@@ -1,0 +1,10 @@
+[package]
+name = "wg-rusteze"
+version = "0.1.0"
+authors = ["Yaşar İdikut <yasar8000@gmail.com>"]
+edition="2021"
+
+[dependencies]
+actix-web = "4"
+mime_guess = "2.0.4"
+rust-embed = "8.0.0"
