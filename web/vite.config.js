@@ -12,5 +12,9 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
+  },
+  build: {
+    outDir: '../.wg-rusteze/dist',
+    emptyOutDir: true, // also necessary
   }
 })

@@ -1,9 +1,11 @@
+mod api;
+
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use mime_guess::from_path;
-use rust_embed::RustEmbed;
+use rust_embed::Embed;
 
-#[derive(RustEmbed)]
-#[folder = "./web/dist/"]
+#[derive(Embed)]
+#[folder = "web/dist"]
 struct Asset;
 
 fn handle_embedded_file(path: &str) -> HttpResponse {
@@ -21,15 +23,15 @@ async fn web_ui_index() -> impl Responder {
 }
 
 #[actix_web::get("/{_:.*}")]
-async fn web_ui_dist(path: web::Path<String>) -> impl Responder {
-    handle_embedded_file(path.as_str())
-}
+async fn web_ui_dist(path: web::Path<String>) -> impl Responder { handle_embedded_file(path.as_str()) }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    println!("Hosting the frontend at http://{}:{}/", "127.0.0.1", 8080);
     HttpServer::new(|| {
         App::new()
             .service(web_ui_index)
+            .service(api::network)
             .service(web_ui_dist)
     })
         .bind(("127.0.0.1", 8080))?
