@@ -1,7 +1,8 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
-pub(crate) const CONFIG: &str = ".wg-rusteze/config.yml";
+pub(crate) const CONF_FILE: &str = ".wg-rusteze/conf.yml";
+
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub(crate) struct Config { network: Network }
