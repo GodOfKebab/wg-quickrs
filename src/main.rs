@@ -6,14 +6,15 @@ mod app;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    println!("Hosting the frontend at http://{}:{}/", "127.0.0.1", 8080);
+    println!("Hosting the frontend at http://{}:{}/", "0.0.0.0", 8080);
     HttpServer::new(|| {
         App::new()
             .service(app::web_ui_index)
             .service(api::network)
+            .service(api::server_status)
             .service(app::web_ui_dist)
     })
-        .bind(("127.0.0.1", 8080))?
+        .bind(("0.0.0.0", 8080))?
         .run()
         .await
 }
