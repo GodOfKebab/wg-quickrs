@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Yaşar İdikut <yasar8000@gmail.com>"]
 edition="2021"
 
+[dev-dependencies]
+cargo-watch = "8.5.3"
+
 [dependencies]
 actix-web = "4"
 mime_guess = "2.0.4"
