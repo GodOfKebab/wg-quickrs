@@ -7,14 +7,14 @@
     <div class="mt-10 mb-2" style="display: flex; align-items: center;">
       <div class="inline-block float-left ml-3" style="flex: 1; min-width: 0;">
         <h1 class="text-4xl font-medium truncate">
-          <img class="inline align-middle" src="/favicon.ico" width="32"/>
+          <img alt="" class="inline align-middle" src="/favicon.ico" width="32"/>
           <span class="align-middle">WireGuard Management Console</span>
         </h1>
       </div>
 
       <div class=" inline-block float-right p-3 whitespace-nowrap bg-gray-50 align-middle">
         <div v-if="requiresPassword" class="relative mb-5 bg-blue-50">
-          <div class="text-sm text-gray-400 cursor-pointer hover:underline absolute top-0 right-0" @click="logout">
+          <div class="text-sm text-gray-400 cursor-pointer hover:underline absolute top-0 right-0" @click="">
             Logout
             <svg class="h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                  xmlns="http://www.w3.org/2000/svg">
@@ -25,30 +25,30 @@
           </div>
         </div>
         <div>
-          <div v-if="webServerStatus === 0"
+          <div v-if="webServerStatus === ServerStatusEnum.unknown"
                class="inline-block shadow-md rounded-lg bg-yellow-500 hover:bg-yellow-400 p-1.5 mr-0.5"
                title="Management Web Server Status Unknown"></div>
-          <div v-else-if="webServerStatus === 1"
+          <div v-else-if="webServerStatus === ServerStatusEnum.down"
                class="inline-block shadow-md rounded-lg bg-red-500 hover:bg-red-400 p-1.5 mr-0.5"
                title="Management Web Server is Down/Not reachable"></div>
-          <div v-else-if="webServerStatus === 2"
+          <div v-else-if="webServerStatus === ServerStatusEnum.up"
                class="inline-block shadow-md rounded-lg bg-green-500 hover:bg-green-400 p-1.5 mr-0.5"
                title="Management Web Server is Up"></div>
           <span class="text-sm text-gray-500">Web Server Status</span>
         </div>
         <div>
-          <div v-if="wireguardStatus === 0"
+          <div v-if="wireguardStatus === ServerStatusEnum.unknown"
                class="inline-block align-middle shadow-md rounded-full w-5 h-3 bg-yellow-500 hover:bg-yellow-400 transition-all"
                title="WireGuard Networking Status Unknown">
             <div class="shadow-md rounded-full w-1 h-1 m-1 ml-2 bg-white"></div>
           </div>
-          <div v-else-if="wireguardStatus === 1"
+          <div v-else-if="wireguardStatus === ServerStatusEnum.down"
                class="inline-block align-middle shadow-md rounded-full w-5 h-3 mr-0.25 bg-red-500 cursor-pointer hover:bg-red-400 transition-all"
                title="Enable WireGuard Networking"
                @click="dialogId = 'network-toggle'">
             <div class="shadow-md rounded-full w-1 h-1 m-1 bg-white"></div>
           </div>
-          <div v-else-if="wireguardStatus === 2"
+          <div v-else-if="wireguardStatus === ServerStatusEnum.up"
                class="inline-block align-middle shadow-md rounded-full w-5 h-3 bg-green-500 cursor-pointer hover:bg-green-400 transition-all"
                title="Disable WireGuard Networking"
                @click="dialogId = 'network-toggle'">
@@ -67,7 +67,7 @@
     <div class="grid grid-cols-2 gap-2">
       <div v-for="mobility in ['static', 'roaming']"
            class="grid-cols-1 flex flex-row flex-auto items-center justify-center p-3 px-5 border-gray-100">
-        <button :disabled="webServerStatus !== 2"
+        <button :disabled="webServerStatus !== ServerStatusEnum.up"
                 class="bg-gray-200 enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white text-gray-700 border-2 border-gray-500 py-2 px-4 rounded inline-flex items-center transition"
                 @click=""> <!-- TODO: open peer create window-->
           <span class="text-sm">Add a {{ mobility[0].toUpperCase() + mobility.slice(1) }} Peer</span>
@@ -78,16 +78,17 @@
     <!-- Dialog: WireGuard Enable/Disable -->
     <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = null }"
                    :left-button-text="'Cancel'"
-                   :right-button-classes="wireguardStatus === 2 ? ['text-white', 'bg-red-600', 'hover:bg-red-700'] : ['text-white', 'bg-green-600', 'hover:bg-green-700']"
+                   :right-button-classes="wireguardStatus === ServerStatusEnum.up ? ['text-white', 'bg-red-600', 'hover:bg-red-700'] : ['text-white', 'bg-green-600', 'hover:bg-green-700']"
                    :right-button-click="() => { toggleWireGuardNetworking(); dialogId = null; }"
-                   :right-button-text="wireguardStatus === 2 ? 'Disable' : 'Enable'"
+                   :right-button-text="wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable'"
                    class="z-10"
                    icon="danger">
       <h3 class="text-lg leading-6 font-medium text-gray-900">
-        {{ wireguardStatus === 2 ? 'Disable' : 'Enable' }} the WireGuard Network
+        {{ wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable' }} the WireGuard Network
       </h3>
       <div class="mt-2 text-sm text-gray-500">
-        Are you sure you want to {{ wireguardStatus === 2 ? 'disable' : 'enable' }} the WireGuard network?
+        Are you sure you want to {{ wireguardStatus === ServerStatusEnum.up ? 'disable' : 'enable' }} the WireGuard
+        network?
       </div>
     </custom-dialog>
   </div>
@@ -103,7 +104,6 @@ import CustomDialog from "./components/custom-dialog.vue";
 import MapVisual from "./components/map-visual.vue";
 import API from "./js/api.js";
 
-
 export default {
   name: "app",
   components: {MapVisual, CustomDialog},
@@ -113,6 +113,11 @@ export default {
       api: null,
       webServerStatus: 0,
       wireguardStatus: 0,
+      ServerStatusEnum: {
+        'unknown': 0,
+        'down': 1,
+        'up': 2
+      },
       requiresPassword: false,
       dialogId: null,
       network: {}
@@ -128,7 +133,7 @@ export default {
   methods: {
     async refresh() {
       await this.api.get_network().then(network_plus => {
-        this.webServerStatus = 2;
+        this.webServerStatus = this.ServerStatusEnum.up;
         this.network = network_plus['network'];
         // console.log(this.network)
         // console.log(JSON.stringify(network_plus))
@@ -136,18 +141,18 @@ export default {
         // console.log(this.wireguardStatus)
 
       }).catch(err => {
-        this.wireguardStatus = 0;
+        this.wireguardStatus = this.ServerStatusEnum.unknown;
         if (err.toString() === 'TypeError: Load failed') {
-          this.webServerStatus = 1;
+          this.webServerStatus = this.ServerStatusEnum.down;
         } else {
-          this.webServerStatus = 0;
+          this.webServerStatus = this.ServerStatusEnum.unknown;
           console.log('getNetwork error =>');
           console.log(err);
         }
       });
     },
     toggleWireGuardNetworking() {
-      console.log(`${this.wireguardStatus === 2 ? 'Disabling' : 'Enabling'} WireGuard Network...`)
+      console.log(`${this.wireguardStatus === this.ServerStatusEnum.up ? 'Disabling' : 'Enabling'} WireGuard Network...`)
       // TODO: implement me
     },
   }
