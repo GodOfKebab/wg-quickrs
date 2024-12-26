@@ -25,7 +25,14 @@ export default class API {
         return json;
     }
 
-    async getWireGuardStatus() {
+    async get_network() {
+        return this.call({
+            method: 'get',
+            path: '/network',
+        });
+    }
+
+    async get_server_status() {
         return this.call({
             method: 'get',
             path: '/server/status',

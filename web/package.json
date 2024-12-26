@@ -8,7 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.3.4"
+    "vue": "^3.3.4",
+    "force-graph": "^1.47.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.3.1",

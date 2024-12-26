@@ -1,11 +1,48 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::time::SystemTime;
 
-pub(crate) const CONF_FILE: &str = ".wg-rusteze/conf.yml";
+pub(crate) const DEFAULT_CONF_FILE: &str = ".wg-rusteze/conf.yml";
 
+
+pub(crate) enum WireGuardStatus {
+    UNKNOWN,
+    DOWN,
+    UP,
+}
+impl WireGuardStatus {
+    pub(crate) fn value(&self) -> u8 {
+        match *self {
+            WireGuardStatus::UNKNOWN => 0,
+            WireGuardStatus::DOWN => 1,
+            WireGuardStatus::UP => 2,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub(crate) struct Config { network: Network }
+pub(crate) struct Config {
+    network: Network,
+    #[serde(default)]
+    status: u8,
+    #[serde(default)]
+    timestamp: u64,
+}
+
+impl Config {
+    pub(crate) fn set_status(&mut self, status: u8) -> &mut Self {
+        self.status = status;
+        return self;
+    }
+
+    pub(crate) fn put_timestamp(&mut self) -> &mut Self {
+        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(n) => self.timestamp = n.as_secs(),
+            Err(_) => self.timestamp = 0,
+        }
+        return self;
+    }
+}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct Network {
@@ -13,10 +50,6 @@ struct Network {
     peers: HashMap<String, Peer>,
     connections: HashMap<String, Connection>,
     defaults: Defaults,
-    #[serde(default)]
-    status: i8,
-    #[serde(default)]
-    timestamp: i64,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]

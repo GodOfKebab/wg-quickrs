@@ -5,9 +5,12 @@ mod conf;
 
 
 #[actix_web::get("/api/network")]
-async fn network() -> impl Responder {
-    let file = File::open(conf::CONF_FILE).expect("Unable to open file");
-    let resp: conf::Config = serde_yml::from_reader(file).unwrap();
+async fn get_network() -> impl Responder {
+    let file = File::open(conf::DEFAULT_CONF_FILE).expect("Unable to open file");
+    let mut resp: conf::Config = serde_yml::from_reader(file).unwrap();
+
+    resp.set_status(conf::WireGuardStatus::UP.value());  // TODO: check wg status
+    resp.put_timestamp();
 
     HttpResponse::Ok()
         .content_type("application/json")
@@ -15,7 +18,7 @@ async fn network() -> impl Responder {
 }
 
 #[actix_web::get("/api/server/status")]
-async fn server_status() -> impl Responder {
+async fn get_server_status() -> impl Responder {
     HttpResponse::Ok()
         .content_type("application/json")
         .body(r#"{"status": "up"}"#)

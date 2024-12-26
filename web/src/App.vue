@@ -25,34 +25,34 @@
           </div>
         </div>
         <div>
-          <div v-if="webServerStatus === 'unknown'"
+          <div v-if="webServerStatus === 0"
                class="inline-block shadow-md rounded-lg bg-yellow-500 hover:bg-yellow-400 p-1.5 mr-0.5"
                title="Management Web Server Status Unknown"></div>
-          <div v-if="webServerStatus === 'down'"
+          <div v-else-if="webServerStatus === 1"
                class="inline-block shadow-md rounded-lg bg-red-500 hover:bg-red-400 p-1.5 mr-0.5"
                title="Management Web Server is Down/Not reachable"></div>
-          <div v-if="webServerStatus === 'up'"
+          <div v-else-if="webServerStatus === 2"
                class="inline-block shadow-md rounded-lg bg-green-500 hover:bg-green-400 p-1.5 mr-0.5"
                title="Management Web Server is Up"></div>
           <span class="text-sm text-gray-500">Web Server Status</span>
         </div>
         <div>
-          <div v-if="wireguardStatus === 'unknown'"
+          <div v-if="wireguardStatus === 0"
                class="inline-block align-middle shadow-md rounded-full w-5 h-3 bg-yellow-500 hover:bg-yellow-400 transition-all"
                title="WireGuard Networking Status Unknown">
             <div class="shadow-md rounded-full w-1 h-1 m-1 ml-2 bg-white"></div>
           </div>
-          <div v-if="wireguardStatus === 'up'"
-               class="inline-block align-middle shadow-md rounded-full w-5 h-3 bg-green-500 cursor-pointer hover:bg-green-400 transition-all"
-               title="Disable WireGuard Networking"
-               @click="dialogId = 'network-toggle'">
-            <div class="shadow-md rounded-full w-1 h-1 m-1 ml-3 bg-white"></div>
-          </div>
-          <div v-if="wireguardStatus === 'down'"
+          <div v-else-if="wireguardStatus === 1"
                class="inline-block align-middle shadow-md rounded-full w-5 h-3 mr-0.25 bg-red-500 cursor-pointer hover:bg-red-400 transition-all"
                title="Enable WireGuard Networking"
                @click="dialogId = 'network-toggle'">
             <div class="shadow-md rounded-full w-1 h-1 m-1 bg-white"></div>
+          </div>
+          <div v-else-if="wireguardStatus === 2"
+               class="inline-block align-middle shadow-md rounded-full w-5 h-3 bg-green-500 cursor-pointer hover:bg-green-400 transition-all"
+               title="Disable WireGuard Networking"
+               @click="dialogId = 'network-toggle'">
+            <div class="shadow-md rounded-full w-1 h-1 m-1 ml-3 bg-white"></div>
           </div>
           <span class="text-sm text-gray-500">WireGuard Status</span>
         </div>
@@ -60,13 +60,14 @@
     </div>
 
     <!-- Map -->
-    <div id="graph" class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center h-96"></div>
+    <map-visual :network="network"
+                class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center h-96"></map-visual>
 
     <!-- Add a Static/Roaming Peer -->
     <div class="grid grid-cols-2 gap-2">
       <div v-for="mobility in ['static', 'roaming']"
            class="grid-cols-1 flex flex-row flex-auto items-center justify-center p-3 px-5 border-gray-100">
-        <button :disabled="webServerStatus !== 'up'"
+        <button :disabled="webServerStatus !== 2"
                 class="bg-gray-200 enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white text-gray-700 border-2 border-gray-500 py-2 px-4 rounded inline-flex items-center transition"
                 @click=""> <!-- TODO: open peer create window-->
           <span class="text-sm">Add a {{ mobility[0].toUpperCase() + mobility.slice(1) }} Peer</span>
@@ -77,20 +78,21 @@
     <!-- Dialog: WireGuard Enable/Disable -->
     <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = null }"
                    :left-button-text="'Cancel'"
-                   :right-button-classes="wireguardStatus === 'up' ? ['text-white', 'bg-red-600', 'hover:bg-red-700'] : ['text-white', 'bg-green-600', 'hover:bg-green-700']"
+                   :right-button-classes="wireguardStatus === 2 ? ['text-white', 'bg-red-600', 'hover:bg-red-700'] : ['text-white', 'bg-green-600', 'hover:bg-green-700']"
                    :right-button-click="() => { toggleWireGuardNetworking(); dialogId = null; }"
-                   :right-button-text="wireguardStatus === 'up' ? 'Disable' : 'Enable'"
+                   :right-button-text="wireguardStatus === 2 ? 'Disable' : 'Enable'"
                    class="z-10"
                    icon="danger">
       <h3 class="text-lg leading-6 font-medium text-gray-900">
-        {{ wireguardStatus === 'up' ? 'Disable' : 'Enable' }} the WireGuard Network
+        {{ wireguardStatus === 2 ? 'Disable' : 'Enable' }} the WireGuard Network
       </h3>
       <div class="mt-2 text-sm text-gray-500">
-        Are you sure you want to {{ wireguardStatus === 'up' ? 'disable' : 'enable' }} the WireGuard network?
+        Are you sure you want to {{ wireguardStatus === 2 ? 'disable' : 'enable' }} the WireGuard network?
       </div>
     </custom-dialog>
   </div>
 
+  <!-- Footer -->
   <footer class="text-center text-gray-500 my-10">
     <small>&copy; Copyright 2024, <a class="hover:underline" href="https://yasar.idikut.cc/">Yaşar İdikut</a></small>
   </footer>
@@ -98,20 +100,22 @@
 
 <script>
 import CustomDialog from "./components/custom-dialog.vue";
-
+import MapVisual from "./components/map-visual.vue";
 import API from "./js/api.js";
+
 
 export default {
   name: "app",
-  components: {CustomDialog},
+  components: {MapVisual, CustomDialog},
   data() {
     return {
       refreshRate: 1000,
       api: null,
-      webServerStatus: 'up',
-      wireguardStatus: 'up',
+      webServerStatus: 0,
+      wireguardStatus: 0,
       requiresPassword: false,
       dialogId: null,
+      network: {}
     }
   },
   mounted: function () {
@@ -123,24 +127,27 @@ export default {
   computed: {},
   methods: {
     async refresh() {
-      // Get WirGuard Server Status
-      await this.api.getWireGuardStatus().then(wgStatus => {
-        this.webServerStatus = 'up';
-        if (wgStatus['status'] === 'up') {
-          this.wireguardStatus = 'up';
-        } else if (wgStatus['status'] === 'down') {
-          this.wireguardStatus = 'down';
-        }
-      }).catch(() => {
-        this.webServerStatus = 'down';
-        this.wireguardStatus = 'unknown';
-      });
-      if (this.wireguardStatus !== 'up') return null;
+      await this.api.get_network().then(network_plus => {
+        this.webServerStatus = 2;
+        this.network = network_plus['network'];
+        // console.log(this.network)
+        // console.log(JSON.stringify(network_plus))
+        this.wireguardStatus = network_plus['status']
+        // console.log(this.wireguardStatus)
 
-      // TODO: implement me
+      }).catch(err => {
+        this.wireguardStatus = 0;
+        if (err.toString() === 'TypeError: Load failed') {
+          this.webServerStatus = 1;
+        } else {
+          this.webServerStatus = 0;
+          console.log('getNetwork error =>');
+          console.log(err);
+        }
+      });
     },
     toggleWireGuardNetworking() {
-      console.log(`${this.wireguardStatus === 'up' ? 'Disabling' : 'Enabling'} WireGuard Network...`)
+      console.log(`${this.wireguardStatus === 2 ? 'Disabling' : 'Enabling'} WireGuard Network...`)
       // TODO: implement me
     },
   }
