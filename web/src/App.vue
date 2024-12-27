@@ -12,7 +12,8 @@
         </h1>
       </div>
 
-      <div class=" inline-block float-right p-3 whitespace-nowrap bg-gray-50 align-middle">
+      <div :title="`Last Updated: ${lastUpdated ? lastUpdated.toISOString(): 'Never'}`"
+           class="inline-block float-right p-3 whitespace-nowrap bg-gray-50 align-middle">
         <div v-if="requiresPassword" class="relative mb-5 bg-blue-50">
           <div class="text-sm text-gray-400 cursor-pointer hover:underline absolute top-0 right-0" @click="">
             Logout
@@ -113,6 +114,7 @@ export default {
       api: null,
       webServerStatus: 0,
       wireguardStatus: 0,
+      lastUpdated: null,
       ServerStatusEnum: {
         'unknown': 0,
         'down': 1,
@@ -125,6 +127,7 @@ export default {
   },
   mounted: function () {
     this.api = new API();
+    this.lastUpdated = new Date()
     setInterval(() => {
       this.refresh()
     }, this.refreshRate)
@@ -132,14 +135,13 @@ export default {
   computed: {},
   methods: {
     async refresh() {
-      await this.api.get_network().then(network_plus => {
+      await this.api.get_summary().then(summary => {
         this.webServerStatus = this.ServerStatusEnum.up;
-        this.network = network_plus['network'];
-        // console.log(this.network)
-        // console.log(JSON.stringify(network_plus))
-        this.wireguardStatus = network_plus['status']
-        // console.log(this.wireguardStatus)
+        this.network = summary.network;
+        this.wireguardStatus = summary.status
 
+        this.lastUpdated.setUTCFullYear(1970, 0, 0);
+        this.lastUpdated.setUTCHours(0, 0, summary.timestamp, 0);
       }).catch(err => {
         this.wireguardStatus = this.ServerStatusEnum.unknown;
         if (err.toString() === 'TypeError: Load failed') {

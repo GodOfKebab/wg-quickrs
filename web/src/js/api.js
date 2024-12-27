@@ -25,17 +25,10 @@ export default class API {
         return json;
     }
 
-    async get_network() {
+    async get_summary() {
         return this.call({
             method: 'get',
-            path: '/network',
-        });
-    }
-
-    async get_server_status() {
-        return this.call({
-            method: 'get',
-            path: '/server/status',
+            path: '/summary',
         });
     }
 }

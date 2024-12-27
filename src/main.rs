@@ -12,8 +12,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .service(app::web_ui_index)
-            .service(api::get_network)
-            .service(api::get_server_status)
+            .service(api::get_summary)
             .service(app::web_ui_dist)
     })
         .bind(DEFAULT_SERVER_ADDRESS_PORT)?

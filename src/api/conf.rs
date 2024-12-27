@@ -47,6 +47,7 @@ impl Config {
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct Network {
     subnet: String,
+    this_peer: String,
     peers: HashMap<String, Peer>,
     connections: HashMap<String, Connection>,
     defaults: Defaults,
