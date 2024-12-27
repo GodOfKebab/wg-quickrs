@@ -55,6 +55,7 @@ struct Network {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct Peer {
+    name: String,
     address: String,
     public_key: String,
     private_key: String,
