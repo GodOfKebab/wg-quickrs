@@ -138,6 +138,15 @@ export default {
       await this.api.get_summary().then(summary => {
         this.webServerStatus = this.ServerStatusEnum.up;
         this.network = summary.network;
+        this.network.staticPeerIds = [];
+        this.network.roamingPeerIds = [];
+        Object.entries(summary.network.peers).forEach(([peerId, peerDetails]) => {
+          if (peerDetails.mobility === "static") {
+            this.network.staticPeerIds.push(peerId);
+          } else {
+            this.network.roamingPeerIds.push(peerId);
+          }
+        })
         this.wireguardStatus = summary.status
 
         this.lastUpdated.setUTCFullYear(1970, 0, 0);
