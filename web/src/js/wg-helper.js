@@ -6,15 +6,15 @@ export default class WireGuardHelper {
         const peer = network.peers[peerId];
         
         let conf = `[Interface]
-PrivateKey = ${peer.privateKey}
+PrivateKey = ${peer.private_key}
 Address = ${peer.address}/24
 ${peer.mobility === 'static' ? `ListenPort = ${peer.endpoint.toString().split(':')[1]}` : 'DEL'}
 ${peer.dns.enabled ? `DNS = ${peer.dns.value}` : 'DEL'}
 ${peer.mtu.enabled ? `MTU = ${peer.mtu.value}` : 'DEL'}
-${peer.scripts.PreUp.enabled ? `PreUp = ${peer.scripts.PreUp.value}` : 'DEL'}
-${peer.scripts.PostUp.enabled ? `PostUp = ${peer.scripts.PostUp.value}` : 'DEL'}
-${peer.scripts.PreDown.enabled ? `PreDown = ${peer.scripts.PreDown.value}` : 'DEL'}
-${peer.scripts.PostDown.enabled ? `PostDown = ${peer.scripts.PostDown.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
+${peer.scripts.pre_up.enabled ? `pre_up = ${peer.scripts.pre_up.value}` : 'DEL'}
+${peer.scripts.post_up.enabled ? `post_up = ${peer.scripts.post_up.value}` : 'DEL'}
+${peer.scripts.pre_down.enabled ? `pre_down = ${peer.scripts.pre_down.value}` : 'DEL'}
+${peer.scripts.post_down.enabled ? `post_down = ${peer.scripts.post_down.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
 
         for (const [connectionPeers, connectionDetails] of Object.entries(network.connections)) {
             if (!connectionPeers.includes(peerId)) continue;
@@ -24,19 +24,19 @@ ${peer.scripts.PostDown.enabled ? `PostDown = ${peer.scripts.PostDown.value}` : 
             let allowedIPsThisPeer = '';
             if (connectionPeers.split('*')[0] === peerId) {
                 otherPeerId = connectionPeers.split('*')[1];
-                allowedIPsThisPeer = connectionDetails.allowedIPsAtoB;
+                allowedIPsThisPeer = connectionDetails.allowed_ips_a_to_b;
             } else {
                 otherPeerId = connectionPeers.split('*')[0];
-                allowedIPsThisPeer = connectionDetails.allowedIPsBtoA;
+                allowedIPsThisPeer = connectionDetails.allowed_ips_b_to_a;
             }
 
             conf += `
 # Peer: ${network.peers[otherPeerId].name} (${otherPeerId})
 [Peer]
-PublicKey = ${network.peers[otherPeerId].publicKey}
-PresharedKey = ${connectionDetails.preSharedKey}
+PublicKey = ${network.peers[otherPeerId].public_key}
+PresharedKey = ${connectionDetails.pre_shared_key}
 AllowedIPs = ${allowedIPsThisPeer}
-${connectionDetails.persistentKeepalive.enabled ? `PersistentKeepalive = ${connectionDetails.persistentKeepalive.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
+${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${connectionDetails.persistentKeepalive.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
 
             // Add the Endpoint line if known TODO: get roaming endpoints as well
             if (network.peers[otherPeerId].mobility === 'static') {
@@ -103,7 +103,7 @@ ${connectionDetails.persistentKeepalive.enabled ? `PersistentKeepalive = ${conne
         }
 
         // check allowedIPs
-        if (fieldName === 'persistentKeepalive') {
+        if (fieldName === 'persistent_keepalive') {
             return fieldVariable.match('^([0-9][0-9]|[0-9])$');
         }
 
@@ -133,7 +133,7 @@ ${connectionDetails.persistentKeepalive.enabled ? `PersistentKeepalive = ${conne
         // check scripts
         if (fieldName === 'scripts') {
             let checkScripts = true;
-            for (const scriptField of ['PreUp', 'PostUp', 'PreDown', 'PostDown']) {
+            for (const scriptField of ['pre_up', 'post_up', 'pre_down', 'post_down']) {
                 if (Object.keys(fieldVariable).includes(scriptField)) {
                     if (fieldVariable[scriptField].enabled) {
                         checkScripts &&= WireGuardHelper.checkField('script', fieldVariable[scriptField]);

@@ -62,6 +62,7 @@
 
     <!-- Map -->
     <map-visual :network="network"
+                @peer-selected="onPeerSelected"
                 class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center h-96"></map-visual>
 
     <!-- Add a Static/Roaming Peer -->
@@ -92,6 +93,14 @@
         network?
       </div>
     </custom-dialog>
+
+
+    <!-- Dialog: Peer View/Edit -->
+    <peer-config-window v-if="dialogId.startsWith('selected-peer-id=')"
+                        :network="network"
+                        :peer-id="dialogId.slice(17, dialogId.length)"></peer-config-window>
+
+
   </div>
 
   <!-- Footer -->
@@ -101,13 +110,16 @@
 </template>
 
 <script>
-import CustomDialog from "./components/custom-dialog.vue";
-import MapVisual from "./components/map-visual.vue";
+import {initFlowbite} from 'flowbite'
+
 import API from "./js/api.js";
+import MapVisual from "./components/map-visual.vue";
+import CustomDialog from "./components/custom-dialog.vue";
+import PeerConfigWindow from "./components/peer-config-window.vue";
 
 export default {
   name: "app",
-  components: {MapVisual, CustomDialog},
+  components: {MapVisual, CustomDialog, PeerConfigWindow},
   data() {
     return {
       refreshRate: 1000,
@@ -121,11 +133,13 @@ export default {
         'up': 2
       },
       requiresPassword: false,
-      dialogId: null,
-      network: {}
+      dialogId: '',
+      network: {},
     }
   },
   mounted: function () {
+    initFlowbite();
+
     this.api = new API();
     this.lastUpdated = new Date()
     setInterval(() => {
@@ -166,6 +180,9 @@ export default {
       console.log(`${this.wireguardStatus === this.ServerStatusEnum.up ? 'Disabling' : 'Enabling'} WireGuard Network...`)
       // TODO: implement me
     },
+    onPeerSelected(peer_id) {
+      this.dialogId = `selected-peer-id=${peer_id}`;
+    }
   }
 }
 </script>

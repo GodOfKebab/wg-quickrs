@@ -77,7 +77,9 @@ export default {
             this.graph.centerAt(node.x, node.y, 400);
             this.graph.zoom(8, 400);
 
-            // this.peerEditWindow.id = node.id;
+            // this.peer_selected = node.id;
+            // console.log(node.id)
+            this.$emit('peer-selected', node.id);
           });
 
           this.graph.graphData(this.calculateForceGraphData(newVal));
