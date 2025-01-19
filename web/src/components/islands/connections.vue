@@ -140,8 +140,8 @@ export default {
       type: Object,
       default: {
         context: 'edit',
-        addedFields: {},
-        removedFields: {},
+        addedConnections: {},
+        removedConnections: {},
         changedFields: {},
         error: null,
       },
@@ -184,8 +184,8 @@ export default {
     //   this.connectionChanged[peerId] = false;
     // }
 
-    this.value.addedFields = {};
-    this.value.removedFields = {};
+    this.value.addedConnections = {};
+    this.value.removedConnections = {};
     this.value.changedFields = {};
     this.value.error = null;
   },
@@ -289,13 +289,13 @@ export default {
         attachedPeerDiv: {},
         selectionDiv: WireGuardHelper.checkField('peerCount', this.allAttachedPeersLocal) ? 'bg-green-50' : 'bg-red-50',
       };
-      const addedFields = {};
+      const addedConnections = {};
       const changedFields = {};
       let error = null;
       for (const peerId of this.allAttachedPeers) {
         const connectionId = WireGuardHelper.getConnectionId(this.peerId, peerId);
         try {
-          addedFields[peerId] = {};
+          addedConnections[peerId] = {};
           changedFields[peerId] = {};
           // eslint-disable-next-line no-nested-ternary
           color.allowed_ips_a_to_b[peerId] = this.value.context === 'create' || !this.allAttachedPeers.includes(peerId) || this.allowed_ips_a_to_b[peerId] !== this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].allowed_ips_a_to_b
@@ -335,7 +335,7 @@ export default {
           if (Object.keys(changedFields[peerId]).length === 0) delete changedFields[peerId];
 
           if (!this.allAttachedPeers.includes(peerId)) {
-            addedFields[peerId] = {
+            addedConnections[peerId] = {
               enabled: this.isConnectionEnabled[peerId],
               allowed_ips_a_to_b: this.allowed_ips_a_to_b[peerId],
               allowed_ips_b_to_a: this.allowed_ips_b_to_a[peerId],
@@ -345,7 +345,7 @@ export default {
               },
             };
           } else {
-            delete addedFields[peerId];
+            delete addedConnections[peerId];
           }
 
           // eslint-disable-next-line no-nested-ternary
@@ -360,11 +360,11 @@ export default {
         }
       }
 
-      const removedFields = {};
+      const removedConnections = {};
       for (const peerId of this.allAttachedPeers) {
         if (!this.allAttachedPeers.includes(peerId)) {
           const connectionId = WireGuardHelper.getConnectionId(peerId, this.peerId);
-          removedFields[peerId] = {
+          removedConnections[peerId] = {
             enabled: this.rollbackData.isConnectionEnabled[peerId],
             allowed_ips_a_to_b: this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].allowed_ips_a_to_b,
             allowed_ips_b_to_a: this.network.peers[peerId],
@@ -376,8 +376,8 @@ export default {
         }
       }
 
-      this.value.addedFields = addedFields;
-      this.value.removedFields = removedFields;
+      this.value.addedConnections = addedConnections;
+      this.value.removedConnections = removedConnections;
       this.value.changedFields = changedFields;
       this.value.error = error;
 
