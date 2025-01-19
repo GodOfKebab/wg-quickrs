@@ -1,19 +1,19 @@
 <template>
 
-  <div :class="[peerEditConfigColor]" class="my-2 mr-2 p-1 shadow-md border rounded">
+  <div :class="[color_div]" class="my-2 mr-2 p-1 shadow-md border rounded">
     <div class="my-0.5 truncate flex items-center relative">
                                    <span class="text-gray-800 text-xs mr-1">
                                      <strong class="text-sm">Name:</strong>
                                    </span>
       <input
           v-model="peer_local.name"
-          :class="[peerEditNameColor]"
+          :class="[FIELD_COLOR_LOOKUP[is_changed_name]]"
           class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow"
           placeholder="Name" type="text"/>
-      <div v-if="peerEditNameColor !== 'bg-white'"
+      <div v-if="is_changed_name"
            class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
         <button
-            :disabled="peerEditNameColor === 'bg-white'"
+            :disabled="!is_changed_name"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
             @click="peer_local.name = peer.name">
@@ -28,15 +28,15 @@
                                    </span>
       <input
           v-model="peer_local.address"
-          :class="[peerEditAddressColor]"
+          :class="[FIELD_COLOR_LOOKUP[is_changed_address]]"
           :placeholder="`Address (e.g. ${next_available_address})`"
           class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow"
           type="text"
           @change=""/> <!--TODO: update connection address on change  -->
-      <div v-if="peerEditAddressColor !== 'bg-white'"
+      <div v-if="is_changed_address"
            class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
         <button
-            :disabled="peerEditAddressColor === 'bg-white'"
+            :disabled="!is_changed_address"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition undo-button-itself"
             title="Undo Changes"
             @click="peer_local.address = peer.address">
@@ -59,15 +59,15 @@
 
       <input
           v-model="peer_local.endpoint"
-          :class="[peerEditEndpointColor]" :disabled="peer_local.mobility !== 'static'"
-          class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow"
+          :class="[FIELD_COLOR_LOOKUP[is_changed_endpoint]]" :disabled="peer_local.mobility !== 'static'"
+          class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow disabled:bg-gray-100"
           placeholder="Endpoint (e.g. 1.2.3.4:51820 example.com:51820)"
           type="text"/>
       <div
-          v-if="!(peer_local.endpoint === peer.endpoint && peer_local.mobility === peer.mobility)"
+          v-if="is_changed_mobility || is_changed_endpoint"
           class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
         <button
-            :disabled="peer_local.endpoint === peer.endpoint && peer_local.mobility === peer.mobility"
+            :disabled="!(is_changed_mobility || is_changed_endpoint)"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
             @click="peer_local.endpoint = peer.endpoint; peer_local.mobility = peer.mobility;">
@@ -107,39 +107,47 @@ export default {
         address: 'Address',
         endpoint: 'Endpoint',
       },
+      FIELD_COLOR_LOOKUP: {
+        0: 'bg-white',
+        1: 'enabled:bg-green-200',
+        '-1': 'enabled:bg-red-200',
+      },
     };
   },
   created() {
     this.peer_local = this.peer;
   },
   emits: ['update:value'],
+  methods: {
+    check_field_status(field_name, field_pl, field_p) {
+      return field_pl !== field_p
+          ? (WireGuardHelper.checkField(field_name, field_pl) ? 1 : -1) : 0;
+    }
+  },
   computed: {
-    peerEditNameColor() {
-      // eslint-disable-next-line no-nested-ternary
-      return this.peer_local.name !== this.peer.name
-          ? (WireGuardHelper.checkField('name', this.peer_local.name) ? 'bg-green-200' : 'bg-red-200') : 'bg-white';
+    is_changed_name() {
+      return this.check_field_status('name', this.peer_local.name, this.peer.name);
     },
-    peerEditAddressColor() {
-      // eslint-disable-next-line no-nested-ternary
-      return this.peer_local.address !== this.peer.address
-          ? (WireGuardHelper.checkField('address', this.peer_local.address) ? 'bg-green-200' : 'bg-red-200') : 'bg-white';
+    is_changed_address() {
+      return this.check_field_status('address', this.peer_local.address, this.peer.address);
     },
-    peerEditEndpointColor() {
-      // eslint-disable-next-line no-nested-ternary
-      return this.peer_local.mobility === 'static' ? this.peer_local.endpoint !== this.peer.endpoint || !WireGuardHelper.checkField('endpoint', this.peer_local.endpoint)
-          ? (WireGuardHelper.checkField('endpoint', this.peer_local.endpoint) ? 'bg-green-200' : 'bg-red-200') : 'bg-white' : 'bg-gray-100';
+    is_changed_mobility() {
+      return this.check_field_status('mobility', this.peer_local.mobility, this.peer.mobility);
     },
-    peerEditConfigColor() {
-      let error = false;
+    is_changed_endpoint() {
+      return this.check_field_status('endpoint', this.peer_local.endpoint, this.peer.endpoint);
+    },
+    color_div() {
       let changeDetected = false;
-      error ||= this.peerEditNameColor === 'bg-red-200';
-      changeDetected ||= this.peerEditNameColor === 'bg-green-200';
-      error ||= this.peerEditAddressColor === 'bg-red-200';
-      changeDetected ||= this.peerEditAddressColor === 'bg-green-200';
-      error ||= this.peerEditEndpointColor === 'bg-red-200';
-      changeDetected ||= this.peerEditEndpointColor === 'bg-green-200';
-      // eslint-disable-next-line no-nested-ternary
-      return error ? 'bg-red-50' : changeDetected ? 'bg-green-100' : 'bg-green-50';
+      for (const field_status of [this.is_changed_name, this.is_changed_address, this.is_changed_mobility, this.is_changed_endpoint]) {
+        if (field_status === -1) {
+          return 'bg-red-50';
+        }
+        if (field_status === 1) {
+          changeDetected = true;
+        }
+      }
+      return changeDetected ? 'bg-green-100' : 'bg-green-50';
     },
   },
 }
