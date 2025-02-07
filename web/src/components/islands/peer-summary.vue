@@ -119,23 +119,26 @@ export default {
   },
   emits: ['update:value'],
   methods: {
-    check_field_status(field_name, field_pl, field_p) {
-      return field_pl !== field_p
-          ? (WireGuardHelper.checkField(field_name, field_pl) ? 1 : -1) : 0;
+    check_field_status(field_name) {
+      if (this.peer_local[field_name] === this.peer[field_name]) return 0;
+      if (!WireGuardHelper.checkField(field_name, this.peer_local[field_name])) return -1;
+
+      this.value.changedFields[field_name] = this.peer_local[field_name];
+      return 1;
     }
   },
   computed: {
     is_changed_name() {
-      return this.check_field_status('name', this.peer_local.name, this.peer.name);
+      return this.check_field_status('name');
     },
     is_changed_address() {
-      return this.check_field_status('address', this.peer_local.address, this.peer.address);
+      return this.check_field_status('address');
     },
     is_changed_mobility() {
-      return this.check_field_status('mobility', this.peer_local.mobility, this.peer.mobility);
+      return this.check_field_status('mobility');
     },
     is_changed_endpoint() {
-      return this.check_field_status('endpoint', this.peer_local.endpoint, this.peer.endpoint);
+      return this.check_field_status('endpoint');
     },
     color_div() {
       let changeDetected = false;
