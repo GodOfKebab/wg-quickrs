@@ -1,12 +1,10 @@
 'use strict';
 
 export default class API {
-    async call({method, path, body}) {
+    async call({method, path, headers, body}) {
         const res = await fetch(`/api${path}`, {
             method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
             body: body
                 ? JSON.stringify(body)
                 : undefined,
@@ -25,10 +23,11 @@ export default class API {
         return json;
     }
 
-    async get_summary() {
+    async get_summary(url_encoded_params) {
         return this.call({
             method: 'get',
-            path: '/summary',
+            path: `/summary${url_encoded_params}`,
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
     }
 }

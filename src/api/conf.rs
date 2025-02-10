@@ -24,17 +24,34 @@ impl WireGuardStatus {
 pub(crate) struct Config {
     network: Network,
     #[serde(default)]
-    status: u8,
+    pub(crate) network_digest: String,
     #[serde(default)]
-    timestamp: u64,
+    pub(crate) status: u8,
+    #[serde(default)]
+    pub(crate) timestamp: u64,
 }
 
 impl Config {
-    pub(crate) fn set_status(&mut self, status: u8) -> &mut Self {
-        self.status = status;
+    pub(crate) fn put_timestamp(&mut self) -> &mut Self {
+        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(n) => self.timestamp = n.as_secs(),
+            Err(_) => self.timestamp = 0,
+        }
         return self;
     }
+}
 
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub(crate) struct ConfigDigest {
+    #[serde(default)]
+    pub(crate) network_digest: String,
+    #[serde(default)]
+    pub(crate) status: u8,
+    #[serde(default)]
+    pub(crate) timestamp: u64,
+}
+
+impl ConfigDigest {
     pub(crate) fn put_timestamp(&mut self) -> &mut Self {
         match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => self.timestamp = n.as_secs(),

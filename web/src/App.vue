@@ -135,6 +135,7 @@ export default {
       requiresPassword: false,
       dialogId: '',
       network: {},
+      network_digest: '',
     }
   },
   mounted: function () {
@@ -149,8 +150,34 @@ export default {
   computed: {},
   methods: {
     async refresh() {
-      await this.api.get_summary().then(summary => {
+      let need_to_update_network = true;
+      if (this.network_digest.length === 64) {
+        await this.api.get_summary('?only_network_digest=true').then(summary => {
+          this.webServerStatus = this.ServerStatusEnum.up;
+          this.wireguardStatus = summary.status;
+          need_to_update_network = this.network_digest !== summary.network_digest;
+
+          this.lastUpdated.setUTCFullYear(1970, 0, 0);
+          this.lastUpdated.setUTCHours(0, 0, summary.timestamp, 0);
+        }).catch(err => {
+          this.wireguardStatus = this.ServerStatusEnum.unknown;
+          if (err.toString() === 'TypeError: Load failed') {
+            this.webServerStatus = this.ServerStatusEnum.down;
+          } else {
+            this.webServerStatus = this.ServerStatusEnum.unknown;
+            console.log('getNetwork error =>');
+            console.log(err);
+          }
+        });
+      }
+
+      if (!need_to_update_network) {
+        return;
+      }
+
+      await this.api.get_summary('?only_network_digest=false').then(summary => {
         this.webServerStatus = this.ServerStatusEnum.up;
+        this.network_digest = summary.network_digest;
         this.network = summary.network;
         this.network.staticPeerIds = [];
         this.network.roamingPeerIds = [];
