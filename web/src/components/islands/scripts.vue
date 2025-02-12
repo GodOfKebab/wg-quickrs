@@ -8,15 +8,15 @@
       <div
           :class="[scripts_local[field].enabled !== scripts[field].enabled || scripts_local[field].value !== scripts[field].value ? 'highlight-undo-box' : '']"
           class="form-check truncate flex items-center relative mb-0.5">
-        <label class="flex-none">
+        <label class="form-check-label flex items-center">
           <input
               :checked="scripts_local[field].enabled"
-              class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
+              class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
               type="checkbox"
               @change="scripts_local[field].enabled = !scripts_local[field].enabled;">
           <span class="text-gray-800 cursor-pointer text-xs mr-1">
-                       <strong class="text-sm">{{ SCRIPTS_KEY_LOOKUP[field] }}:</strong>
-                      </span>
+            <strong class="text-sm">{{ SCRIPTS_KEY_LOOKUP[field] }}:</strong>
+          </span>
         </label>
         <input
             v-model="scripts_local[field].value"

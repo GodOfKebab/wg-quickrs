@@ -46,15 +46,15 @@
     </div>
 
     <div class="form-check truncate flex items-center relative">
-      <label class="flex-none">
+      <label class="form-check-label flex items-center">
         <input
             :checked="peer_local.mobility === 'static'"
-            class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
+            class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
             type="checkbox"
             @change="peer_local.mobility = peer_local.mobility === 'static' ? 'roaming' : 'static';">
         <span class="text-gray-800 cursor-pointer text-xs mr-1">
-                <strong class="text-sm">Static Endpoint:</strong>
-              </span>
+          <strong class="text-sm">Static Endpoint:</strong>
+        </span>
       </label>
 
       <input

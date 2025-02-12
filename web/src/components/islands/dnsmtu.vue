@@ -9,22 +9,21 @@
         <div class="truncate">
           <div
               :class="[dnsmtu[field].enabled !== dnsmtu_local[field].enabled || dnsmtu[field].value !== dnsmtu_local[field].value ? 'highlight-undo-box' : '']"
-              class="form-check relative">
-            <label>
+              class="flex">
+            <label class="form-check-label flex items-center">
               <input
                   v-model="dnsmtu_local[field].enabled"
-                  class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
+                  class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
                   type="checkbox">
               <span class="text-gray-800 cursor-pointer text-xs">
-                           <strong class="text-sm">{{ field.toUpperCase() }}: </strong>
-                         </span>
+                <strong class="text-sm">{{ field.toUpperCase() }}: </strong>
+              </span>
             </label>
             <input v-model="dnsmtu_local[field].value" :class="[`${computed_colors[field]}`]"
                    :disabled="!dnsmtu_local[field].enabled"
                    :list="field + 'Recommendations'"
                    :placeholder="defaultDnsmtu[field].value !== '' ? 'Click to see recommendations' : 'No recommendations'"
-                   class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow disabled:bg-gray-100"
-                   style="width: 25vw;"
+                   class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none text-xs text-gray-500 disabled:bg-gray-100 inline-block ml-1 w-full"
                    type="text"/>
             <datalist :id="field + 'Recommendations'">
               <option v-if="field === 'dns'" :value="defaultDnsmtu[field].value">
