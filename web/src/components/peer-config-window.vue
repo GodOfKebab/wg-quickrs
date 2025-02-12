@@ -45,7 +45,7 @@
       <!-- edit config -->
       <div v-show="peerConfigWindow === 'edit'" class="mt-0 w-full overflow-scroll h-96">
 
-        <peer-summary-island v-model="peerSummaryIslandData"
+        <peer-summary-island @update:value="peerSummaryIslandData"
                              :peer="peer_conf"
                              class="my-2 mr-2"></peer-summary-island>
 
@@ -139,31 +139,40 @@ export default {
       peerConfigWindow: "",
 
       peerSummaryIslandData: {
-        context: 'edit',
-        changedFields: {},
-        error: null,
+        changed_fields: {
+          name: null,
+          address: null,
+          mobility: null,
+          endpoint: null,
+        },
+        errors: {
+          name: null,
+          address: null,
+          mobility: null,
+          endpoint: null,
+        }
       },
       dnsmtuIslandData: {
         context: 'edit',
-        changedFields: {},
-        error: null,
+        changed_fields: {},
+        errors: null,
       },
       scriptsIslandData: {
         context: 'edit',
-        changedFields: {},
-        error: null,
+        changed_fields: {},
+        errors: null,
       },
       peerDetailsIslandData: {
         context: 'edit',
-        changedFields: {},
-        error: null,
+        changed_fields: {},
+        errors: null,
       },
       connectionIslandsData: {
         context: 'edit',
         addedConnections: {},
         removedConnections: {},
-        changedFields: {},
-        error: null,
+        changed_fields: {},
+        errors: null,
       },
 
       change_sum: null,
@@ -171,11 +180,11 @@ export default {
   },
   watch: {
     peerSummaryIslandData: {
-      deep: true,
-      handle() {
-        console.log("anan")
+      handle(newValue, oldValue) {
+        console.log("...")
         this.update_change_sum();
       },
+      deep: true,
     },
     dnsmtuIslandData: {
       handle(newValue, oldValue) {
@@ -202,27 +211,30 @@ export default {
   methods: {
     update_change_sum() {
       const data = {
-        changedFields: {
+        errors: {
+          peers: {},
+          connections: {},
+        },
+        changed_fields: {
           peers: {},
           connections: {},
         },
         addedConnections: {},
         removedConnections: {}
       };
-      for (const island_datum of [this.peerSummaryIslandData,
-        this.dnsmtuIslandData,
-        this.scriptsIslandData,
-        this.peerDetailsIslandData]) {
-        if (island_datum.error) continue;
-
-        for (const [island_field, island_value] of Object.entries(island_datum.changedFields)) {
-          data.changedFields.peers[island_field] = island_value;
+      console.log(this.peerSummaryIslandData);
+      for (const island_datum of [this.peerSummaryIslandData]) {
+        for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
+          if (island_value !== null) data.errors.peers[island_field] = island_value;
+        }
+        for (const [island_field, island_value] of Object.entries(island_datum.changed_fields)) {
+          if (island_value !== null) data.changed_fields.peers[island_field] = island_value;
         }
       }
-      if (Object.keys(data.changedFields.peers).length === 0) delete data.changedFields.peers;
+      if (Object.keys(data.errors.peers).length === 0) delete data.errors.peers;
+      if (Object.keys(data.changed_fields.peers).length === 0) delete data.changed_fields.peers;
 
       this.change_sum = data;
-      console.log(this.change_sum)
     }
   },
   computed: {
