@@ -43,7 +43,7 @@
       </div>
 
       <!-- edit config -->
-      <div v-show="peerConfigWindow === 'edit'" class="mt-2 w-full overflow-auto h-96">
+      <div v-show="peerConfigWindow === 'edit'" class="mt-0 w-full overflow-scroll h-96">
 
         <peer-summary-island v-model="peerSummaryIslandData"
                              :peer="peer_conf"

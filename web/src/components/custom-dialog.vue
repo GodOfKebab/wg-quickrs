@@ -11,7 +11,7 @@
           class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
           role="dialog">
         <div class="bg-white px-4 pt-4 sm:px-6 sm:pt-6">
-          <div class="sm:flex sm:items-start">
+          <div class="pr-4">
             <div v-if="icon === 'danger'"
                  class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
               <!-- Heroicon name: outline/exclamation -->
@@ -31,7 +31,7 @@
                       stroke-width="2"/>
               </svg>
             </div>
-            <div class="m-2 flex-grow text-center sm:text-left w-full">
+            <div class="m-2 text-center sm:text-left w-full">
               <slot></slot>
             </div>
           </div>
