@@ -185,7 +185,7 @@ export default {
         added_connections: {},
         removed_connections: {}
       };
-      for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum]) {
+      for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum]) {
         if (!island_datum) continue;
         for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
           if (island_value) data.errors.peers[island_field] = island_value;

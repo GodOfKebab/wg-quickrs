@@ -118,6 +118,35 @@ ${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${conn
             return ret;
         }
 
+        // check script
+        if (fieldName === 'script') {
+            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
+            if ((typeof fieldVariable.value === 'string' || fieldVariable.value instanceof String)) {
+                ret.status &&= fieldVariable.value.match('^.*;\\s*$') !== null;
+            }
+            if (!ret.status) ret.msg = "script needs to end with a semicolon";
+            return ret;
+        }
+
+        // check scripts
+        if (fieldName === 'scripts') {
+            ret.status = true;
+            for (const scriptField of ['pre_up', 'post_up', 'pre_down', 'post_down']) {
+                if (Object.keys(fieldVariable).includes(scriptField)) {
+                    if (fieldVariable[scriptField].enabled) {
+                        const _ret = WireGuardHelper.checkField('script', fieldVariable[scriptField]);
+                        ret.status &&= _ret.status;
+                        if (!_ret.status) ret.msg = _ret.msg;
+                    }
+                } else {
+                    ret.status = false;
+                    ret.msg = `'scripts' must include '${scriptField}'`;
+                    return ret;
+                }
+            }
+            return ret;
+        }
+
         // // check peer count
         // if (fieldName === 'peerCount') {
         //     return fieldVariable.length > 0;
@@ -131,30 +160,6 @@ ${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${conn
         // // check allowedIPs
         // if (fieldName === 'persistent_keepalive') {
         //     return fieldVariable.match('^([0-9][0-9]|[0-9])$');
-        // }
-        //
-        // // check script
-        // if (fieldName === 'script') {
-        //     let checkScript = fieldVariable.enabled === true || fieldVariable.enabled === false;
-        //     if ((typeof fieldVariable.value === 'string' || fieldVariable.value instanceof String)) {
-        //         checkScript &&= fieldVariable.value.match('^.*;\\s*$') !== null;
-        //     }
-        //     return checkScript;
-        // }
-        //
-        // // check scripts
-        // if (fieldName === 'scripts') {
-        //     let checkScripts = true;
-        //     for (const scriptField of ['pre_up', 'post_up', 'pre_down', 'post_down']) {
-        //         if (Object.keys(fieldVariable).includes(scriptField)) {
-        //             if (fieldVariable[scriptField].enabled) {
-        //                 checkScripts &&= WireGuardHelper.checkField('script', fieldVariable[scriptField]);
-        //             }
-        //         } else {
-        //             return false;
-        //         }
-        //     }
-        //     return checkScripts;
         // }
 
         return {status: false, msg: "field doesn't exist"};
