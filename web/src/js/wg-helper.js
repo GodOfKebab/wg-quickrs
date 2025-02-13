@@ -64,88 +64,100 @@ ${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${conn
     }
 
     static checkField(fieldName, fieldVariable) {
+        const ret = {status: false, msg: ""};
         // check peerId
         if (fieldName === 'peerId') {
-            return fieldVariable.match('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+            ret.status = fieldVariable.match('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+            if (!ret.status) ret.msg = "peerId needs to follow uuid4 standards"
+            return ret;
         }
 
         // check name
         if (fieldName === 'name') {
-            return fieldVariable.length > 0;
+            ret.status = fieldVariable.length > 0;
+            if (!ret.status) ret.msg = "name cannot be empty";
+            return ret;
         }
 
         // TODO: check subnet
         // TODO: check to see if a duplicate exists
         if (fieldName === 'address') {
-            return fieldVariable.match('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
+            ret.status = fieldVariable.match('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
+            if (!ret.status) ret.msg = "address is not IPv4";
+            return ret;
         }
 
         // check mobility
         if (fieldName === 'mobility') {
-            return fieldVariable === 'static' || fieldVariable === 'roaming';
+            ret.status = fieldVariable === 'static' || fieldVariable === 'roaming';
+            if (!ret.status) ret.msg = "mobility is invalid (needs to be either 'static' or 'roaming')";
+            return ret;
         }
 
         // check endpoint
         if (fieldName === 'endpoint') {
-            let endpointCheck = fieldVariable.match('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
-            endpointCheck ||= fieldVariable.match('^(((?!\\-))(xn\\-\\-)?[a-z0-9\\-_]{0,61}[a-z0-9]{1,1}\\.)*(xn\\-\\-)?([a-z0-9\\-]{1,61}|[a-z0-9\\-]{1,30})\\.[a-z]{2,}:(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
-            return endpointCheck;
-        }
-
-        // check peer count
-        if (fieldName === 'peerCount') {
-            return fieldVariable.length > 0;
-        }
-
-        // check allowedIPs
-        if (fieldName === 'allowedIPs') {
-            return fieldVariable.match('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9]))(,(|\\s)*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9])))*$');
-        }
-
-        // check allowedIPs
-        if (fieldName === 'persistent_keepalive') {
-            return fieldVariable.match('^([0-9][0-9]|[0-9])$');
+            ret.status = fieldVariable.match('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
+            ret.status ||= fieldVariable.match('^(((?!\\-))(xn\\-\\-)?[a-z0-9\\-_]{0,61}[a-z0-9]{1,1}\\.)*(xn\\-\\-)?([a-z0-9\\-]{1,61}|[a-z0-9\\-]{1,30})\\.[a-z]{2,}:(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
+            if (!ret.status) ret.msg = "endpoint is not IPv4 nor an FQDN";
+            return ret;
         }
 
         // check dns
         if (fieldName === 'dns') {
-            let checkDNS = fieldVariable.enabled === true || fieldVariable.enabled === false;
-            checkDNS &&= !(fieldVariable.enabled === true && !fieldVariable.value.toString().match('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(,(|\\s)*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)))*$'));
-            return checkDNS;
+            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
+            ret.status &&= !(fieldVariable.enabled === true && !fieldVariable.value.toString().match('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(,(|\\s)*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)))*$'));
+            if (!ret.status) ret.msg = "DNS is invalid";
+            return ret;
         }
 
-        // check allowedIPs
+        // check mtu
         if (fieldName === 'mtu') {
-            let checkMTU = fieldVariable.enabled === true || fieldVariable.enabled === false;
-            checkMTU &&= !(fieldVariable.enabled === true && !(fieldVariable.value > 0 && fieldVariable.value < 65536));
-            return checkMTU;
+            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
+            ret.status &&= !(fieldVariable.enabled === true && !(fieldVariable.value > 0 && fieldVariable.value < 65536));
+            if (!ret.status) ret.msg = "MTU is invalid";
+            return ret;
         }
 
-        // check script
-        if (fieldName === 'script') {
-            let checkScript = fieldVariable.enabled === true || fieldVariable.enabled === false;
-            if ((typeof fieldVariable.value === 'string' || fieldVariable.value instanceof String)) {
-                checkScript &&= fieldVariable.value.match('^.*;\\s*$') !== null;
-            }
-            return checkScript;
-        }
+        // // check peer count
+        // if (fieldName === 'peerCount') {
+        //     return fieldVariable.length > 0;
+        // }
+        //
+        // // check allowedIPs
+        // if (fieldName === 'allowedIPs') {
+        //     return fieldVariable.match('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9]))(,(|\\s)*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9])))*$');
+        // }
+        //
+        // // check allowedIPs
+        // if (fieldName === 'persistent_keepalive') {
+        //     return fieldVariable.match('^([0-9][0-9]|[0-9])$');
+        // }
+        //
+        // // check script
+        // if (fieldName === 'script') {
+        //     let checkScript = fieldVariable.enabled === true || fieldVariable.enabled === false;
+        //     if ((typeof fieldVariable.value === 'string' || fieldVariable.value instanceof String)) {
+        //         checkScript &&= fieldVariable.value.match('^.*;\\s*$') !== null;
+        //     }
+        //     return checkScript;
+        // }
+        //
+        // // check scripts
+        // if (fieldName === 'scripts') {
+        //     let checkScripts = true;
+        //     for (const scriptField of ['pre_up', 'post_up', 'pre_down', 'post_down']) {
+        //         if (Object.keys(fieldVariable).includes(scriptField)) {
+        //             if (fieldVariable[scriptField].enabled) {
+        //                 checkScripts &&= WireGuardHelper.checkField('script', fieldVariable[scriptField]);
+        //             }
+        //         } else {
+        //             return false;
+        //         }
+        //     }
+        //     return checkScripts;
+        // }
 
-        // check scripts
-        if (fieldName === 'scripts') {
-            let checkScripts = true;
-            for (const scriptField of ['pre_up', 'post_up', 'pre_down', 'post_down']) {
-                if (Object.keys(fieldVariable).includes(scriptField)) {
-                    if (fieldVariable[scriptField].enabled) {
-                        checkScripts &&= WireGuardHelper.checkField('script', fieldVariable[scriptField]);
-                    }
-                } else {
-                    return false;
-                }
-            }
-            return checkScripts;
-        }
-
-        return false;
+        return {status: false, msg: "field doesn't exist"};
     }
 
     static getConnectionId(peer1, peer2) {
