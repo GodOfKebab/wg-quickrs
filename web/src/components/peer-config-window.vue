@@ -45,25 +45,25 @@
       <!-- edit config -->
       <div v-show="peerConfigWindow === 'edit'" class="mt-0 w-full overflow-scroll h-96">
 
-        <peer-summary-island @update:value="peerSummaryIslandData"
+        <peer-summary-island @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"
                              :peer="peer_conf"
                              class="my-2 mr-2"></peer-summary-island>
 
-        <dnsmtu-island v-model="dnsmtuIslandData"
+        <dnsmtu-island :peer="peer_conf"
                        :default-dnsmtu="{dns: network.defaults.peer.dns, mtu: network.defaults.peer.mtu}"
-                       :dnsmtu="{dns: peer_conf.dns, mtu: peer_conf.mtu}"
+                       @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"
                        class="my-2 mr-2"></dnsmtu-island>
 
-        <scripts-island v-model="scriptsIslandData"
+        <scripts-island @updated-change-sum="onUpdatedScriptsIslandChangeSum"
                         :default-scripts="network.defaults.peer.scripts"
                         :scripts="peer_conf.scripts"
                         class="my-2 mr-2"></scripts-island>
 
-        <peer-details-island v-model="peerDetailsIslandData"
+        <peer-details-island @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"
                              :peer="peer_conf"
                              class="my-2 mr-2"></peer-details-island>
 
-        <connection-islands v-model="connectionIslandsData"
+        <connection-islands @updated-change-sum="onUpdatedConnectionsIslandsChangeSum"
                             :network="network"
                             :peer-id="peerId"
                             class="my-2 mr-2"></connection-islands>
@@ -71,7 +71,7 @@
 
       <!-- show config -->
       <div v-show="peerConfigWindow === 'view-changes'" class="mt-2 w-full overflow-scroll h-96">
-        <change-sum :change-sum="change_sum"
+        <change-sum :change-sum="changeSum"
                     :network="network"
                     :peer-id="peerId"></change-sum>
       </div>
@@ -138,78 +138,41 @@ export default {
 
       peerConfigWindow: "",
 
-      peerSummaryIslandData: {
-        changed_fields: {
-          name: null,
-          address: null,
-          mobility: null,
-          endpoint: null,
-        },
-        errors: {
-          name: null,
-          address: null,
-          mobility: null,
-          endpoint: null,
-        }
-      },
-      dnsmtuIslandData: {
-        context: 'edit',
-        changed_fields: {},
-        errors: null,
-      },
-      scriptsIslandData: {
-        context: 'edit',
-        changed_fields: {},
-        errors: null,
-      },
-      peerDetailsIslandData: {
-        context: 'edit',
-        changed_fields: {},
-        errors: null,
-      },
-      connectionIslandsData: {
-        context: 'edit',
-        addedConnections: {},
-        removedConnections: {},
-        changed_fields: {},
-        errors: null,
-      },
-
-      change_sum: null,
+      peerSummaryIslandChangeSum: null,
+      dnsmtuIslandChangeSum: null,
+      scriptsIslandChangeSum: null,
+      peerDetailsIslandChangeSum: null,
+      connectionIslandsChangeSum: null,
     }
-  },
-  watch: {
-    peerSummaryIslandData: {
-      handle(newValue, oldValue) {
-        console.log("...")
-        this.update_change_sum();
-      },
-      deep: true,
-    },
-    dnsmtuIslandData: {
-      handle(newValue, oldValue) {
-        this.update_change_sum();
-      },
-      deep: true
-    },
-    scriptsIslandData: {
-      handle(newValue, oldValue) {
-        this.update_change_sum();
-      },
-      deep: true
-    },
-    peerDetailsIslandData: {
-      handle(newValue, oldValue) {
-        this.update_change_sum();
-      },
-      deep: true
-    },
   },
   mounted: function () {
     this.peerConfigWindow = 'edit'
   },
   methods: {
-    update_change_sum() {
+    onUpdatedPeerSummaryIslandChangeSum(data) {
+      this.peerSummaryIslandChangeSum = data;
+    },
+    onUpdatedDnsmtuIslandChangeSum(data) {
+      this.dnsmtuIslandChangeSum = data;
+    },
+    onUpdatedScriptsIslandChangeSum(data) {
+      this.scriptsIslandChangeSum = data;
+    },
+    onUpdatedPeerDetailsIslandChangeSum(data) {
+      this.peerDetailsIslandChangeSum = data;
+    },
+    onUpdatedConnectionsIslandsChangeSum(data) {
+      this.connectionIslandsChangeSum = data;
+    },
+  },
+  computed: {
+    peer_conf() {
+      return this.network.peers[this.peerId];
+    },
+    peer_wg_conf_file() {
+      return WireGuardHelper.getPeerConfig(this.network, this.peerId);
+    },
+    changeSum() {
       const data = {
         errors: {
           peers: {},
@@ -219,32 +182,36 @@ export default {
           peers: {},
           connections: {},
         },
-        addedConnections: {},
-        removedConnections: {}
+        added_connections: {},
+        removed_connections: {}
       };
-      console.log(this.peerSummaryIslandData);
-      for (const island_datum of [this.peerSummaryIslandData]) {
+      for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum]) {
+        if (!island_datum) continue;
         for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
-          if (island_value !== null) data.errors.peers[island_field] = island_value;
+          if (island_value) data.errors.peers[island_field] = island_value;
         }
         for (const [island_field, island_value] of Object.entries(island_datum.changed_fields)) {
-          if (island_value !== null) data.changed_fields.peers[island_field] = island_value;
+          if (island_value) data.changed_fields.peers[island_field] = island_value;
         }
       }
-      if (Object.keys(data.errors.peers).length === 0) delete data.errors.peers;
-      if (Object.keys(data.changed_fields.peers).length === 0) delete data.changed_fields.peers;
+      if (Object.keys(data.errors.peers).length + Object.keys(data.errors.connections).length === 0) {
+        delete data.errors;
+      } else {
+        if (Object.keys(data.errors.peers).length === 0) delete data.errors.peers;
+        if (Object.keys(data.errors.connections).length === 0) delete data.errors.connections;
+      }
 
-      this.change_sum = data;
-    }
-  },
-  computed: {
-    peer_conf() {
-      return this.network.peers[this.peerId];
-    },
-    peer_wg_conf_file() {
-      return WireGuardHelper.getPeerConfig(this.network, this.peerId);
-    },
-    change_sum() {
+      if (Object.keys(data.changed_fields.peers).length + Object.keys(data.changed_fields.connections).length === 0) {
+        delete data.changed_fields;
+      } else {
+        if (Object.keys(data.changed_fields.peers).length === 0) delete data.changed_fields.peers;
+        if (Object.keys(data.changed_fields.connections).length === 0) delete data.changed_fields.connections;
+      }
+
+      if (Object.keys(data.added_connections).length === 0) delete data.added_connections;
+      if (Object.keys(data.removed_connections).length === 0) delete data.removed_connections;
+
+      return data;
     }
   },
 }

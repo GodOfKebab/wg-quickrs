@@ -91,53 +91,13 @@ export default {
       type: Object,
       default: {},
     },
-    value: {
-      type: Object,
-      default: {
-        changed_fields: {
-          name: null,
-          address: null,
-          mobility: null,
-          endpoint: null,
-        },
-        errors: {
-          name: null,
-          address: null,
-          mobility: null,
-          endpoint: null,
-        },
-      },
-    },
   },
   data() {
     return {
-      peer_local: {
-        name: null,
-        address: null,
-        mobility: null,
-        endpoint: null,
-      },
-      value_local: {
-        type: Object,
-        default: {
-          changed_fields: {
-            name: null,
-            address: null,
-            mobility: null,
-            endpoint: null,
-          },
-          errors: {
-            name: null,
-            address: null,
-            mobility: null,
-            endpoint: null,
-          },
-        },
-      },
-      PEER_SUMMARY_KEY_LOOKUP: {
-        name: 'Name',
-        address: 'Address',
-        endpoint: 'Endpoint',
+      peer_local: {name: null, address: null, mobility: null, endpoint: null},
+      island_change_sum: {
+        changed_fields: {name: null, address: null, mobility: null, endpoint: null},
+        errors: {name: null, address: null, mobility: null, endpoint: null},
       },
       FIELD_COLOR_LOOKUP: {
         0: 'bg-white',
@@ -151,58 +111,45 @@ export default {
     this.peer_local.address = this.peer.address;
     this.peer_local.mobility = this.peer.mobility;
     this.peer_local.endpoint = this.peer.endpoint;
-
-    this.value_local = {
-      changed_fields: {
-        name: null,
-        address: null,
-        mobility: null,
-        endpoint: null,
-      },
-      errors: {
-        name: null,
-        address: null,
-        mobility: null,
-        endpoint: null,
-      },
-    }
   },
-  emits: ['update:value'],
+  emits: ['updated-change-sum'],
   methods: {
     check_field_status(field_name) {
       if (this.peer_local[field_name] === this.peer[field_name]) return 0;
       if (!WireGuardHelper.checkField(field_name, this.peer_local[field_name])) return -1;
       return 1;
+    },
+    emit_island_change_sum() {
+      this.$emit("updated-change-sum", this.island_change_sum);
     }
   },
   computed: {
     is_changed_name() {
       const field_status = this.check_field_status('name');
-      this.value_local.errors.name = field_status === -1 ? 'name cannot be empty' : null;
-      this.value_local.changed_fields.name = field_status === 1 ? this.peer_local.name : null;
-      this.$emit("update:value", JSON.parse(JSON.stringify(this.value_local)));
-      // console.log({...this.value_local});
+      this.island_change_sum.errors.name = field_status === -1 ? 'name cannot be empty' : null;
+      this.island_change_sum.changed_fields.name = field_status === 1 ? this.peer_local.name : null;
+      this.emit_island_change_sum();
       return field_status;
     },
     is_changed_address() {
       const field_status = this.check_field_status('address');
-      this.value_local.errors.address = field_status === -1 ? 'address is not IPv4' : null;
-      this.value_local.changed_fields.address = field_status === 1 ? this.peer_local.address : null;
-      this.$emit("update:value", {...this.value_local});
+      this.island_change_sum.errors.address = field_status === -1 ? 'address is not IPv4' : null;
+      this.island_change_sum.changed_fields.address = field_status === 1 ? this.peer_local.address : null;
+      this.emit_island_change_sum();
       return field_status;
     },
     is_changed_mobility() {
       const field_status = this.check_field_status('mobility');
-      this.value_local.errors.mobility = field_status === -1 ? 'mobility is invalid' : null;
-      this.value_local.changed_fields.mobility = field_status === 1 ? this.peer_local.mobility : null;
-      this.$emit("update:value", {...this.value_local});
+      this.island_change_sum.errors.mobility = field_status === -1 ? 'mobility is invalid' : null;
+      this.island_change_sum.changed_fields.mobility = field_status === 1 ? this.peer_local.mobility : null;
+      this.emit_island_change_sum();
       return field_status;
     },
     is_changed_endpoint() {
       const field_status = this.check_field_status('endpoint');
-      this.value_local.errors.endpoint = field_status === -1 ? 'endpoint is not IPv4' : null;
-      this.value_local.changed_fields.endpoint = field_status === 1 ? this.peer_local.endpoint : null;
-      this.$emit("update:value", {...this.value_local});
+      this.island_change_sum.errors.endpoint = field_status === -1 ? 'endpoint is not IPv4' : null;
+      this.island_change_sum.changed_fields.endpoint = field_status === 1 ? this.peer_local.endpoint : null;
+      this.emit_island_change_sum();
       return field_status;
     },
     color_div() {
