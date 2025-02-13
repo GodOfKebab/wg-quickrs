@@ -69,8 +69,8 @@ export default {
     return {
       peer_local: {dns: {enabled: false, value: ""}, mtu: {enabled: false, value: ""}},
       island_change_sum: {
-        changed_fields: {dns: {enabled: false, value: ""}, mtu: {enabled: false, value: ""}},
-        errors: {dns: {enabled: false, value: ""}, mtu: {enabled: false, value: ""}},
+        changed_fields: {},
+        errors: {},
       },
       FIELD_COLOR_LOOKUP: {
         0: 'bg-white',

@@ -96,8 +96,8 @@ export default {
     return {
       peer_local: {name: null, address: null, mobility: null, endpoint: null},
       island_change_sum: {
-        changed_fields: {name: null, address: null, mobility: null, endpoint: null},
-        errors: {name: null, address: null, mobility: null, endpoint: null},
+        changed_fields: {},
+        errors: {},
       },
       FIELD_COLOR_LOOKUP: {
         0: 'bg-white',

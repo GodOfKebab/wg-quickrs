@@ -45,8 +45,8 @@
       <!-- edit config -->
       <div v-show="peerConfigWindow === 'edit'" class="mt-0 w-full overflow-scroll h-96">
 
-        <peer-summary-island @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"
-                             :peer="peer_conf"
+        <peer-summary-island :peer="peer_conf"
+                             @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"
                              class="my-2 mr-2"></peer-summary-island>
 
         <dnsmtu-island :peer="peer_conf"
@@ -54,9 +54,9 @@
                        @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"
                        class="my-2 mr-2"></dnsmtu-island>
 
-        <scripts-island @updated-change-sum="onUpdatedScriptsIslandChangeSum"
+        <scripts-island :peer="peer_conf"
                         :default-scripts="network.defaults.peer.scripts"
-                        :scripts="peer_conf.scripts"
+                        @updated-change-sum="onUpdatedScriptsIslandChangeSum"
                         class="my-2 mr-2"></scripts-island>
 
         <peer-details-island @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"
