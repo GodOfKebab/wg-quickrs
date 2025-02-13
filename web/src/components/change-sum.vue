@@ -23,8 +23,7 @@
     </div>
     <div class="bg-green-100 rounded-md overflow-scroll">
       <strong class="text-gray-600 justify-center rounded-md bg-green-200 p-1">New configuration</strong>
-      <!--      <div v-if="!peerEditChangedFieldsCompute[3]" class="p-1">{}</div>-->
-      <!--      <div v-else class="p-1">{{ JSON.stringify(peerEditNewConfig, false, 2) }}</div>-->
+      <div class="p-1">{{ JSON.stringify(new_network, false, 2) }}</div>
     </div>
   </div>
 
@@ -61,8 +60,23 @@ export default {
     },
   },
   computed: {
-    error_detected() {
-      return false;
+    new_network() {
+      let new_network = JSON.parse(JSON.stringify(this.network));
+
+      if (!this.changeSum.changed_fields) {
+        return new_network;
+      }
+      for (const peer_field in this.changeSum.changed_fields.peers) {
+        if (peer_field === "scripts") {
+          for (const script_field in this.changeSum.changed_fields.peers.scripts[peer_field]) {
+            new_network.peers[this.peerId].scripts[script_field] = this.changeSum.changed_fields.peers.scripts[script_field];
+          }
+          continue;
+        }
+        new_network.peers[this.peerId][peer_field] = this.changeSum.changed_fields.peers[peer_field];
+      }
+
+      return new_network
     },
   }
 }
