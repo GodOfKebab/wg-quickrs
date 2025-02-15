@@ -1,10 +1,10 @@
 
 <template>
 
-  <div class="container mx-auto max-w-3xl">
+  <div class="container mx-auto max-w-3xl relative">
 
     <!-- Header -->
-    <div class="mt-10 mb-2" style="display: flex; align-items: center;">
+    <div class="mt-5 mb-2" style="display: flex; align-items: center;">
       <div class="inline-block float-left ml-3" style="flex: 1; min-width: 0;">
         <h1 class="text-4xl font-medium truncate">
           <img alt="" class="inline align-middle" src="/favicon.ico" width="32"/>
@@ -60,11 +60,17 @@
       </div>
     </div>
 
+  </div>
+
+  <div class="container mx-auto max-w-6xl">
     <!-- Map -->
     <map-visual :network="network"
-                @peer-selected="onPeerSelected"
-                class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center h-96"></map-visual>
+                class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center"
+                style="max-height: 70vh"
+                @peer-selected="onPeerSelected"></map-visual>
+  </div>
 
+  <div class="container mx-auto max-w-3xl relative">
     <!-- Add a Static/Roaming Peer -->
     <div class="grid grid-cols-2 gap-2">
       <div v-for="mobility in ['static', 'roaming']"

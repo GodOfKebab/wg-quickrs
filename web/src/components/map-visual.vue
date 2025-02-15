@@ -9,6 +9,9 @@ import ForceGraph from "force-graph";
 import FastEqual from "fast-deep-equal";
 import WireGuardHelper from "../js/wg-helper.js";
 
+import staticNodeIcon from "../icons/svgrepo/globe-05-svgrepo-com.svg";
+import roamingNodeIcon from "../icons/svgrepo/rss-02-svgrepo-com.svg";
+
 
 export default {
   name: "map-visual",
@@ -41,15 +44,12 @@ export default {
       if (!this.initializedGraph) {
         try {
           this.graph = ForceGraph()(document.getElementById('graph'))
-              // .nodeCanvasObject((node, ctx) => {
-              //   if (this.peerAvatarCanvases[node.id]) {
-              //     ctx.drawImage(this.peerAvatarCanvases[node.id], node.x - node.size / 2, node.y - node.size / 2, node.size, node.size);
-              //   } else {
-              //     const img = new Image();
-              //     img.src = node.mobility === 'static' ? staticPeerIconSrc : roamingPeerIconSrc;
-              //     ctx.drawImage(this.getGraphNodeIcon(img), node.x - node.size / 2, node.y - node.size / 2, node.size, node.size);
-              //   }
-              // })
+              .nodeCanvasObject((node, ctx) => {
+                const img = new Image();
+                img.src = node.mobility === 'static' ? staticNodeIcon : roamingNodeIcon;
+                const cis = this.getGraphNodeIcon(img, 500);
+                ctx.drawImage(cis, node.x - node.size / 2, node.y - node.size / 2, node.size, node.size);
+              })
               .nodePointerAreaPaint((node, color, ctx) => {
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, node.size / 2, 0, Math.PI * 2, true);
@@ -62,7 +62,7 @@ export default {
               .zoomToFit(100, 20)
               .nodeId('id')
               .nodeLabel('name')
-              .nodeColor('color')
+              // .nodeColor('color')
               .linkSource('source')
               .linkTarget('target')
               .linkAutoColorBy('color')
@@ -126,10 +126,10 @@ export default {
           forceG.links.push({
             source: b, target: a, particleCount: 0, color, strength: linkColorStrength,
           });
-          for (const ab of [a, b]) {
-            peerSize[ab] += network.staticPeerIds.includes(ab) ? 0.925 : 0.0625;
-            peerSize[ab] += connectionDetails.enabled ? 0.125 : 0.03125;
-          }
+          // for (const ab of [a, b]) {
+          //   peerSize[ab] += network.staticPeerIds.includes(ab) ? 0.925 : 0.0625;
+          //   peerSize[ab] += connectionDetails.enabled ? 0.125 : 0.03125;
+          // }
         }
       }
 
@@ -144,7 +144,25 @@ export default {
         });
       }
       return forceG;
-    }
+    },
+    getGraphNodeIcon(image, size) {
+      const tmpCanvas = document.createElement('canvas');
+      const tmpCtx = tmpCanvas.getContext('2d');
+
+      tmpCanvas.width = size;
+      tmpCanvas.height = size;
+
+      // draw the cached images to temporary canvas and return the context
+      tmpCtx.save();
+      tmpCtx.beginPath();
+      tmpCtx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
+      tmpCtx.closePath();
+      tmpCtx.clip();
+      tmpCtx.fillStyle = 'rgb(249 250 251)';
+      tmpCtx.fillRect(0, 0, size, size);
+      tmpCtx.drawImage(image, size / 4, size / 4, size / 2, size / 2);
+      return tmpCanvas;
+    },
   }
 }
 </script>
