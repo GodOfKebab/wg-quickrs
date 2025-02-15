@@ -185,26 +185,28 @@ export default {
         added_connections: {},
         removed_connections: {}
       };
+      data.errors.peers[this.peerId] = {};
+      data.changed_fields.peers[this.peerId] = {};
       for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum]) {
         if (!island_datum) continue;
         for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
-          if (island_value) data.errors.peers[island_field] = island_value;
+          if (island_value) data.errors.peers[this.peerId][island_field] = island_value;
         }
         for (const [island_field, island_value] of Object.entries(island_datum.changed_fields)) {
-          if (island_value) data.changed_fields.peers[island_field] = island_value;
+          if (island_value) data.changed_fields.peers[this.peerId][island_field] = island_value;
         }
       }
-      if (Object.keys(data.errors.peers).length + Object.keys(data.errors.connections).length === 0) {
+      if (Object.keys(data.errors.peers[this.peerId]).length + Object.keys(data.errors.connections).length === 0) {
         delete data.errors;
       } else {
-        if (Object.keys(data.errors.peers).length === 0) delete data.errors.peers;
+        if (Object.keys(data.errors.peers[this.peerId]).length === 0) delete data.errors.peers;
         if (Object.keys(data.errors.connections).length === 0) delete data.errors.connections;
       }
 
-      if (Object.keys(data.changed_fields.peers).length + Object.keys(data.changed_fields.connections).length === 0) {
+      if (Object.keys(data.changed_fields.peers[this.peerId]).length + Object.keys(data.changed_fields.connections).length === 0) {
         delete data.changed_fields;
       } else {
-        if (Object.keys(data.changed_fields.peers).length === 0) delete data.changed_fields.peers;
+        if (Object.keys(data.changed_fields.peers[this.peerId]).length === 0) delete data.changed_fields.peers;
         if (Object.keys(data.changed_fields.connections).length === 0) delete data.changed_fields.connections;
       }
 
