@@ -1,10 +1,12 @@
 <template>
 
-  <div v-if="staticPeerIdsExcludingSelf.length + roamingPeerIdsExcludingSelf.length > 0">
-    <div
-        :class="[color.selectionDiv, _FastEqual(attachedStaticPeerIdsLocal, attachedStaticPeerIds) && _FastEqual(attachedRoamingPeerIdsLocal, attachedRoamingPeerIds) ? '' : 'highlight-undo-box']"
+  <div v-if="other_static_peer_ids.length +  other_roaming_peer_ids.length > 0">
+    <!-- selection box -->
+    <div :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peers_box]]"
         class="my-2 p-1 shadow-md border rounded relative">
-      <div v-if="staticPeerIdsExcludingSelf.length > 0">
+
+      <!-- static neighbors -->
+      <div v-if="other_static_peer_ids.length > 0">
         <div class="text-gray-800">
           Attached static peers:
         </div>
@@ -14,26 +16,27 @@
             <input
                 v-model="selectAllStaticPeers"
                 class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
-                type="checkbox">
+                type="checkbox"
+                @change="toggleConnection('all')">
             <span class="align-middle">Select All</span>
           </label>
         </div>
 
         <div class="grid grid-cols-2">
-          <div v-for="peerId in staticPeerIdsExcludingSelf"
+          <div v-for="peerId in other_static_peer_ids"
                class="relative overflow-hidden">
             <div class="form-check truncate">
               <label>
                 <input
-                    v-model="attachedStaticPeerIdsLocal"
+                    v-model="attached_static_peer_ids_local"
                     :value="peerId"
                     class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
                     type="checkbox"
                     @change="toggleConnection(peerId)">
                 <span class="text-gray-800 cursor-pointer text-xs align-middle">
                            <strong class="text-sm">{{
-                               this.network.peers[peerId].name
-                             }}</strong> {{ this.network.peers[peerId].address }} ({{
+                               network.peers[peerId].name
+                             }}</strong> {{ network.peers[peerId].address }} ({{
                     peerId
                   }})
                          </span>
@@ -42,7 +45,9 @@
           </div>
         </div>
       </div>
-      <div v-if="roamingPeerIdsExcludingSelf.length > 0">
+
+      <!-- roaming neighbors -->
+      <div v-if=" other_roaming_peer_ids.length > 0">
         <div class="text-gray-800">
           Attached roaming peers:
         </div>
@@ -56,20 +61,20 @@
           </label>
         </div>
         <div class="grid grid-cols-2">
-          <div v-for="peerId in roamingPeerIdsExcludingSelf"
+          <div v-for="peerId in  other_roaming_peer_ids"
                class="relative overflow-hidden">
             <div class="form-check truncate">
               <label>
                 <input
-                    v-model="attachedRoamingPeerIdsLocal"
+                    v-model="attached_roaming_peer_ids_local"
                     :value="peerId"
                     class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
                     type="checkbox"
                     @change="toggleConnection(peerId)">
                 <span class="text-gray-800 cursor-pointer text-xs align-middle">
                            <strong class="text-sm">{{
-                               this.network.peers[peerId].name
-                             }}</strong> {{ this.network.peers[peerId].address }} ({{
+                               network.peers[peerId].name
+                             }}</strong> {{ network.peers[peerId].address }} ({{
                     peerId
                   }})
                          </span>
@@ -78,133 +83,130 @@
           </div>
         </div>
       </div>
-      <div
-          v-if="!(_FastEqual(attachedStaticPeerIdsLocal, attachedStaticPeerIds) && _FastEqual(attachedRoamingPeerIdsLocal, attachedRoamingPeerIds))"
-          class="inline-block float-right absolute z-20 right-[0.2rem] top-[0rem]">
+
+      <!-- undo button -->
+      <div v-if="is_changed_field.attached_peers_box"
+           class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
         <button
-            :disabled="_FastEqual(attachedStaticPeerIdsLocal, attachedStaticPeerIds) && _FastEqual(attachedRoamingPeerIdsLocal, attachedRoamingPeerIds)"
-            class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white opacity-0 transition undo-button-itself"
+            :disabled="!is_changed_field.attached_peers_box"
+            class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
-            @click="attachedStaticPeerIdsLocal = attachedStaticPeerIds; attachedRoamingPeerIdsLocal = attachedRoamingPeerIds">
+            @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids">
           <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
         </button>
       </div>
+
     </div>
 
-
-    <div v-for="otherPeerId in [...this.staticPeerIdsExcludingSelf, ...this.roamingPeerIdsExcludingSelf]"
+    <!-- connection islands -->
+    <div v-for="otherPeerId in [...other_static_peer_ids, ...other_roaming_peer_ids]"
          class="relative">
-      <div v-if="allAttachedPeersLocal.includes(otherPeerId)"
-           :class="[color.attachedPeerDiv[otherPeerId], connectionChanged[otherPeerId] ? 'highlight-undo-box' : '']"
-           class="my-2 p-1 shadow-md border rounded bg-blue-50 overflow-x-auto whitespace-nowrap highlight-remove-box">
+      <div v-if="all_attached_peer_ids_local.includes(otherPeerId)"
+           :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peer_box[otherPeerId]]]"
+           class="my-2 p-1 shadow-md border rounded overflow-x-auto whitespace-nowrap highlight-remove-box">
 
+        <!-- enabled checkbox-->
         <div class="form-check ml-0">
           <label class="form-check-label text-gray-800 cursor-pointer text-sm flex items-center">
             <input
-                v-model="this.isConnectionEnabled[otherPeerId]"
+                v-model="connections_local.enabled[otherPeerId]"
                 class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer inline-block"
-                type="checkbox"
-                @change="colorRefresh += 1">
+                type="checkbox">
             <span class="text-gray-800 text-xs">
-              <strong class="text-sm">{{ network.peers[otherPeerId].name }}</strong>
-              {{ network.peers[otherPeerId].address }}
-              ({{ otherPeerId }})
-            </span>
+                  <strong class="text-sm">{{ network.peers[otherPeerId].name }}</strong>
+                  {{ network.peers[otherPeerId].address }}
+                  ({{ otherPeerId }})
+                </span>
           </label>
         </div>
 
-        <div v-show="this.isConnectionEnabled[otherPeerId]" class="mt-1 mb-0.5 mx-0.5 text-xs text-gray-800">
+        <!-- connection details  -->
+        <div v-show="connections_local.enabled[otherPeerId]" class="mt-1 mb-0.5 mx-0.5 text-xs text-gray-800">
           <hr class="w-full h-1"/>
 
           <div class="grid grid-cols-3 gap-1">
             <!-- Pre Shared Key -->
-            <div v-if="pre_shared_key[otherPeerId]" class="col-span-1 flex">
-              <span class="align-middle flex">
-                 <strong class="align-middle">PreSharedKey</strong>
-              </span>
+            <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-1 flex">
+                  <span class="align-middle flex">
+                     <strong class="align-middle">PreSharedKey</strong>
+                  </span>
             </div>
-            <div v-if="pre_shared_key[otherPeerId]" class="col-span-2 flex">
-              <span class="pr-1 align-middle">
-                :
-              </span>
+            <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-2 flex">
+                  <span class="pr-1 align-middle">
+                    :
+                  </span>
               <button
                   class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mr-1 inline-block shrink-0"
                   @click="refreshPreSharedKey(otherPeerId)">
                 <img alt="Refresh Keys" class="h-4" src="../../icons/flowbite/refresh.svg"/>
               </button>
               <span class="pr-1 align-middle">
-                {{ pre_shared_key[otherPeerId] }}
-              </span>
+                    {{ connections_local.pre_shared_key[otherPeerId] }}
+                  </span>
             </div>
 
             <!-- Persistent Keepalive -->
-            <div class="col-span-1 flex">
-              <span class="align-middle flex">
-                 <strong class="align-middle">Persistent Keepalive</strong>
-              </span>
+            <div v-if="connections_local.persistent_keepalive[otherPeerId]" class="col-span-1 flex">
+                  <span class="align-middle flex">
+                     <strong class="align-middle">Persistent Keepalive</strong>
+                  </span>
             </div>
-            <div class="col-span-2 flex">
+            <div v-if="connections_local.persistent_keepalive[otherPeerId]" class="col-span-2 flex">
               <div class="inline-block align-middle">
                 <label class="flex items-center">
-                  <span class="pr-1 align-middle">
-                    :
-                  </span>
+                      <span class="pr-1 align-middle">
+                        :
+                      </span>
                   <input
-                      v-model="persistent_keepalive_enabled[otherPeerId]"
+                      v-model="connections_local.persistent_keepalive[otherPeerId].enabled"
                       class="form-check-input appearance-none h-3.5 w-3.5 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left ml-0.5 mr-1 cursor-pointer inline-block"
-                      type="checkbox"
-                      @change="colorRefresh += 1">
+                      type="checkbox">
                 </label>
               </div>
-              <input v-model="persistent_keepalive_value[otherPeerId]"
-                     :class="[persistent_keepalive_enabled[otherPeerId] ? color.persistent_keepalive[otherPeerId] : 'bg-gray-100']"
-                     :disabled="!persistent_keepalive_enabled[otherPeerId]"
-                     class="mr-1 rounded-md pl-1 align-middle inline-block"
-                     type="string"
-                     @change="colorRefresh += 1" @keyup="colorRefresh += 1">
+              <input v-model="connections_local.persistent_keepalive[otherPeerId].value"
+                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.persistent_keepalive[otherPeerId]]]"
+                     :disabled="!connections_local.persistent_keepalive[otherPeerId].enabled"
+                     class="mr-1 rounded-md pl-1 align-middle inline-block disabled:bg-gray-100"
+                     type="string">
             </div>
           </div>
 
           <!-- Allowed IPs -->
           <div class="relative text-gray-800 text-xs">
             <div class="mt-1">
-                <span class="flex-none"><strong>{{
-                    network.peers[peerId].name
-                  }}</strong> will forward IP subnet(s)</span>
+                    <span class="flex-none"><strong>{{
+                        network.peers[peerId].name
+                      }}</strong> will forward IP subnet(s)</span>
               <input v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
-                     v-model="allowed_ips_a_to_b[otherPeerId]"
-                     :class="[color.allowed_ips_a_to_b[otherPeerId]]"
-                     :list="_WireGuardHelper_getConnectionId(otherPeerId) + 'focusPeerName to peerDetails.name'"
-                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow"
-                     @change="colorRefresh += 1" @keyup="colorRefresh += 1">
+                     v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
+                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
+                     :list="otherPeerId + 'focusPeerName to peerDetails.name'"
+                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow">
               <input v-else
-                     v-model="allowed_ips_b_to_a[otherPeerId]"
-                     :class="[color.allowed_ips_b_to_a[otherPeerId]]"
-                     :list="_WireGuardHelper_getConnectionId(otherPeerId) + 'focusPeerName to peerDetails.name'"
-                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow"
-                     @change="colorRefresh += 1" @keyup="colorRefresh += 1">
+                     v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
+                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
+                     :list="otherPeerId + 'focusPeerName to peerDetails.name'"
+                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow">
               <span class="flex-none pr-2"> to <strong>{{ network.peers[otherPeerId].name }}</strong></span>
             </div>
             <div class="mt-1">
-              <span class="flex-none"><strong>{{
-                  network.peers[otherPeerId].name
-                }}</strong> will forward IP subnet(s)</span>
+                  <span class="flex-none"><strong>{{
+                      network.peers[otherPeerId].name
+                    }}</strong> will forward IP subnet(s)</span>
               <input v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
-                     v-model="allowed_ips_a_to_b[otherPeerId]"
-                     :class="[color.allowed_ips_a_to_b[otherPeerId]]"
-                     :list="_WireGuardHelper_getConnectionId(otherPeerId) + 'peerDetails.name to focusPeerName'"
-                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow"
-                     @change="colorRefresh += 1" @keyup="colorRefresh += 1">
+                     v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
+                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
+                     :list="otherPeerId + 'peerDetails.name to focusPeerName'"
+                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow">
               <input v-else
-                     v-model="allowed_ips_b_to_a[otherPeerId]"
-                     :class="[color.allowed_ips_b_to_a[otherPeerId]]"
-                     :list="_WireGuardHelper_getConnectionId(otherPeerId) + 'peerDetails.name to focusPeerName'"
-                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow"
-                     @change="colorRefresh += 1" @keyup="colorRefresh += 1">
+                     v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
+                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
+                     :list="otherPeerId + 'peerDetails.name to focusPeerName'"
+                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow">
               <span class="flex-none pr-2"> to <strong>{{ network.peers[peerId].name }}</strong></span>
             </div>
             <datalist
-                :id="_WireGuardHelper_getConnectionId(otherPeerId) + 'focusPeerName to peerDetails.name'">
+                :id="otherPeerId + 'focusPeerName to peerDetails.name'">
               <option value="0.0.0.0/0">
                 All traffic
               </option>
@@ -216,7 +218,7 @@
               </option>
             </datalist>
             <datalist
-                :id="_WireGuardHelper_getConnectionId(otherPeerId) + 'peerDetails.name to focusPeerName'">
+                :id="otherPeerId + 'peerDetails.name to focusPeerName'">
               <option :value="network.peers[peerId].address + '/32'">
                 Only {{ network.peers[peerId].name }}
               </option>
@@ -225,9 +227,21 @@
 
         </div>
 
+        <!-- undo button -->
+        <div v-if="is_changed_field.attached_peer_box[otherPeerId]"
+             class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
+          <button
+              :disabled="!is_changed_field.attached_peer_box[otherPeerId]"
+              class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
+              title="Undo Changes"
+              @click="connections_local.enabled[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].enabled; connections_local.pre_shared_key[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].pre_shared_key; connections_local.persistent_keepalive[otherPeerId] = JSON.parse(JSON.stringify(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].persistent_keepalive)); connections_local.allowed_ips_a_to_b[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b; connections_local.allowed_ips_b_to_a[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a; ">
+            <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
+          </button>
+        </div>
 
       </div>
     </div>
+
   </div>
 
 </template>
@@ -248,272 +262,220 @@ export default {
       type: Object,
       default: {},
     },
-    value: {
-      type: Object,
-      default: {
-        context: 'edit',
-        addedConnections: {},
-        removedConnections: {},
-        changedFields: {},
-        error: null,
-      },
-    },
   },
   data() {
     return {
-      connections_local: {},
-      colorRefresh: 0,
-      connectionChanged: {},
-      attachedStaticPeerIdsLocal: [],
-      attachedRoamingPeerIdsLocal: [],
-      isConnectionEnabled: {},
-      pre_shared_key: {},
-      persistent_keepalive_enabled: {},
-      persistent_keepalive_value: {},
-      allowed_ips_a_to_b: {},
-      allowed_ips_b_to_a: {},
+      attached_static_peer_ids_local: [],
+      attached_roaming_peer_ids_local: [],
+      connections_local: {
+        enabled: {},
+        pre_shared_key: {},
+        allowed_ips_a_to_b: {},
+        allowed_ips_b_to_a: {},
+        persistent_keepalive: {},
+      },
+      island_change_sum: {
+        changed_fields: {},
+        added_fields: {},
+        removed_fields: {},
+        errors: {},
+      },
+      FIELD_COLOR_LOOKUP: {
+        0: 'bg-white',
+        1: 'enabled:bg-green-200',
+        '-1': 'enabled:bg-red-200',
+      },
+      DIV_COLOR_LOOKUP: {
+        0: 'bg-green-50',
+        1: 'bg-green-100',
+        2: 'bg-blue-50',
+        '-1': 'bg-red-100',
+      },
+      is_changed_field: {
+        attached_peers_box: 0,
+        attached_peer_box: {},
+        allowed_ips_a_to_b: {},
+        allowed_ips_b_to_a: {},
+        persistent_keepalive: {},
+      },
     };
   },
   created() {
-    this.connections_local = this.value;
+    this.attached_static_peer_ids_local = this.attached_static_peer_ids;
+    this.attached_roaming_peer_ids_local = this.attached_roaming_peer_ids;
 
-    // To enforce order of static > roaming connections when listed in the view
-    // for (const peerId of this.staticPeerIdsExcludingSelf) {
-    //   const connectionId = WireGuardHelper.getConnectionId(peerId, this.peerId);
-    //   if (Object.keys(this.network.connections).includes(connectionId)) this.attachedStaticPeerIdsLocal.push(peerId);
-    // }
-    this.attachedStaticPeerIdsLocal = this.attachedStaticPeerIds;
-    // for (const peerId of this.roamingPeerIdsExcludingSelf) {
-    //   const connectionId = WireGuardHelper.getConnectionId(peerId, this.peerId);
-    //   if (Object.keys(this.network.connections).includes(connectionId)) this.attachedRoamingPeerIdsLocal.push(peerId);
-    // }
-    this.attachedRoamingPeerIdsLocal = this.attachedRoamingPeerIds;
-    // console.log(`... ${this.attachedStaticPeerIdsLocal} ${this.attachedRoamingPeerIdsLocal}`)
-
-    for (const otherPeerId of this.allAttachedPeersLocal) {
-      const connectionId = WireGuardHelper.getConnectionId(this.peerId, otherPeerId);
-      this.isConnectionEnabled[otherPeerId] = this.network.connections[connectionId].enabled;
-      this.pre_shared_key[otherPeerId] = this.network.connections[connectionId].pre_shared_key;
-      this.persistent_keepalive_enabled[otherPeerId] = this.network.connections[connectionId].persistent_keepalive.enabled;
-      this.persistent_keepalive_value[otherPeerId] = this.network.connections[connectionId].persistent_keepalive.value;
-      this.allowed_ips_a_to_b[otherPeerId] = this.network.connections[connectionId].allowed_ips_a_to_b;
-      this.allowed_ips_b_to_a[otherPeerId] = this.network.connections[connectionId].allowed_ips_b_to_a;
+    for (const other_peer_id of this.all_attached_peer_ids) {
+      const connectionId = WireGuardHelper.getConnectionId(this.peerId, other_peer_id);
+      this.connections_local.enabled[other_peer_id] = this.network.connections[connectionId].enabled;
+      this.connections_local.pre_shared_key[other_peer_id] = this.network.connections[connectionId].pre_shared_key;
+      this.connections_local.allowed_ips_a_to_b[other_peer_id] = this.network.connections[connectionId].allowed_ips_a_to_b;
+      this.connections_local.allowed_ips_b_to_a[other_peer_id] = this.network.connections[connectionId].allowed_ips_b_to_a;
+      this.connections_local.persistent_keepalive[other_peer_id] = JSON.parse(JSON.stringify(this.network.connections[connectionId].persistent_keepalive));
     }
-
-    // for (const peerId of [...Object.keys(this.value.staticPeers), ...Object.keys(this.value.roamingPeers)]) {
-    //   console.log(peerId)
-    //   const connectionId = WireGuardHelper.getConnectionId(this.peerId, peerId);
-    //   this.connectionChanged[peerId] = false;
-    // }
-
-    this.value.addedConnections = {};
-    this.value.removedConnections = {};
-    this.value.changedFields = {};
-    this.value.error = null;
   },
   methods: {
-    _FastEqual(a, b) {
-      return FastEqual(a, b);
+    check_connection_field_status(other_peer_id, field_name) {
+      const connection_id = this._WireGuardHelper_getConnectionId(other_peer_id);
+      if (Object.keys(this.network.connections).includes(connection_id) && FastEqual(this.connections_local[field_name][other_peer_id], this.network.connections[connection_id][field_name])) return [0, ''];
+      const ret = WireGuardHelper.checkField(field_name, this.connections_local[field_name][other_peer_id]);
+      if (!ret.status) return [-1, ret.msg];
+      return [1, ''];
+    },
+    emit_island_change_sum() {
+      this.$emit("updated-change-sum", this.island_change_sum);
     },
     _WireGuardHelper_getConnectionId(otherPeerId) {
       return WireGuardHelper.getConnectionId(this.peerId, otherPeerId);
     },
-    // async refreshConnectionEditKeys(connectionId) {
-    //   const {preSharedKey} = await this.getNewPreSharedKey();
-    //   this.value.preSharedKey[peerId] = preSharedKey;
-    //   this.colorRefresh += 1;
-    // },
-    toggleConnection(peerId, state = null) {
-      // TODO: implement ...
+    toggleConnection(peer_id, state = null) {
+      this.connections_local.enabled[peer_id] = state ? state : this.connections_local.enabled[peer_id] ? !this.connections_local.enabled[peer_id] : true;
+
+      const connection_id = this._WireGuardHelper_getConnectionId(peer_id);
+      if (this.connections_local.enabled[peer_id] && !Object.keys(this.network.connections).includes(connection_id)) {
+        this.connections_local.pre_shared_key[peer_id] = '...';
+        this.connections_local.persistent_keepalive[peer_id] = JSON.parse(JSON.stringify(this.network.defaults.connection.persistent_keepalive));
+        if (this.network.peers[this.peerId].mobility === 'roaming' &&
+            this.network.peers[peer_id].mobility === 'roaming') {
+          this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
+          this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
+        } else if (this.network.peers[this.peerId].mobility === 'static' &&
+            this.network.peers[peer_id].mobility === 'static') {
+          this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
+          this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
+        } else if (this.network.peers[this.peerId].mobility === 'static' &&
+            this.network.peers[peer_id].mobility === 'roaming') {
+          this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : this.network.subnet;
+          this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? this.network.subnet : `${this.network.peers[peer_id].address}/32`;
+        } else if (this.network.peers[this.peerId].mobility === 'roaming' &&
+            this.network.peers[peer_id].mobility === 'static') {
+          this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? this.network.subnet : `${this.network.peers[this.peerId].address}/32`;
+          this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : this.network.subnet;
+        }
+      }
+    },
+    refreshPreSharedKey(otherPeerId) {
+      // TODO
+      //   const {preSharedKey} = await this.getNewPreSharedKey();
+      //   this.value.preSharedKey[peerId] = preSharedKey;
     }
   },
-  emits: ['update:value'],
+  emits: ['updated-change-sum'],
   computed: {
-    staticPeerIdsExcludingSelf() {
+    other_static_peer_ids() {
       if (this.network.peers[this.peerId].mobility !== 'static') {
-        return this.network.staticPeerIds;
+        return this.network.static_peer_ids;
       }
-      const ids = [];
-      for (const peerId of this.network.staticPeerIds) {
-        if (peerId === this.peerId) continue;
-        ids.push(peerId);
-      }
-      return ids;
+      const peerId = this.peerId;
+      return this.network.static_peer_ids.filter(function (item) {
+        return item !== peerId;
+      });
     },
-    roamingPeerIdsExcludingSelf() {
+    other_roaming_peer_ids() {
       if (this.network.peers[this.peerId].mobility !== 'roaming') {
-        return this.network.roamingPeerIds;
+        return this.network.roaming_peer_ids;
       }
+      const peerId = this.peerId;
+      return this.network.roaming_peer_ids.filter(function (item) {
+        return item !== peerId;
+      });
+    },
+    attached_static_peer_ids() {
       const ids = [];
-      for (const peerId of this.network.roamingPeerIds) {
-        if (peerId === this.peerId) continue;
-        ids.push(peerId);
+      for (const otherPeerId of this.other_static_peer_ids) {
+        const connectionId = WireGuardHelper.getConnectionId(otherPeerId, this.peerId);
+        if (Object.keys(this.network.connections).includes(connectionId)) ids.push(otherPeerId);
       }
       return ids;
     },
-    attachedStaticPeerIds() {
+    attached_roaming_peer_ids() {
       const ids = [];
-      for (const staticPeerId of this.staticPeerIdsExcludingSelf) {
-        const connectionId = WireGuardHelper.getConnectionId(staticPeerId, this.peerId);
-        if (Object.keys(this.network.connections).includes(connectionId)) ids.push(staticPeerId);
+      for (const otherPeerId of this.other_roaming_peer_ids) {
+        const connectionId = WireGuardHelper.getConnectionId(otherPeerId, this.peerId);
+        if (Object.keys(this.network.connections).includes(connectionId)) ids.push(otherPeerId);
       }
       return ids;
     },
-    attachedRoamingPeerIds() {
-      const ids = [];
-      for (const peerId of this.roamingPeerIdsExcludingSelf) {
-        const connectionId = WireGuardHelper.getConnectionId(peerId, this.peerId);
-        if (Object.keys(this.network.connections).includes(connectionId)) ids.push(peerId);
-      }
-      return ids;
+    all_attached_peer_ids() {
+      return [...this.attached_static_peer_ids, ...this.attached_roaming_peer_ids];
     },
     selectAllStaticPeers: {
       get() {
-        return this.staticPeerIdsExcludingSelf.length ? this.staticPeerIdsExcludingSelf.length === this.attachedStaticPeerIdsLocal.length : false;
+        return this.other_static_peer_ids.length ? this.other_static_peer_ids.length === this.attached_static_peer_ids_local.length : false;
       },
       set(value) {
         const attached = [];
 
         if (value) {
-          for (const peerId of this.staticPeerIdsExcludingSelf) {
+          for (const peerId of this.other_static_peer_ids) {
             attached.push(peerId);
-            if (!(peerId in this.attachedStaticPeerIdsLocal)) {
+            if (!(peerId in this.attached_static_peer_ids_local)) {
               this.toggleConnection(peerId, true);
             }
           }
         }
 
-        this.attachedStaticPeerIdsLocal = attached;
+        this.attached_static_peer_ids_local = attached;
       },
     },
     selectAllRoamingPeers: {
       get() {
-        return this.roamingPeerIdsExcludingSelf.length ? this.roamingPeerIdsExcludingSelf.length === this.attachedRoamingPeerIdsLocal.length : false;
+        return this.other_roaming_peer_ids.length ? this.other_roaming_peer_ids.length === this.attached_roaming_peer_ids_local.length : false;
       },
       set(value) {
         const attached = [];
 
         if (value) {
-          for (const peerId of this.roamingPeerIdsExcludingSelf) {
+          for (const peerId of this.other_roaming_peer_ids) {
             attached.push(peerId);
-            if (!(peerId in this.attachedRoamingPeerIdsLocal)) {
+            if (!(peerId in this.attached_roaming_peer_ids_local)) {
               this.toggleConnection(peerId, true);
             }
           }
         }
 
-        this.attachedRoamingPeerIdsLocal = attached;
+        this.attached_roaming_peer_ids_local = attached;
       },
     },
-    allAttachedPeers() {
-      return [...this.attachedStaticPeerIds, ...this.attachedRoamingPeerIds];
+    all_attached_peer_ids_local() {
+      return [...this.attached_static_peer_ids_local, ...this.attached_roaming_peer_ids_local];
     },
-    allAttachedPeersLocal() {
-      return [...this.attachedStaticPeerIdsLocal, ...this.attachedRoamingPeerIdsLocal];
+  },
+  watch: {
+    all_attached_peer_ids_local() {
+      this.is_changed_field.attached_peers_box = FastEqual(this.all_attached_peer_ids_local, this.all_attached_peer_ids) ? 0 : 1;
+      this.emit_island_change_sum();
     },
-    color() {
-      this.colorRefresh &&= this.colorRefresh;
-      const color = {
-        allowed_ips_a_to_b: {},
-        allowed_ips_b_to_a: {},
-        persistent_keepalive: {},
-        attachedPeerDiv: {},
-        selectionDiv: WireGuardHelper.checkField('peerCount', this.allAttachedPeersLocal) ? 'bg-green-50' : 'bg-red-50',
-      };
-      // const addedConnections = {};
-      // const changedFields = {};
-      // let error = null;
-      // for (const peerId of this.allAttachedPeers) {
-      //   const connectionId = WireGuardHelper.getConnectionId(this.peerId, peerId);
-      //   try {
-      //     addedConnections[peerId] = {};
-      //     changedFields[peerId] = {};
-      //     // eslint-disable-next-line no-nested-ternary
-      //     color.allowed_ips_a_to_b[peerId] = this.value.context === 'create' || !this.allAttachedPeers.includes(peerId) || this.allowed_ips_a_to_b[peerId] !== this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].allowed_ips_a_to_b
-      //         ? WireGuardHelper.checkField('allowedIPs', this.allowed_ips_a_to_b[peerId]) ? 'bg-green-200' : 'bg-red-200' : 'bg-white';
-      //     if (this.allowed_ips_a_to_b[peerId] !== this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].allowed_ips_a_to_b) {
-      //       changedFields[peerId].allowed_ips_a_to_b = this.allowed_ips_a_to_b[peerId];
-      //     }
-      //     error = color.allowed_ips_a_to_b[peerId] === 'bg-red-200' ? `${connectionId}'s 'allowed_ips_a_to_b' field` : error;
-      //
-      //     // eslint-disable-next-line no-nested-ternary
-      //     color.allowed_ips_b_to_a[peerId] = this.value.context === 'create' || !this.allAttachedPeers.includes(peerId) || this.value.allowed_ips_b_to_a[peerId] !== this.network.peers[peerId]
-      //         ? WireGuardHelper.checkField('allowedIPs', this.allowed_ips_b_to_a[peerId]) ? 'bg-green-200' : 'bg-red-200' : 'bg-white';
-      //     if (this.value.allowed_ips_b_to_a[peerId] !== this.network.peers[peerId]) {
-      //       changedFields[peerId].allowed_ips_b_to_a = this.allowed_ips_b_to_a[peerId];
-      //     }
-      //     error = color.allowed_ips_b_to_a[peerId] === 'bg-red-200' ? `${connectionId}'s 'allowed_ips_b_to_a' field` : error;
-      //
-      //     const changedpersistent_keepalive = {};
-      //     // eslint-disable-next-line no-nested-ternary
-      //     color.persistent_keepalive[peerId] = !this.allAttachedPeers.includes(peerId) || this.value.persistent_keepaliveEnabled[peerId] !== this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].persistent_keepalive.enabled
-      //     || this.value.persistent_keepaliveValue[peerId] !== this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].persistent_keepalive.value
-      //         ? WireGuardHelper.checkField('persistent_keepalive', this.persistent_keepalive_value[peerId]) ? 'bg-green-200' : 'bg-red-200' : 'bg-white';
-      //     if (this.value.persistent_keepaliveEnabled[peerId] !== this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].persistent_keepalive.enabled) {
-      //       changedpersistent_keepalive.enabled = this.value.persistent_keepaliveEnabled[connectionId];
-      //     }
-      //     if (this.value.persistent_keepaliveValue[peerId] !== this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].persistent_keepalive.value) {
-      //       changedpersistent_keepalive.value = this.persistent_keepalive_value[peerId];
-      //     }
-      //     if (Object.keys(changedpersistent_keepalive).length > 0) changedFields[peerId].persistent_keepalive = changedpersistent_keepalive;
-      //     error = color.persistent_keepalive[peerId] === 'bg-red-200' ? `${connectionId}'s 'persistent_keepalive' field` : error;
-      //
-      //     if (this.value.preSharedKey[peerId] !== this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].pre_shared_key) {
-      //       changedFields[peerId].preSharedKey = this.value.preSharedKey[connectionId];
-      //     }
-      //
-      //     this.connectionChanged[peerId] = Object.keys(changedFields[peerId]).length !== 0;
-      //     if (Object.keys(changedFields[peerId]).length === 0) delete changedFields[peerId];
-      //
-      //     if (!this.allAttachedPeers.includes(peerId)) {
-      //       addedConnections[peerId] = {
-      //         enabled: this.isConnectionEnabled[peerId],
-      //         allowed_ips_a_to_b: this.allowed_ips_a_to_b[peerId],
-      //         allowed_ips_b_to_a: this.allowed_ips_b_to_a[peerId],
-      //         persistent_keepalive: {
-      //           enabled: this.value.persistent_keepaliveEnabled[connectionId],
-      //           value: this.persistent_keepalive_value[peerId],
-      //         },
-      //       };
-      //     } else {
-      //       delete addedConnections[peerId];
-      //     }
-      //
-      //     // eslint-disable-next-line no-nested-ternary
-      //     color.attachedPeerDiv[peerId] = ![color.allowed_ips_a_to_b[peerId], color.allowed_ips_b_to_a[peerId], this.value.persistent_keepaliveEnabled[peerId] ? color.persistent_keepalive[peerId] : ''].includes('bg-red-200') ? this.isConnectionEnabled[peerId] ? this.connectionChanged[peerId] || (!this.allAttachedPeers.includes(peerId) && this.value.context === 'edit') ? 'bg-green-100' : 'bg-green-50' : 'bg-red-50' : 'bg-red-100';
-      //   } catch (e) {
-      //     this.connectionChanged[peerId] = true;
-      //     for (const colorField of Object.keys(color)) {
-      //       if (colorField === 'selectionDiv') continue;
-      //       color[colorField][peerId] = 'bg-red-50';
-      //     }
-      //     console.log(e);
-      //   }
-      // }
-      //
-      // const removedConnections = {};
-      // for (const peerId of this.allAttachedPeers) {
-      //   if (!this.allAttachedPeers.includes(peerId)) {
-      //     const connectionId = WireGuardHelper.getConnectionId(peerId, this.peerId);
-      //     removedConnections[peerId] = {
-      //       enabled: this.rollbackData.isConnectionEnabled[peerId],
-      //       allowed_ips_a_to_b: this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].allowed_ips_a_to_b,
-      //       allowed_ips_b_to_a: this.network.peers[peerId],
-      //       persistent_keepalive: {
-      //         enabled: this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].persistent_keepalive.enabled,
-      //         value: this.network.connections[WireGuardHelper.getConnectionId(this.peerId, peerId)].persistent_keepalive.value,
-      //       },
-      //     };
-      //   }
-      // }
-      //
-      // this.value.addedConnections = addedConnections;
-      // this.value.removedConnections = removedConnections;
-      // this.value.changedFields = changedFields;
-      // this.value.error = error;
+    connections_local: {
+      handler() {
+        for (const other_peer_id of this.all_attached_peer_ids_local) {
+          let msg = "";
+          [this.is_changed_field.persistent_keepalive[other_peer_id], msg] = this.check_connection_field_status(other_peer_id, 'persistent_keepalive');
+          [this.is_changed_field.allowed_ips_a_to_b[other_peer_id], msg] = this.check_connection_field_status(other_peer_id, 'allowed_ips_a_to_b');
+          [this.is_changed_field.allowed_ips_b_to_a[other_peer_id], msg] = this.check_connection_field_status(other_peer_id, 'allowed_ips_b_to_a');
 
-      return color;
-    },
+          const connection_id = this._WireGuardHelper_getConnectionId(other_peer_id);
+          const connection_details = {
+            enabled: this.connections_local.enabled[other_peer_id],
+            pre_shared_key: this.connections_local.pre_shared_key[other_peer_id],
+            persistent_keepalive: this.connections_local.persistent_keepalive[other_peer_id],
+            allowed_ips_a_to_b: this.connections_local.allowed_ips_a_to_b[other_peer_id],
+            allowed_ips_b_to_a: this.connections_local.allowed_ips_b_to_a[other_peer_id],
+          }
+
+          if (FastEqual(connection_details, this.network.connections[connection_id])) {
+            this.is_changed_field.attached_peer_box[other_peer_id] = 0;
+          } else {
+            if ([this.is_changed_field.persistent_keepalive[other_peer_id], this.is_changed_field.allowed_ips_a_to_b[other_peer_id], this.is_changed_field.allowed_ips_b_to_a[other_peer_id]].includes(-1)) {
+              this.is_changed_field.attached_peer_box[other_peer_id] = -1;
+            } else {
+              this.is_changed_field.attached_peer_box[other_peer_id] = Object.keys(this.network.connections).includes(connection_id) ? 2 : 1;
+            }
+          }
+
+        }
+      },
+      deep: true,
+    }
   },
 }
 </script>

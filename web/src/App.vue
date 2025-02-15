@@ -185,13 +185,13 @@ export default {
         this.webServerStatus = this.ServerStatusEnum.up;
         this.network_digest = summary.network_digest;
         this.network = summary.network;
-        this.network.staticPeerIds = [];
-        this.network.roamingPeerIds = [];
+        this.network.static_peer_ids = [];
+        this.network.roaming_peer_ids = [];
         Object.entries(summary.network.peers).forEach(([peerId, peerDetails]) => {
           if (peerDetails.mobility === "static") {
-            this.network.staticPeerIds.push(peerId);
+            this.network.static_peer_ids.push(peerId);
           } else {
-            this.network.roamingPeerIds.push(peerId);
+            this.network.roaming_peer_ids.push(peerId);
           }
         })
         this.wireguardStatus = summary.status

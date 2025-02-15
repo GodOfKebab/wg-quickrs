@@ -36,7 +36,7 @@ ${peer.scripts.post_down.enabled ? `post_down = ${peer.scripts.post_down.value}`
 PublicKey = ${network.peers[otherPeerId].public_key}
 PresharedKey = ${connectionDetails.pre_shared_key}
 AllowedIPs = ${allowedIPsThisPeer}
-${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${connectionDetails.persistentKeepalive.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
+${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${connectionDetails.persistent_keepalive.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
 
             // Add the Endpoint line if known TODO: get roaming endpoints as well
             if (network.peers[otherPeerId].mobility === 'static') {
@@ -147,20 +147,20 @@ ${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${conn
             return ret;
         }
 
-        // // check peer count
-        // if (fieldName === 'peerCount') {
-        //     return fieldVariable.length > 0;
-        // }
-        //
-        // // check allowedIPs
-        // if (fieldName === 'allowedIPs') {
-        //     return fieldVariable.match('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9]))(,(|\\s)*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9])))*$');
-        // }
-        //
-        // // check allowedIPs
-        // if (fieldName === 'persistent_keepalive') {
-        //     return fieldVariable.match('^([0-9][0-9]|[0-9])$');
-        // }
+        // check allowedIPs
+        if (fieldName === 'allowed_ips_a_to_b' || fieldName === 'allowed_ips_b_to_a') {
+            ret.status = fieldVariable.match('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9]))(,(|\\s)*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9])))*$');
+            if (!ret.status) ret.msg = "AllowedIPs is not in the 'X[X][X].X[X][X].X[X][X].X[X][X]/[1-32]' format";
+            return ret;
+        }
+
+        // check persistent_keepalive
+        if (fieldName === 'persistent_keepalive') {
+            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
+            ret.status &&= !(fieldVariable.enabled === true && !(fieldVariable.value > 0 && fieldVariable.value < 65536));
+            if (!ret.status) ret.msg = "Persistent Keepalive is invalid";
+            return ret;
+        }
 
         return {status: false, msg: "field doesn't exist"};
     }

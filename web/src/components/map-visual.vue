@@ -105,8 +105,8 @@ export default {
         if (connectionDetails.enabled) {
           const {a, b} = WireGuardHelper.getConnectionPeers(connectionId);
           const linkColorStrength = 1
-              + network.staticPeerIds.includes(a)
-              + network.staticPeerIds.includes(b);
+              + network.static_peer_ids.includes(a)
+              + network.static_peer_ids.includes(b);
           let color = '';
           // eslint-disable-next-line default-case
           switch (linkColorStrength) {
@@ -127,7 +127,7 @@ export default {
             source: b, target: a, particleCount: 0, color, strength: linkColorStrength,
           });
           // for (const ab of [a, b]) {
-          //   peerSize[ab] += network.staticPeerIds.includes(ab) ? 0.925 : 0.0625;
+          //   peerSize[ab] += network.static_peer_ids.includes(ab) ? 0.925 : 0.0625;
           //   peerSize[ab] += connectionDetails.enabled ? 0.125 : 0.03125;
           // }
         }
@@ -139,7 +139,7 @@ export default {
           name: peerDetails.name,
           mobility: peerDetails.mobility,
           size: Math.sqrt(peerSize[peerId]) * 7,
-          color: network.staticPeerIds.includes(peerId) ? 'rgb(21 128 61)' : 'rgb(7 89 133)',
+          color: network.static_peer_ids.includes(peerId) ? 'rgb(21 128 61)' : 'rgb(7 89 133)',
           // icon: this.peerAvatarCanvases[peerId],
         });
       }

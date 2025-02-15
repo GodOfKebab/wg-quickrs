@@ -13,6 +13,7 @@
                    :right-button-text="peerConfigWindow === 'file' ? 'Copy To Clipboard' : 'Save Configuration'"
                    class="z-10">
 
+      <!-- title and top bar -->
       <div class="flex justify-between items-center">
         <h3 class="text-lg leading-6 font-medium text-gray-900 inline">
           Configuration for <strong>{{ peer_conf.name }}</strong>:
@@ -203,12 +204,16 @@ export default {
         if (Object.keys(data.errors.connections).length === 0) delete data.errors.connections;
       }
 
+      // changed conns
+
       if (Object.keys(data.changed_fields.peers[this.peerId]).length + Object.keys(data.changed_fields.connections).length === 0) {
         delete data.changed_fields;
       } else {
         if (Object.keys(data.changed_fields.peers[this.peerId]).length === 0) delete data.changed_fields.peers;
         if (Object.keys(data.changed_fields.connections).length === 0) delete data.changed_fields.connections;
       }
+
+      // added/removed conns
 
       if (Object.keys(data.added_connections).length === 0) delete data.added_connections;
       if (Object.keys(data.removed_connections).length === 0) delete data.removed_connections;
