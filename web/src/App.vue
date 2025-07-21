@@ -1,9 +1,8 @@
 
 <template>
 
+  <!-- Header -->
   <div class="container mx-auto max-w-3xl relative">
-
-    <!-- Header -->
     <div class="mt-5 mb-2" style="display: flex; align-items: center;">
       <div class="inline-block float-left ml-3" style="flex: 1; min-width: 0;">
         <h1 class="text-4xl font-medium truncate">
@@ -59,17 +58,17 @@
         </div>
       </div>
     </div>
-
   </div>
 
+  <!-- Map -->
   <div class="container mx-auto max-w-6xl">
-    <!-- Map -->
     <map-visual :network="network"
                 class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center"
                 style="max-height: 70vh"
                 @peer-selected="onPeerSelected"></map-visual>
   </div>
 
+  <!-- Add a Peer Buttons -->
   <div class="container mx-auto max-w-3xl relative">
     <!-- Add a Static/Roaming Peer -->
     <div class="grid grid-cols-2 gap-2">
@@ -82,37 +81,36 @@
         </button>
       </div>
     </div>
-
-    <!-- Dialog: WireGuard Enable/Disable -->
-    <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = null }"
-                   :left-button-text="'Cancel'"
-                   :right-button-classes="wireguardStatus === ServerStatusEnum.up ? ['text-white', 'bg-red-600', 'hover:bg-red-700'] : ['text-white', 'bg-green-600', 'hover:bg-green-700']"
-                   :right-button-click="() => { toggleWireGuardNetworking(); dialogId = null; }"
-                   :right-button-text="wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable'"
-                   class="z-10"
-                   icon="danger">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">
-        {{ wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable' }} the WireGuard Network
-      </h3>
-      <div class="mt-2 text-sm text-gray-500">
-        Are you sure you want to {{ wireguardStatus === ServerStatusEnum.up ? 'disable' : 'enable' }} the WireGuard
-        network?
-      </div>
-    </custom-dialog>
-
-
-    <!-- Dialog: Peer View/Edit -->
-    <peer-config-window v-if="dialogId.startsWith('selected-peer-id=')"
-                        :network="network"
-                        :peer-id="dialogId.slice(17, dialogId.length)"></peer-config-window>
-
-
   </div>
 
   <!-- Footer -->
   <footer class="text-center text-gray-500 my-10">
     <small>&copy; Copyright 2024, <a class="hover:underline" href="https://yasar.idikut.cc/">Yaşar İdikut</a></small>
   </footer>
+
+  <!-- Dialog: WireGuard Enable/Disable -->
+  <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = '' }"
+                 :left-button-text="'Cancel'"
+                 :right-button-classes="wireguardStatus === ServerStatusEnum.up ? ['text-white', 'bg-red-600', 'hover:bg-red-700'] : ['text-white', 'bg-green-600', 'hover:bg-green-700']"
+                 :right-button-click="() => { toggleWireGuardNetworking(); dialogId = ''; }"
+                 :right-button-text="wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable'"
+                 class="z-10"
+                 icon="danger">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">
+      {{ wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable' }} the WireGuard Network
+    </h3>
+    <div class="mt-2 text-sm text-gray-500">
+      Are you sure you want to {{ wireguardStatus === ServerStatusEnum.up ? 'disable' : 'enable' }} the WireGuard
+      network?
+    </div>
+  </custom-dialog>
+
+  <!-- Dialog: Peer View/Edit -->
+  <peer-config-window v-if="dialogId.startsWith('selected-peer-id=')"
+                      v-model:dialog-id="dialogId"
+                      :network="network"
+                      :peer-id="dialogId.slice(17, dialogId.length)"></peer-config-window>
+
 </template>
 
 <script>

@@ -1,7 +1,8 @@
 <template>
 
   <div>
-    <custom-dialog :left-button-click="() => { peerId = null }"
+    <!-- Dialog: Settings -->
+    <custom-dialog :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['enabled:bg-green-700', 'enabled:hover:bg-green-800', 'enabled:focus:outline-none', 'bg-gray-200', 'disabled:hover:bg-gray-200', 'disabled:cursor-not-allowed', 'text-white']"
                    :right-button-click="peerConfigWindow === 'file' ? () => { navigator.clipboard.writeText(peer_wg_conf_file).then(() => {
@@ -79,10 +80,11 @@
     </custom-dialog>
 
     <!-- Dialog: Confirm -->
-    <custom-dialog v-if="dialogId === 'confirm-changes'" :left-button-click="() => { dialogId = null }"
+    <custom-dialog v-if="dialogId === 'confirm-changes'"
+                   :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['text-white', 'bg-green-600', 'hover:bg-green-700']"
-                   :right-button-click="() => { peerId = null; peerConfigWindow = 'edit'; dialogId = null; }"
+                   :right-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); peerConfigWindow = 'edit'; }"
                    :right-button-text="'Do it!'"
                    class="z-20"
                    icon="danger">
@@ -132,11 +134,14 @@ export default {
       type: Object,
       default: {},
     },
+    dialogId: {
+      type: String,
+      default: "",
+    }
   },
+  emits: ['update:dialogId'],
   data() {
     return {
-      dialogId: '',
-
       peerConfigWindow: "",
 
       peerSummaryIslandChangeSum: null,
