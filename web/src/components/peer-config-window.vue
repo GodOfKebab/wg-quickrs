@@ -5,6 +5,7 @@
     <custom-dialog :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['enabled:bg-green-700', 'enabled:hover:bg-green-800', 'enabled:focus:outline-none', 'bg-gray-200', 'disabled:hover:bg-gray-200', 'disabled:cursor-not-allowed', 'text-white']"
+                   :rightButtonDisabled="!changeDetected || changeSum.errors"
                    :right-button-click="peerConfigWindow === 'file' ? () => { navigator.clipboard.writeText(peer_wg_conf_file).then(() => {
                                           alert('successfully copied');
                                           })
@@ -21,18 +22,19 @@
         </h3>
         <span class="order-last">
           <button v-show="peerConfigWindow === 'edit'"
-                  class="align-middle bg-gray-100 hover:enabled:bg-gray-600 hover:enabled:text-white disabled:text-blue-100 disabled:bg-gray-50 p-1 rounded transition special-fill mr-1"
+                  :disabled="!changeDetected"
                   title="See the configuration differences for this peer"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 rounded transition special-fill mr-1"
                   @click="peerConfigWindow = 'view-changes'">
             <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/file-clone.svg"/>
           </button>
           <button v-show="peerConfigWindow === 'file' || peerConfigWindow === 'view-changes'"
-                  class="align-middle bg-gray-100 hover:bg-gray-600 hover:text-white p-1 rounded transition special-fill-edit"
+                  class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill-edit"
                   title="Edit the configuration for this peer" @click="peerConfigWindow = 'edit'">
             <img alt="Edit Configuration" class="h-6" src="../icons/flowbite/file-pen.svg"/>
           </button>
           <button v-show="peerConfigWindow === 'edit'"
-                  class="align-middle bg-gray-100 hover:bg-gray-600 hover:text-white p-1 rounded transition special-fill"
+                  class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill"
                   title="See the configuration file for this peer" @click="peerConfigWindow = 'file'">
             <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
           </button>
@@ -71,7 +73,7 @@
                             class="my-2 mr-2"></connection-islands>
       </div>
 
-      <!-- show config -->
+      <!-- view changes -->
       <div v-show="peerConfigWindow === 'view-changes'" class="mt-2 w-full overflow-scroll h-96">
         <change-sum :change-sum="changeSum"
                     :network="network"
@@ -191,9 +193,11 @@ export default {
         added_connections: {},
         removed_connections: {}
       };
+
+      // check for errors + changed fields for this peer
       data.errors.peers[this.peerId] = {};
       data.changed_fields.peers[this.peerId] = {};
-      for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum]) {
+      for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum, this.peerDetailsIslandChangeSum]) {
         if (!island_datum) continue;
         for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
           if (island_value) data.errors.peers[this.peerId][island_field] = island_value;
@@ -202,14 +206,16 @@ export default {
           if (island_value) data.changed_fields.peers[this.peerId][island_field] = island_value;
         }
       }
+      // TODO: check for errors + changed fields for connections
+
+
+      // cleanup excess fields
       if (Object.keys(data.errors.peers[this.peerId]).length + Object.keys(data.errors.connections).length === 0) {
         delete data.errors;
       } else {
         if (Object.keys(data.errors.peers[this.peerId]).length === 0) delete data.errors.peers;
         if (Object.keys(data.errors.connections).length === 0) delete data.errors.connections;
       }
-
-      // changed conns
 
       if (Object.keys(data.changed_fields.peers[this.peerId]).length + Object.keys(data.changed_fields.connections).length === 0) {
         delete data.changed_fields;
@@ -218,12 +224,13 @@ export default {
         if (Object.keys(data.changed_fields.connections).length === 0) delete data.changed_fields.connections;
       }
 
-      // added/removed conns
-
       if (Object.keys(data.added_connections).length === 0) delete data.added_connections;
       if (Object.keys(data.removed_connections).length === 0) delete data.removed_connections;
 
       return data;
+    },
+    changeDetected() {
+      return this.changeSum.errors || this.changeSum.changed_fields || this.changeSum.added_connections || this.changeSum.removed_connections;
     }
   },
 }
