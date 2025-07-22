@@ -91,7 +91,7 @@
             :disabled="!is_changed_field.attached_peers_box"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
-            @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids">
+            @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids; update_added_removed_change_sum();">
           <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
         </button>
       </div>
@@ -234,7 +234,7 @@
               :disabled="!is_changed_field.attached_peer_box[otherPeerId]"
               class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
               title="Undo Changes"
-              @click="connections_local.enabled[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].enabled; connections_local.pre_shared_key[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].pre_shared_key; connections_local.persistent_keepalive[otherPeerId] = JSON.parse(JSON.stringify(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].persistent_keepalive)); connections_local.allowed_ips_a_to_b[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b; connections_local.allowed_ips_b_to_a[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a; ">
+              @click="undo_connection_changes(otherPeerId);">
             <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
           </button>
         </div>
@@ -276,8 +276,8 @@ export default {
       },
       island_change_sum: {
         changed_fields: {},
-        added_fields: {},
-        removed_fields: {},
+        added_connections: {},
+        removed_connections: {},
         errors: {},
       },
       FIELD_COLOR_LOOKUP: {
@@ -327,31 +327,79 @@ export default {
     _WireGuardHelper_getConnectionId(otherPeerId) {
       return WireGuardHelper.getConnectionId(this.peerId, otherPeerId);
     },
+    initialize_connection(peer_id) {
+      const connection_id = this._WireGuardHelper_getConnectionId(peer_id);
+      this.connections_local.pre_shared_key[peer_id] = '...';
+      this.connections_local.persistent_keepalive[peer_id] = JSON.parse(JSON.stringify(this.network.defaults.connection.persistent_keepalive));
+      if (this.network.peers[this.peerId].mobility === 'roaming' &&
+          this.network.peers[peer_id].mobility === 'roaming') {
+        this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
+        this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
+      } else if (this.network.peers[this.peerId].mobility === 'static' &&
+          this.network.peers[peer_id].mobility === 'static') {
+        this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
+        this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
+      } else if (this.network.peers[this.peerId].mobility === 'static' &&
+          this.network.peers[peer_id].mobility === 'roaming') {
+        this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : this.network.subnet;
+        this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? this.network.subnet : `${this.network.peers[peer_id].address}/32`;
+      } else if (this.network.peers[this.peerId].mobility === 'roaming' &&
+          this.network.peers[peer_id].mobility === 'static') {
+        this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? this.network.subnet : `${this.network.peers[this.peerId].address}/32`;
+        this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : this.network.subnet;
+      }
+    },
     toggleConnection(peer_id, state = null) {
       this.connections_local.enabled[peer_id] = state ? state : this.connections_local.enabled[peer_id] ? !this.connections_local.enabled[peer_id] : true;
 
       const connection_id = this._WireGuardHelper_getConnectionId(peer_id);
       if (this.connections_local.enabled[peer_id] && !Object.keys(this.network.connections).includes(connection_id)) {
-        this.connections_local.pre_shared_key[peer_id] = '...';
-        this.connections_local.persistent_keepalive[peer_id] = JSON.parse(JSON.stringify(this.network.defaults.connection.persistent_keepalive));
-        if (this.network.peers[this.peerId].mobility === 'roaming' &&
-            this.network.peers[peer_id].mobility === 'roaming') {
-          this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
-          this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
-        } else if (this.network.peers[this.peerId].mobility === 'static' &&
-            this.network.peers[peer_id].mobility === 'static') {
-          this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
-          this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
-        } else if (this.network.peers[this.peerId].mobility === 'static' &&
-            this.network.peers[peer_id].mobility === 'roaming') {
-          this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : this.network.subnet;
-          this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? this.network.subnet : `${this.network.peers[peer_id].address}/32`;
-        } else if (this.network.peers[this.peerId].mobility === 'roaming' &&
-            this.network.peers[peer_id].mobility === 'static') {
-          this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? this.network.subnet : `${this.network.peers[this.peerId].address}/32`;
-          this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : this.network.subnet;
+        this.initialize_connection(peer_id);
+      }
+
+      this.update_added_removed_change_sum();
+    },
+    update_added_removed_change_sum() {
+      const added_connections = {};
+      for (const peerId of this.all_attached_peer_ids_local) {
+        if (!(this.all_attached_peer_ids.includes(peerId))) {
+          added_connections[this._WireGuardHelper_getConnectionId(peerId)] = {
+            enabled: this.connections_local.enabled[peerId],
+            pre_shared_key: this.connections_local.pre_shared_key[peerId],
+            allowed_ips_a_to_b: this.connections_local.allowed_ips_a_to_b[peerId],
+            allowed_ips_b_to_a: this.connections_local.allowed_ips_b_to_a[peerId],
+            persistent_keepalive: this.connections_local.persistent_keepalive[peerId],
+          };
         }
       }
+      this.island_change_sum.added_connections = added_connections;
+
+      const removed_connections = {};
+      for (const peerId of this.all_attached_peer_ids) {
+        if (!(this.all_attached_peer_ids_local.includes(peerId))) {
+          removed_connections[this._WireGuardHelper_getConnectionId(peerId)] = {
+            enabled: this.connections_local.enabled[peerId],
+            pre_shared_key: this.connections_local.pre_shared_key[peerId],
+            allowed_ips_a_to_b: this.connections_local.allowed_ips_a_to_b[peerId],
+            allowed_ips_b_to_a: this.connections_local.allowed_ips_b_to_a[peerId],
+            persistent_keepalive: this.connections_local.persistent_keepalive[peerId],
+          };
+        }
+      }
+      this.island_change_sum.removed_connections = removed_connections;
+    },
+    undo_connection_changes(otherPeerId) {
+      const connection_id = this._WireGuardHelper_getConnectionId(otherPeerId);
+      if (!Object.keys(this.network.connections).includes(connection_id)) {
+        this.initialize_connection(otherPeerId);
+        return;
+      }
+
+      this.connections_local.enabled[otherPeerId] = this.network.connections[connection_id].enabled;
+      this.connections_local.pre_shared_key[otherPeerId] = this.network.connections[connection_id].pre_shared_key;
+      this.connections_local.persistent_keepalive[otherPeerId] = JSON.parse(JSON.stringify(this.network.connections[connection_id].persistent_keepalive));
+      this.connections_local.allowed_ips_a_to_b[otherPeerId] = this.network.connections[connection_id].allowed_ips_a_to_b;
+      this.connections_local.allowed_ips_b_to_a[otherPeerId] = this.network.connections[connection_id].allowed_ips_b_to_a;
     },
     refreshPreSharedKey(otherPeerId) {
       // TODO
@@ -443,10 +491,10 @@ export default {
   watch: {
     all_attached_peer_ids_local() {
       this.is_changed_field.attached_peers_box = FastEqual(this.all_attached_peer_ids_local, this.all_attached_peer_ids) ? 0 : 1;
-      this.emit_island_change_sum();
     },
     connections_local: {
       handler() {
+        const changed_fields = {};
         for (const other_peer_id of this.all_attached_peer_ids_local) {
           let msg = "";
           [this.is_changed_field.persistent_keepalive[other_peer_id], msg] = this.check_connection_field_status(other_peer_id, 'persistent_keepalive');
@@ -472,9 +520,30 @@ export default {
             }
           }
 
+          const connection_changed_fields = {};
+          for (const [fkey, fvalue] of Object.entries(connection_details)) {
+            if (!Object.keys(this.network.connections).includes(connection_id)) {
+              continue;
+            }
+            if (!FastEqual(fvalue, this.network.connections[connection_id][fkey])) {
+              connection_changed_fields[fkey] = fvalue;
+            }
+          }
+          if (Object.keys(connection_changed_fields).length > 0) {
+            changed_fields[connection_id] = connection_changed_fields;
+          }
         }
+        this.island_change_sum.changed_fields = changed_fields;
+        this.update_added_removed_change_sum();
       },
       deep: true,
+    },
+    island_change_sum: {
+      handler() {
+        // console.log(JSON.stringify(this.island_change_sum, false, 2));
+        this.emit_island_change_sum();
+      },
+      deep: true
     }
   },
 }

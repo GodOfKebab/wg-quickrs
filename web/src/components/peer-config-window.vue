@@ -150,7 +150,12 @@ export default {
       dnsmtuIslandChangeSum: null,
       scriptsIslandChangeSum: null,
       peerDetailsIslandChangeSum: null,
-      connectionIslandsChangeSum: null,
+      connectionIslandsChangeSum: {
+        changed_fields: {},
+        added_connections: {},
+        removed_connections: {},
+        errors: {},
+      },
     }
   },
   mounted: function () {
@@ -206,8 +211,11 @@ export default {
           if (island_value) data.changed_fields.peers[this.peerId][island_field] = island_value;
         }
       }
-      // TODO: check for errors + changed fields for connections
 
+      data.changed_fields.connections = this.connectionIslandsChangeSum.changed_fields
+      data.added_connections = this.connectionIslandsChangeSum.added_connections;
+      data.removed_connections = this.connectionIslandsChangeSum.removed_connections;
+      data.errors.connections = this.connectionIslandsChangeSum.errors;
 
       // cleanup excess fields
       if (Object.keys(data.errors.peers[this.peerId]).length + Object.keys(data.errors.connections).length === 0) {
