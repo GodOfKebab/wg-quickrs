@@ -82,7 +82,7 @@
 <script>
 
 
-import WireGuardHelper from "../../js/wg-helper";
+import WireGuardHelper from "../../js/wg-helper.js";
 
 export default {
   name: "peer-summary",
