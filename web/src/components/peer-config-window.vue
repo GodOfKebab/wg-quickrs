@@ -86,7 +86,7 @@
                    :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['text-white', 'bg-green-600', 'hover:bg-green-700']"
-                   :right-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); peerConfigWindow = 'edit'; }"
+                   :right-button-click="() => { updateConfiguration(); dialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', dialogId); }"
                    :right-button-text="'Do it!'"
                    class="z-20"
                    icon="danger">
@@ -114,6 +114,7 @@ import PeerDetails from "./islands/peer-details.vue";
 import ConnectionIslands from "./islands/connections.vue";
 import ChangeSum from "./change-sum.vue";
 import WireGuardHelper from "../js/wg-helper";
+import API from "../js/api.js";
 
 
 export default {
@@ -177,6 +178,9 @@ export default {
     onUpdatedConnectionsIslandsChangeSum(data) {
       this.connectionIslandsChangeSum = data;
     },
+    updateConfiguration() {
+      API.patch_network_config(this.changeSum);
+    }
   },
   computed: {
     peer_conf() {

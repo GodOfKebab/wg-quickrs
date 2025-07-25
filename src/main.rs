@@ -23,6 +23,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::get_summary)
             .service(api::get_public_private_key)
             .service(api::get_pre_shared_key)
+            .service(api::patch_network_config)
             .service(app::web_ui_dist)
     })
         .bind((config.agent.address, config.agent.web.port))?

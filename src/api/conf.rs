@@ -1,11 +1,15 @@
+use actix_web::HttpResponse;
+use log::error;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serde_yml::Serializer;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::hash::Hash;
-use std::io::Write;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::ops::Deref;
 use std::time::SystemTime;
 
@@ -197,3 +201,98 @@ pub(crate) fn set_config(config: &Config) {
     file.write_all(config_str.as_bytes()).expect("Failed to write to config file");
     log::info!("Updated config file")
 }
+
+pub(crate) fn update_config(change_sum: Value) {
+    // Open the config file for reading and writing
+    let mut config_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(DEFAULT_CONF_FILE)
+        .expect("Failed to open config file");
+
+    // Read the existing contents
+    let mut config_str = String::new();
+    config_file.read_to_string(&mut config_str).expect("Failed to read config file");
+    let mut config_yml: Value = match serde_yml::from_str(&config_str) {
+        Ok(val) => val,
+        Err(err) => {
+            return error!("Unable to parse config file: {}", err);
+        }
+    };
+
+    let network_config = match config_yml.get_mut("network") {
+        Some(n) => n,
+        None => return,
+    };
+
+    // process changed_fields
+    if let Some(changed_fields) = change_sum.get("changed_fields") {
+        { apply_changes(network_config, "peers", changed_fields); }
+        { apply_changes(network_config, "connections", changed_fields); }
+    }
+
+    // process added_connections
+    if let Some(added_connections) = change_sum.get("added_connections") {
+        if let Some(added_connections_map) = added_connections.as_object() {
+            for (connection_id, connection_details) in added_connections_map {
+                {
+                    if let Some(connections) = network_config.get_mut("connections") {
+                        connections[connection_id] = connection_details.clone();
+                    }
+                }
+            }
+        }
+    }
+
+    // process removed_connections
+    if let Some(removed_connections) = change_sum.get("removed_connections") {
+        if let Some(removed_connections_map) = removed_connections.as_object() {
+            for (connection_id, connection_details) in removed_connections_map {
+                {
+                    if let Some(connections) = network_config.get_mut("connections") {
+                        if let Some(connections_map) = connections.as_object_mut() {
+                            connections_map.remove(connection_id);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    let config_str = serde_yml::to_string(&config_yml)
+        .expect("Failed to serialize config");
+
+    // Move back to beginning and truncate before writing
+    config_file.set_len(0).expect("Failed to truncate config file");
+    config_file.seek(SeekFrom::Start(0)).expect("Failed to seek to start");
+    config_file.write_all(config_str.as_bytes()).expect("Failed to write to config file");
+
+    log::info!("Updated config file");
+}
+
+fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields: &Value) {
+    if let Some(config_section) = network_config.get_mut(section_name) {
+        if let Some(section) = changed_fields.get(section_name) {
+            if let Some(section_map) = section.as_object() {
+                for (item_id, item_changes) in section_map {
+                    let item_config = match config_section.get_mut(item_id) {
+                        Some(cfg) => cfg,
+                        None => continue,
+                    };
+
+                    let item_changes_map = match item_changes.as_object() {
+                        Some(map) => map,
+                        None => continue,
+                    };
+
+                    for (field_key, field_value) in item_changes_map {
+                        item_config[field_key] = field_value.clone();
+                    }
+                }
+            }
+        }
+    }
+}
+

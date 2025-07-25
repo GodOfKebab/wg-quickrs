@@ -27,7 +27,7 @@ export default class API {
     static async get_summary(url_encoded_params) {
         return API.call({
             method: 'get',
-            path: `/summary${url_encoded_params}`,
+            path: `/network/summary${url_encoded_params}`,
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
     }
@@ -35,7 +35,7 @@ export default class API {
     static async get_public_private_key() {
         return API.call({
             method: 'get',
-            path: `/public_private_key`,
+            path: `/wireguard/public_private_key`,
             headers: {}
         });
     }
@@ -43,8 +43,18 @@ export default class API {
     static async get_pre_shared_key() {
         return API.call({
             method: 'get',
-            path: `/pre_shared_key`,
+            path: `/wireguard/pre_shared_key`,
             headers: {}
         });
     }
+
+    static async patch_network_config(change_sum) {
+        return API.call({
+            method: 'patch',
+            path: `/network/config`,
+            headers: {},
+            body: change_sum
+        });
+    }
+
 }

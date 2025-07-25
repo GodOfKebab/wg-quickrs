@@ -1,4 +1,5 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, patch, web, HttpResponse, Responder};
+use serde_json::Value;
 use sha2::Digest;
 use std::hash::Hash;
 use std::io::Write;
@@ -11,7 +12,7 @@ struct SummaryBody {
     only_network_digest: bool,
 }
 
-#[get("/api/summary")]
+#[get("/api/network/summary")]
 async fn get_summary(params: web::Query<SummaryBody>) -> impl Responder {
     let resp_body = if params.only_network_digest {
         serde_json::to_string(&conf::ConfigDigest::from(&conf::get_config()))
@@ -24,7 +25,7 @@ async fn get_summary(params: web::Query<SummaryBody>) -> impl Responder {
         .body(resp_body)
 }
 
-#[get("/api/public_private_key")]
+#[get("/api/wireguard/public_private_key")]
 async fn get_public_private_key() -> impl Responder {
     #[derive(serde::Serialize, serde::Deserialize)]
     struct PublicPrivateKeyBody {
@@ -68,7 +69,7 @@ async fn get_public_private_key() -> impl Responder {
         .body(serde_json::to_string(&body).unwrap())
 }
 
-#[get("/api/pre_shared_key")]
+#[get("/api/wireguard/pre_shared_key")]
 async fn get_pre_shared_key() -> impl Responder {
     #[derive(serde::Serialize, serde::Deserialize)]
     struct PreSharedKeyBody {
@@ -92,4 +93,22 @@ async fn get_pre_shared_key() -> impl Responder {
     HttpResponse::Ok()
         .content_type("application/json")
         .body(serde_json::to_string(&body).unwrap())
+}
+
+#[patch("/api/network/config")]
+async fn patch_network_config(body: web::Bytes) -> impl Responder {
+    let body_raw = String::from_utf8_lossy(&body);
+    let body_json: Value = match serde_json::from_str(&body_raw) {
+        Ok(val) => val,
+        Err(err) => {
+            return HttpResponse::BadRequest()
+                .content_type("application/json")
+                .body(format!(r#"{{"error":"Invalid JSON: {}"}}"#, err));
+        }
+    };
+
+    conf::update_config(body_json);
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(r#"{"status":"ok"}"#) // ✅ sends JSON response
 }

@@ -318,6 +318,7 @@ export default {
     check_connection_field_status(other_peer_id, field_name) {
       const connection_id = this._WireGuardHelper_getConnectionId(other_peer_id);
       if (Object.keys(this.network.connections).includes(connection_id) && FastEqual(this.connections_local[field_name][other_peer_id], this.network.connections[connection_id][field_name])) return [0, ''];
+      if (!Object.keys(this.connections_local[field_name]).includes(other_peer_id)) return [-1, 'connections_local is out of sync'];
       const ret = WireGuardHelper.checkField(field_name, this.connections_local[field_name][other_peer_id]);
       if (!ret.status) return [-1, ret.msg];
       return [1, ''];
@@ -328,9 +329,10 @@ export default {
     _WireGuardHelper_getConnectionId(otherPeerId) {
       return WireGuardHelper.getConnectionId(this.peerId, otherPeerId);
     },
-    initialize_connection(peer_id) {
+    async initialize_connection(peer_id) {
       const connection_id = this._WireGuardHelper_getConnectionId(peer_id);
-      this.connections_local.pre_shared_key[peer_id] = '...';
+
+      this.connections_local.pre_shared_key[peer_id] = (await API.get_pre_shared_key()).pre_shared_key;
       this.connections_local.persistent_keepalive[peer_id] = JSON.parse(JSON.stringify(this.network.defaults.connection.persistent_keepalive));
       if (this.network.peers[this.peerId].mobility === 'roaming' &&
           this.network.peers[peer_id].mobility === 'roaming') {
@@ -350,12 +352,12 @@ export default {
         this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : this.network.subnet;
       }
     },
-    toggleConnection(peer_id, state = null) {
+    async toggleConnection(peer_id, state = null) {
       this.connections_local.enabled[peer_id] = state ? state : this.connections_local.enabled[peer_id] ? !this.connections_local.enabled[peer_id] : true;
 
       const connection_id = this._WireGuardHelper_getConnectionId(peer_id);
       if (this.connections_local.enabled[peer_id] && !Object.keys(this.network.connections).includes(connection_id)) {
-        this.initialize_connection(peer_id);
+        await this.initialize_connection(peer_id);
       }
 
       this.update_added_removed_change_sum();
@@ -389,10 +391,10 @@ export default {
       }
       this.island_change_sum.removed_connections = removed_connections;
     },
-    undo_connection_changes(otherPeerId) {
+    async undo_connection_changes(otherPeerId) {
       const connection_id = this._WireGuardHelper_getConnectionId(otherPeerId);
       if (!Object.keys(this.network.connections).includes(connection_id)) {
-        this.initialize_connection(otherPeerId);
+        await this.initialize_connection(otherPeerId);
         return;
       }
 
