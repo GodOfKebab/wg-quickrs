@@ -11,7 +11,7 @@ import WireGuardHelper from "../js/wg-helper.js";
 
 import staticNodeIcon from "../icons/svgrepo/globe-05-svgrepo-com.svg";
 import roamingNodeIcon from "../icons/svgrepo/rss-02-svgrepo-com.svg";
-
+import thisNodeMarker from "../icons/flowbite/home.svg";
 
 export default {
   name: "map-visual",
@@ -49,6 +49,12 @@ export default {
                 img.src = node.mobility === 'static' ? staticNodeIcon : roamingNodeIcon;
                 const cis = this.getGraphNodeIcon(img, 500);
                 ctx.drawImage(cis, node.x - node.size / 2, node.y - node.size / 2, node.size, node.size);
+                if (node.id === this.network.this_peer) {
+                  const marker_img = new Image();
+                  marker_img.src = thisNodeMarker;
+                  const marker = this.getGraphNodeIcon(marker_img, 500);
+                  ctx.drawImage(marker, node.x, node.y, node.size / 2, node.size / 2);
+                }
               })
               .nodePointerAreaPaint((node, color, ctx) => {
                 ctx.beginPath();

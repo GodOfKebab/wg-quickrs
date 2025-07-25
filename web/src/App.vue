@@ -3,8 +3,8 @@
 
   <!-- Header -->
   <div class="container mx-auto max-w-3xl relative">
-    <div class="mt-5 mb-2" style="display: flex; align-items: center;">
-      <div class="inline-block float-left ml-3" style="flex: 1; min-width: 0;">
+    <div class="flex items-center mt-5">
+      <div class="inline-block float-left ml-3 flex-1 min-w-0">
         <h1 class="text-4xl font-medium truncate">
           <img alt="" class="inline align-middle" src="/favicon.ico" width="32"/>
           <span class="align-middle">WireGuard Management Console</span>
@@ -12,7 +12,7 @@
       </div>
 
       <div :title="`Last Updated: ${lastUpdated ? lastUpdated.toISOString(): 'Never'}`"
-           class="inline-block float-right p-3 whitespace-nowrap bg-gray-50 align-middle">
+           class="inline-block float-right px-3 whitespace-nowrap align-middle">
         <div v-if="requiresPassword" class="relative mb-5 bg-blue-50">
           <div class="text-sm text-gray-400 cursor-pointer hover:underline absolute top-0 right-0" @click="">
             Logout
@@ -58,10 +58,31 @@
         </div>
       </div>
     </div>
+
+    <div class="flex items-center opacity-50">
+
+      <div v-if="network.this_peer" class="inline-block mr-auto text-gray-800 text-xs ml-5">
+        <span>Network Identifier: <strong class="text-sm whitespace-nowrap">{{ network.identifier }}</strong></span>
+      </div>
+
+      <div v-if="network.this_peer"
+           class=" inline-block overflow-auto ml-auto mr-3 text-gray-800 text-xs flex-0 text-right">
+        <span>Host: <strong class="text-sm">{{ network.peers[network.this_peer].name }}</strong></span>
+        ({{ network.this_peer }})
+        <span>
+          @
+          {{ network.peers[network.this_peer].address }} /
+          {{ network.peers[network.this_peer].endpoint }}
+        </span>
+      </div>
+
+    </div>
+
+
   </div>
 
   <!-- Map -->
-  <div class="container mx-auto max-w-6xl">
+  <div class="mt-2 container mx-auto max-w-6xl">
     <map-visual :network="network"
                 class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center"
                 style="max-height: 70vh"

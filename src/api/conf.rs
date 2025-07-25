@@ -119,11 +119,13 @@ pub(crate) struct AgentVpn {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 struct Network {
+    identifier: String,
     subnet: String,
     this_peer: String,
     peers: HashMap<String, Peer>,
     connections: HashMap<String, Connection>,
     defaults: Defaults,
+    updated_at: String,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
