@@ -5,7 +5,7 @@
     <custom-dialog :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['enabled:bg-green-700', 'enabled:hover:bg-green-800', 'enabled:focus:outline-none', 'bg-gray-200', 'disabled:hover:bg-gray-200', 'disabled:cursor-not-allowed', 'text-white']"
-                   :rightButtonDisabled="!changeDetected || changeSum.errors"
+                   :rightButtonDisabled="peerConfigWindow !== 'file' && (!changeDetected || changeSum.errors)"
                    :right-button-click="peerConfigWindow === 'file' ? () => { navigator.clipboard.writeText(peer_wg_conf_file).then(() => {
                                           alert('successfully copied');
                                           })
@@ -37,6 +37,16 @@
                   class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill"
                   title="See the configuration file for this peer" @click="peerConfigWindow = 'file'">
             <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
+          </button>
+          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill ml-1"
+                  title="Show QR Code"
+                  @click="drawQRCode(); showQRCode = true">
+            <img alt="QR Code" class="h-6" src="../icons/flowbite/qr-code.svg"/>
+          </button>
+          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill ml-1"
+                  title="Download Configuration"
+                  @click="downloadPeerConfig()">
+            <img alt="Download" class="h-6" src="../icons/flowbite/download.svg"/>
           </button>
         </span>
       </div>
@@ -101,6 +111,19 @@
       <!--                  :peer-edit-new-config="peerEditNewConfig"-->
       <!--                  :peer-edit-old-config="peerEditOldConfig"></change-sum>-->
     </custom-dialog>
+
+    <!-- Window: QR Code Display -->
+    <div v-show="showQRCode">
+      <div class="bg-black bg-opacity-50 fixed top-0 right-0 left-0 bottom-0 flex items-center justify-center z-20">
+        <div class="bg-white rounded-md shadow-lg relative p-8">
+          <button class="absolute right-4 top-4 text-gray-600 hover:text-gray-800" @click="showQRCode = false">
+            <img alt="Close QR Code Window" class="h-6" src="../icons/flowbite/close.svg"/>
+          </button>
+          <canvas id="qr-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </template>
@@ -115,7 +138,7 @@ import ConnectionIslands from "./islands/connections.vue";
 import ChangeSum from "./change-sum.vue";
 import WireGuardHelper from "../js/wg-helper";
 import API from "../js/api.js";
-
+import QRCode from "qrcode";
 
 export default {
   name: "peer-config-window",
@@ -157,6 +180,7 @@ export default {
         removed_connections: {},
         errors: {},
       },
+      showQRCode: false,
     }
   },
   mounted: function () {
@@ -180,6 +204,23 @@ export default {
     },
     updateConfiguration() {
       API.patch_network_config(this.changeSum);
+    },
+    drawQRCode() {
+      QRCode.toCanvas(document.getElementById('qr-canvas'), this.peer_wg_conf_file);
+    },
+    downloadPeerConfig() {
+      const peerConfigFileName = this.peer_conf.name.replace(/[^a-zA-Z0-9_=+.-]/g, '-').replace(/(-{2,}|-$)/g, '-').replace(/-$/, '').substring(0, 32);
+
+      const element = document.createElement('a');
+      element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(this.peer_wg_conf_file)}`);
+      element.setAttribute('download', `${peerConfigFileName}.conf`);
+
+      element.style.display = 'none';
+      document.body.appendChild(element);
+
+      element.click();
+
+      document.body.removeChild(element);
     }
   },
   computed: {
