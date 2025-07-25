@@ -21,6 +21,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(app::web_ui_index)
             .service(api::get_summary)
+            .service(api::get_public_private_key)
             .service(app::web_ui_dist)
     })
         .bind((config.agent.address, config.agent.web.port))?

@@ -1,7 +1,7 @@
 'use strict';
 
 export default class API {
-    async call({method, path, headers, body}) {
+    static async call({method, path, headers, body}) {
         const res = await fetch(`/api${path}`, {
             method,
             headers,
@@ -23,11 +23,20 @@ export default class API {
         return json;
     }
 
-    async get_summary(url_encoded_params) {
-        return this.call({
+
+    static async get_summary(url_encoded_params) {
+        return API.call({
             method: 'get',
             path: `/summary${url_encoded_params}`,
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        });
+    }
+
+    static async get_public_private_key() {
+        return API.call({
+            method: 'get',
+            path: `/public_private_key`,
+            headers: {}
         });
     }
 }

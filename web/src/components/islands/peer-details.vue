@@ -1,14 +1,14 @@
 <template>
 
   <div
-      :class="[computed_colors.div]"
+      :class="[this.are_keys_updated ? 'bg-green-100' : 'bg-green-50']"
       class="p-1 shadow-md border rounded relative">
     <div
         v-if="are_keys_updated"
         class="inline-block float-right absolute z-20 right-[0.2rem] top-[0rem]">
       <button
           :disabled="!are_keys_updated"
-          class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white opacity-0 transition undo-button-itself"
+          class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
           title="Undo Changes"
           @click="peer_local.public_key = peer.public_key; peer_local.private_key = peer.private_key">
         <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
@@ -47,6 +47,7 @@
 </template>
 
 <script>
+import API from "../../js/api.js";
 
 
 export default {
@@ -55,13 +56,6 @@ export default {
     peer: {
       type: Object,
       default: {},
-    },
-    value: {
-      type: Object,
-      default: {
-        changedFields: {},
-        error: null,
-      },
     },
   },
   data() {
@@ -76,27 +70,25 @@ export default {
     };
   },
   created() {
-    this.peer_local = this.peer;
+    this.peer_local = JSON.parse(JSON.stringify(this.peer));
   },
-  emits: ['update:value'],
+  emits: ['updated-change-sum'],
+  methods: {
+    async refreshPeerEditKeys() {
+      await API.get_public_private_key().then(response => {
+        this.peer_local.public_key = response.public_key;
+        this.peer_local.private_key = response.private_key;
+        this.$emit("updated-change-sum", {
+              changed_fields: response,
+              errors: {},
+            },
+        );
+      });
+    }
+  },
   computed: {
     are_keys_updated() {
       return this.peer_local.public_key !== this.peer.public_key || this.peer_local.private_key !== this.peer.private_key;
-    },
-    computed_colors() {
-      const changedFields = {public_key: "", private_key: ""};
-      let error = null;
-      const colors = {div: 'bg-green-50 highlight-undo-box'};
-      for (const field of ['public_key', 'private_key']) {
-        if (this.peer_local[field] !== this.peer[field]) changedFields[field] = this.peer_local[field];
-        if (changedFields[field].length === 0) delete changedFields[field];
-      }
-      if (this.are_keys_updated) colors.div = 'bg-green-100 highlight-undo-box'
-
-      this.value.changedFields = changedFields;
-      this.value.error = error;
-
-      return colors;
     },
   },
 }

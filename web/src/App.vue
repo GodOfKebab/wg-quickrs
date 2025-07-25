@@ -127,7 +127,6 @@ export default {
   data() {
     return {
       refreshRate: 1000,
-      api: null,
       webServerStatus: 0,
       wireguardStatus: 0,
       lastUpdated: null,
@@ -145,7 +144,6 @@ export default {
   mounted: function () {
     initFlowbite();
 
-    this.api = new API();
     this.lastUpdated = new Date()
     setInterval(() => {
       this.refresh()
@@ -156,7 +154,7 @@ export default {
     async refresh() {
       let need_to_update_network = true;
       if (this.network_digest.length === 64) {
-        await this.api.get_summary('?only_network_digest=true').then(summary => {
+        await API.get_summary('?only_network_digest=true').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.wireguardStatus = summary.status;
           need_to_update_network = this.network_digest !== summary.network_digest;
@@ -179,7 +177,7 @@ export default {
         return;
       }
 
-      await this.api.get_summary('?only_network_digest=false').then(summary => {
+      await API.get_summary('?only_network_digest=false').then(summary => {
         this.webServerStatus = this.ServerStatusEnum.up;
         this.network_digest = summary.network_digest;
         this.network = summary.network;
