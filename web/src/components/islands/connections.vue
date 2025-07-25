@@ -249,6 +249,7 @@
 <script>
 import FastEqual from "fast-deep-equal";
 import WireGuardHelper from "../../js/wg-helper.js";
+import API from "../../js/api.js";
 
 
 export default {
@@ -401,10 +402,10 @@ export default {
       this.connections_local.allowed_ips_a_to_b[otherPeerId] = this.network.connections[connection_id].allowed_ips_a_to_b;
       this.connections_local.allowed_ips_b_to_a[otherPeerId] = this.network.connections[connection_id].allowed_ips_b_to_a;
     },
-    refreshPreSharedKey(otherPeerId) {
-      // TODO
-      //   const {preSharedKey} = await this.getNewPreSharedKey();
-      //   this.value.preSharedKey[peerId] = preSharedKey;
+    async refreshPreSharedKey(otherPeerId) {
+      await API.get_pre_shared_key().then(response => {
+        this.connections_local.pre_shared_key[otherPeerId] = response.pre_shared_key;
+      });
     }
   },
   emits: ['updated-change-sum'],

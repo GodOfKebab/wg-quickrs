@@ -67,3 +67,29 @@ async fn get_public_private_key() -> impl Responder {
         .content_type("application/json")
         .body(serde_json::to_string(&body).unwrap())
 }
+
+#[get("/api/pre_shared_key")]
+async fn get_pre_shared_key() -> impl Responder {
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct PreSharedKeyBody {
+        pre_shared_key: String,
+    }
+
+    // execute $ wg genpsk
+    let pre_shared_key_resp = Command::new("wg")
+        .arg("genpsk")
+        .output()
+        .unwrap();
+    if !pre_shared_key_resp.status.success() {
+        HttpResponse::InternalServerError();
+    }
+    let pre_shared_key = String::from_utf8_lossy(&pre_shared_key_resp.stdout);
+
+    let body = PreSharedKeyBody {
+        pre_shared_key: pre_shared_key.trim().to_string(),
+    };
+
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(serde_json::to_string(&body).unwrap())
+}

@@ -39,4 +39,12 @@ export default class API {
             headers: {}
         });
     }
+
+    static async get_pre_shared_key() {
+        return API.call({
+            method: 'get',
+            path: `/pre_shared_key`,
+            headers: {}
+        });
+    }
 }
