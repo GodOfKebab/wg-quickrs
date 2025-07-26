@@ -51,6 +51,7 @@
             :checked="peer_local.mobility === 'static'"
             class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
             type="checkbox"
+            :disabled="isHost"
             @change="peer_local.mobility = peer_local.mobility === 'static' ? 'roaming' : 'static';">
         <span class="text-gray-800 cursor-pointer text-xs mr-1">
           <strong class="text-sm">Static Endpoint:</strong>
@@ -59,7 +60,8 @@
 
       <input
           v-model="peer_local.endpoint"
-          :class="[FIELD_COLOR_LOOKUP[is_changed_field.endpoint]]" :disabled="peer_local.mobility !== 'static'"
+          :class="[FIELD_COLOR_LOOKUP[is_changed_field.endpoint]]"
+          :disabled="peer_local.mobility !== 'static' || isHost"
           class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow disabled:bg-gray-100"
           placeholder="Endpoint (e.g. 1.2.3.4:51820 example.com:51820)"
           type="text"/>
@@ -90,6 +92,10 @@ export default {
     peer: {
       type: Object,
       default: {},
+    },
+    isHost: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {

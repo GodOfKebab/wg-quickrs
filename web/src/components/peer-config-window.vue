@@ -60,6 +60,7 @@
       <div v-show="peerConfigWindow === 'edit'" class="mt-0 w-full overflow-scroll h-96">
 
         <peer-summary-island :peer="peer_conf"
+                             :is-host="peerId === network.this_peer"
                              @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"
                              class="my-2 mr-2"></peer-summary-island>
 

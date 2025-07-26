@@ -96,7 +96,7 @@ async fn get_pre_shared_key() -> impl Responder {
 #[patch("/api/network/config")]
 async fn patch_network_config(body: web::Bytes) -> impl Responder {
     let body_raw = String::from_utf8_lossy(&body);
-    let body_json: Value = match serde_json::from_str(&body_raw) {
+    let change_sum: Value = match serde_json::from_str(&body_raw) {
         Ok(val) => val,
         Err(err) => {
             return HttpResponse::BadRequest()
@@ -105,8 +105,5 @@ async fn patch_network_config(body: web::Bytes) -> impl Responder {
         }
     };
 
-    conf::update_config(body_json);
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(r#"{"status":"ok"}"#) // ✅ sends JSON response
+    return conf::update_config(change_sum);
 }

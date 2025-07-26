@@ -1,3 +1,4 @@
+use actix_web::HttpResponse;
 use log::error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -189,9 +190,9 @@ pub(crate) fn set_config(config: &Config) {
     log::info!("Updated config file")
 }
 
-pub(crate) fn update_config(change_sum: Value) {
+pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
     // Open the config file for reading and writing
-    let mut config_file = OpenOptions::new()
+    let mut config_file_reader = OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
@@ -200,21 +201,40 @@ pub(crate) fn update_config(change_sum: Value) {
 
     // Read the existing contents
     let mut config_str = String::new();
-    config_file.read_to_string(&mut config_str).expect("Failed to read config file");
-    let mut config_yml: Value = match serde_yml::from_str(&config_str) {
+    config_file_reader.read_to_string(&mut config_str).expect("Failed to read config file");
+    let config_file: FileConfig = serde_yml::from_str(&config_str).unwrap();
+    let mut config_value: Value = match serde_yml::from_str(&config_str) {
         Ok(val) => val,
-        Err(err) => {
-            return error!("Unable to parse config file: {}", err);
+        Err(_err) => {
+            return HttpResponse::NotFound()
+                .content_type("application/json")
+                .body(r#"{"status":"forbidden","message":"Unable to parse config file"}"#);
         }
     };
 
-    let network_config = match config_yml.get_mut("network") {
+    let network_config = match config_value.get_mut("network") {
         Some(n) => n,
-        None => return,
+        None => return HttpResponse::NotFound()
+            .content_type("application/json")
+            .body(r#"{"status":"forbidden","message":"Unable to parse config file"}"#),
     };
 
     // process changed_fields
     if let Some(changed_fields) = change_sum.get("changed_fields") {
+        {
+            if changed_fields
+                .get("peers")
+                .and_then(|p| p.as_object())
+                .and_then(|peers| peers.get(config_file.network.this_peer.as_str()))
+                .and_then(|this_peer| this_peer.get("endpoint"))
+                .is_some()
+            {
+                log::info!("A client tried to change the host's endpoint! (forbidden)");
+                return HttpResponse::Forbidden()
+                    .content_type("application/json")
+                    .body(r#"{"status":"forbidden","message":"can't change the host's endpoint"}"#);
+            }
+        }
         { apply_changes(network_config, "peers", changed_fields); }
         { apply_changes(network_config, "connections", changed_fields); }
     }
@@ -248,15 +268,18 @@ pub(crate) fn update_config(change_sum: Value) {
     }
 
 
-    let config_str = serde_yml::to_string(&config_yml)
+    let config_str = serde_yml::to_string(&config_value)
         .expect("Failed to serialize config");
 
     // Move back to beginning and truncate before writing
-    config_file.set_len(0).expect("Failed to truncate config file");
-    config_file.seek(SeekFrom::Start(0)).expect("Failed to seek to start");
-    config_file.write_all(config_str.as_bytes()).expect("Failed to write to config file");
+    config_file_reader.set_len(0).expect("Failed to truncate config file");
+    config_file_reader.seek(SeekFrom::Start(0)).expect("Failed to seek to start");
+    config_file_reader.write_all(config_str.as_bytes()).expect("Failed to write to config file");
 
     log::info!("Updated config file");
+    return HttpResponse::Ok()
+        .content_type("application/json")
+        .body(r#"{"status":"ok"}"#) // ✅ sends JSON response
 }
 
 fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields: &Value) {
