@@ -1,4 +1,4 @@
-use actix_web::{App, HttpServer};
+use actix_web::{middleware, App, HttpServer};
 use log::LevelFilter;
 use std::fs;
 
@@ -19,6 +19,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
+            .wrap(middleware::Compress::default())
             .service(app::web_ui_index)
             .service(api::get_summary)
             .service(api::get_public_private_key)
