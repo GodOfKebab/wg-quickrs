@@ -13,7 +13,7 @@ async fn main() -> std::io::Result<()> {
     SimpleLogger::new().with_level(LevelFilter::Info).init().unwrap();
 
     let file_contents = fs::read_to_string(api::conf::DEFAULT_CONF_FILE).expect("Unable to open file");
-    let mut config: api::conf::Config = serde_yml::from_str(&file_contents).unwrap();
+    let config: api::conf::Config = serde_yml::from_str(&file_contents).unwrap();
 
     log::info!("Hosting the frontend at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);
 

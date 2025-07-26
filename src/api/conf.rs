@@ -1,21 +1,17 @@
-use actix_web::HttpResponse;
 use log::error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_yml::Serializer;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::hash::Hash;
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::ops::Deref;
 use std::time::SystemTime;
 
 pub(crate) const DEFAULT_CONF_FILE: &str = ".wg-rusteze/conf.yml";
 
-
+#[allow(dead_code)]
 pub(crate) enum WireGuardStatus {
     UNKNOWN,
     DOWN,
@@ -88,17 +84,6 @@ impl From<&Config> for ConfigDigest {
     }
 }
 
-
-impl ConfigDigest {
-    pub(crate) fn put_timestamp(&mut self) -> &mut Self {
-        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(n) => self.timestamp = n.as_secs(),
-            Err(_) => self.timestamp = 0,
-        }
-        return self;
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub(crate) struct Agent {
     pub(crate) address: String,
@@ -118,7 +103,7 @@ pub(crate) struct AgentVpn {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-struct Network {
+pub(crate) struct Network {
     identifier: String,
     subnet: String,
     this_peer: String,
@@ -250,7 +235,7 @@ pub(crate) fn update_config(change_sum: Value) {
     // process removed_connections
     if let Some(removed_connections) = change_sum.get("removed_connections") {
         if let Some(removed_connections_map) = removed_connections.as_object() {
-            for (connection_id, connection_details) in removed_connections_map {
+            for (connection_id, _connection_details) in removed_connections_map {
                 {
                     if let Some(connections) = network_config.get_mut("connections") {
                         if let Some(connections_map) = connections.as_object_mut() {

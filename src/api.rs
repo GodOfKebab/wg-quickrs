@@ -1,7 +1,5 @@
 use actix_web::{get, patch, web, HttpResponse, Responder};
 use serde_json::Value;
-use sha2::Digest;
-use std::hash::Hash;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
