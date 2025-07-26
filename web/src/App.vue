@@ -72,7 +72,7 @@
         <span>
           @
           {{ network.peers[network.this_peer].address }} /
-          {{ network.peers[network.this_peer].endpoint }}
+          {{ network.peers[network.this_peer].endpoint.value }}
         </span>
       </div>
 
@@ -90,19 +90,19 @@
   </div>
 
   <!-- Add a Peer Buttons -->
-  <div class="container mx-auto max-w-3xl relative">
-    <!-- Add a Static/Roaming Peer -->
-    <div class="grid grid-cols-2 gap-2">
-      <div v-for="mobility in ['static', 'roaming']"
-           class="grid-cols-1 flex flex-row flex-auto items-center justify-center p-3 px-5 border-gray-100">
-        <button :disabled="webServerStatus !== ServerStatusEnum.up"
-                class="bg-gray-200 enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white text-gray-700 border-2 border-gray-500 py-2 px-4 rounded inline-flex items-center transition"
-                @click=""> <!-- TODO: open peer create window-->
-          <span class="text-sm">Add a {{ mobility[0].toUpperCase() + mobility.slice(1) }} Peer</span>
-        </button>
-      </div>
-    </div>
-  </div>
+  <!--  <div class="container mx-auto max-w-3xl relative">-->
+  <!--    &lt;!&ndash; Add a Static/Roaming Peer &ndash;&gt;-->
+  <!--    <div class="grid grid-cols-2 gap-2">-->
+  <!--      <div v-for="mobility in ['static', 'roaming']"-->
+  <!--           class="grid-cols-1 flex flex-row flex-auto items-center justify-center p-3 px-5 border-gray-100">-->
+  <!--        <button :disabled="webServerStatus !== ServerStatusEnum.up"-->
+  <!--                class="bg-gray-200 enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white text-gray-700 border-2 border-gray-500 py-2 px-4 rounded inline-flex items-center transition"-->
+  <!--                @click=""> &lt;!&ndash; TODO: open peer create window&ndash;&gt;-->
+  <!--          <span class="text-sm">Add a {{ mobility[0].toUpperCase() + mobility.slice(1) }} Peer</span>-->
+  <!--        </button>-->
+  <!--      </div>-->
+  <!--    </div>-->
+  <!--  </div>-->
 
   <!-- Footer -->
   <footer class="text-center text-gray-500 my-10">
@@ -205,7 +205,7 @@ export default {
         this.network.static_peer_ids = [];
         this.network.roaming_peer_ids = [];
         Object.entries(summary.network.peers).forEach(([peerId, peerDetails]) => {
-          if (peerDetails.mobility === "static") {
+          if (peerDetails.endpoint.enabled) {
             this.network.static_peer_ids.push(peerId);
           } else {
             this.network.roaming_peer_ids.push(peerId);

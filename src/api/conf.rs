@@ -122,8 +122,7 @@ struct Peer {
     private_key: String,
     created_at: String,
     updated_at: String,
-    mobility: String,
-    endpoint: String,
+    endpoint: EnabledValue,
     dns: EnabledValue,
     mtu: EnabledValue,
     scripts: Scripts
@@ -167,8 +166,8 @@ pub(crate) fn get_config() -> Config {
     let mut config: Config = serde_yml::from_str(&file_contents).unwrap();
 
     // Make sure agent fields get precedence over network fields
-    if config.network.peers.get(&config.network.this_peer).unwrap().endpoint != format!("{}:{}", config.agent.address, config.agent.vpn.port) {
-        config.network.peers.get_mut(&config.network.this_peer).unwrap().endpoint = format!("{}:{}", config.agent.address, config.agent.vpn.port);
+    if config.network.peers.get(&config.network.this_peer).unwrap().endpoint.value != format!("{}:{}", config.agent.address, config.agent.vpn.port) {
+        config.network.peers.get_mut(&config.network.this_peer).unwrap().endpoint.value = format!("{}:{}", config.agent.address, config.agent.vpn.port);
         set_config(&config);
     }
 

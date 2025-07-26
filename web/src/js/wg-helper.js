@@ -8,7 +8,7 @@ export default class WireGuardHelper {
         let conf = `[Interface]
 PrivateKey = ${peer.private_key}
 Address = ${peer.address}/24
-${peer.mobility === 'static' ? `ListenPort = ${peer.endpoint.toString().split(':')[1]}` : 'DEL'}
+${peer.endpoint.enabled ? `ListenPort = ${peer.endpoint.toString().split(':')[1]}` : 'DEL'}
 ${peer.dns.enabled ? `DNS = ${peer.dns.value}` : 'DEL'}
 ${peer.mtu.enabled ? `MTU = ${peer.mtu.value}` : 'DEL'}
 ${peer.scripts.pre_up.enabled ? `pre_up = ${peer.scripts.pre_up.value}` : 'DEL'}
@@ -39,8 +39,8 @@ AllowedIPs = ${allowedIPsThisPeer}
 ${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${connectionDetails.persistent_keepalive.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
 
             // Add the Endpoint line if known TODO: get roaming endpoints as well
-            if (network.peers[otherPeerId].mobility === 'static') {
-                conf += `Endpoint = ${network.peers[otherPeerId].endpoint}\n`;
+            if (network.peers[otherPeerId].endpoint.enabled) {
+                conf += `Endpoint = ${network.peers[otherPeerId].endpoint.value}\n`;
             }
         }
 
@@ -87,17 +87,12 @@ ${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${conn
             return ret;
         }
 
-        // check mobility
-        if (fieldName === 'mobility') {
-            ret.status = fieldVariable === 'static' || fieldVariable === 'roaming';
-            if (!ret.status) ret.msg = "mobility is invalid (needs to be either 'static' or 'roaming')";
-            return ret;
-        }
-
         // check endpoint
         if (fieldName === 'endpoint') {
-            ret.status = fieldVariable.match('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
-            ret.status ||= fieldVariable.match('^(((?!\\-))(xn\\-\\-)?[a-z0-9\\-_]{0,61}[a-z0-9]{1,1}\\.)*(xn\\-\\-)?([a-z0-9\\-]{1,61}|[a-z0-9\\-]{1,30})\\.[a-z]{2,}:(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
+            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
+            let endpointStrCheck = fieldVariable.value.toString().match('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
+            endpointStrCheck ||= fieldVariable.value.toString().match('^(((?!\\-))(xn\\-\\-)?[a-z0-9\\-_]{0,61}[a-z0-9]{1,1}\\.)*(xn\\-\\-)?([a-z0-9\\-]{1,61}|[a-z0-9\\-]{1,30})\\.[a-z]{2,}:(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
+            ret.status &&= !(fieldVariable.enabled === true && !endpointStrCheck);
             if (!ret.status) ret.msg = "endpoint is not IPv4 nor an FQDN";
             return ret;
         }

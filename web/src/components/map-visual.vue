@@ -46,7 +46,7 @@ export default {
           this.graph = ForceGraph()(document.getElementById('graph'))
               .nodeCanvasObject((node, ctx) => {
                 const img = new Image();
-                img.src = node.mobility === 'static' ? staticNodeIcon : roamingNodeIcon;
+                img.src = node.endpoint.enabled ? staticNodeIcon : roamingNodeIcon;
                 const cis = this.getGraphNodeIcon(img, 500);
                 ctx.drawImage(cis, node.x - node.size / 2, node.y - node.size / 2, node.size, node.size);
                 if (node.id === this.network.this_peer) {
@@ -143,7 +143,7 @@ export default {
         forceG.nodes.push({
           id: peerId,
           name: peerDetails.name,
-          mobility: peerDetails.mobility,
+          endpoint: peerDetails.endpoint,
           size: Math.sqrt(peerSize[peerId]) * 7,
           color: network.static_peer_ids.includes(peerId) ? 'rgb(21 128 61)' : 'rgb(7 89 133)',
           // icon: this.peerAvatarCanvases[peerId],

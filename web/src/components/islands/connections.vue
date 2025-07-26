@@ -334,20 +334,15 @@ export default {
 
       this.connections_local.pre_shared_key[peer_id] = (await API.get_pre_shared_key()).pre_shared_key;
       this.connections_local.persistent_keepalive[peer_id] = JSON.parse(JSON.stringify(this.network.defaults.connection.persistent_keepalive));
-      if (this.network.peers[this.peerId].mobility === 'roaming' &&
-          this.network.peers[peer_id].mobility === 'roaming') {
+      if (this.network.peers[this.peerId].endpoint.enabled === this.network.peers[peer_id].endpoint.enabled) {
         this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
         this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
-      } else if (this.network.peers[this.peerId].mobility === 'static' &&
-          this.network.peers[peer_id].mobility === 'static') {
-        this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
-        this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
-      } else if (this.network.peers[this.peerId].mobility === 'static' &&
-          this.network.peers[peer_id].mobility === 'roaming') {
+      } else if (this.network.peers[this.peerId].endpoint.enabled &&
+          !this.network.peers[peer_id].endpoint.enabled) {
         this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : this.network.subnet;
         this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? this.network.subnet : `${this.network.peers[peer_id].address}/32`;
-      } else if (this.network.peers[this.peerId].mobility === 'roaming' &&
-          this.network.peers[peer_id].mobility === 'static') {
+      } else if (!this.network.peers[this.peerId].endpoint.enabled &&
+          this.network.peers[peer_id].endpoint.enabled) {
         this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? this.network.subnet : `${this.network.peers[this.peerId].address}/32`;
         this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : this.network.subnet;
       }
@@ -413,7 +408,7 @@ export default {
   emits: ['updated-change-sum'],
   computed: {
     other_static_peer_ids() {
-      if (this.network.peers[this.peerId].mobility !== 'static') {
+      if (!this.network.peers[this.peerId].endpoint.enabled) {
         return this.network.static_peer_ids;
       }
       const peerId = this.peerId;
@@ -422,7 +417,7 @@ export default {
       });
     },
     other_roaming_peer_ids() {
-      if (this.network.peers[this.peerId].mobility !== 'roaming') {
+      if (this.network.peers[this.peerId].endpoint.enabled) {
         return this.network.roaming_peer_ids;
       }
       const peerId = this.peerId;
