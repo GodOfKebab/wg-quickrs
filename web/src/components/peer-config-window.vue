@@ -26,7 +26,7 @@
                   title="See the configuration differences for this peer"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 rounded transition special-fill mr-1"
                   @click="peerConfigWindow = 'view-changes'">
-            <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/file-clone.svg"/>
+            <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/merge-cells.svg"/>
           </button>
           <button v-show="peerConfigWindow === 'file' || peerConfigWindow === 'view-changes'"
                   class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill-edit"
