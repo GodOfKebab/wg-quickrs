@@ -107,3 +107,8 @@ async fn patch_network_config(body: web::Bytes) -> impl Responder {
 
     return conf::update_config(change_sum);
 }
+
+#[get("/api/network/lease/id-address")]
+async fn get_network_lease_id_address() -> impl Responder {
+    return conf::lease_id_address();
+}

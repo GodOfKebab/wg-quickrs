@@ -88,9 +88,9 @@ export default {
   emits: ['updated-change-sum'],
   methods: {
     check_field_status(field_name) {
-      if (FastEqual(this.peer_local[field_name], this.peer[field_name])) return [0, ''];
       const ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name]);
       if (!ret.status) return [-1, ret.msg];
+      if (FastEqual(this.peer_local[field_name], this.peer[field_name])) return [0, ''];
       return [1, ''];
     },
     emit_island_change_sum() {

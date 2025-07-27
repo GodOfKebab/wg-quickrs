@@ -12,10 +12,10 @@
           :class="[FIELD_COLOR_LOOKUP[is_changed_field.name]]"
           class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow"
           placeholder="Name" type="text"/>
-      <div v-if="is_changed_field.name"
+      <div v-if="!_fast_equal(peer_local.name, peer.name)"
            class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
         <button
-            :disabled="!is_changed_field.name"
+            :disabled="_fast_equal(peer_local.name, peer.name)"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
             @click="peer_local.name = peer.name">
@@ -33,13 +33,14 @@
           v-model="peer_local.address"
           :class="[FIELD_COLOR_LOOKUP[is_changed_field.address]]"
           :placeholder="`Address (e.g. ${next_available_address})`"
-          class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow"
+          :disabled="isNewPeer"
+          class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow disabled:bg-gray-100"
           type="text"
           @change=""/> <!--TODO: update connection address on change  -->
-      <div v-if="is_changed_field.address"
+      <div v-if="!_fast_equal(peer_local.address, peer.address) && !isNewPeer"
            class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
         <button
-            :disabled="!is_changed_field.address"
+            :disabled="_fast_equal(peer_local.address, peer.address)"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition undo-button-itself"
             title="Undo Changes"
             @click="peer_local.address = peer.address">
@@ -70,10 +71,10 @@
           placeholder="Endpoint (e.g. 1.2.3.4:51820 example.com:51820)"
           type="text"/>
       <div
-          v-if="is_changed_field.endpoint.enabled || is_changed_field.endpoint.value"
+          v-if="!_fast_equal(peer_local.endpoint, peer.endpoint)"
           class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
         <button
-            :disabled="!(is_changed_field.endpoint.enabled || is_changed_field.endpoint.value)"
+            :disabled="_fast_equal(peer_local.endpoint, peer.endpoint)"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
             @click="peer_local.endpoint.value = peer.endpoint.value; peer_local.endpoint.enabled = peer.endpoint.enabled;">
@@ -102,6 +103,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    isNewPeer: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -119,17 +124,21 @@ export default {
       color_div: 'bg-green-50',
     };
   },
+
   created() {
-    this.peer_local.name = this.peer.name;
-    this.peer_local.address = this.peer.address;
+    this.peer_local.name = JSON.parse(JSON.stringify(this.peer.name));
+    this.peer_local.address = JSON.parse(JSON.stringify(this.peer.address));
     this.peer_local.endpoint = JSON.parse(JSON.stringify(this.peer.endpoint));
   },
   emits: ['updated-change-sum'],
   methods: {
+    _fast_equal(s1, s2) {
+      return FastEqual(s1, s2);
+    },
     check_field_status(field_name) {
-      if (FastEqual(this.peer_local[field_name], this.peer[field_name])) return [0, ''];
       const ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name]);
       if (!ret.status) return [-1, ret.msg];
+      if (FastEqual(this.peer_local[field_name], this.peer[field_name])) return [0, ''];
       return [1, ''];
     },
     emit_island_change_sum() {

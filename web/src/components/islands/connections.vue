@@ -263,6 +263,10 @@ export default {
       type: Object,
       default: {},
     },
+    isNewPeer: {
+      type: Object,
+      default: false,
+    },
   },
   data() {
     return {
@@ -312,6 +316,11 @@ export default {
       this.connections_local.allowed_ips_a_to_b[other_peer_id] = this.network.connections[connectionId].allowed_ips_a_to_b;
       this.connections_local.allowed_ips_b_to_a[other_peer_id] = this.network.connections[connectionId].allowed_ips_b_to_a;
       this.connections_local.persistent_keepalive[other_peer_id] = JSON.parse(JSON.stringify(this.network.connections[connectionId].persistent_keepalive));
+    }
+
+    if (this.isNewPeer) {
+      this.attached_static_peer_ids_local = [this.network.this_peer];
+      this.toggleConnection(this.network.this_peer, true);
     }
   },
   methods: {

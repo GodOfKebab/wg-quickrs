@@ -4,6 +4,7 @@ use std::fs;
 
 mod api;
 mod app;
+mod helpers;
 
 use simple_logger::SimpleLogger;
 
@@ -25,6 +26,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::get_public_private_key)
             .service(api::get_pre_shared_key)
             .service(api::patch_network_config)
+            .service(api::get_network_lease_id_address)
             .service(app::web_ui_dist)
     })
         .bind((config.agent.address, config.agent.web.port))?

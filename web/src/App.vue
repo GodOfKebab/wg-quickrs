@@ -11,7 +11,7 @@
         </h1>
       </div>
 
-      <div :title="`Last Updated: ${lastUpdated ? lastUpdated.toISOString(): 'Never'}`"
+      <div :title="`Last Updated: ${lastUpdated ? lastUpdated: 'Never'}`"
            class="inline-block float-right px-3 whitespace-nowrap align-middle">
         <div v-if="requiresPassword" class="relative mb-5 bg-blue-50">
           <div class="text-sm text-gray-400 cursor-pointer hover:underline absolute top-0 right-0" @click="">
@@ -75,37 +75,31 @@
           {{ network.peers[network.this_peer].endpoint.value }}
         </span>
       </div>
-
     </div>
-
-
   </div>
 
   <!-- Map -->
-  <div class="mt-2 container mx-auto max-w-6xl">
+  <div class="container mx-auto mt-3 max-w-6xl">
     <map-visual :network="network"
                 class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center"
-                style="max-height: 70vh"
+                style="max-height: 80vh"
                 @peer-selected="onPeerSelected"></map-visual>
   </div>
 
   <!-- Add a Peer Buttons -->
-  <!--  <div class="container mx-auto max-w-3xl relative">-->
-  <!--    &lt;!&ndash; Add a Static/Roaming Peer &ndash;&gt;-->
-  <!--    <div class="grid grid-cols-2 gap-2">-->
-  <!--      <div v-for="mobility in ['static', 'roaming']"-->
-  <!--           class="grid-cols-1 flex flex-row flex-auto items-center justify-center p-3 px-5 border-gray-100">-->
-  <!--        <button :disabled="webServerStatus !== ServerStatusEnum.up"-->
-  <!--                class="bg-gray-200 enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white text-gray-700 border-2 border-gray-500 py-2 px-4 rounded inline-flex items-center transition"-->
-  <!--                @click=""> &lt;!&ndash; TODO: open peer create window&ndash;&gt;-->
-  <!--          <span class="text-sm">Add a {{ mobility[0].toUpperCase() + mobility.slice(1) }} Peer</span>-->
-  <!--        </button>-->
-  <!--      </div>-->
-  <!--    </div>-->
-  <!--  </div>-->
+  <div class="container mx-auto max-w-6xl">
+    <!-- Add a Peer -->
+    <div class="items-center justify-center p-3 px-5 border-gray-100">
+      <button :disabled="webServerStatus !== ServerStatusEnum.up"
+              class="bg-gray-200 text-gray-700 border-2 border-gray-500 py-2 px-4 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white"
+              @click="dialogId = 'create-peer'">
+        <span class="text-sm">Add a Peer</span>
+      </button>
+    </div>
+  </div>
 
   <!-- Footer -->
-  <footer class="text-center text-gray-500 my-10">
+  <footer class="text-center text-gray-500 my-5">
     <small>&copy; Copyright 2024, <a class="hover:underline" href="https://yasar.idikut.cc/">Yaşar İdikut</a></small>
   </footer>
 
@@ -132,6 +126,11 @@
                       :network="network"
                       :peer-id="dialogId.slice(17, dialogId.length)"></peer-config-window>
 
+  <!-- Dialog: Peer Create -->
+  <peer-create-window v-if="dialogId === 'create-peer'"
+                      v-model:dialog-id="dialogId"
+                      :network="network"></peer-create-window>
+
 </template>
 
 <script>
@@ -141,10 +140,11 @@ import API from "./js/api.js";
 import MapVisual from "./components/map-visual.vue";
 import CustomDialog from "./components/custom-dialog.vue";
 import PeerConfigWindow from "./components/peer-config-window.vue";
+import PeerCreateWindow from "./components/peer-create-window.vue";
 
 export default {
   name: "app",
-  components: {MapVisual, CustomDialog, PeerConfigWindow},
+  components: {MapVisual, CustomDialog, PeerConfigWindow, PeerCreateWindow},
   data() {
     return {
       refreshRate: 1000,
@@ -165,7 +165,6 @@ export default {
   mounted: function () {
     initFlowbite();
 
-    this.lastUpdated = new Date()
     setInterval(() => {
       this.refresh()
     }, this.refreshRate)
@@ -180,8 +179,7 @@ export default {
           this.wireguardStatus = summary.status;
           need_to_update_network = this.network_digest !== summary.network_digest;
 
-          this.lastUpdated.setUTCFullYear(1970, 0, 0);
-          this.lastUpdated.setUTCHours(0, 0, summary.timestamp, 0);
+          this.lastUpdated = summary.timestamp;
         }).catch(err => {
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
@@ -213,8 +211,7 @@ export default {
         })
         this.wireguardStatus = summary.status
 
-        this.lastUpdated.setUTCFullYear(1970, 0, 0);
-        this.lastUpdated.setUTCHours(0, 0, summary.timestamp, 0);
+        this.lastUpdated = summary.timestamp;
       }).catch(err => {
         this.wireguardStatus = this.ServerStatusEnum.unknown;
         if (err.toString() === 'TypeError: Load failed') {

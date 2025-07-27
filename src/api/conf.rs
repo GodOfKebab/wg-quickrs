@@ -1,4 +1,9 @@
+use crate::api;
+use crate::api::conf;
+use crate::helpers::chrono_helper;
+use crate::helpers::network_helper;
 use actix_web::HttpResponse;
+use chrono::{Duration, Utc};
 use log::error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -8,7 +13,8 @@ use std::fs;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::time::SystemTime;
+use uuid::Uuid;
+
 
 pub(crate) const DEFAULT_CONF_FILE: &str = ".wg-rusteze/conf.yml";
 
@@ -43,17 +49,7 @@ pub(crate) struct Config {
     #[serde(default)]
     pub(crate) status: u8,
     #[serde(default)]
-    pub(crate) timestamp: u64,
-}
-
-impl Config {
-    pub(crate) fn put_timestamp(&mut self) -> &mut Self {
-        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(n) => self.timestamp = n.as_secs(),
-            Err(_) => self.timestamp = 0,
-        }
-        return self;
-    }
+    pub(crate) timestamp: String,
 }
 
 impl From<&Config> for FileConfig {
@@ -72,7 +68,7 @@ pub(crate) struct ConfigDigest {
     #[serde(default)]
     pub(crate) status: u8,
     #[serde(default)]
-    pub(crate) timestamp: u64,
+    pub(crate) timestamp: String,
 }
 
 impl From<&Config> for ConfigDigest {
@@ -111,11 +107,13 @@ pub(crate) struct Network {
     peers: HashMap<String, Peer>,
     connections: HashMap<String, Connection>,
     defaults: Defaults,
+    leases: Vec<Lease>,
     updated_at: String,
 }
 
+
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-struct Peer {
+pub(crate) struct Peer {
     name: String,
     address: String,
     public_key: String,
@@ -129,13 +127,21 @@ struct Peer {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-struct EnabledValue { enabled: bool, value: String}
+pub(crate) struct EnabledValue {
+    enabled: bool,
+    value: String,
+}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-struct Scripts { pre_up: EnabledValue, post_up: EnabledValue, pre_down: EnabledValue, post_down: EnabledValue }
+pub(crate) struct Scripts {
+    pre_up: EnabledValue,
+    post_up: EnabledValue,
+    pre_down: EnabledValue,
+    post_down: EnabledValue,
+}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-struct Connection {
+pub(crate) struct Connection {
     enabled: bool,
     pre_shared_key: String,
     allowed_ips_a_to_b: String,
@@ -144,22 +150,31 @@ struct Connection {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-struct Defaults {
+pub(crate) struct Defaults {
     peer: DefaultPeer,
     connection: DefaultConnection,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-struct DefaultPeer {
+pub(crate) struct DefaultPeer {
+    endpoint: EnabledValue,
     dns: EnabledValue,
     mtu: EnabledValue,
     scripts: Scripts,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-struct DefaultConnection {
+pub(crate) struct DefaultConnection {
     persistent_keepalive: EnabledValue,
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub(crate) struct Lease {
+    address: String,
+    peer_id: String,
+    valid_until: String,
+}
+
 
 pub(crate) fn get_config() -> Config {
     let file_contents = fs::read_to_string(DEFAULT_CONF_FILE).expect("Unable to open file");
@@ -175,13 +190,14 @@ pub(crate) fn get_config() -> Config {
     let network_digest: &str = base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf).expect("Unable to calculate network digest");
     config.network_digest = network_digest.to_string();
     config.status = WireGuardStatus::UP.value(); // TODO: replace
-    config.put_timestamp();
+    config.timestamp = chrono_helper::get_now_timestamp_formatted();
 
     return config;
 }
 
 pub(crate) fn set_config(config: &Config) {
-    let file_config = FileConfig::from(config);
+    let mut file_config = FileConfig::from(config);
+    file_config.network.updated_at = chrono_helper::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&file_config).expect("Failed to serialize config");
 
     let mut file = File::create(DEFAULT_CONF_FILE).expect("Failed to open config file");
@@ -190,11 +206,11 @@ pub(crate) fn set_config(config: &Config) {
 }
 
 pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
+    log::info!("update_config with the change_sum = {}", change_sum);
     // Open the config file for reading and writing
     let mut config_file_reader = OpenOptions::new()
         .read(true)
         .write(true)
-        .create(true)
         .open(DEFAULT_CONF_FILE)
         .expect("Failed to open config file");
 
@@ -218,6 +234,8 @@ pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
             .body(r#"{"status":"forbidden","message":"Unable to parse config file"}"#),
     };
 
+    // TODO: process errors
+
     // process changed_fields
     if let Some(changed_fields) = change_sum.get("changed_fields") {
         {
@@ -236,6 +254,27 @@ pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
         }
         { apply_changes(network_config, "peers", changed_fields); }
         { apply_changes(network_config, "connections", changed_fields); }
+    }
+
+    // process added_peers
+    if let Some(added_peers) = change_sum.get("added_peers") {
+        if let Some(added_peers_map) = added_peers.as_object() {
+            for (peer_id, peer_details) in added_peers_map {
+                {
+                    if let Some(peers) = network_config.get_mut("peers") {
+                        peers[peer_id] = peer_details.clone();
+                        peers[peer_id]["created_at"] = Value::String(chrono_helper::get_now_timestamp_formatted());
+                        peers[peer_id]["updated_at"] = peers[peer_id]["created_at"].clone();
+                    }
+                    // remove leased id/address
+                    if let Some(leases_array) = network_config
+                        .get_mut("leases")
+                        .and_then(|v| v.as_array_mut()) {
+                        leases_array.retain(|lease| lease.get("peer_id").and_then(|v| v.as_str()) != Some(peer_id));
+                    }
+                }
+            }
+        }
     }
 
     // process added_connections
@@ -266,6 +305,9 @@ pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
         }
     }
 
+    if let Some(updated_at) = network_config.get_mut("updated_at") {
+        *updated_at = Value::String(chrono_helper::get_now_timestamp_formatted());
+    }
 
     let config_str = serde_yml::to_string(&config_value)
         .expect("Failed to serialize config");
@@ -278,7 +320,7 @@ pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
     log::info!("Updated config file");
     return HttpResponse::Ok()
         .content_type("application/json")
-        .body(r#"{"status":"ok"}"#) // ✅ sends JSON response
+        .body(r#"{"status":"ok"}"#)
 }
 
 fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields: &Value) {
@@ -297,7 +339,19 @@ fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields:
                     };
 
                     for (field_key, field_value) in item_changes_map {
-                        item_config[field_key] = field_value.clone();
+                        if field_key.eq("scripts") {
+                            if let Some(scripts_map) = field_value.as_object() {
+                                for (script_key, script_value) in scripts_map {
+                                    let scripts_config = match item_config.get_mut("scripts") {
+                                        Some(cfg) => cfg,
+                                        None => continue,
+                                    };
+                                    scripts_config[script_key] = script_value.clone();
+                                }
+                            }
+                        } else {
+                            item_config[field_key] = field_value.clone();
+                        }
                     }
                 }
             }
@@ -305,3 +359,47 @@ fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields:
     }
 }
 
+pub(crate) fn lease_id_address() -> HttpResponse {
+    // Open the config file for reading and writing
+    let mut config_file_reader = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(DEFAULT_CONF_FILE)
+        .expect("Failed to open config file");
+
+    // Read the existing contents
+    let mut config_str = String::new();
+    config_file_reader.read_to_string(&mut config_str).expect("Failed to read config file");
+    let mut config_file: FileConfig = serde_yml::from_str(&config_str).unwrap();
+
+    let mut reserved_addresses = Vec::<String>::new();
+    for peer in config_file.network.peers.values() {
+        reserved_addresses.push(peer.address.clone());
+    }
+    config_file.network.leases.retain(|lease| {
+        chrono_helper::get_duration_since_formatted(lease.valid_until.clone()) > Duration::zero()
+    });
+
+    for lease in config_file.network.leases.clone() {
+        reserved_addresses.push(lease.address.clone());
+    }
+    let next_address = network_helper::get_next_available_address(&config_file.network.subnet, &reserved_addresses);
+    log::info!("Next available address: {:?}", next_address);
+
+    let body = Lease {
+        address: next_address.unwrap(),
+        peer_id: String::from(Uuid::new_v4()),
+        valid_until: chrono_helper::get_future_timestamp_formatted(Duration::minutes(10)),
+    };
+    config_file.network.leases.push(body.clone());
+    config_file.network.updated_at = chrono_helper::get_now_timestamp_formatted();
+    let config_str = serde_yml::to_string(&config_file).expect("Failed to serialize config");
+    // Move back to beginning and truncate before writing
+    config_file_reader.set_len(0).expect("Failed to truncate config file");
+    config_file_reader.seek(SeekFrom::Start(0)).expect("Failed to seek to start");
+    config_file_reader.write_all(config_str.as_bytes()).expect("Failed to write to config file");
+
+    return HttpResponse::Ok()
+        .content_type("application/json")
+        .body(serde_json::to_string(&body).unwrap())
+}

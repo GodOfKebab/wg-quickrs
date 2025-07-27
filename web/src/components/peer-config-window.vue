@@ -5,7 +5,7 @@
     <custom-dialog :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['enabled:bg-green-700', 'enabled:hover:bg-green-800', 'enabled:focus:outline-none', 'bg-gray-200', 'disabled:hover:bg-gray-200', 'disabled:cursor-not-allowed', 'text-white']"
-                   :rightButtonDisabled="peerConfigWindow !== 'file' && (!changeDetected || changeSum.errors)"
+                   :rightButtonDisabled="peerConfigWindow !== 'file' && (!changeDetected || errorDetected)"
                    :right-button-click="peerConfigWindow === 'file' ? () => { navigator.clipboard.writeText(peer_wg_conf_file).then(() => {
                                           alert('successfully copied');
                                           })
@@ -104,13 +104,13 @@
       <h3 class="text-lg leading-6 font-medium text-gray-900">
         Confirm changes for <strong>{{ peer_conf.name }}</strong>
       </h3>
-      <div class="mt-2 text-sm text-gray-500">
+      <div class="my-2 text-sm text-gray-500">
         Are you sure you want to make these changes?
       </div>
 
-      <!--      <change-sum :peer-edit-changed-fields-compute="peerEditChangedFieldsCompute"-->
-      <!--                  :peer-edit-new-config="peerEditNewConfig"-->
-      <!--                  :peer-edit-old-config="peerEditOldConfig"></change-sum>-->
+      <change-sum :change-sum="changeSum"
+                  :network="network"
+                  :peer-id="peerId"></change-sum>
     </custom-dialog>
 
     <!-- Window: QR Code Display -->
@@ -251,10 +251,27 @@ export default {
       for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum, this.peerDetailsIslandChangeSum]) {
         if (!island_datum) continue;
         for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
-          if (island_value) data.errors.peers[this.peerId][island_field] = island_value;
+          if (island_field === "scripts" && island_value) {
+            data.errors.peers[this.peerId].scripts = {};
+            for (const [script_field, script_value] of Object.entries(island_value)) {
+              if (script_field) data.errors.peers[this.peerId].scripts[script_field] = script_value;
+            }
+            if (Object.keys(data.errors.peers[this.peerId].scripts).length === 0) delete data.errors.peers[this.peerId].scripts;
+          } else {
+            if (island_value) data.errors.peers[this.peerId][island_field] = island_value;
+          }
         }
+
         for (const [island_field, island_value] of Object.entries(island_datum.changed_fields)) {
-          if (island_value) data.changed_fields.peers[this.peerId][island_field] = island_value;
+          if (island_field === "scripts" && island_value) {
+            data.changed_fields.peers[this.peerId].scripts = {};
+            for (const [script_field, script_value] of Object.entries(island_value)) {
+              if (script_field) data.changed_fields.peers[this.peerId].scripts[script_field] = script_value;
+            }
+            if (Object.keys(data.changed_fields.peers[this.peerId].scripts).length === 0) delete data.changed_fields.peers[this.peerId].scripts;
+          } else {
+            if (island_value) data.changed_fields.peers[this.peerId][island_field] = island_value;
+          }
         }
       }
 
@@ -263,28 +280,18 @@ export default {
       data.removed_connections = this.connectionIslandsChangeSum.removed_connections;
       data.errors.connections = this.connectionIslandsChangeSum.errors;
 
-      // cleanup excess fields
-      if (Object.keys(data.errors.peers[this.peerId]).length + Object.keys(data.errors.connections).length === 0) {
-        delete data.errors;
-      } else {
-        if (Object.keys(data.errors.peers[this.peerId]).length === 0) delete data.errors.peers;
-        if (Object.keys(data.errors.connections).length === 0) delete data.errors.connections;
-      }
-
-      if (Object.keys(data.changed_fields.peers[this.peerId]).length + Object.keys(data.changed_fields.connections).length === 0) {
-        delete data.changed_fields;
-      } else {
-        if (Object.keys(data.changed_fields.peers[this.peerId]).length === 0) delete data.changed_fields.peers;
-        if (Object.keys(data.changed_fields.connections).length === 0) delete data.changed_fields.connections;
-      }
-
-      if (Object.keys(data.added_connections).length === 0) delete data.added_connections;
-      if (Object.keys(data.removed_connections).length === 0) delete data.removed_connections;
-
       return data;
     },
+    errorDetected() {
+      return Object.keys(this.changeSum.errors.peers[this.peerId]).length
+          + Object.keys(this.changeSum.errors.connections).length
+    },
     changeDetected() {
-      return this.changeSum.errors || this.changeSum.changed_fields || this.changeSum.added_connections || this.changeSum.removed_connections;
+      return this.errorDetected
+          + Object.keys(this.changeSum.changed_fields.peers[this.peerId]).length
+          + Object.keys(this.changeSum.changed_fields.connections).length
+          + Object.keys(this.changeSum.added_connections).length
+          + Object.keys(this.changeSum.removed_connections).length;
     }
   },
 }

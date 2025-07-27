@@ -1,30 +1,38 @@
 <template>
 
   <div class="text-sm text-gray-500 whitespace-pre grid grid-cols-2 gap-1">
-    <div v-show="changeSum.errors" class="col-span-2 bg-red-100 rounded-md overflow-scroll">
+    <div
+        v-if="is_full(pruned_errors)"
+        class="col-span-2 bg-red-100 rounded-md overflow-scroll">
       <strong class="text-gray-600 justify-center rounded-md bg-red-200 p-1">Errors</strong>
-      {{ JSON.stringify(changeSum.errors, false, 2) }}
+      {{ JSON.stringify(pruned_errors, false, 2) }}
     </div>
-    <div v-show="changeSum.changed_fields" class="col-span-2 bg-blue-100 rounded-md overflow-scroll">
+    <div v-if="is_full(pruned_changed_fields)" class="col-span-2 bg-blue-100 rounded-md overflow-scroll">
       <strong class="text-gray-600 justify-center rounded-md bg-blue-200 p-1">Changed Fields</strong>
-      {{ JSON.stringify(changeSum.changed_fields, false, 2) }}
+      {{ JSON.stringify(pruned_changed_fields, false, 2) }}
     </div>
-    <div v-show="changeSum.added_connections" class="col-span-2 bg-green-100 rounded-md overflow-scroll">
+    <div v-if="is_full(changeSum.added_peers)" class="col-span-2 bg-green-100 rounded-md overflow-scroll">
+      <strong class="text-gray-600 justify-center rounded-md bg-green-200 p-1">Added Peer</strong>
+      {{ JSON.stringify(padded_added_peers, false, 2) }}
+    </div>
+    <div v-if="is_full(changeSum.added_connections)" class="col-span-2 bg-green-100 rounded-md overflow-scroll">
       <strong class="text-gray-600 justify-center rounded-md bg-green-200 p-1">Added Connections</strong>
       {{ JSON.stringify(changeSum.added_connections, false, 2) }}
     </div>
-    <div v-show="changeSum.removed_connections" class="col-span-2 bg-red-100 rounded-md overflow-scroll">
+    <div v-if="is_full(changeSum.removed_connections)" class="col-span-2 bg-red-100 rounded-md overflow-scroll">
       <strong class="text-gray-600 justify-center rounded-md bg-red-200 p-1">Removed Connections</strong>
       {{ JSON.stringify(changeSum.removed_connections, false, 2) }}
     </div>
-    <div class="bg-gray-100 rounded-md overflow-scroll">
+    <div v-if="Object.keys(network.peers).includes(peerId)"
+         class="bg-gray-100 rounded-md overflow-scroll">
       <strong class="text-gray-600 justify-center rounded-md bg-gray-200 p-1">Old Configuration</strong>
       <div class="p-1">{{
           JSON.stringify({peers: pruned_network.peers, connections: pruned_network.connections}, false, 2)
         }}
       </div>
     </div>
-    <div class="bg-green-100 rounded-md overflow-scroll">
+    <div v-if="Object.keys(network.peers).includes(peerId)"
+         class="bg-green-100 rounded-md overflow-scroll">
       <strong class="text-gray-600 justify-center rounded-md bg-green-200 p-1">New Configuration</strong>
       <div class="p-1">{{
           JSON.stringify({peers: new_network.peers, connections: new_network.connections}, false, 2)
@@ -65,7 +73,47 @@ export default {
       default: {},
     },
   },
+  methods: {
+    is_full(field) {
+      if (field === undefined) {
+        return false;
+      }
+      if (Object.keys(field).length === 0) {
+        return false;
+      }
+      return true;
+    }
+  },
   computed: {
+    pruned_errors() {
+      const pruned_errors = {};
+      if (this.changeSum.errors.peers[this.peerId]) {
+        if (Object.keys(this.changeSum.errors.peers[this.peerId]).length) {
+          pruned_errors.peers = this.changeSum.errors.peers;
+        }
+      }
+      if (Object.keys(this.changeSum.errors.connections).length) {
+        pruned_errors.connections = this.changeSum.errors.connections;
+      }
+      return pruned_errors;
+    },
+    pruned_changed_fields() {
+      if (!Object.keys(this.changeSum).includes("changed_fields")) {
+        return {};
+      }
+
+      const pruned_changed_fields = {};
+      if (Object.keys(this.changeSum.changed_fields.peers[this.peerId]).length) {
+        pruned_changed_fields.peers = this.changeSum.changed_fields.peers;
+      }
+      if (Object.keys(this.changeSum.changed_fields.connections).length) {
+        pruned_changed_fields.connections = this.changeSum.changed_fields.connections;
+      }
+      return pruned_changed_fields;
+    },
+    padded_added_peers() {
+      return {peers: this.changeSum.added_peers};
+    },
     pruned_network() {
       let pruned_network = {peers: {}, connections: {}};
       pruned_network.peers[this.peerId] = this.network.peers[this.peerId];

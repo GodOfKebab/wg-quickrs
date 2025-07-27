@@ -16,11 +16,11 @@
     </div>
     <div class="overflow-x-auto">
       <div v-for="peerConfigKey in ['public_key', 'private_key', 'created_at', 'updated_at']">
-        <div class="grid grid-cols-10 text-sm refresh-key">
+        <div v-if="peer_local[peerConfigKey]" class="grid grid-cols-10 text-sm refresh-key">
           <div class="col-span-2">
-                                 <span class="text-gray-800">
-                                     <strong>{{ PEER_DETAILS_KEY_LOOKUP[peerConfigKey] }}</strong>
-                                 </span>
+            <span class="text-gray-800">
+              <strong>{{ PEER_DETAILS_KEY_LOOKUP[peerConfigKey] }}</strong>
+            </span>
           </div>
           <div class="col-span-8 text-sm whitespace-nowrap">
             <span class="text-gray-800 text-xs mr-1">:</span>

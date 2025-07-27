@@ -57,4 +57,12 @@ export default class API {
         });
     }
 
+    static async get_lease_id_address() {
+        return API.call({
+            method: 'get',
+            path: `/network/lease/id-address`,
+            headers: {},
+        });
+    }
+
 }

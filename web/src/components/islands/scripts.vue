@@ -111,8 +111,6 @@ export default {
       for (let field in island_change_sum.changed_fields.scripts) {
         if (island_change_sum.changed_fields.scripts[field] === null) delete island_change_sum.changed_fields.scripts[field];
       }
-      if (Object.keys(island_change_sum.errors.scripts).length === 0) island_change_sum.errors.scripts = null;
-      if (Object.keys(island_change_sum.changed_fields.scripts).length === 0) island_change_sum.changed_fields.scripts = null;
       this.$emit("updated-change-sum", island_change_sum);
     }
   },
