@@ -3,7 +3,8 @@ use crate::conf::timestamp;
 use crate::conf::types::{Config, FileConfig, Lease, WireGuardStatus};
 use crate::conf::DEFAULT_CONF_FILE;
 
-use actix_web::HttpResponse;
+use crate::conf;
+use actix_web::{web, HttpResponse};
 use chrono::Duration;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -13,6 +14,17 @@ use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
 
+pub(crate) fn respond_get_network_summary(params: web::Query<crate::api::SummaryBody>) -> HttpResponse {
+    let resp_body = if params.only_network_digest {
+        serde_json::to_string(&conf::types::ConfigDigest::from(&get_config()))
+    } else {
+        serde_json::to_string(&get_config())
+    }.unwrap();
+
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(resp_body)
+}
 
 pub(crate) fn get_config() -> Config {
     let file_contents = fs::read_to_string(DEFAULT_CONF_FILE).expect("Unable to open file");
@@ -43,7 +55,17 @@ pub(crate) fn set_config(config: &Config) {
     log::info!("Updated config file")
 }
 
-pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
+pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
+    let body_raw = String::from_utf8_lossy(&body);
+    let change_sum: Value = match serde_json::from_str(&body_raw) {
+        Ok(val) => val,
+        Err(err) => {
+            return HttpResponse::BadRequest()
+                .content_type("application/json")
+                .body(format!(r#"{{"error":"Invalid JSON: {}"}}"#, err));
+        }
+    };
+
     log::info!("update_config with the change_sum = {}", change_sum);
     // Open the config file for reading and writing
     let mut config_file_reader = OpenOptions::new()
@@ -212,7 +234,7 @@ fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields:
     }
 }
 
-pub(crate) fn lease_id_address() -> HttpResponse {
+pub(crate) fn respond_get_network_lease_id_address() -> HttpResponse {
     // Open the config file for reading and writing
     let mut config_file_reader = OpenOptions::new()
         .read(true)

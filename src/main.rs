@@ -6,8 +6,7 @@ use std::fs;
 mod api;
 mod app;
 mod conf;
-
-
+mod wireguard;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -22,9 +21,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(middleware::Compress::default())
             .service(app::web_ui_index)
-            .service(api::get_summary)
-            .service(api::get_public_private_key)
-            .service(api::get_pre_shared_key)
+            .service(api::get_network_summary)
+            .service(api::get_wireguard_public_private_key)
+            .service(api::get_wireguard_pre_shared_key)
             .service(api::patch_network_config)
             .service(api::get_network_lease_id_address)
             .service(app::web_ui_dist)
