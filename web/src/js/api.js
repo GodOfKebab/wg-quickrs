@@ -2,7 +2,7 @@
 
 export default class API {
     static async call({method, path, headers, body}) {
-        const res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}/api${path}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}${path}`, {
             method,
             headers,
             body: body
@@ -24,10 +24,18 @@ export default class API {
     }
 
 
+    static async get_version() {
+        return API.call({
+            method: 'get',
+            path: `/version`,
+            headers: {}
+        });
+    }
+
     static async get_summary(url_encoded_params) {
         return API.call({
             method: 'get',
-            path: `/network/summary${url_encoded_params}`,
+            path: `/api/network/summary${url_encoded_params}`,
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
     }
@@ -35,7 +43,7 @@ export default class API {
     static async get_public_private_key() {
         return API.call({
             method: 'get',
-            path: `/wireguard/public_private_key`,
+            path: `/api/wireguard/public_private_key`,
             headers: {}
         });
     }
@@ -43,7 +51,7 @@ export default class API {
     static async get_pre_shared_key() {
         return API.call({
             method: 'get',
-            path: `/wireguard/pre_shared_key`,
+            path: `/api/wireguard/pre_shared_key`,
             headers: {}
         });
     }
@@ -51,7 +59,7 @@ export default class API {
     static async patch_network_config(change_sum) {
         return API.call({
             method: 'patch',
-            path: `/network/config`,
+            path: `/api/network/config`,
             headers: {},
             body: change_sum
         });
@@ -60,7 +68,7 @@ export default class API {
     static async get_lease_id_address() {
         return API.call({
             method: 'get',
-            path: `/network/lease/id-address`,
+            path: `/api/network/lease/id-address`,
             headers: {},
         });
     }

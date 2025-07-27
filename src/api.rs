@@ -1,6 +1,25 @@
 use crate::conf;
+use crate::macros::*;
 use crate::wireguard;
-use actix_web::{get, patch, web, Responder};
+use actix_web::{get, patch, web, HttpResponse, Responder};
+use serde::Serialize;
+
+#[get("/version")]
+async fn get_version() -> impl Responder {
+    #[derive(Serialize)]
+    struct VersionInfo {
+        backend: &'static str,
+        frontend: &'static str,
+        built: &'static str,
+    }
+    let version_info = VersionInfo {
+        backend: backend_version!(),
+        frontend: frontend_version!(),
+        built: build_timestamp!(),
+    };
+    return HttpResponse::Ok().json(version_info);
+}
+
 
 #[derive(serde::Deserialize)]
 pub(crate) struct SummaryBody {

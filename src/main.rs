@@ -1,7 +1,9 @@
 #[cfg(debug_assertions)]
 use actix_cors::Cors;
 use actix_web::{middleware, App, HttpServer};
+use clap::Parser;
 use log::LevelFilter;
+use once_cell::sync::OnceCell;
 use simple_logger::SimpleLogger;
 use std::fs;
 
@@ -9,10 +11,35 @@ mod api;
 mod app;
 mod conf;
 mod wireguard;
+mod macros;
+
+#[derive(Parser, Debug)]
+#[command(
+    version = full_version!(),
+    about = "Run the wg-rusteze network agent",
+    long_about = "Starts the wg-rusteze agent with the default/provided configuration file. \
+                  Use this tool to manage the peer and network configuration of the \
+                  WireGuard-based overlay network over the web console."
+)]
+struct Args {
+    #[arg(
+        short,
+        long,
+        default_value = ".wg-rusteze/conf.yml",
+        value_name = "CONFIG_PATH"
+    )]
+    wg_rusteze_config_file: String,
+}
+pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<String> = OnceCell::new();
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     SimpleLogger::new().with_level(LevelFilter::Info).init().unwrap();
+    log::info!(full_version!());
+
+    let args = Args::parse();
+    WG_RUSTEZE_CONFIG_FILE.set(args.wg_rusteze_config_file).unwrap();
+    log::info!("Using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().expect("CONFIG_FILE not set"));
 
     let file_contents = fs::read_to_string(conf::DEFAULT_CONF_FILE).expect("Unable to open file");
     let config: conf::types::Config = serde_yml::from_str(&file_contents).unwrap();
@@ -28,6 +55,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::get_wireguard_pre_shared_key)
             .service(api::patch_network_config)
             .service(api::get_network_lease_id_address)
+            .service(api::get_version)
             .service(app::web_ui_dist);
 
         #[cfg(debug_assertions)]

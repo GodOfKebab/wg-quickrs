@@ -100,7 +100,16 @@
 
   <!-- Footer -->
   <footer class="text-center text-gray-500 my-5">
-    <small>&copy; Copyright 2024, <a class="hover:underline" href="https://yasar.idikut.cc/">Yaşar İdikut</a></small>
+    <div v-if="version">
+      <small :title="version.datetime">
+        backend: {{ version.backend }},
+        frontend: {{ version.frontend }},
+        built: {{ version.built }}
+      </small>
+    </div>
+
+    <small>&copy; Copyright 2024-2025, <a class="hover:underline" href="https://yasar.idikut.cc/">Yaşar
+      İdikut</a></small>
   </footer>
 
   <!-- Dialog: WireGuard Enable/Disable -->
@@ -160,6 +169,7 @@ export default {
       dialogId: '',
       network: {},
       network_digest: '',
+      version: null
     }
   },
   mounted: function () {
@@ -168,6 +178,15 @@ export default {
     setInterval(() => {
       this.refresh()
     }, this.refreshRate)
+
+    API.get_version().then(response => {
+      this.version = {
+        backend: response.backend,
+        frontend: response.frontend,
+        built: response.built,
+        datetime: (new Date(Date.parse(response.built))).toString()
+      }
+    });
   },
   computed: {},
   methods: {
