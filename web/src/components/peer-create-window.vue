@@ -15,7 +15,7 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 inline mb-2 text-start w-full">
           Create a new Peer:
         </h3>
-        <span class="order-last w-full flex justify-between px-1">
+        <span class="order-last w-full flex justify-between px-1 mb-1">
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
               disabled
@@ -24,20 +24,23 @@
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+              :class="peerConfigWindow === 'view-changes' ? 'bg-gray-600' : ''"
                   title="See the configuration differences for this peer"
                   @click="peerConfigWindow = 'view-changes'">
             <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/merge-cells.svg"/>
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
+              :class="peerConfigWindow === 'edit' ? 'bg-gray-600' : ''"
               title="Edit the configuration for this peer"
               @click="peerConfigWindow = 'edit'">
             <img alt="Edit Configuration" class="h-6" src="../icons/flowbite/file-pen.svg"/>
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-              disabled
-              title="See the configuration file for this peer">
+              :class="peerConfigWindow === 'file' ? 'bg-gray-600' : ''"
+              title="See the configuration file for this peer"
+              @click="peerConfigWindow = 'file'">
             <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
           </button>
           <button
@@ -47,12 +50,17 @@
             <img alt="QR Code" class="h-6" src="../icons/flowbite/qr-code.svg"/>
           </button>
           <button
-              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 rounded transition special-fill"
+              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
               disabled
               title="Download Configuration">
             <img alt="Download" class="h-6" src="../icons/flowbite/download.svg"/>
           </button>
         </span>
+      </div>
+
+      <!-- show config -->
+      <div v-if="peerConfigWindow === 'file' && network_w_new_peer" class="mt-2 w-full overflow-scroll h-96">
+        <span class="text-sm text-gray-500 whitespace-pre">{{ peer_wg_conf_file }}</span>
       </div>
 
       <!-- edit config -->
@@ -135,6 +143,7 @@ import PeerDetails from "./islands/peer-details.vue";
 import ConnectionIslands from "./islands/connections.vue";
 import ChangeSum from "./change-sum.vue";
 import API from "../js/api.js";
+import WireGuardHelper from "../js/wg-helper";
 
 export default {
   name: "peer-config-window",
@@ -268,7 +277,12 @@ export default {
     errorDetected() {
       return Object.keys(this.change_sum.errors.peers[this.peerId]).length
           + Object.keys(this.change_sum.errors.connections).length
-    }
+    },
+    peer_wg_conf_file() {
+      const wg_network = this.network_w_new_peer;
+      wg_network.connections = this.change_sum.added_connections;
+      return WireGuardHelper.getPeerConfig(wg_network, this.peerId);
+    },
   },
 }
 </script>

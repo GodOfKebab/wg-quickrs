@@ -20,7 +20,7 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 inline mb-2 text-start w-full">
           Configuration for <strong>{{ peer_conf.name }}</strong>:
         </h3>
-        <span class="order-last w-full flex justify-between px-1">
+        <span class="order-last w-full flex justify-between p-1 px-2 mb-1">
           <button :disabled="peerId === network.this_peer"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="Delete this peer"
@@ -29,26 +29,30 @@
           </button>
           <button :disabled="!changeDetected"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  :class="peerConfigWindow === 'view-changes' ? 'bg-gray-600' : ''"
                   title="See the configuration differences for this peer"
                   @click="peerConfigWindow = 'view-changes'">
             <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/merge-cells.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
+                  :class="peerConfigWindow === 'edit' ? 'bg-gray-600' : ''"
                   title="Edit the configuration for this peer"
                   @click="peerConfigWindow = 'edit'">
             <img alt="Edit Configuration" class="h-6" src="../icons/flowbite/file-pen.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  :class="peerConfigWindow === 'file' ? 'bg-gray-600' : ''"
                   title="See the configuration file for this peer"
                   @click="peerConfigWindow = 'file'">
             <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  :class="showQRCode ? 'bg-gray-600' : ''"
                   title="Show QR Code"
                   @click="drawQRCode(); showQRCode = true">
             <img alt="QR Code" class="h-6" src="../icons/flowbite/qr-code.svg"/>
           </button>
-          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill"
+          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="Download Configuration"
                   @click="downloadPeerConfig()">
             <img alt="Download" class="h-6" src="../icons/flowbite/download.svg"/>
