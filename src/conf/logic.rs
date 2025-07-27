@@ -1,179 +1,17 @@
-use crate::api;
-use crate::api::conf;
-use crate::helpers::chrono_helper;
-use crate::helpers::network_helper;
+use crate::conf::network;
+use crate::conf::timestamp;
+use crate::conf::types::{Config, FileConfig, Lease, WireGuardStatus};
+use crate::conf::DEFAULT_CONF_FILE;
+
 use actix_web::HttpResponse;
-use chrono::{Duration, Utc};
-use log::error;
-use serde::{Deserialize, Serialize};
+use chrono::Duration;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
-
-
-pub(crate) const DEFAULT_CONF_FILE: &str = ".wg-rusteze/conf.yml";
-
-#[allow(dead_code)]
-pub(crate) enum WireGuardStatus {
-    UNKNOWN,
-    DOWN,
-    UP,
-}
-impl WireGuardStatus {
-    pub(crate) fn value(&self) -> u8 {
-        match *self {
-            WireGuardStatus::UNKNOWN => 0,
-            WireGuardStatus::DOWN => 1,
-            WireGuardStatus::UP => 2,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct FileConfig {
-    pub(crate) agent: Agent,
-    pub(crate) network: Network,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct Config {
-    pub(crate) agent: Agent,
-    pub(crate) network: Network,
-    #[serde(default)]
-    pub(crate) network_digest: String,
-    #[serde(default)]
-    pub(crate) status: u8,
-    #[serde(default)]
-    pub(crate) timestamp: String,
-}
-
-impl From<&Config> for FileConfig {
-    fn from(config: &Config) -> Self {
-        FileConfig {
-            agent: config.agent.clone(),
-            network: config.network.clone(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct ConfigDigest {
-    #[serde(default)]
-    pub(crate) network_digest: String,
-    #[serde(default)]
-    pub(crate) status: u8,
-    #[serde(default)]
-    pub(crate) timestamp: String,
-}
-
-impl From<&Config> for ConfigDigest {
-    fn from(config: &Config) -> Self {
-        ConfigDigest {
-            network_digest: config.network_digest.clone(),
-            status: config.status.clone(),
-            timestamp: config.timestamp.clone(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub(crate) struct Agent {
-    pub(crate) address: String,
-    pub(crate) web: AgentWeb,
-    pub(crate) vpn: AgentVpn,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct AgentWeb {
-    pub(crate) scheme: String,
-    pub(crate) port: u16,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct AgentVpn {
-    pub(crate) port: u16,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct Network {
-    identifier: String,
-    subnet: String,
-    this_peer: String,
-    peers: HashMap<String, Peer>,
-    connections: HashMap<String, Connection>,
-    defaults: Defaults,
-    leases: Vec<Lease>,
-    updated_at: String,
-}
-
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct Peer {
-    name: String,
-    address: String,
-    public_key: String,
-    private_key: String,
-    created_at: String,
-    updated_at: String,
-    endpoint: EnabledValue,
-    dns: EnabledValue,
-    mtu: EnabledValue,
-    scripts: Scripts
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct EnabledValue {
-    enabled: bool,
-    value: String,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct Scripts {
-    pre_up: EnabledValue,
-    post_up: EnabledValue,
-    pre_down: EnabledValue,
-    post_down: EnabledValue,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct Connection {
-    enabled: bool,
-    pre_shared_key: String,
-    allowed_ips_a_to_b: String,
-    allowed_ips_b_to_a: String,
-    persistent_keepalive: EnabledValue,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct Defaults {
-    peer: DefaultPeer,
-    connection: DefaultConnection,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct DefaultPeer {
-    endpoint: EnabledValue,
-    dns: EnabledValue,
-    mtu: EnabledValue,
-    scripts: Scripts,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct DefaultConnection {
-    persistent_keepalive: EnabledValue,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub(crate) struct Lease {
-    address: String,
-    peer_id: String,
-    valid_until: String,
-}
 
 
 pub(crate) fn get_config() -> Config {
@@ -190,14 +28,14 @@ pub(crate) fn get_config() -> Config {
     let network_digest: &str = base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf).expect("Unable to calculate network digest");
     config.network_digest = network_digest.to_string();
     config.status = WireGuardStatus::UP.value(); // TODO: replace
-    config.timestamp = chrono_helper::get_now_timestamp_formatted();
+    config.timestamp = timestamp::get_now_timestamp_formatted();
 
     return config;
 }
 
 pub(crate) fn set_config(config: &Config) {
     let mut file_config = FileConfig::from(config);
-    file_config.network.updated_at = chrono_helper::get_now_timestamp_formatted();
+    file_config.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&file_config).expect("Failed to serialize config");
 
     let mut file = File::create(DEFAULT_CONF_FILE).expect("Failed to open config file");
@@ -263,7 +101,7 @@ pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
                 {
                     if let Some(peers) = network_config.get_mut("peers") {
                         peers[peer_id] = peer_details.clone();
-                        peers[peer_id]["created_at"] = Value::String(chrono_helper::get_now_timestamp_formatted());
+                        peers[peer_id]["created_at"] = Value::String(timestamp::get_now_timestamp_formatted());
                         peers[peer_id]["updated_at"] = peers[peer_id]["created_at"].clone();
                     }
                     // remove leased id/address
@@ -321,7 +159,7 @@ pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
     }
 
     if let Some(updated_at) = network_config.get_mut("updated_at") {
-        *updated_at = Value::String(chrono_helper::get_now_timestamp_formatted());
+        *updated_at = Value::String(timestamp::get_now_timestamp_formatted());
     }
 
     let config_str = serde_yml::to_string(&config_value)
@@ -392,22 +230,22 @@ pub(crate) fn lease_id_address() -> HttpResponse {
         reserved_addresses.push(peer.address.clone());
     }
     config_file.network.leases.retain(|lease| {
-        chrono_helper::get_duration_since_formatted(lease.valid_until.clone()) > Duration::zero()
+        timestamp::get_duration_since_formatted(lease.valid_until.clone()) > Duration::zero()
     });
 
     for lease in config_file.network.leases.clone() {
         reserved_addresses.push(lease.address.clone());
     }
-    let next_address = network_helper::get_next_available_address(&config_file.network.subnet, &reserved_addresses);
+    let next_address = network::get_next_available_address(&config_file.network.subnet, &reserved_addresses);
     log::info!("Next available address: {:?}", next_address);
 
     let body = Lease {
         address: next_address.unwrap(),
         peer_id: String::from(Uuid::new_v4()),
-        valid_until: chrono_helper::get_future_timestamp_formatted(Duration::minutes(10)),
+        valid_until: timestamp::get_future_timestamp_formatted(Duration::minutes(10)),
     };
     config_file.network.leases.push(body.clone());
-    config_file.network.updated_at = chrono_helper::get_now_timestamp_formatted();
+    config_file.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&config_file).expect("Failed to serialize config");
     // Move back to beginning and truncate before writing
     config_file_reader.set_len(0).expect("Failed to truncate config file");

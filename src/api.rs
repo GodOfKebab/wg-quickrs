@@ -1,9 +1,8 @@
+use crate::conf;
 use actix_web::{get, patch, web, HttpResponse, Responder};
 use serde_json::Value;
 use std::io::Write;
 use std::process::{Command, Stdio};
-
-pub(crate) mod conf;
 
 #[derive(serde::Deserialize)]
 struct SummaryBody {
@@ -13,9 +12,9 @@ struct SummaryBody {
 #[get("/api/network/summary")]
 async fn get_summary(params: web::Query<SummaryBody>) -> impl Responder {
     let resp_body = if params.only_network_digest {
-        serde_json::to_string(&conf::ConfigDigest::from(&conf::get_config()))
+        serde_json::to_string(&conf::types::ConfigDigest::from(&conf::logic::get_config()))
     } else {
-        serde_json::to_string(&conf::get_config())
+        serde_json::to_string(&conf::logic::get_config())
     }.unwrap();
 
     HttpResponse::Ok()
@@ -105,10 +104,10 @@ async fn patch_network_config(body: web::Bytes) -> impl Responder {
         }
     };
 
-    return conf::update_config(change_sum);
+    return conf::logic::update_config(change_sum);
 }
 
 #[get("/api/network/lease/id-address")]
 async fn get_network_lease_id_address() -> impl Responder {
-    return conf::lease_id_address();
+    return conf::logic::lease_id_address();
 }
