@@ -277,6 +277,21 @@ pub(crate) fn update_config(change_sum: Value) -> HttpResponse {
         }
     }
 
+    // process removed_peers
+    if let Some(removed_peers) = change_sum.get("removed_peers") {
+        if let Some(removed_peers_map) = removed_peers.as_object() {
+            for (peer_id, _peer_details) in removed_peers_map {
+                {
+                    if let Some(peers) = network_config.get_mut("peers") {
+                        if let Some(peers_map) = peers.as_object_mut() {
+                            peers_map.remove(peer_id);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // process added_connections
     if let Some(added_connections) = change_sum.get("added_connections") {
         if let Some(added_connections_map) = added_connections.as_object() {

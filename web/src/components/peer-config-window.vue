@@ -16,34 +16,39 @@
                    class="z-10">
 
       <!-- title and top bar -->
-      <div class="flex justify-between items-center">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 inline">
+      <div class="flex flex-col items-center">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 inline mb-2 text-start w-full">
           Configuration for <strong>{{ peer_conf.name }}</strong>:
         </h3>
-        <span class="order-last">
-          <button v-show="peerConfigWindow === 'edit'"
-                  :disabled="!changeDetected"
+        <span class="order-last w-full flex justify-between px-1">
+          <button :disabled="peerId === network.this_peer"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  title="Delete this peer"
+                  @click="dialogId = 'confirm-delete'">
+            <img alt="Delete" class="h-6" src="../icons/flowbite/trash-bin.svg"/>
+          </button>
+          <button :disabled="!changeDetected"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="See the configuration differences for this peer"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 rounded transition special-fill mr-1"
                   @click="peerConfigWindow = 'view-changes'">
             <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/merge-cells.svg"/>
           </button>
-          <button v-show="peerConfigWindow === 'file' || peerConfigWindow === 'view-changes'"
-                  class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill-edit"
-                  title="Edit the configuration for this peer" @click="peerConfigWindow = 'edit'">
+          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
+                  title="Edit the configuration for this peer"
+                  @click="peerConfigWindow = 'edit'">
             <img alt="Edit Configuration" class="h-6" src="../icons/flowbite/file-pen.svg"/>
           </button>
-          <button v-show="peerConfigWindow === 'edit'"
-                  class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill"
-                  title="See the configuration file for this peer" @click="peerConfigWindow = 'file'">
+          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  title="See the configuration file for this peer"
+                  @click="peerConfigWindow = 'file'">
             <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
           </button>
-          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill ml-1"
+          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="Show QR Code"
                   @click="drawQRCode(); showQRCode = true">
             <img alt="QR Code" class="h-6" src="../icons/flowbite/qr-code.svg"/>
           </button>
-          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill ml-1"
+          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill"
                   title="Download Configuration"
                   @click="downloadPeerConfig()">
             <img alt="Download" class="h-6" src="../icons/flowbite/download.svg"/>
@@ -92,7 +97,7 @@
       </div>
     </custom-dialog>
 
-    <!-- Dialog: Confirm -->
+    <!-- Dialog: Confirm Changes-->
     <custom-dialog v-if="dialogId === 'confirm-changes'"
                    :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
                    :left-button-text="'Cancel'"
@@ -111,6 +116,23 @@
       <change-sum :change-sum="changeSum"
                   :network="network"
                   :peer-id="peerId"></change-sum>
+    </custom-dialog>
+
+    <!-- Dialog: Confirm Delete -->
+    <custom-dialog v-if="dialogId === 'confirm-delete'"
+                   :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
+                   :left-button-text="'Cancel'"
+                   :right-button-classes="['text-white', 'bg-red-600', 'hover:bg-red-700']"
+                   :right-button-click="() => { deletePeer(); dialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', dialogId); }"
+                   :right-button-text="'Delete!'"
+                   class="z-20"
+                   icon="danger">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Confirm deleting <strong>{{ peer_conf.name }}</strong>
+      </h3>
+      <div class="my-2 text-sm text-gray-500">
+        Are you sure you want to delete this peer?
+      </div>
     </custom-dialog>
 
     <!-- Window: QR Code Display -->
@@ -205,6 +227,17 @@ export default {
     },
     updateConfiguration() {
       API.patch_network_config(this.changeSum);
+    },
+    deletePeer() {
+      const changeSum = {
+        removed_peers: {},
+        removed_connections: {}
+      };
+      changeSum.removed_peers[this.peerId] = this.peer_conf;
+      for (const [connection_id, connection_details] of Object.entries(this.network.connections)) {
+        if (connection_id.includes(this.peerId)) changeSum.removed_connections[connection_id] = connection_details;
+      }
+      API.patch_network_config(changeSum);
     },
     drawQRCode() {
       QRCode.toCanvas(document.getElementById('qr-canvas'), this.peer_wg_conf_file);

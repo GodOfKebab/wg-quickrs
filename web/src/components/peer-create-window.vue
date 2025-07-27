@@ -11,21 +11,46 @@
                    right-button-text="Create Peer">
 
       <!-- title and top bar -->
-      <div class="flex justify-between items-center">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 inline">
+      <div class="flex flex-col items-center">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 inline mb-2 text-start w-full">
           Create a new Peer:
         </h3>
-        <span class="order-last">
-          <button v-show="peerConfigWindow === 'edit'"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 rounded transition special-fill"
+        <span class="order-last w-full flex justify-between px-1">
+          <button
+              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+              disabled
+              title="Delete this peer">
+            <img alt="Delete" class="h-6" src="../icons/flowbite/trash-bin.svg"/>
+          </button>
+          <button
+              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="See the configuration differences for this peer"
                   @click="peerConfigWindow = 'view-changes'">
             <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/merge-cells.svg"/>
           </button>
-          <button v-show="peerConfigWindow === 'view-changes'"
-                  class="align-middle bg-gray-100 hover:bg-gray-600 p-1 rounded transition special-fill-edit"
-                  title="Edit the configuration for this peer" @click="peerConfigWindow = 'edit'">
+          <button
+              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
+              title="Edit the configuration for this peer"
+              @click="peerConfigWindow = 'edit'">
             <img alt="Edit Configuration" class="h-6" src="../icons/flowbite/file-pen.svg"/>
+          </button>
+          <button
+              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+              disabled
+              title="See the configuration file for this peer">
+            <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
+          </button>
+          <button
+              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+              disabled
+              title="Show QR Code">
+            <img alt="QR Code" class="h-6" src="../icons/flowbite/qr-code.svg"/>
+          </button>
+          <button
+              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 rounded transition special-fill"
+              disabled
+              title="Download Configuration">
+            <img alt="Download" class="h-6" src="../icons/flowbite/download.svg"/>
           </button>
         </span>
       </div>
