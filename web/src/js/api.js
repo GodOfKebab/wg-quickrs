@@ -2,7 +2,7 @@
 
 export default class API {
     static async call({method, path, headers, body}) {
-        const res = await fetch(`/api${path}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}/api${path}`, {
             method,
             headers,
             body: body

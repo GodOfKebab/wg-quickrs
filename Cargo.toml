@@ -9,6 +9,7 @@ cargo-watch = "8.5.3"
 
 [dependencies]
 actix-web = "4"
+actix-cors = "0.7"
 mime_guess = "2.0.4"
 rust-embed = "8.5.0"
 serde = { version = "1.0", features = ["derive"] }

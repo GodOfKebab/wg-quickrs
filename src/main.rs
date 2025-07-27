@@ -1,3 +1,5 @@
+#[cfg(debug_assertions)]
+use actix_cors::Cors;
 use actix_web::{middleware, App, HttpServer};
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
@@ -18,7 +20,7 @@ async fn main() -> std::io::Result<()> {
     log::info!("Hosting the frontend at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);
 
     HttpServer::new(|| {
-        App::new()
+        let app = App::new()
             .wrap(middleware::Compress::default())
             .service(app::web_ui_index)
             .service(api::get_network_summary)
@@ -26,7 +28,22 @@ async fn main() -> std::io::Result<()> {
             .service(api::get_wireguard_pre_shared_key)
             .service(api::patch_network_config)
             .service(api::get_network_lease_id_address)
-            .service(app::web_ui_dist)
+            .service(app::web_ui_dist);
+
+        #[cfg(debug_assertions)]
+        {
+            let cors = Cors::default()
+                .allow_any_origin()
+                .allow_any_method()
+                .allow_any_header()
+                .max_age(3600);
+            app.wrap(cors)
+        }
+
+        #[cfg(not(debug_assertions))]
+        {
+            app
+        }
     })
         .bind((config.agent.address, config.agent.web.port))?
         .run()
