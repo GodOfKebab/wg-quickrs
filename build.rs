@@ -24,7 +24,7 @@ fn main() {
         })
         .unwrap_or_else(|| "unknown".to_string());
 
-    let timestamp = chrono::Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+    let timestamp = chrono::Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
     let content = format!(
         r#"

@@ -11,8 +11,7 @@
         </h1>
       </div>
 
-      <div :title="`Last Updated: ${lastUpdated ? lastUpdated: 'Never'}`"
-           class="inline-block float-right px-3 whitespace-nowrap align-middle">
+      <div class="inline-block float-right px-3 whitespace-nowrap align-middle">
         <div v-if="requiresPassword" class="relative mb-5 bg-blue-50">
           <div class="text-sm text-gray-400 cursor-pointer hover:underline absolute top-0 right-0" @click="">
             Logout
@@ -62,14 +61,20 @@
     <div class="flex items-center opacity-50">
 
       <div v-if="network.this_peer" class="inline-block mr-auto text-gray-800 text-xs ml-5">
-        <span>Network Identifier: <strong class="text-sm whitespace-nowrap">{{ network.identifier }}</strong></span>
+        <span>Network Identifier: <strong class="text-sm inline-block">{{ network.identifier }}</strong></span>
       </div>
 
       <div v-if="network.this_peer"
            class=" inline-block overflow-auto ml-auto mr-3 text-gray-800 text-xs flex-0 text-right">
-        <span>Host: <strong class="text-sm">{{ network.peers[network.this_peer].name }}</strong></span>
-        ({{ network.this_peer }})
         <span>
+          Host: <strong class="text-sm inline-block whitespace-pre-wrap">{{
+            network.peers[network.this_peer].name
+          }}</strong>
+        </span>
+        <span class="inline-block whitespace-pre-wrap">
+          ({{ network.this_peer }})
+        </span>
+        <span class="inline-block whitespace-pre-wrap">
           @
           {{ network.peers[network.this_peer].address }} /
           {{ network.peers[network.this_peer].endpoint.value }}
@@ -99,12 +104,19 @@
   </div>
 
   <!-- Footer -->
-  <footer class="text-center text-gray-500 my-5">
+  <footer class="text-center text-gray-500 my-5 font-mono mx-2">
     <div v-if="version">
-      <small :title="version.datetime">
-        backend: {{ version.backend }},
-        frontend: {{ version.frontend }},
-        built: {{ version.built }}
+      <small :title="version.datetime" class="inline-block whitespace-pre-wrap">
+        backend: <strong>{{ version.backend }}</strong>
+      </small>
+      <small :title="version.datetime" class="inline-block whitespace-pre-wrap">
+        frontend: <strong>{{ version.frontend }}</strong>
+      </small>
+      <small :title="version.datetime" class="inline-block whitespace-pre-wrap">
+        built: <strong>{{ version.built }}</strong>
+      </small>
+      <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
+        last fetched: <strong>{{ last_fetch.rfc3339 }}</strong>
       </small>
     </div>
 
@@ -159,7 +171,6 @@ export default {
       refreshRate: 1000,
       webServerStatus: 0,
       wireguardStatus: 0,
-      lastUpdated: null,
       ServerStatusEnum: {
         'unknown': 0,
         'down': 1,
@@ -169,7 +180,12 @@ export default {
       dialogId: '',
       network: {},
       network_digest: '',
-      version: null
+      version: null,
+      last_fetch: {
+        rfc3339: "",
+        readable: "",
+      },
+
     }
   },
   mounted: function () {
@@ -198,7 +214,8 @@ export default {
           this.wireguardStatus = summary.status;
           need_to_update_network = this.network_digest !== summary.network_digest;
 
-          this.lastUpdated = summary.timestamp;
+          this.last_fetch.rfc3339 = summary.timestamp;
+          this.last_fetch.readable = (new Date(Date.parse(this.last_fetch.rfc3339))).toString();
         }).catch(err => {
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
