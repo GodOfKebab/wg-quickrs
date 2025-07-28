@@ -32,11 +32,12 @@
       <input
           v-model="peer_local.address"
           :class="[FIELD_COLOR_LOOKUP[is_changed_field.address]]"
-          :placeholder="`Address (e.g. ${next_available_address})`"
+          :placeholder="`Address (e.g. 10.8.0.1})`"
           :disabled="isNewPeer"
           class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow disabled:bg-gray-100"
           type="text"
           @change=""/> <!--TODO: update connection address on change  -->
+      <!--TODO: get placeholder address to have an actual working address  -->
       <div v-if="!_fast_equal(peer_local.address, peer.address) && !isNewPeer"
            class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
         <button
