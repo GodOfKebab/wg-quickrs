@@ -260,11 +260,11 @@ export default {
       default: {},
     },
     peerId: {
-      type: Object,
-      default: {},
+      type: String,
+      default: "",
     },
     isNewPeer: {
-      type: Object,
+      type: Boolean,
       default: false,
     },
   },

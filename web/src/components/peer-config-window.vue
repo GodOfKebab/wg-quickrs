@@ -320,15 +320,15 @@ export default {
       return data;
     },
     errorDetected() {
-      return Object.keys(this.changeSum.errors.peers[this.peerId]).length
-          + Object.keys(this.changeSum.errors.connections).length
+      return !!(Object.keys(this.changeSum.errors.peers[this.peerId]).length
+          + Object.keys(this.changeSum.errors.connections).length);
     },
     changeDetected() {
-      return this.errorDetected
+      return !!(this.errorDetected
           + Object.keys(this.changeSum.changed_fields.peers[this.peerId]).length
           + Object.keys(this.changeSum.changed_fields.connections).length
           + Object.keys(this.changeSum.added_connections).length
-          + Object.keys(this.changeSum.removed_connections).length;
+          + Object.keys(this.changeSum.removed_connections).length);
     }
   },
 }
