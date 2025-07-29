@@ -2,7 +2,7 @@
 
   <div>
     <!-- Dialog: Settings -->
-    <custom-dialog :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
+    <custom-dialog :left-button-click="() => { $emit('update:dialogId', ''); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['enabled:bg-green-700', 'enabled:hover:bg-green-800', 'enabled:focus:outline-none', 'bg-gray-200', 'disabled:hover:bg-gray-200', 'disabled:cursor-not-allowed', 'text-white']"
                    :rightButtonDisabled="peerConfigWindow !== 'file' && (!changeDetected || errorDetected)"
@@ -11,7 +11,7 @@
                                           })
                                           .catch(() => {
                                           alert('something went wrong');
-                                          }); } : () => { dialogId = 'confirm-changes'; }"
+                                          }); } : () => { overlayDialogId = 'confirm-changes' }"
                    :right-button-text="peerConfigWindow === 'file' ? 'Copy To Clipboard' : 'Save Configuration'"
                    class="z-10">
 
@@ -24,7 +24,7 @@
           <button :disabled="peerId === network.this_peer"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="Delete this peer"
-                  @click="dialogId = 'confirm-delete'">
+                  @click="overlayDialogId = 'confirm-delete'">
             <img alt="Delete" class="h-6" src="../icons/flowbite/trash-bin.svg"/>
           </button>
           <button :disabled="!changeDetected"
@@ -47,9 +47,9 @@
             <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
-                  :class="showQRCode ? 'bg-gray-600' : ''"
+                  :class="overlayDialogId === 'qr' ? 'bg-gray-600' : ''"
                   title="Show QR Code"
-                  @click="drawQRCode(); showQRCode = true">
+                  @click="drawQRCode(); overlayDialogId = 'qr'">
             <img alt="QR Code" class="h-6" src="../icons/flowbite/qr-code.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
@@ -102,11 +102,11 @@
     </custom-dialog>
 
     <!-- Dialog: Confirm Changes-->
-    <custom-dialog v-if="dialogId === 'confirm-changes'"
-                   :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
+    <custom-dialog v-if="overlayDialogId === 'confirm-changes'"
+                   :left-button-click="() => { overlayDialogId = ''; }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['text-white', 'bg-green-600', 'hover:bg-green-700']"
-                   :right-button-click="() => { updateConfiguration(); dialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', dialogId); }"
+                   :right-button-click="() => { updateConfiguration(); overlayDialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', ''); }"
                    :right-button-text="'Do it!'"
                    class="z-20"
                    icon="danger">
@@ -123,11 +123,11 @@
     </custom-dialog>
 
     <!-- Dialog: Confirm Delete -->
-    <custom-dialog v-if="dialogId === 'confirm-delete'"
-                   :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
+    <custom-dialog v-if="overlayDialogId === 'confirm-delete'"
+                   :left-button-click="() => { overlayDialogId = '' }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['text-white', 'bg-red-600', 'hover:bg-red-700']"
-                   :right-button-click="() => { deletePeer(); dialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', dialogId); }"
+                   :right-button-click="() => { deletePeer(); overlayDialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', ''); }"
                    :right-button-text="'Delete!'"
                    class="z-20"
                    icon="danger">
@@ -140,10 +140,10 @@
     </custom-dialog>
 
     <!-- Window: QR Code Display -->
-    <div v-show="showQRCode">
+    <div v-show="overlayDialogId === 'qr'">
       <div class="bg-black bg-opacity-50 fixed top-0 right-0 left-0 bottom-0 flex items-center justify-center z-20">
         <div class="bg-white rounded-md shadow-lg relative p-8">
-          <button class="absolute right-4 top-4 text-gray-600 hover:text-gray-800" @click="showQRCode = false">
+          <button class="absolute right-4 top-4 text-gray-600 hover:text-gray-800" @click="overlayDialogId = ''">
             <img alt="Close QR Code Window" class="h-6" src="../icons/flowbite/close.svg"/>
           </button>
           <canvas id="qr-canvas"></canvas>
@@ -207,7 +207,7 @@ export default {
         removed_connections: {},
         errors: {},
       },
-      showQRCode: false,
+      overlayDialogId: '',
     }
   },
   mounted: function () {

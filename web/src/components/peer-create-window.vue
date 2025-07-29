@@ -2,10 +2,10 @@
 
   <div>
     <!-- Dialog: Settings -->
-    <custom-dialog :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
+    <custom-dialog :left-button-click="() => { $emit('update:dialogId', ''); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['enabled:bg-green-700', 'enabled:hover:bg-green-800', 'enabled:focus:outline-none', 'bg-gray-200', 'disabled:hover:bg-gray-200', 'disabled:cursor-not-allowed', 'text-white']"
-                   :right-button-click="() => { dialogId = 'confirm-changes'; }"
+                   :right-button-click="() => { overlayDialogId = 'confirm-changes'; }"
                    :rightButtonDisabled="peerConfigWindow !== 'file' && errorDetected"
                    class="z-10"
                    right-button-text="Create Peer">
@@ -110,11 +110,11 @@
     </custom-dialog>
 
     <!-- Dialog: Confirm -->
-    <custom-dialog v-if="dialogId === 'confirm-changes'"
-                   :left-button-click="() => { dialogId = ''; $emit('update:dialogId', dialogId); }"
+    <custom-dialog v-if="overlayDialogId === 'confirm-changes'"
+                   :left-button-click="() => { overlayDialogId = '' }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['text-white', 'bg-green-600', 'hover:bg-green-700']"
-                   :right-button-click="() => { updateConfiguration(); dialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', dialogId); }"
+                   :right-button-click="() => { updateConfiguration(); overlayDialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', ''); }"
                    :right-button-text="'Do it!'"
                    class="z-20"
                    icon="danger">
@@ -183,7 +183,8 @@ export default {
       },
       peerId: "",
       default_peer_conf: {},
-      peer_id_address_valid_until: ""
+      peer_id_address_valid_until: "",
+      overlayDialogId: '',
     }
   },
   created() {
