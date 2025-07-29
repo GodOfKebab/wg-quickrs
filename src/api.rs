@@ -23,7 +23,7 @@ async fn get_version() -> impl Responder {
 
 #[derive(serde::Deserialize)]
 pub(crate) struct SummaryBody {
-    pub(crate) only_network_digest: bool,
+    pub(crate) only_digest: bool,
 }
 
 #[get("/api/network/summary")]

@@ -15,7 +15,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
 
 pub(crate) fn respond_get_network_summary(params: web::Query<crate::api::SummaryBody>) -> HttpResponse {
-    let resp_body = if params.only_network_digest {
+    let resp_body = if params.only_digest {
         serde_json::to_string(&conf::types::ConfigDigest::from(&get_config()))
     } else {
         serde_json::to_string(&get_config())
@@ -32,13 +32,14 @@ pub(crate) fn get_config() -> Config {
 
     // Make sure agent fields get precedence over network fields
     if config.network.peers.get(&config.network.this_peer).unwrap().endpoint.value != format!("{}:{}", config.agent.address, config.agent.vpn.port) {
+        log::info!("detected mismatch between configured wg-rusteze agent endpoints and wireguard peer endpoints! overriding wireguard peer endpoints");
         config.network.peers.get_mut(&config.network.this_peer).unwrap().endpoint.value = format!("{}:{}", config.agent.address, config.agent.vpn.port);
         set_config(&config);
     }
 
     let mut buf = [0u8; 64];
-    let network_digest: &str = base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf).expect("Unable to calculate network digest");
-    config.network_digest = network_digest.to_string();
+    let digest: &str = base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf).expect("Unable to calculate network digest");
+    config.digest = digest.to_string();
     config.status = WireGuardStatus::UP.value(); // TODO: replace
     config.timestamp = timestamp::get_now_timestamp_formatted();
 

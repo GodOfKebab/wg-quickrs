@@ -5,7 +5,6 @@ use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
 use simple_logger::SimpleLogger;
-use std::fs;
 
 mod api;
 mod app;
@@ -39,13 +38,12 @@ async fn main() -> std::io::Result<()> {
 
     let args = Args::parse();
     WG_RUSTEZE_CONFIG_FILE.set(args.wg_rusteze_config_file).unwrap();
-    log::info!("Using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().expect("CONFIG_FILE not set"));
+    log::info!("using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().expect("CONFIG_FILE not set"));
 
-    let file_contents = fs::read_to_string(conf::DEFAULT_CONF_FILE).expect("Unable to open file");
-    let config: conf::types::Config = serde_yml::from_str(&file_contents).unwrap();
+    let config: conf::types::Config = conf::logic::get_config();
+    log::info!("wg-rusteze config digest: {}", config.digest);
 
-    log::info!("Hosting the frontend at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);
-
+    log::info!("wg-rusteze frontend accessible at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);
     HttpServer::new(|| {
         let app = App::new()
             .wrap(middleware::Compress::default())

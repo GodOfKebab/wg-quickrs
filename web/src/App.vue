@@ -184,7 +184,7 @@ export default {
       requiresPassword: false,
       dialogId: '',
       network: {},
-      network_digest: '',
+      digest: '',
       version: null,
       last_fetch: {
         rfc3339: "",
@@ -214,11 +214,11 @@ export default {
   methods: {
     async refresh() {
       let need_to_update_network = true;
-      if (this.network_digest.length === 64) {
-        await API.get_summary('?only_network_digest=true').then(summary => {
+      if (this.digest.length === 64) {
+        await API.get_summary('?only_digest=true').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.wireguardStatus = summary.status;
-          need_to_update_network = this.network_digest !== summary.network_digest;
+          need_to_update_network = this.digest !== summary.digest;
 
           this.last_fetch.rfc3339 = summary.timestamp;
           const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
@@ -239,9 +239,9 @@ export default {
         return;
       }
 
-      await API.get_summary('?only_network_digest=false').then(summary => {
+      await API.get_summary('?only_digest=false').then(summary => {
         this.webServerStatus = this.ServerStatusEnum.up;
-        this.network_digest = summary.network_digest;
+        this.digest = summary.digest;
         this.network = summary.network;
         this.network.static_peer_ids = [];
         this.network.roaming_peer_ids = [];

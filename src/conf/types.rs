@@ -30,7 +30,7 @@ pub(crate) struct Config {
     pub(crate) agent: Agent,
     pub(crate) network: Network,
     #[serde(default)]
-    pub(crate) network_digest: String,
+    pub(crate) digest: String,
     #[serde(default)]
     pub(crate) status: u8,
     #[serde(default)]
@@ -49,7 +49,7 @@ impl From<&Config> for FileConfig {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub(crate) struct ConfigDigest {
     #[serde(default)]
-    pub(crate) network_digest: String,
+    pub(crate) digest: String,
     #[serde(default)]
     pub(crate) status: u8,
     #[serde(default)]
@@ -59,7 +59,7 @@ pub(crate) struct ConfigDigest {
 impl From<&Config> for ConfigDigest {
     fn from(config: &Config) -> Self {
         ConfigDigest {
-            network_digest: config.network_digest.clone(),
+            digest: config.digest.clone(),
             status: config.status.clone(),
             timestamp: config.timestamp.clone(),
         }
