@@ -106,13 +106,13 @@
   <!-- Footer -->
   <footer class="text-center text-gray-500 my-5 font-mono mx-2">
     <div v-if="version">
-      <small :title="version.datetime" class="inline-block whitespace-pre-wrap">
+      <small :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
         backend: <strong>{{ version.backend }}</strong>
       </small>
-      <small :title="version.datetime" class="inline-block whitespace-pre-wrap">
+      <small :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
         frontend: <strong>{{ version.frontend }}</strong>
       </small>
-      <small :title="version.datetime" class="inline-block whitespace-pre-wrap">
+      <small :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
         built: <strong>{{ version.built }}</strong>
       </small>
       <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
@@ -163,6 +163,11 @@ import CustomDialog from "./components/custom-dialog.vue";
 import PeerConfigWindow from "./components/peer-config-window.vue";
 import PeerCreateWindow from "./components/peer-create-window.vue";
 
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
+
 export default {
   name: "app",
   components: {MapVisual, CustomDialog, PeerConfigWindow, PeerCreateWindow},
@@ -196,11 +201,12 @@ export default {
     }, this.refreshRate)
 
     API.get_version().then(response => {
+      const last_built_date = (new Date(Date.parse(response.built)))
       this.version = {
         backend: response.backend,
         frontend: response.frontend,
         built: response.built,
-        datetime: (new Date(Date.parse(response.built))).toString()
+        readable_datetime: `${last_built_date} [${dayjs(last_built_date).fromNow()}]`
       }
     });
   },
@@ -215,7 +221,8 @@ export default {
           need_to_update_network = this.network_digest !== summary.network_digest;
 
           this.last_fetch.rfc3339 = summary.timestamp;
-          this.last_fetch.readable = (new Date(Date.parse(this.last_fetch.rfc3339))).toString();
+          const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
+          this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
         }).catch(err => {
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
@@ -247,7 +254,9 @@ export default {
         })
         this.wireguardStatus = summary.status
 
-        this.lastUpdated = summary.timestamp;
+        this.last_fetch.rfc3339 = summary.timestamp;
+        const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
+        this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
       }).catch(err => {
         this.wireguardStatus = this.ServerStatusEnum.unknown;
         if (err.toString() === 'TypeError: Load failed') {
