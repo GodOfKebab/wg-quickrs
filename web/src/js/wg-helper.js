@@ -11,10 +11,10 @@ Address = ${peer.address}/24
 ${peer.endpoint.enabled ? `ListenPort = ${peer.endpoint.toString().split(':')[1]}` : 'DEL'}
 ${peer.dns.enabled ? `DNS = ${peer.dns.value}` : 'DEL'}
 ${peer.mtu.enabled ? `MTU = ${peer.mtu.value}` : 'DEL'}
-${peer.scripts.pre_up.enabled ? `pre_up = ${peer.scripts.pre_up.value}` : 'DEL'}
-${peer.scripts.post_up.enabled ? `post_up = ${peer.scripts.post_up.value}` : 'DEL'}
-${peer.scripts.pre_down.enabled ? `pre_down = ${peer.scripts.pre_down.value}` : 'DEL'}
-${peer.scripts.post_down.enabled ? `post_down = ${peer.scripts.post_down.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
+${peer.scripts.pre_up.enabled ? `PreUp = ${peer.scripts.pre_up.value}` : 'DEL'}
+${peer.scripts.post_up.enabled ? `PostUp = ${peer.scripts.post_up.value}` : 'DEL'}
+${peer.scripts.pre_down.enabled ? `PreDown = ${peer.scripts.pre_down.value}` : 'DEL'}
+${peer.scripts.post_down.enabled ? `PostDown = ${peer.scripts.post_down.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
 
         for (const [connectionPeers, connectionDetails] of Object.entries(network.connections)) {
             if (!connectionPeers.includes(peerId)) continue;
