@@ -54,7 +54,7 @@ async fn main() -> std::io::Result<()> {
     log::info!("config digest: {}", config.digest);
 
     // start the tunnel
-    // wireguard::util::start_wireguard_tunnel(&config);
+    wireguard::util::start_wireguard_tunnel(&config);
 
     // start the HTTP server for frontend and API control
     log::info!("frontend/API accessible at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);
