@@ -5,6 +5,8 @@ use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
 use simple_logger::SimpleLogger;
+use std::fmt::format;
+use std::path::{Path, PathBuf};
 
 mod api;
 mod app;
@@ -24,18 +26,19 @@ struct Args {
     #[arg(
         long,
         default_value = ".wg-rusteze/conf.yml",
-        value_name = "CONFIG_PATH"
+        value_name = "WG_RUSTEZE_CONFIG_FILE_PATH"
     )]
-    wg_rusteze_config_file: String,
+    wg_rusteze_config_file: PathBuf,
     #[arg(
         long,
-        default_value = ".wg-rusteze/wg-rusteze.conf",
-        value_name = "CONFIG_PATH"
+        default_value = "/opt/homebrew/etc/wireguard/",
+        value_name = "WIREGUARD_CONFIG_FOLDER_PATH"
     )]
-    wireguard_config_file: String,
+    wireguard_config_folder: PathBuf,
 }
-pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<String> = OnceCell::new();
-pub static WIREGUARD_CONFIG_FILE: OnceCell<String> = OnceCell::new();
+
+pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
+pub static WIREGUARD_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -46,15 +49,19 @@ async fn main() -> std::io::Result<()> {
     // get the wg_rusteze config file path
     let args = Args::parse();
     WG_RUSTEZE_CONFIG_FILE.set(args.wg_rusteze_config_file).unwrap();
-    WIREGUARD_CONFIG_FILE.set(args.wireguard_config_file).unwrap();
-    log::info!("using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set"));
+    log::info!("using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().unwrap().display());
 
-    // print the config digest
+    // get the wireguard config file path
     let config: config_wasm::types::Config = conf::logic::get_config();
-    log::info!("config digest: {}", config.digest);
+    let mut wireguard_config_folder = PathBuf::from(&args.wireguard_config_folder);
+    wireguard_config_folder.push(format!("{}.conf", config.network.identifier));
+    WIREGUARD_CONFIG_FILE.set(wireguard_config_folder).unwrap();
+    log::info!("using the wireguard config file at \"{}\"", WIREGUARD_CONFIG_FILE.get().unwrap().display());
 
     // start the tunnel
-    wireguard::util::start_wireguard_tunnel(&config);
+    let _wg_startup_success = wireguard::util::start_wireguard_tunnel(&config).unwrap_or_else(|e| {
+        log::error!("{}", e);
+    });
 
     // start the HTTP server for frontend and API control
     log::info!("frontend/API accessible at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);

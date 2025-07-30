@@ -2,30 +2,106 @@ use crate::macros::*;
 use crate::WIREGUARD_CONFIG_FILE;
 use actix_web::{HttpResponse, Responder};
 use config_wasm::get_peer_wg_config;
+use std::fs;
 use std::fs::File;
+use std::io;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-pub(crate) fn start_wireguard_tunnel(config: &config_wasm::types::Config) {
+pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
+    match Command::new("wg-quick")
+        .arg("down")
+        .arg(config.network.identifier.clone())
+        .output() {
+        Ok(output) => {
+            log::info!("$ wg-quick down {}", config.network.identifier.clone());
+            if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
+            if output.status.success() { return Ok(()); }
+            Err(io::Error::from(io::ErrorKind::Other))
+        }
+        Err(e) => {
+            Err(e)
+        }
+    }
+}
+
+pub(crate) fn enable_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
+    match Command::new("wg-quick")
+        .arg("up")
+        .arg(config.network.identifier.clone())
+        .output() {
+        Ok(output) => {
+            log::info!("$ wg-quick up {}", config.network.identifier.clone());
+            if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
+            if output.status.success() { return Ok(()); }
+            Err(io::Error::from(io::ErrorKind::Other))
+        }
+        Err(e) => {
+            Err(e)
+        }
+    }
+}
+
+pub(crate) fn update_wireguard_conf_file(config: &config_wasm::types::Config) -> Result<(), io::Error> {
+    // generate .conf content
     let wg_conf = match get_peer_wg_config(&config.network, config.network.this_peer.clone(), full_version!()) {
         Ok(n) => n,
         Err(e) => {
-            log::error!("{}", e);
-            return;
+            return Err(e);
         },
     };
 
-    let config_path = WIREGUARD_CONFIG_FILE
-        .get()
-        .expect("WIREGUARD_CONFIG_FILE not set");
-
-    let mut file = File::create(config_path).expect("Failed to open config file");
-    file.write_all(wg_conf.as_bytes()).expect("Failed to write to config file");
-
-    // log::info!("wireguard tunnel accessible at {}:{}", config.agent.address, config.agent.vpn.port);
-    // log::info!("wireguard tunnel address: {} subnet: {}", this_peer.address, config.network.subnet);
+    // write the content to the .conf file
+    let config_path = WIREGUARD_CONFIG_FILE.get().unwrap();
+    // make sure the parent directory exists
+    match fs::create_dir_all(config_path.parent().unwrap()) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(e);
+        }
+    };
+    // open the file with write-only permissions
+    let mut file = match File::create(config_path) {
+        Ok(f) => f,
+        Err(e) => {
+            return Err(e);
+        }
+    };
+    // dump the new conf to the file
+    match file.write_all(wg_conf.as_bytes()) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(e);
+        }
+    };
+    return Ok(());
 }
 
+pub(crate) fn start_wireguard_tunnel(config: &config_wasm::types::Config) -> Result<(), io::Error> {
+    // override .conf from .yml
+    match update_wireguard_conf_file(config) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(e);
+        }
+    };
+    match disable_wireguard(config) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(e);
+        }
+    };
+    match enable_wireguard(config) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(e);
+        }
+    };
+    log::info!("wireguard tunnel accessible at {}:{}", config.agent.address, config.agent.vpn.port);
+    return Ok(());
+}
 
 pub(crate) fn respond_get_wireguard_public_private_key() -> impl Responder {
     #[derive(serde::Serialize, serde::Deserialize)]
