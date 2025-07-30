@@ -75,7 +75,7 @@ export default {
   emits: ['updated-change-sum'],
   methods: {
     async refreshPeerEditKeys() {
-      await API.get_public_private_key().then(response => {
+      await API.get_public_private_keys().then(response => {
         this.peer_local.public_key = response.public_key;
         this.peer_local.private_key = response.private_key;
         this.$emit("updated-change-sum", {

@@ -31,9 +31,9 @@ async fn get_network_summary(params: web::Query<SummaryBody>) -> impl Responder 
     return conf::logic::respond_get_network_summary(params);
 }
 
-#[get("/api/wireguard/public_private_key")]
-async fn get_wireguard_public_private_key() -> impl Responder {
-    return wireguard::util::respond_get_wireguard_public_private_key();
+#[get("/api/wireguard/public_private_keys")]
+async fn get_wireguard_public_private_keys() -> impl Responder {
+    return wireguard::util::respond_get_wireguard_public_private_keys();
 }
 
 #[get("/api/wireguard/pre_shared_key")]

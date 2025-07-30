@@ -5,8 +5,7 @@ use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
 use simple_logger::SimpleLogger;
-use std::fmt::format;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 mod api;
 mod app;
@@ -59,7 +58,7 @@ async fn main() -> std::io::Result<()> {
     log::info!("using the wireguard config file at \"{}\"", WIREGUARD_CONFIG_FILE.get().unwrap().display());
 
     // start the tunnel
-    let _wg_startup_success = wireguard::util::start_wireguard_tunnel(&config).unwrap_or_else(|e| {
+    let _wg_startup_success = wireguard::cmd::start_wireguard_tunnel(&config).unwrap_or_else(|e| {
         log::error!("{}", e);
     });
 
@@ -70,7 +69,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Compress::default())
             .service(app::web_ui_index)
             .service(api::get_network_summary)
-            .service(api::get_wireguard_public_private_key)
+            .service(api::get_wireguard_public_private_keys)
             .service(api::get_wireguard_pre_shared_key)
             .service(api::patch_network_config)
             .service(api::get_network_lease_id_address)

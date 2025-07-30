@@ -203,7 +203,7 @@ export default {
       this.peer_id_address_valid_until = response.valid_until;
     });
 
-    API.get_public_private_key().then(response => {
+    API.get_public_private_keys().then(response => {
       this.default_peer_conf.public_key = response.public_key;
       this.default_peer_conf.private_key = response.private_key;
     });

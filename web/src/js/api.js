@@ -40,10 +40,10 @@ export default class API {
         });
     }
 
-    static async get_public_private_key() {
+    static async get_public_private_keys() {
         return API.call({
             method: 'get',
-            path: `/api/wireguard/public_private_key`,
+            path: `/api/wireguard/public_private_keys`,
             headers: {}
         });
     }
