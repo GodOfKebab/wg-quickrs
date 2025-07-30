@@ -105,21 +105,24 @@
 
   <!-- Footer -->
   <footer class="text-center text-gray-500 my-5 font-mono mx-2">
-    <div v-if="version">
-      <small :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
-        backend: <strong>{{ version.backend }}</strong>
-      </small>
-      <small :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
-        frontend: <strong>{{ version.frontend }}</strong>
-      </small>
-      <small :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
-        built: <strong>{{ version.built }}</strong>
-      </small>
-      <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
-        last fetched: <strong>{{ last_fetch.rfc3339 }}</strong>
-      </small>
-    </div>
-
+    <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
+      backend: <strong>{{ version.backend }}</strong>
+    </small>
+    <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
+      frontend: <strong>{{ version.frontend }}</strong>
+    </small>
+    <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
+      built: <strong>{{ version.built }}</strong>
+    </small>
+    <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
+      last fetched:
+      <strong v-if="last_fetch.since <= refreshRate * 5"
+              class="text-green-400">{{ last_fetch.rfc3339 }}</strong>
+      <strong v-else-if="last_fetch.since > refreshRate * 5"
+              class="text-yellow-400">{{ last_fetch.rfc3339 }}</strong>
+      <strong v-else class="text-red-400">Never</strong>
+    </small>
+    <br/>
     <small>&copy; Copyright 2024-2025, <a class="hover:underline" href="https://yasar.idikut.cc/">Yaşar
       İdikut</a></small>
   </footer>
@@ -191,6 +194,7 @@ export default {
       last_fetch: {
         rfc3339: "",
         readable: "",
+        since: Infinity,
       },
 
     }
@@ -201,21 +205,12 @@ export default {
     setInterval(() => {
       this.refresh()
     }, this.refreshRate)
-
-    API.get_version().then(response => {
-      const last_built_date = (new Date(Date.parse(response.built)))
-      this.version = {
-        backend: response.backend,
-        frontend: response.frontend,
-        built: response.built,
-        full_version: `backend: ${response.backend}, frontend: ${response.frontend}, built: ${response.built}`,
-        readable_datetime: `${last_built_date} [${dayjs(last_built_date).fromNow()}]`
-      }
-    });
   },
   computed: {},
   methods: {
     async refresh() {
+      this.last_fetch.since = new Date() - new Date(this.last_fetch.rfc3339);
+
       let need_to_update_network = true;
       if (this.digest.length === 64) {
         await API.get_summary('?only_digest=true').then(summary => {
@@ -226,6 +221,7 @@ export default {
           this.last_fetch.rfc3339 = summary.timestamp;
           const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
           this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
+          this.last_fetch.since = 0;
         }).catch(err => {
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
@@ -238,38 +234,50 @@ export default {
         });
       }
 
-      if (!need_to_update_network) {
-        return;
+      if (need_to_update_network) {
+        await API.get_summary('?only_digest=false').then(summary => {
+          this.webServerStatus = this.ServerStatusEnum.up;
+          this.digest = summary.digest;
+          this.network = summary.network;
+          this.network.static_peer_ids = [];
+          this.network.roaming_peer_ids = [];
+          Object.entries(summary.network.peers).forEach(([peerId, peerDetails]) => {
+            if (peerDetails.endpoint.enabled) {
+              this.network.static_peer_ids.push(peerId);
+            } else {
+              this.network.roaming_peer_ids.push(peerId);
+            }
+          })
+          this.wireguardStatus = summary.status
+
+          this.last_fetch.rfc3339 = summary.timestamp;
+          const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
+          this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
+          this.last_fetch.since = 0;
+        }).catch(err => {
+          this.wireguardStatus = this.ServerStatusEnum.unknown;
+          if (err.toString() === 'TypeError: Load failed') {
+            this.webServerStatus = this.ServerStatusEnum.down;
+          } else {
+            this.webServerStatus = this.ServerStatusEnum.unknown;
+            console.log('getNetwork error =>');
+            console.log(err);
+          }
+        });
       }
 
-      await API.get_summary('?only_digest=false').then(summary => {
-        this.webServerStatus = this.ServerStatusEnum.up;
-        this.digest = summary.digest;
-        this.network = summary.network;
-        this.network.static_peer_ids = [];
-        this.network.roaming_peer_ids = [];
-        Object.entries(summary.network.peers).forEach(([peerId, peerDetails]) => {
-          if (peerDetails.endpoint.enabled) {
-            this.network.static_peer_ids.push(peerId);
-          } else {
-            this.network.roaming_peer_ids.push(peerId);
+      if (this.version === null) {
+        API.get_version().then(response => {
+          const last_built_date = (new Date(Date.parse(response.built)))
+          this.version = {
+            backend: response.backend,
+            frontend: response.frontend,
+            built: response.built,
+            full_version: `backend: ${response.backend}, frontend: ${response.frontend}, built: ${response.built}`,
+            readable_datetime: `${last_built_date} [${dayjs(last_built_date).fromNow()}]`
           }
-        })
-        this.wireguardStatus = summary.status
-
-        this.last_fetch.rfc3339 = summary.timestamp;
-        const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
-        this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
-      }).catch(err => {
-        this.wireguardStatus = this.ServerStatusEnum.unknown;
-        if (err.toString() === 'TypeError: Load failed') {
-          this.webServerStatus = this.ServerStatusEnum.down;
-        } else {
-          this.webServerStatus = this.ServerStatusEnum.unknown;
-          console.log('getNetwork error =>');
-          console.log(err);
-        }
-      });
+        });
+      }
     },
     toggleWireGuardNetworking() {
       console.log(`${this.wireguardStatus === this.ServerStatusEnum.up ? 'Disabling' : 'Enabling'} WireGuard Network...`)
