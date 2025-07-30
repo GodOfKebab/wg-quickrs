@@ -22,28 +22,42 @@ mod macros;
 )]
 struct Args {
     #[arg(
-        short,
         long,
         default_value = ".wg-rusteze/conf.yml",
         value_name = "CONFIG_PATH"
     )]
     wg_rusteze_config_file: String,
+    #[arg(
+        long,
+        default_value = ".wg-rusteze/wg-rusteze.conf",
+        value_name = "CONFIG_PATH"
+    )]
+    wireguard_config_file: String,
 }
 pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<String> = OnceCell::new();
+pub static WIREGUARD_CONFIG_FILE: OnceCell<String> = OnceCell::new();
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // start logger and print version
     SimpleLogger::new().with_level(LevelFilter::Info).init().unwrap();
     log::info!(full_version!());
 
+    // get the wg_rusteze config file path
     let args = Args::parse();
     WG_RUSTEZE_CONFIG_FILE.set(args.wg_rusteze_config_file).unwrap();
-    log::info!("using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().expect("CONFIG_FILE not set"));
+    WIREGUARD_CONFIG_FILE.set(args.wireguard_config_file).unwrap();
+    log::info!("using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set"));
 
+    // print the config digest
     let config: conf::types::Config = conf::logic::get_config();
-    log::info!("wg-rusteze config digest: {}", config.digest);
+    log::info!("config digest: {}", config.digest);
 
-    log::info!("wg-rusteze frontend accessible at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);
+    // start the tunnel
+    // wireguard::util::start_wireguard_tunnel(&config);
+
+    // start the HTTP server for frontend and API control
+    log::info!("frontend/API accessible at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);
     HttpServer::new(|| {
         let app = App::new()
             .wrap(middleware::Compress::default())

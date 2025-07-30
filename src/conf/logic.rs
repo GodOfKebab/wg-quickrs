@@ -1,7 +1,7 @@
 use crate::conf::network;
 use crate::conf::timestamp;
 use crate::conf::types::{Config, FileConfig, Lease, WireGuardStatus};
-use crate::conf::DEFAULT_CONF_FILE;
+use crate::WG_RUSTEZE_CONFIG_FILE;
 
 use crate::conf;
 use actix_web::{web, HttpResponse};
@@ -27,7 +27,7 @@ pub(crate) fn respond_get_network_summary(params: web::Query<crate::api::Summary
 }
 
 pub(crate) fn get_config() -> Config {
-    let file_contents = fs::read_to_string(DEFAULT_CONF_FILE).expect("Unable to open file");
+    let file_contents = fs::read_to_string(WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set")).expect("Unable to open file");
     let mut config: Config = serde_yml::from_str(&file_contents).unwrap();
 
     // Make sure agent fields get precedence over network fields
@@ -51,7 +51,7 @@ pub(crate) fn set_config(config: &Config) {
     file_config.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&file_config).expect("Failed to serialize config");
 
-    let mut file = File::create(DEFAULT_CONF_FILE).expect("Failed to open config file");
+    let mut file = File::create(WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set")).expect("Failed to open config file");
     file.write_all(config_str.as_bytes()).expect("Failed to write to config file");
     log::info!("Updated config file")
 }
@@ -72,7 +72,7 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
     let mut config_file_reader = OpenOptions::new()
         .read(true)
         .write(true)
-        .open(DEFAULT_CONF_FILE)
+        .open(WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set"))
         .expect("Failed to open config file");
 
     // Read the existing contents
@@ -240,7 +240,7 @@ pub(crate) fn respond_get_network_lease_id_address() -> HttpResponse {
     let mut config_file_reader = OpenOptions::new()
         .read(true)
         .write(true)
-        .open(DEFAULT_CONF_FILE)
+        .open(WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set"))
         .expect("Failed to open config file");
 
     // Read the existing contents
