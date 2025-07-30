@@ -50,7 +50,7 @@ async fn main() -> std::io::Result<()> {
     log::info!("using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set"));
 
     // print the config digest
-    let config: conf::types::Config = conf::logic::get_config();
+    let config: config_wasm::types::Config = conf::logic::get_config();
     log::info!("config digest: {}", config.digest);
 
     // start the tunnel

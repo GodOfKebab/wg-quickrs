@@ -1,9 +1,8 @@
 use crate::conf::network;
 use crate::conf::timestamp;
-use crate::conf::types::{Config, FileConfig, Lease, WireGuardStatus};
 use crate::WG_RUSTEZE_CONFIG_FILE;
+use config_wasm::types::{Config, FileConfig, Lease, WireGuardStatus};
 
-use crate::conf;
 use actix_web::{web, HttpResponse};
 use chrono::Duration;
 use serde_json::Value;
@@ -16,7 +15,7 @@ use uuid::Uuid;
 
 pub(crate) fn respond_get_network_summary(params: web::Query<crate::api::SummaryBody>) -> HttpResponse {
     let resp_body = if params.only_digest {
-        serde_json::to_string(&conf::types::ConfigDigest::from(&get_config()))
+        serde_json::to_string(&config_wasm::types::ConfigDigest::from(&get_config()))
     } else {
         serde_json::to_string(&get_config())
     }.unwrap();

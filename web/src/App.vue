@@ -145,12 +145,14 @@
   <peer-config-window v-if="dialogId.startsWith('selected-peer-id=')"
                       v-model:dialog-id="dialogId"
                       :network="network"
+                      :version="version"
                       :peer-id="dialogId.slice(17, dialogId.length)"></peer-config-window>
 
   <!-- Dialog: Peer Create -->
   <peer-create-window v-if="dialogId === 'create-peer'"
                       v-model:dialog-id="dialogId"
-                      :network="network"></peer-create-window>
+                      :network="network"
+                      :version="version"></peer-create-window>
 
 </template>
 
@@ -206,6 +208,7 @@ export default {
         backend: response.backend,
         frontend: response.frontend,
         built: response.built,
+        full_version: `backend: ${response.backend}, frontend: ${response.frontend}, built: ${response.built}`,
         readable_datetime: `${last_built_date} [${dayjs(last_built_date).fromNow()}]`
       }
     });

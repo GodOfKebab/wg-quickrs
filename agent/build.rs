@@ -6,7 +6,7 @@ use std::path::Path;
 use toml::Value as TomlValue;
 
 fn main() {
-    let frontend_version = fs::read_to_string("web/package.json")
+    let frontend_version = fs::read_to_string("../web/package.json")
         .ok()
         .and_then(|content| {
             serde_json::from_str::<JsonValue>(&content)

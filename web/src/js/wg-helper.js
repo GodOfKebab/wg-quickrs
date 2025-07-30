@@ -1,50 +1,13 @@
 'use strict';
 
+import init, {get_peer_wg_config_frontend} from '../../pkg/config_wasm.js';
+
+await init();
+
 export default class WireGuardHelper {
 
-    static getPeerConfig(network, peerId) {
-        const peer = network.peers[peerId];
-        
-        let conf = `[Interface]
-PrivateKey = ${peer.private_key}
-Address = ${peer.address}/24
-${peer.endpoint.enabled ? `ListenPort = ${peer.endpoint.toString().split(':')[1]}` : 'DEL'}
-${peer.dns.enabled ? `DNS = ${peer.dns.value}` : 'DEL'}
-${peer.mtu.enabled ? `MTU = ${peer.mtu.value}` : 'DEL'}
-${peer.scripts.pre_up.enabled ? `PreUp = ${peer.scripts.pre_up.value}` : 'DEL'}
-${peer.scripts.post_up.enabled ? `PostUp = ${peer.scripts.post_up.value}` : 'DEL'}
-${peer.scripts.pre_down.enabled ? `PreDown = ${peer.scripts.pre_down.value}` : 'DEL'}
-${peer.scripts.post_down.enabled ? `PostDown = ${peer.scripts.post_down.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
-
-        for (const [connectionPeers, connectionDetails] of Object.entries(network.connections)) {
-            if (!connectionPeers.includes(peerId)) continue;
-            if (!connectionDetails.enabled) continue;
-
-            let otherPeerId = '';
-            let allowedIPsThisPeer = '';
-            if (connectionPeers.split('*')[0] === peerId) {
-                otherPeerId = connectionPeers.split('*')[1];
-                allowedIPsThisPeer = connectionDetails.allowed_ips_a_to_b;
-            } else {
-                otherPeerId = connectionPeers.split('*')[0];
-                allowedIPsThisPeer = connectionDetails.allowed_ips_b_to_a;
-            }
-
-            conf += `
-# Peer: ${network.peers[otherPeerId].name} (${otherPeerId})
-[Peer]
-PublicKey = ${network.peers[otherPeerId].public_key}
-PresharedKey = ${connectionDetails.pre_shared_key}
-AllowedIPs = ${allowedIPsThisPeer}
-${connectionDetails.persistent_keepalive.enabled ? `PersistentKeepalive = ${connectionDetails.persistent_keepalive.value}` : 'DEL'}\n`.replaceAll('DEL\n', '');
-
-            // Add the Endpoint line if known TODO: get roaming endpoints as well
-            if (network.peers[otherPeerId].endpoint.enabled) {
-                conf += `Endpoint = ${network.peers[otherPeerId].endpoint.value}\n`;
-            }
-        }
-
-        return conf;
+    static getPeerConfig(network, peerId, version) {
+        return get_peer_wg_config_frontend(network, peerId, version);
     }
 
     static downloadPeerConfig(network, peerId) {

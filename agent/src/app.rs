@@ -3,7 +3,7 @@ use mime_guess::from_path;
 use rust_embed::Embed;
 
 #[derive(Embed)]
-#[folder = "web/dist"]
+#[folder = "../web/dist"]
 struct Asset;
 
 

@@ -190,6 +190,10 @@ export default {
     dialogId: {
       type: String,
       default: "",
+    },
+    version: {
+      type: Object,
+      default: {},
     }
   },
   emits: ['update:dialogId'],
@@ -266,7 +270,7 @@ export default {
       return this.network.peers[this.peerId];
     },
     peer_wg_conf_file() {
-      return WireGuardHelper.getPeerConfig(this.network, this.peerId);
+      return WireGuardHelper.getPeerConfig(this.network, this.peerId, this.version.full_version);
     },
     changeSum() {
       const data = {

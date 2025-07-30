@@ -1,0 +1,16 @@
+[package]
+name = "config-wasm"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = { version = "0.2.100", optional = true }
+serde = { version = "1.0.219", features = ["derive"] }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+
+[features]
+default = []         # Do not enable wasm-bindgen by default
+wasm = ["wasm-bindgen", "serde-wasm-bindgen"]
