@@ -1,4 +1,3 @@
-
 <template>
 
   <!-- Header -->
@@ -71,9 +70,7 @@
             network.peers[network.this_peer].name
           }}</strong>
         </span>
-        <span class="inline-block whitespace-pre-wrap">
-          ({{ network.this_peer }})
-        </span>
+        <span class="inline-block whitespace-pre-wrap">({{ network.this_peer }})</span>
         <span class="inline-block whitespace-pre-wrap">
           @
           {{ network.peers[network.this_peer].address }} /
