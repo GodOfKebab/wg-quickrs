@@ -73,6 +73,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::get_wireguard_pre_shared_key)
             .service(api::patch_network_config)
             .service(api::get_network_lease_id_address)
+            .service(api::post_wireguard_server_status)
             .service(api::get_version)
             .service(app::web_ui_dist);
 

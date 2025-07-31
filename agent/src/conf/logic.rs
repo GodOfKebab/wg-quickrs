@@ -3,6 +3,7 @@ use crate::conf::timestamp;
 use crate::WG_RUSTEZE_CONFIG_FILE;
 use config_wasm::types::{Config, FileConfig, Lease, WireGuardStatus};
 
+use crate::wireguard::cmd::status_wireguard;
 use actix_web::{web, HttpResponse};
 use chrono::Duration;
 use serde_json::Value;
@@ -39,7 +40,13 @@ pub(crate) fn get_config() -> Config {
     let mut buf = [0u8; 64];
     let digest: &str = base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf).expect("Unable to calculate network digest");
     config.digest = digest.to_string();
-    config.status = WireGuardStatus::UP.value(); // TODO: replace
+    match status_wireguard() {
+        Ok(status) => { config.status = status.value(); },
+        Err(e) => {
+            log::error!("{}", e);
+            config.status = WireGuardStatus::UNKNOWN.value();
+        }
+    }
     config.timestamp = timestamp::get_now_timestamp_formatted();
 
     return config;

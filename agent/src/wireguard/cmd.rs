@@ -1,10 +1,29 @@
 use crate::macros::*;
 use crate::WIREGUARD_CONFIG_FILE;
 use config_wasm::get_peer_wg_config;
+use config_wasm::types::{TelemetryDatum, WireGuardStatus};
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::process::{Command, Stdio};
+use std::sync::Mutex;
 use std::{fs, io};
+
+static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
+
+pub(crate) fn status_wireguard() -> Result<WireGuardStatus, io::Error> {
+    let wg_interface_mut = match WG_INTERFACE.lock() {
+        Ok(lock) => { lock },
+        Err(_e) => { return Err(io::Error::from(io::ErrorKind::Other)); }
+    };
+    if *wg_interface_mut == "" { return Ok(WireGuardStatus::DOWN); }
+    Ok(WireGuardStatus::UP)
+}
+
+pub(crate) fn show_dump_wireguard() -> Result<HashMap<String, TelemetryDatum>, io::Error> {
+    Ok(Default::default()) // TODO: implement me
+}
 
 pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
     match Command::new("wg-quick")
@@ -15,7 +34,13 @@ pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(
             log::info!("$ wg-quick down {}", config.network.identifier.clone());
             if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
-            if output.status.success() { return Ok(()); }
+            if output.status.success() {
+                match WG_INTERFACE.lock() {
+                    Ok(mut wg_interface_mut) => { *wg_interface_mut = "".to_string(); },
+                    Err(_e) => { return Err(io::Error::from(io::ErrorKind::Other)); }
+                };
+                return Ok(());
+            }
             Err(io::Error::from(io::ErrorKind::Other))
         }
         Err(e) => {
@@ -33,6 +58,26 @@ pub(crate) fn enable_wireguard(config: &config_wasm::types::Config) -> Result<()
             log::info!("$ wg-quick up {}", config.network.identifier.clone());
             if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
+            if !output.stderr.is_empty() {
+                let mut wg_interface_mut = match WG_INTERFACE.lock() {
+                    Ok(lock) => lock,
+                    Err(_e) => { return Err(io::Error::from(io::ErrorKind::Other)); }
+                };
+                match String::from_utf8_lossy(&output.stderr)
+                    .lines()
+                    .find(|line| line.contains("[+] Interface for wg-rusteze-home is"))
+                    .map(|line| line.to_string()) {
+                    Some(line) => {
+                        match line.split_whitespace().last() {
+                            Some(word) => { *wg_interface_mut = word.to_string(); },
+                            None => { return Err(io::Error::from(io::ErrorKind::Other)); }
+                        }
+                    },
+                    None => {
+                        *wg_interface_mut = config.network.identifier.clone();
+                    }
+                }
+            }
             if output.status.success() { return Ok(()); }
             Err(io::Error::from(io::ErrorKind::Other))
         }
@@ -87,9 +132,7 @@ pub(crate) fn start_wireguard_tunnel(config: &config_wasm::types::Config) -> Res
     };
     match disable_wireguard(config) {
         Ok(_) => {}
-        Err(e) => {
-            return Err(e);
-        }
+        Err(_e) => {}
     };
     match enable_wireguard(config) {
         Ok(_) => {}

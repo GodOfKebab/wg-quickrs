@@ -72,5 +72,14 @@ export default class API {
             headers: {},
         });
     }
+    
+    static async post_wireguard_server_status(body) {
+        return this.call({
+            method: 'post',
+            path: '/api/wireguard/server/status',
+            headers: {"Content-Type": "application/json"},
+            body: body
+        });
+    }
 
 }

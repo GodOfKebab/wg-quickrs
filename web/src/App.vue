@@ -280,8 +280,13 @@ export default {
       }
     },
     toggleWireGuardNetworking() {
-      console.log(`${this.wireguardStatus === this.ServerStatusEnum.up ? 'Disabling' : 'Enabling'} WireGuard Network...`)
-      // TODO: implement me
+      const curr = this.wireguardStatus === this.ServerStatusEnum.up;
+      API.post_wireguard_server_status({status: curr ? this.ServerStatusEnum.down : this.ServerStatusEnum.up})
+          .then(() => {
+            this.refresh();
+          }).catch(err => {
+        console.log(err);
+      });
     },
     onPeerSelected(peer_id) {
       this.dialogId = `selected-peer-id=${peer_id}`;

@@ -1,7 +1,7 @@
 use crate::conf;
 use crate::macros::*;
 use crate::wireguard;
-use actix_web::{get, patch, web, HttpResponse, Responder};
+use actix_web::{get, patch, post, web, HttpResponse, Responder};
 use serde::Serialize;
 
 #[get("/version")]
@@ -49,4 +49,9 @@ async fn patch_network_config(body: web::Bytes) -> impl Responder {
 #[get("/api/network/lease/id-address")]
 async fn get_network_lease_id_address() -> impl Responder {
     return conf::logic::respond_get_network_lease_id_address();
+}
+
+#[post("/api/wireguard/server/status")]
+async fn post_wireguard_server_status(body: web::Bytes) -> impl Responder {
+    return wireguard::util::respond_post_wireguard_server_status(body);
 }
