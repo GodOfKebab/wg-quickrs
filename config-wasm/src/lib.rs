@@ -2,19 +2,28 @@ use std::io;
 
 pub mod types;
 
-pub fn get_peer_wg_config(network: &types::Network, peer_id: String, version: &str) -> Result<String, io::Error> {
+pub fn get_peer_wg_config(
+    network: &types::Network,
+    peer_id: String,
+    version: &str,
+) -> Result<String, io::Error> {
     let this_peer = match network.peers.get(&peer_id) {
         Some(n) => n,
         None => {
             return Err(io::Error::new(io::ErrorKind::NotFound, "peer not found"));
-        },
+        }
     };
 
     let mut wg_conf = String::new();
     use std::fmt::Write as FmtWrite; // brings `write!` macro for String
 
-    writeln!(wg_conf, "# auto-generated using wg-rusteze ({})", version).unwrap();
-    writeln!(wg_conf, "# wg-rusteze network identifier: {}\n", network.identifier).unwrap();
+    writeln!(wg_conf, "# auto-generated using wg-rusteze ({version})").unwrap();
+    writeln!(
+        wg_conf,
+        "# wg-rusteze network identifier: {}\n",
+        network.identifier
+    )
+    .unwrap();
 
     // Peer fields
     writeln!(wg_conf, "# Peer: {} ({})", this_peer.name, peer_id).unwrap();
@@ -24,7 +33,7 @@ pub fn get_peer_wg_config(network: &types::Network, peer_id: String, version: &s
 
     if this_peer.endpoint.enabled {
         if let Some((_host, port)) = this_peer.endpoint.value.rsplit_once(':') {
-            writeln!(wg_conf, "ListenPort = {}", port).unwrap();
+            writeln!(wg_conf, "ListenPort = {port}").unwrap();
         }
     }
     if this_peer.dns.enabled {
@@ -50,11 +59,17 @@ pub fn get_peer_wg_config(network: &types::Network, peer_id: String, version: &s
 
     // connection fields
     for (connection_id, connection_details) in network.connections.clone().into_iter() {
-        if !connection_id.contains(&peer_id) { continue; }
-        if !connection_details.enabled { continue; }
+        if !connection_id.contains(&peer_id) {
+            continue;
+        }
+        if !connection_details.enabled {
+            continue;
+        }
 
         let parts: Vec<&str> = connection_id.split('*').collect();
-        if parts.len() != 2 { continue; } // or handle error
+        if parts.len() != 2 {
+            continue;
+        } // or handle error
         let (other_peer_id, allowed_ips) = if parts[0] == peer_id {
             (parts[1], &connection_details.allowed_ips_a_to_b)
         } else {
@@ -63,31 +78,49 @@ pub fn get_peer_wg_config(network: &types::Network, peer_id: String, version: &s
         let other_peer_details = match network.peers.get(other_peer_id) {
             Some(n) => n,
             None => {
-                return Err(io::Error::new(io::ErrorKind::NotFound, "other peer not found"));
-            },
+                return Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "other peer not found",
+                ));
+            }
         };
-        writeln!(wg_conf, "# Linked Peer: {} ({})", other_peer_details.name, other_peer_id).unwrap();
+        writeln!(
+            wg_conf,
+            "# Linked Peer: {} ({})",
+            other_peer_details.name, other_peer_id
+        )
+        .unwrap();
         writeln!(wg_conf, "[Peer]").unwrap();
         writeln!(wg_conf, "PublicKey = {}", other_peer_details.public_key).unwrap();
-        writeln!(wg_conf, "PresharedKey = {}", connection_details.pre_shared_key).unwrap();
-        writeln!(wg_conf, "AllowedIPs = {}", allowed_ips).unwrap();
+        writeln!(
+            wg_conf,
+            "PresharedKey = {}",
+            connection_details.pre_shared_key
+        )
+        .unwrap();
+        writeln!(wg_conf, "AllowedIPs = {allowed_ips}").unwrap();
 
         if connection_details.persistent_keepalive.enabled {
-            writeln!(wg_conf, "PersistentKeepalive = {}", connection_details.persistent_keepalive.value).unwrap();
+            writeln!(
+                wg_conf,
+                "PersistentKeepalive = {}",
+                connection_details.persistent_keepalive.value
+            )
+            .unwrap();
         }
         if other_peer_details.endpoint.enabled {
             writeln!(wg_conf, "Endpoint = {}", other_peer_details.endpoint.value).unwrap();
         }
         writeln!(wg_conf).unwrap();
     }
-    return Ok(wg_conf);
+    Ok(wg_conf)
 }
 
 pub fn get_connection_id(peer1: &str, peer2: &str) -> String {
     if peer1 > peer2 {
-        format!("{}*{}", peer1, peer2)
+        format!("{peer1}*{peer2}")
     } else {
-        format!("{}*{}", peer2, peer1)
+        format!("{peer2}*{peer1}")
     }
 }
 

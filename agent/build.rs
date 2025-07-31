@@ -18,9 +18,12 @@ fn main() {
     let backend_version = fs::read_to_string("Cargo.toml")
         .ok()
         .and_then(|content| {
-            toml::from_str::<TomlValue>(&content)
-                .ok()
-                .and_then(|toml| toml.get("package")?.get("version")?.as_str().map(String::from))
+            toml::from_str::<TomlValue>(&content).ok().and_then(|toml| {
+                toml.get("package")?
+                    .get("version")?
+                    .as_str()
+                    .map(String::from)
+            })
         })
         .unwrap_or_else(|| "unknown".to_string());
 
@@ -31,14 +34,14 @@ fn main() {
 #[macro_export]
 macro_rules! backend_version {{
     () => {{
-        "v{backend}"
+        "v{backend_version}"
     }};
 }}
 
 #[macro_export]
 macro_rules! frontend_version {{
     () => {{
-        "v{frontend}"
+        "v{frontend_version}"
     }};
 }}
 
@@ -59,10 +62,7 @@ macro_rules! full_version {{
         )
     }};
 }}
-"#,
-        backend = backend_version,
-        frontend = frontend_version,
-        timestamp = timestamp
+"#
     );
 
     let out_dir = std::env::var("OUT_DIR").unwrap();

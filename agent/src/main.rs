@@ -1,6 +1,6 @@
 #[cfg(debug_assertions)]
 use actix_cors::Cors;
-use actix_web::{middleware, App, HttpServer};
+use actix_web::{App, HttpServer, middleware};
 use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
@@ -10,8 +10,8 @@ use std::path::PathBuf;
 mod api;
 mod app;
 mod conf;
-mod wireguard;
 mod macros;
+mod wireguard;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -42,28 +42,44 @@ pub static WIREGUARD_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // start logger and print version
-    SimpleLogger::new().with_level(LevelFilter::Info).init().unwrap();
+    SimpleLogger::new()
+        .with_level(LevelFilter::Info)
+        .init()
+        .unwrap();
     log::info!(full_version!());
 
     // get the wg_rusteze config file path
     let args = Args::parse();
-    WG_RUSTEZE_CONFIG_FILE.set(args.wg_rusteze_config_file).unwrap();
-    log::info!("using the wg-rusteze config file at \"{}\"", WG_RUSTEZE_CONFIG_FILE.get().unwrap().display());
+    WG_RUSTEZE_CONFIG_FILE
+        .set(args.wg_rusteze_config_file)
+        .unwrap();
+    log::info!(
+        "using the wg-rusteze config file at \"{}\"",
+        WG_RUSTEZE_CONFIG_FILE.get().unwrap().display()
+    );
 
     // get the wireguard config file path
     let config: config_wasm::types::Config = conf::logic::get_config();
     let mut wireguard_config_folder = PathBuf::from(&args.wireguard_config_folder);
     wireguard_config_folder.push(format!("{}.conf", config.network.identifier));
     WIREGUARD_CONFIG_FILE.set(wireguard_config_folder).unwrap();
-    log::info!("using the wireguard config file at \"{}\"", WIREGUARD_CONFIG_FILE.get().unwrap().display());
+    log::info!(
+        "using the wireguard config file at \"{}\"",
+        WIREGUARD_CONFIG_FILE.get().unwrap().display()
+    );
 
     // start the tunnel
-    let _wg_startup_success = wireguard::cmd::start_wireguard_tunnel(&config).unwrap_or_else(|e| {
-        log::error!("{}", e);
+    wireguard::cmd::start_wireguard_tunnel(&config).unwrap_or_else(|e| {
+        log::error!("{e}");
     });
 
     // start the HTTP server for frontend and API control
-    log::info!("frontend/API accessible at {}://{}:{}/", config.agent.web.scheme, config.agent.address, config.agent.web.port);
+    log::info!(
+        "frontend/API accessible at {}://{}:{}/",
+        config.agent.web.scheme,
+        config.agent.address,
+        config.agent.web.port
+    );
     HttpServer::new(|| {
         let app = App::new()
             .wrap(middleware::Compress::default())
@@ -92,8 +108,7 @@ async fn main() -> std::io::Result<()> {
             app
         }
     })
-        .bind((config.agent.address, config.agent.web.port))?
-        .run()
-        .await
+    .bind((config.agent.address, config.agent.web.port))?
+    .run()
+    .await
 }
-

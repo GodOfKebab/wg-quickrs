@@ -1,17 +1,18 @@
 use crate::conf;
 use crate::wireguard::cmd;
 use crate::wireguard::cmd::{disable_wireguard, enable_wireguard};
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, web};
 
 pub(crate) fn respond_get_wireguard_public_private_keys() -> impl Responder {
     match cmd::get_wireguard_public_private_keys() {
         Ok(keys) => {
-            return HttpResponse::Ok().content_type("application/json")
-                .body(serde_json::to_string(&keys).unwrap());
-        },
+            HttpResponse::Ok()
+                .content_type("application/json")
+                .body(serde_json::to_string(&keys).unwrap())
+        }
         Err(e) => {
-            log::error!("{}", e);
-            return HttpResponse::InternalServerError().into();
+            log::error!("{e}");
+            HttpResponse::InternalServerError().into()
         }
     }
 }
@@ -28,13 +29,13 @@ pub(crate) fn respond_get_wireguard_pre_shared_key() -> impl Responder {
                 pre_shared_key: output,
             };
 
-            return HttpResponse::Ok()
+            HttpResponse::Ok()
                 .content_type("application/json")
                 .body(serde_json::to_string(&body).unwrap())
         }
         Err(e) => {
-            log::error!("{}", e);
-            return HttpResponse::InternalServerError().into();
+            log::error!("{e}");
+            HttpResponse::InternalServerError().into()
         }
     }
 }
@@ -50,7 +51,7 @@ pub(crate) fn respond_post_wireguard_server_status(body: web::Bytes) -> impl Res
         Err(err) => {
             return HttpResponse::BadRequest()
                 .content_type("application/json")
-                .body(format!(r#"{{"error":"Invalid JSON: {}"}}"#, err));
+                .body(format!(r#"{{"error":"Invalid JSON: {err}"}}"#));
         }
     };
 
@@ -60,10 +61,10 @@ pub(crate) fn respond_post_wireguard_server_status(body: web::Bytes) -> impl Res
             Ok(_) => {
                 return HttpResponse::Ok()
                     .content_type("application/json")
-                    .body(body)
+                    .body(body);
             }
             Err(e) => {
-                log::error!("{}", e);
+                log::error!("{e}");
                 return HttpResponse::InternalServerError().into();
             }
         }
@@ -72,13 +73,13 @@ pub(crate) fn respond_post_wireguard_server_status(body: web::Bytes) -> impl Res
             Ok(_) => {
                 return HttpResponse::Ok()
                     .content_type("application/json")
-                    .body(body)
+                    .body(body);
             }
             Err(e) => {
-                log::error!("{}", e);
+                log::error!("{e}");
                 return HttpResponse::InternalServerError().into();
             }
         }
     }
-    return HttpResponse::BadRequest().into();
+    HttpResponse::BadRequest().into()
 }

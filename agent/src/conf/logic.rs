@@ -1,10 +1,12 @@
+use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
-use crate::WG_RUSTEZE_CONFIG_FILE;
 use config_wasm::types::{Config, FileConfig, Lease, WireGuardStatus};
 
-use crate::wireguard::cmd::{show_dump_wireguard, status_wireguard, sync_conf_wireguard, update_wireguard_conf_file};
-use actix_web::{web, HttpResponse};
+use crate::wireguard::cmd::{
+    show_dump_wireguard, status_wireguard, sync_conf_wireguard,
+};
+use actix_web::{HttpResponse, web};
 use chrono::Duration;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -14,12 +16,15 @@ use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
 
-pub(crate) fn respond_get_network_summary(params: web::Query<crate::api::SummaryBody>) -> HttpResponse {
+pub(crate) fn respond_get_network_summary(
+    params: web::Query<crate::api::SummaryBody>,
+) -> HttpResponse {
     let resp_body = if params.only_digest {
         serde_json::to_string(&config_wasm::types::ConfigDigest::from(&get_config()))
     } else {
         serde_json::to_string(&get_config())
-    }.unwrap();
+    }
+    .unwrap();
 
     HttpResponse::Ok()
         .content_type("application/json")
@@ -27,38 +32,61 @@ pub(crate) fn respond_get_network_summary(params: web::Query<crate::api::Summary
 }
 
 pub(crate) fn get_config() -> Config {
-    let file_contents = fs::read_to_string(WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set")).expect("Unable to open file");
+    let file_contents = fs::read_to_string(
+        WG_RUSTEZE_CONFIG_FILE
+            .get()
+            .expect("WG_RUSTEZE_CONFIG_FILE not set"),
+    )
+    .expect("Unable to open file");
     let mut config: Config = serde_yml::from_str(&file_contents).unwrap();
 
     // Make sure agent fields get precedence over network fields
-    if config.network.peers.get(&config.network.this_peer).unwrap().endpoint.value != format!("{}:{}", config.agent.address, config.agent.vpn.port) {
-        log::warn!("detected mismatch between configured wg-rusteze agent endpoints and wireguard peer endpoints! overriding wireguard peer endpoints");
-        config.network.peers.get_mut(&config.network.this_peer).unwrap().endpoint.value = format!("{}:{}", config.agent.address, config.agent.vpn.port);
+    if config
+        .network
+        .peers
+        .get(&config.network.this_peer)
+        .unwrap()
+        .endpoint
+        .value
+        != format!("{}:{}", config.agent.address, config.agent.vpn.port)
+    {
+        log::warn!(
+            "detected mismatch between configured wg-rusteze agent endpoints and wireguard peer endpoints! overriding wireguard peer endpoints"
+        );
+        config
+            .network
+            .peers
+            .get_mut(&config.network.this_peer)
+            .unwrap()
+            .endpoint
+            .value = format!("{}:{}", config.agent.address, config.agent.vpn.port);
         set_config(&config);
     }
 
     let mut buf = [0u8; 64];
-    let digest: &str = base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf).expect("Unable to calculate network digest");
+    let digest: &str =
+        base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf)
+            .expect("Unable to calculate network digest");
     config.digest = digest.to_string();
     config.status = match status_wireguard() {
-        Ok(status) => { status.value() },
+        Ok(status) => status.value(),
         Err(e) => {
-            log::error!("{}", e);
+            log::error!("{e}");
             WireGuardStatus::UNKNOWN.value()
         }
     };
     if config.status == WireGuardStatus::UP.value() {
         config.telemetry = match show_dump_wireguard(&config) {
-            Ok(status) => { status },
+            Ok(status) => status,
             Err(e) => {
-                log::error!("{}", e);
+                log::error!("{e}");
                 Default::default()
             }
         };
     }
     config.timestamp = timestamp::get_now_timestamp_formatted();
 
-    return config;
+    config
 }
 
 pub(crate) fn set_config(config: &Config) {
@@ -66,8 +94,14 @@ pub(crate) fn set_config(config: &Config) {
     file_config.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&file_config).expect("Failed to serialize config");
 
-    let mut file = File::create(WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set")).expect("Failed to open config file");
-    file.write_all(config_str.as_bytes()).expect("Failed to write to config file");
+    let mut file = File::create(
+        WG_RUSTEZE_CONFIG_FILE
+            .get()
+            .expect("WG_RUSTEZE_CONFIG_FILE not set"),
+    )
+    .expect("Failed to open config file");
+    file.write_all(config_str.as_bytes())
+        .expect("Failed to write to config file");
     log::info!("updated config file")
 }
 
@@ -78,21 +112,27 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
         Err(err) => {
             return HttpResponse::BadRequest()
                 .content_type("application/json")
-                .body(format!(r#"{{"error":"Invalid JSON: {}"}}"#, err));
+                .body(format!(r#"{{"error":"Invalid JSON: {err}"}}"#));
         }
     };
 
-    log::info!("update_config with the change_sum = \n{}", change_sum);
+    log::info!("update_config with the change_sum = \n{change_sum}");
     // Open the config file for reading and writing
     let mut config_file_reader = OpenOptions::new()
         .read(true)
         .write(true)
-        .open(WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set"))
+        .open(
+            WG_RUSTEZE_CONFIG_FILE
+                .get()
+                .expect("WG_RUSTEZE_CONFIG_FILE not set"),
+        )
         .expect("Failed to open config file");
 
     // Read the existing contents
     let mut config_str = String::new();
-    config_file_reader.read_to_string(&mut config_str).expect("Failed to read config file");
+    config_file_reader
+        .read_to_string(&mut config_str)
+        .expect("Failed to read config file");
     let config_file: FileConfig = serde_yml::from_str(&config_str).unwrap();
     let mut config_value: Value = match serde_yml::from_str(&config_str) {
         Ok(val) => val,
@@ -105,9 +145,11 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
 
     let network_config = match config_value.get_mut("network") {
         Some(n) => n,
-        None => return HttpResponse::NotFound()
-            .content_type("application/json")
-            .body(r#"{"status":"forbidden","message":"Unable to parse config file"}"#),
+        None => {
+            return HttpResponse::NotFound()
+                .content_type("application/json")
+                .body(r#"{"status":"forbidden","message":"Unable to parse config file"}"#);
+        }
     };
 
     // TODO: process errors
@@ -125,11 +167,17 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
                 log::info!("A client tried to change the host's endpoint! (forbidden)");
                 return HttpResponse::Forbidden()
                     .content_type("application/json")
-                    .body(r#"{"status":"forbidden","message":"can't change the host's endpoint"}"#);
+                    .body(
+                        r#"{"status":"forbidden","message":"can't change the host's endpoint"}"#,
+                    );
             }
         }
-        { apply_changes(network_config, "peers", changed_fields); }
-        { apply_changes(network_config, "connections", changed_fields); }
+        {
+            apply_changes(network_config, "peers", changed_fields);
+        }
+        {
+            apply_changes(network_config, "connections", changed_fields);
+        }
     }
 
     // process added_peers
@@ -139,14 +187,18 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
                 {
                     if let Some(peers) = network_config.get_mut("peers") {
                         peers[peer_id] = peer_details.clone();
-                        peers[peer_id]["created_at"] = Value::String(timestamp::get_now_timestamp_formatted());
+                        peers[peer_id]["created_at"] =
+                            Value::String(timestamp::get_now_timestamp_formatted());
                         peers[peer_id]["updated_at"] = peers[peer_id]["created_at"].clone();
                     }
                     // remove leased id/address
                     if let Some(leases_array) = network_config
                         .get_mut("leases")
-                        .and_then(|v| v.as_array_mut()) {
-                        leases_array.retain(|lease| lease.get("peer_id").and_then(|v| v.as_str()) != Some(peer_id));
+                        .and_then(|v| v.as_array_mut())
+                    {
+                        leases_array.retain(|lease| {
+                            lease.get("peer_id").and_then(|v| v.as_str()) != Some(peer_id)
+                        });
                     }
                 }
             }
@@ -200,26 +252,31 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
         *updated_at = Value::String(timestamp::get_now_timestamp_formatted());
     }
 
-    let config_str = serde_yml::to_string(&config_value)
-        .expect("Failed to serialize config");
+    let config_str = serde_yml::to_string(&config_value).expect("Failed to serialize config");
 
     // Move back to the beginning and truncate before writing
-    config_file_reader.set_len(0).expect("Failed to truncate config file");
-    config_file_reader.seek(SeekFrom::Start(0)).expect("Failed to seek to start");
-    config_file_reader.write_all(config_str.as_bytes()).expect("Failed to write to config file");
+    config_file_reader
+        .set_len(0)
+        .expect("Failed to truncate config file");
+    config_file_reader
+        .seek(SeekFrom::Start(0))
+        .expect("Failed to seek to start");
+    config_file_reader
+        .write_all(config_str.as_bytes())
+        .expect("Failed to write to config file");
     log::info!("updated config file");
 
     let config: Config = serde_yml::from_str(&config_str).unwrap();
     match sync_conf_wireguard(&config) {
         Ok(_) => {}
         Err(e) => {
-            log::error!("{}", e);
+            log::error!("{e}");
             return HttpResponse::InternalServerError().into();
         }
     };
     log::info!("synchronized config file");
 
-    return HttpResponse::Ok()
+    HttpResponse::Ok()
         .content_type("application/json")
         .body(r#"{"status":"ok"}"#)
 }
@@ -265,12 +322,18 @@ pub(crate) fn respond_get_network_lease_id_address() -> HttpResponse {
     let mut config_file_reader = OpenOptions::new()
         .read(true)
         .write(true)
-        .open(WG_RUSTEZE_CONFIG_FILE.get().expect("WG_RUSTEZE_CONFIG_FILE not set"))
+        .open(
+            WG_RUSTEZE_CONFIG_FILE
+                .get()
+                .expect("WG_RUSTEZE_CONFIG_FILE not set"),
+        )
         .expect("Failed to open config file");
 
     // Read the existing contents
     let mut config_str = String::new();
-    config_file_reader.read_to_string(&mut config_str).expect("Failed to read config file");
+    config_file_reader
+        .read_to_string(&mut config_str)
+        .expect("Failed to read config file");
     let mut config_file: FileConfig = serde_yml::from_str(&config_str).unwrap();
 
     let mut reserved_addresses = Vec::<String>::new();
@@ -284,10 +347,14 @@ pub(crate) fn respond_get_network_lease_id_address() -> HttpResponse {
     for lease in config_file.network.leases.clone() {
         reserved_addresses.push(lease.address.clone());
     }
-    let next_address = match network::get_next_available_address(&config_file.network.subnet, &reserved_addresses) {
-        Some(next_address) => next_address,
-        None => { return HttpResponse::InternalServerError().into(); }
-    };
+    let next_address =
+        match network::get_next_available_address(&config_file.network.subnet, &reserved_addresses)
+        {
+            Some(next_address) => next_address,
+            None => {
+                return HttpResponse::InternalServerError().into();
+            }
+        };
 
     let body = Lease {
         address: next_address,
@@ -299,11 +366,17 @@ pub(crate) fn respond_get_network_lease_id_address() -> HttpResponse {
     config_file.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&config_file).expect("Failed to serialize config");
     // Move back to beginning and truncate before writing
-    config_file_reader.set_len(0).expect("Failed to truncate config file");
-    config_file_reader.seek(SeekFrom::Start(0)).expect("Failed to seek to start");
-    config_file_reader.write_all(config_str.as_bytes()).expect("Failed to write to config file");
+    config_file_reader
+        .set_len(0)
+        .expect("Failed to truncate config file");
+    config_file_reader
+        .seek(SeekFrom::Start(0))
+        .expect("Failed to seek to start");
+    config_file_reader
+        .write_all(config_str.as_bytes())
+        .expect("Failed to write to config file");
 
-    return HttpResponse::Ok()
+    HttpResponse::Ok()
         .content_type("application/json")
         .body(serde_json::to_string(&body).unwrap())
 }

@@ -1,11 +1,10 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, web};
 use mime_guess::from_path;
 use rust_embed::Embed;
 
 #[derive(Embed)]
 #[folder = "../web/dist"]
 struct Asset;
-
 
 fn handle_embedded_file(path: &str) -> HttpResponse {
     match Asset::get(path) {
@@ -22,4 +21,6 @@ async fn web_ui_index() -> impl Responder {
 }
 
 #[actix_web::get("/{_:.*}")]
-async fn web_ui_dist(path: web::Path<String>) -> impl Responder { handle_embedded_file(path.as_str()) }
+async fn web_ui_dist(path: web::Path<String>) -> impl Responder {
+    handle_embedded_file(path.as_str())
+}

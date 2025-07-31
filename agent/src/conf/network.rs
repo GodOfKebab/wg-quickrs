@@ -11,11 +11,7 @@ fn ipv4_to_u32(ip: &str) -> u32 {
 
 /// Convert CIDR (e.g. "24") to subnet mask as u32
 fn cidr_to_u32(cidr: u8) -> u32 {
-    if cidr == 0 {
-        0
-    } else {
-        (!0u32) << (32 - cidr)
-    }
+    if cidr == 0 { 0 } else { (!0u32) << (32 - cidr) }
 }
 
 /// Convert u32 to IPv4 string
@@ -24,8 +20,8 @@ fn u32_to_ipv4(ip: u32) -> String {
 }
 
 /// Get next available IPv4 address in subnet not ending with .0 or .255 and not in `taken`
-pub(crate) fn get_next_available_address(subnet: &String, taken: &Vec<String>) -> Option<String> {
-    let (base_ip_str, cidr_str) = subnet.as_str().split_once('/')?;
+pub(crate) fn get_next_available_address(subnet: &str, taken: &[String]) -> Option<String> {
+    let (base_ip_str, cidr_str) = subnet.split_once('/')?;
     let cidr: u8 = cidr_str.parse().ok()?;
     let base_ip = ipv4_to_u32(base_ip_str);
     let subnet_mask = cidr_to_u32(cidr);
@@ -35,10 +31,7 @@ pub(crate) fn get_next_available_address(subnet: &String, taken: &Vec<String>) -
     for i in 0..num_hosts {
         let candidate_ip = start_ip + i;
         let ip_str = u32_to_ipv4(candidate_ip);
-        if !ip_str.ends_with(".0")
-            && !ip_str.ends_with(".255")
-            && !taken.contains(&ip_str)
-        {
+        if !ip_str.ends_with(".0") && !ip_str.ends_with(".255") && !taken.contains(&ip_str) {
             return Some(ip_str);
         }
     }

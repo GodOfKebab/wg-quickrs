@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum WireGuardStatus {
     UNKNOWN,
@@ -61,7 +60,7 @@ impl From<&Config> for ConfigDigest {
         ConfigDigest {
             telemetry: config.telemetry.clone(),
             digest: config.digest.clone(),
-            status: config.status.clone(),
+            status: config.status,
             timestamp: config.timestamp.clone(),
         }
     }
@@ -166,4 +165,3 @@ pub struct TelemetryDatum {
     pub transfer_a_to_b: u64,
     pub transfer_b_to_a: u64,
 }
-
