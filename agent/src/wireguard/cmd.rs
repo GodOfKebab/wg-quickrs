@@ -6,10 +6,12 @@ use once_cell::sync::Lazy;
 use serde::__private::ser::constrain;
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::Cursor;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::{fs, io};
+use tempfile::NamedTempFile;
 
 static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
 
@@ -38,7 +40,7 @@ pub(crate) fn show_dump_wireguard(config: &config_wasm::types::Config) -> Result
         .output() {
         Ok(output) => {
             log::info!("$ sudo wg show {} dump", &*wg_interface_mut);
-            if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stdout.is_empty() { log::debug!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
             if output.status.success() {
                 let mut telemetry = HashMap::<String, TelemetryDatum>::new();
@@ -76,6 +78,63 @@ pub(crate) fn show_dump_wireguard(config: &config_wasm::types::Config) -> Result
     }
 }
 
+pub(crate) fn sync_conf_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
+    match update_wireguard_conf_file(config) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(e);
+        }
+    };
+
+    let mut stripped_output: Vec<u8> = Vec::new();
+    // wg-quick strip WG_INTERFACE
+    match Command::new("wg-quick")
+        .arg("strip")
+        .arg(config.network.identifier.clone())
+        .output() {
+        Ok(output) => {
+            log::info!("$ wg-quick strip {}", config.network.identifier.clone());
+            if !output.stdout.is_empty() { log::debug!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
+            if !output.status.success() { return Err(io::Error::from(io::ErrorKind::Other)); }
+            stripped_output = output.stdout;
+        }
+        Err(e) => { return Err(e); }
+    }
+
+    // Write to a temp file
+    let mut temp = match NamedTempFile::new() {
+        Ok(file) => file,
+        Err(e) => { return Err(e); }
+    };
+    match temp.write_all(&stripped_output) {
+        Ok(_) => {}
+        Err(e) => { return Err(e); }
+    };
+    let temp_path = temp.path().to_owned(); // Save path before drop
+
+    let mut wg_interface_mut = match WG_INTERFACE.lock() {
+        Ok(lock) => lock,
+        Err(_e) => { return Err(io::Error::from(io::ErrorKind::Other)); }
+    };
+
+    // wg syncconf WG_INTERFACE <(wg-quick strip WG_INTERFACE)
+    match Command::new("sudo")
+        .arg("wg")
+        .arg("syncconf")
+        .arg(&*wg_interface_mut)
+        .arg(temp_path)
+        .output() {
+        Ok(output) => {
+            log::info!("$ wg syncconf {} <(wg-quick strip {})", &*wg_interface_mut, config.network.identifier.clone());
+            if !output.stdout.is_empty() { log::debug!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
+            if !output.status.success() { return Err(io::Error::from(io::ErrorKind::Other)); }
+            Ok(())
+        }
+        Err(e) => { return Err(e); }
+    }
+}
 pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
     // sudo wg-quick down INTERFACE
     match Command::new("sudo")
@@ -85,7 +144,7 @@ pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(
         .output() {
         Ok(output) => {
             log::info!("$ sudo wg-quick down {}", config.network.identifier.clone());
-            if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stdout.is_empty() { log::debug!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
             if output.status.success() {
                 match WG_INTERFACE.lock() {
@@ -111,7 +170,7 @@ pub(crate) fn enable_wireguard(config: &config_wasm::types::Config) -> Result<()
         .output() {
         Ok(output) => {
             log::info!("$ sudo wg-quick up {}", config.network.identifier.clone());
-            if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stdout.is_empty() { log::debug!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
             if !output.stderr.is_empty() {
                 let mut wg_interface_mut = match WG_INTERFACE.lock() {
@@ -216,7 +275,7 @@ pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io
         .output() {
         Ok(output) => {
             log::info!("$ wg genkey");
-            if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stdout.is_empty() { log::debug!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
             if !output.status.success() { return Err(io::Error::from(io::ErrorKind::Other)); }
             res.private_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -242,7 +301,7 @@ pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io
             match child.wait_with_output() {
                 Ok(output) => {
                     log::info!("$ wg genkey");
-                    if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+                    if !output.stdout.is_empty() { log::debug!("{}", String::from_utf8_lossy(&output.stdout)); }
                     if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
                     if !output.status.success() { return Err(io::Error::from(io::ErrorKind::Other)); }
                     res.public_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -264,7 +323,7 @@ pub(crate) fn get_wireguard_pre_shared_key() -> Result<String, io::Error> {
         .output() {
         Ok(output) => {
             log::info!("$ wg genpsk");
-            if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stdout.is_empty() { log::debug!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
             if output.status.success() { return Ok(String::from_utf8_lossy(&output.stdout).trim().to_string()); }
             Err(io::Error::from(io::ErrorKind::Other))
