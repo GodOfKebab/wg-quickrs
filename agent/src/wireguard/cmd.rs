@@ -1,8 +1,9 @@
-use crate::macros::*;
 use crate::WIREGUARD_CONFIG_FILE;
+use crate::macros::*;
 use config_wasm::get_peer_wg_config;
-use config_wasm::types::{TelemetryDatum, WireGuardStatus};
+use config_wasm::types::{Config, TelemetryDatum, WireGuardStatus};
 use once_cell::sync::Lazy;
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
@@ -13,7 +14,7 @@ use tempfile::NamedTempFile;
 
 static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
 
-pub(crate) fn status_wireguard() -> Result<WireGuardStatus, io::Error> {
+pub(crate) fn status_tunnel() -> Result<WireGuardStatus, io::Error> {
     let wg_interface_mut = match WG_INTERFACE.lock() {
         Ok(lock) => lock,
         Err(_e) => {
@@ -26,9 +27,7 @@ pub(crate) fn status_wireguard() -> Result<WireGuardStatus, io::Error> {
     Ok(WireGuardStatus::UP)
 }
 
-pub(crate) fn show_dump_wireguard(
-    config: &config_wasm::types::Config,
-) -> Result<HashMap<String, TelemetryDatum>, io::Error> {
+pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, io::Error> {
     let wg_interface_mut = match WG_INTERFACE.lock() {
         Ok(lock) => lock,
         Err(_e) => {
@@ -103,14 +102,12 @@ pub(crate) fn show_dump_wireguard(
             }
             Err(io::Error::from(io::ErrorKind::Other))
         }
-        Err(e) => {
-            Err(e)
-        }
+        Err(e) => Err(e),
     }
 }
 
-pub(crate) fn sync_conf_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
-    match update_wireguard_conf_file(config) {
+pub(crate) fn sync_conf(config: &Config) -> Result<(), io::Error> {
+    match update_conf_file(config) {
         Ok(_) => {}
         Err(e) => {
             return Err(e);
@@ -188,12 +185,11 @@ pub(crate) fn sync_conf_wireguard(config: &config_wasm::types::Config) -> Result
             }
             Ok(())
         }
-        Err(e) => {
-            Err(e)
-        }
+        Err(e) => Err(e),
     }
 }
-pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
+
+pub(crate) fn disable_tunnel(config: &Config) -> Result<(), io::Error> {
     // sudo wg-quick down INTERFACE
     match Command::new("sudo")
         .arg("wg-quick")
@@ -226,7 +222,7 @@ pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(
     }
 }
 
-pub(crate) fn enable_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
+pub(crate) fn enable_tunnel(config: &Config) -> Result<(), io::Error> {
     // sudo wg-quick up INTERFACE
     match Command::new("sudo")
         .arg("wg-quick")
@@ -276,9 +272,7 @@ pub(crate) fn enable_wireguard(config: &config_wasm::types::Config) -> Result<()
     }
 }
 
-pub(crate) fn update_wireguard_conf_file(
-    config: &config_wasm::types::Config,
-) -> Result<(), io::Error> {
+pub(crate) fn update_conf_file(config: &Config) -> Result<(), io::Error> {
     // generate .conf content
     let wg_conf = match get_peer_wg_config(
         &config.network,
@@ -317,24 +311,14 @@ pub(crate) fn update_wireguard_conf_file(
     Ok(())
 }
 
-pub(crate) fn start_wireguard_tunnel(config: &config_wasm::types::Config) -> Result<(), io::Error> {
+pub(crate) fn start_tunnel(config: &Config) -> Result<(), io::Error> {
     // override .conf from .yml
-    match update_wireguard_conf_file(config) {
-        Ok(_) => {}
-        Err(e) => {
-            return Err(e);
-        }
-    };
-    match disable_wireguard(config) {
-        Ok(_) => {}
-        Err(_e) => {}
-    };
-    match enable_wireguard(config) {
-        Ok(_) => {}
-        Err(e) => {
-            return Err(e);
-        }
-    };
+    update_conf_file(config)?;
+
+    // disable then enable and ignore any error when disabling
+    let _ = disable_tunnel(config);
+    enable_tunnel(config)?;
+
     log::info!(
         "wireguard tunnel accessible at {}:{}",
         config.agent.address,
@@ -343,16 +327,9 @@ pub(crate) fn start_wireguard_tunnel(config: &config_wasm::types::Config) -> Res
     Ok(())
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub(crate) struct PublicPrivateKey {
-    public_key: String,
-    private_key: String,
-}
-pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io::Error> {
-    let mut res = PublicPrivateKey {
-        public_key: "".parse().unwrap(),
-        private_key: "".parse().unwrap(),
-    };
+pub(crate) fn get_public_private_keys() -> Result<Value, io::Error> {
+    #[allow(unused_assignments)]
+    let mut private_key = "".parse().unwrap();
 
     // wg genkey
     match Command::new("wg").arg("genkey").output() {
@@ -367,7 +344,7 @@ pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io
             if !output.status.success() {
                 return Err(io::Error::from(io::ErrorKind::Other));
             }
-            res.private_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            private_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
         }
         Err(e) => {
             return Err(e);
@@ -383,7 +360,7 @@ pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io
     {
         Ok(mut child) => {
             if let Some(stdin) = child.stdin.as_mut() {
-                match stdin.write_all(res.private_key.as_bytes()) {
+                match stdin.write_all(private_key.as_bytes()) {
                     Ok(_) => {}
                     Err(e) => {
                         return Err(e);
@@ -404,21 +381,19 @@ pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io
                     if !output.status.success() {
                         return Err(io::Error::from(io::ErrorKind::Other));
                     }
-                    res.public_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                    Ok(res)
+                    Ok(json!({
+                        "private_key": private_key,
+                        "public_key": String::from_utf8_lossy(&output.stdout).trim().to_string(),
+                    }))
                 }
-                Err(e) => {
-                    Err(e)
-                }
+                Err(e) => Err(e),
             }
         }
-        Err(e) => {
-            Err(e)
-        }
+        Err(e) => Err(e),
     }
 }
 
-pub(crate) fn get_wireguard_pre_shared_key() -> Result<String, io::Error> {
+pub(crate) fn get_pre_shared_key() -> Result<Value, io::Error> {
     // wg genpsk
     match Command::new("wg").arg("genpsk").output() {
         Ok(output) => {
@@ -430,7 +405,9 @@ pub(crate) fn get_wireguard_pre_shared_key() -> Result<String, io::Error> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if output.status.success() {
-                return Ok(String::from_utf8_lossy(&output.stdout).trim().to_string());
+                return Ok(json!({
+                    "pre_shared_key": String::from_utf8_lossy(&output.stdout).trim().to_string(),
+                }));
             }
             Err(io::Error::from(io::ErrorKind::Other))
         }

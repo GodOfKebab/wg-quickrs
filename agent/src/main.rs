@@ -41,35 +41,39 @@ pub static WIREGUARD_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // start logger and print version
+    // print version and start logger
+    println!(full_version!());
     SimpleLogger::new()
         .with_level(LevelFilter::Info)
         .init()
-        .unwrap();
-    log::info!(full_version!());
+        .unwrap_or_else(|e| {
+            eprintln!("Logger init failed: {e}");
+        });
 
     // get the wg_rusteze config file path
     let args = Args::parse();
     WG_RUSTEZE_CONFIG_FILE
         .set(args.wg_rusteze_config_file)
-        .unwrap();
+        .expect("Failed to set WG_RUSTEZE_CONFIG_FILE");
     log::info!(
         "using the wg-rusteze config file at \"{}\"",
         WG_RUSTEZE_CONFIG_FILE.get().unwrap().display()
     );
 
     // get the wireguard config file path
-    let config: config_wasm::types::Config = conf::logic::get_config();
-    let mut wireguard_config_folder = PathBuf::from(&args.wireguard_config_folder);
-    wireguard_config_folder.push(format!("{}.conf", config.network.identifier));
-    WIREGUARD_CONFIG_FILE.set(wireguard_config_folder).unwrap();
+    let config = conf::util::get_config();
+    let wireguard_config_filename = format!("{}.conf", config.network.identifier);
+    let wireguard_config_file_path = args.wireguard_config_folder.join(wireguard_config_filename);
+    WIREGUARD_CONFIG_FILE
+        .set(wireguard_config_file_path)
+        .expect("Failed to set WIREGUARD_CONFIG_FILE");
     log::info!(
         "using the wireguard config file at \"{}\"",
         WIREGUARD_CONFIG_FILE.get().unwrap().display()
     );
 
     // start the tunnel
-    wireguard::cmd::start_wireguard_tunnel(&config).unwrap_or_else(|e| {
+    wireguard::cmd::start_tunnel(&config).unwrap_or_else(|e| {
         log::error!("{e}");
     });
 
@@ -85,12 +89,12 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Compress::default())
             .service(app::web_ui_index)
             .service(api::get_network_summary)
-            .service(api::get_wireguard_public_private_keys)
-            .service(api::get_wireguard_pre_shared_key)
-            .service(api::patch_network_config)
             .service(api::get_network_lease_id_address)
-            .service(api::post_wireguard_server_status)
+            .service(api::get_wireguard_pre_shared_key)
+            .service(api::get_wireguard_public_private_keys)
             .service(api::get_version)
+            .service(api::patch_network_config)
+            .service(api::post_wireguard_server_status)
             .service(app::web_ui_dist);
 
         #[cfg(debug_assertions)]

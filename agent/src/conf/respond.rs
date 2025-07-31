@@ -1,118 +1,34 @@
 use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
-use config_wasm::types::{Config, FileConfig, Lease, WireGuardStatus};
+use config_wasm::types::{Config, FileConfig, Lease};
 
-use crate::wireguard::cmd::{
-    show_dump_wireguard, status_wireguard, sync_conf_wireguard,
-};
+pub(crate) use crate::conf::util::get_config;
+use crate::wireguard::cmd::sync_conf;
 use actix_web::{HttpResponse, web};
 use chrono::Duration;
-use serde_json::Value;
-use sha2::{Digest, Sha256};
-use std::fs;
-use std::fs::File;
+use serde_json::{Value, json};
 use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
 
-pub(crate) fn respond_get_network_summary(
-    params: web::Query<crate::api::SummaryBody>,
-) -> HttpResponse {
-    let resp_body = if params.only_digest {
-        serde_json::to_string(&config_wasm::types::ConfigDigest::from(&get_config()))
+pub(crate) fn get_network_summary(params: web::Query<crate::api::SummaryBody>) -> HttpResponse {
+    let response_data = if params.only_digest {
+        json!(config_wasm::types::ConfigDigest::from(&get_config()))
     } else {
-        serde_json::to_string(&get_config())
-    }
-    .unwrap();
-
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(resp_body)
-}
-
-pub(crate) fn get_config() -> Config {
-    let file_contents = fs::read_to_string(
-        WG_RUSTEZE_CONFIG_FILE
-            .get()
-            .expect("WG_RUSTEZE_CONFIG_FILE not set"),
-    )
-    .expect("Unable to open file");
-    let mut config: Config = serde_yml::from_str(&file_contents).unwrap();
-
-    // Make sure agent fields get precedence over network fields
-    if config
-        .network
-        .peers
-        .get(&config.network.this_peer)
-        .unwrap()
-        .endpoint
-        .value
-        != format!("{}:{}", config.agent.address, config.agent.vpn.port)
-    {
-        log::warn!(
-            "detected mismatch between configured wg-rusteze agent endpoints and wireguard peer endpoints! overriding wireguard peer endpoints"
-        );
-        config
-            .network
-            .peers
-            .get_mut(&config.network.this_peer)
-            .unwrap()
-            .endpoint
-            .value = format!("{}:{}", config.agent.address, config.agent.vpn.port);
-        set_config(&config);
-    }
-
-    let mut buf = [0u8; 64];
-    let digest: &str =
-        base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf)
-            .expect("Unable to calculate network digest");
-    config.digest = digest.to_string();
-    config.status = match status_wireguard() {
-        Ok(status) => status.value(),
-        Err(e) => {
-            log::error!("{e}");
-            WireGuardStatus::UNKNOWN.value()
-        }
+        json!(get_config())
     };
-    if config.status == WireGuardStatus::UP.value() {
-        config.telemetry = match show_dump_wireguard(&config) {
-            Ok(status) => status,
-            Err(e) => {
-                log::error!("{e}");
-                Default::default()
-            }
-        };
-    }
-    config.timestamp = timestamp::get_now_timestamp_formatted();
-
-    config
+    HttpResponse::Ok().json(response_data)
 }
 
-pub(crate) fn set_config(config: &Config) {
-    let mut file_config = FileConfig::from(config);
-    file_config.network.updated_at = timestamp::get_now_timestamp_formatted();
-    let config_str = serde_yml::to_string(&file_config).expect("Failed to serialize config");
-
-    let mut file = File::create(
-        WG_RUSTEZE_CONFIG_FILE
-            .get()
-            .expect("WG_RUSTEZE_CONFIG_FILE not set"),
-    )
-    .expect("Failed to open config file");
-    file.write_all(config_str.as_bytes())
-        .expect("Failed to write to config file");
-    log::info!("updated config file")
-}
-
-pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
+pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     let body_raw = String::from_utf8_lossy(&body);
     let change_sum: Value = match serde_json::from_str(&body_raw) {
         Ok(val) => val,
         Err(err) => {
-            return HttpResponse::BadRequest()
-                .content_type("application/json")
-                .body(format!(r#"{{"error":"Invalid JSON: {err}"}}"#));
+            return HttpResponse::BadRequest().json(json!({
+                "error": format!("Invalid JSON: {err}")
+            }));
         }
     };
 
@@ -137,18 +53,20 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
     let mut config_value: Value = match serde_yml::from_str(&config_str) {
         Ok(val) => val,
         Err(_err) => {
-            return HttpResponse::NotFound()
-                .content_type("application/json")
-                .body(r#"{"status":"forbidden","message":"Unable to parse config file"}"#);
+            return HttpResponse::NotFound().json(json!({
+                "status": "forbidden",
+                "message": "Unable to parse config file"
+            }));
         }
     };
 
     let network_config = match config_value.get_mut("network") {
         Some(n) => n,
         None => {
-            return HttpResponse::NotFound()
-                .content_type("application/json")
-                .body(r#"{"status":"forbidden","message":"Unable to parse config file"}"#);
+            return HttpResponse::NotFound().json(json!({
+                "status": "forbidden",
+                "message": "Unable to parse config file"
+            }));
         }
     };
 
@@ -165,11 +83,10 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
                 .is_some()
             {
                 log::info!("A client tried to change the host's endpoint! (forbidden)");
-                return HttpResponse::Forbidden()
-                    .content_type("application/json")
-                    .body(
-                        r#"{"status":"forbidden","message":"can't change the host's endpoint"}"#,
-                    );
+                return HttpResponse::Forbidden().json(json!({
+                    "status": "forbidden",
+                    "message": "can't change the host's endpoint"
+                }));
             }
         }
         {
@@ -267,7 +184,7 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
     log::info!("updated config file");
 
     let config: Config = serde_yml::from_str(&config_str).unwrap();
-    match sync_conf_wireguard(&config) {
+    match sync_conf(&config) {
         Ok(_) => {}
         Err(e) => {
             log::error!("{e}");
@@ -276,9 +193,9 @@ pub(crate) fn respond_patch_network_config(body: web::Bytes) -> HttpResponse {
     };
     log::info!("synchronized config file");
 
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(r#"{"status":"ok"}"#)
+    HttpResponse::Ok().json(json!({
+        "status": "ok"
+    }))
 }
 
 fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields: &Value) {
@@ -317,7 +234,7 @@ fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields:
     }
 }
 
-pub(crate) fn respond_get_network_lease_id_address() -> HttpResponse {
+pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     // Open the config file for reading and writing
     let mut config_file_reader = OpenOptions::new()
         .read(true)
@@ -376,7 +293,5 @@ pub(crate) fn respond_get_network_lease_id_address() -> HttpResponse {
         .write_all(config_str.as_bytes())
         .expect("Failed to write to config file");
 
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(serde_json::to_string(&body).unwrap())
+    HttpResponse::Ok().json(json!(body))
 }
