@@ -1,6 +1,6 @@
 'use strict';
 
-import init, {get_peer_wg_config_frontend} from '../../pkg/config_wasm.js';
+import init, {get_connection_id_frontend, get_peer_wg_config_frontend} from '../../pkg/config_wasm.js';
 
 await init();
 
@@ -124,8 +124,7 @@ export default class WireGuardHelper {
     }
 
     static getConnectionId(peer1, peer2) {
-        if (peer1.localeCompare(peer2, 'en') === 1) return `${peer1}*${peer2}`;
-        return `${peer2}*${peer1}`;
+        return get_connection_id_frontend(peer1, peer2);
     }
 
     static getConnectionPeers(connectionId) {

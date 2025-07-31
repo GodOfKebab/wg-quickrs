@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 
-#[allow(dead_code)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum WireGuardStatus {
     UNKNOWN,
     DOWN,
@@ -30,6 +30,8 @@ pub struct Config {
     pub agent: Agent,
     pub network: Network,
     #[serde(default)]
+    pub telemetry: HashMap<String, TelemetryDatum>,
+    #[serde(default)]
     pub digest: String,
     #[serde(default)]
     pub status: u8,
@@ -48,17 +50,16 @@ impl From<&Config> for FileConfig {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ConfigDigest {
-    #[serde(default)]
+    pub telemetry: HashMap<String, TelemetryDatum>,
     pub digest: String,
-    #[serde(default)]
     pub status: u8,
-    #[serde(default)]
     pub timestamp: String,
 }
 
 impl From<&Config> for ConfigDigest {
     fn from(config: &Config) -> Self {
         ConfigDigest {
+            telemetry: config.telemetry.clone(),
             digest: config.digest.clone(),
             status: config.status.clone(),
             timestamp: config.timestamp.clone(),
@@ -158,3 +159,11 @@ pub struct Lease {
     pub peer_id: String,
     pub valid_until: String,
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct TelemetryDatum {
+    pub latest_handshake_at: u64,
+    pub transfer_a_to_b: u64,
+    pub transfer_b_to_a: u64,
+}
+

@@ -83,6 +83,14 @@ pub fn get_peer_wg_config(network: &types::Network, peer_id: String, version: &s
     return Ok(wg_conf);
 }
 
+pub fn get_connection_id(peer1: &str, peer2: &str) -> String {
+    if peer1 > peer2 {
+        format!("{}*{}", peer1, peer2)
+    } else {
+        format!("{}*{}", peer2, peer1)
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 use serde_wasm_bindgen;
 // Only include this when compiling to wasm32
@@ -94,4 +102,10 @@ use wasm_bindgen::prelude::*;
 pub fn get_peer_wg_config_frontend(network_js: JsValue, peer_id: String, version: &str) -> String {
     let network: types::Network = serde_wasm_bindgen::from_value(network_js).unwrap();
     get_peer_wg_config(&network, peer_id, version).unwrap()
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn get_connection_id_frontend(peer1: &str, peer2: &str) -> String {
+    get_connection_id(peer1, peer2)
 }

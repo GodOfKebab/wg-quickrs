@@ -20,11 +20,16 @@ export default {
       type: Object,
       default: {},
     },
+    telemetry: {
+      type: Object,
+      default: {},
+    },
   },
   data() {
     return {
       initializedGraph: false,
       graph: null,
+      previous_telemetry: null,
     }
   },
   watch: {
@@ -68,12 +73,37 @@ export default {
               .zoomToFit(100, 20)
               .nodeId('id')
               .nodeLabel('name')
-              // .nodeColor('color')
               .linkSource('source')
               .linkTarget('target')
               .linkAutoColorBy('color')
-              .linkDirectionalParticles('particleCount')
               .linkWidth('strength')
+              .linkDirectionalParticleCanvasObject((x, y, link, ctx, globalScale) => {
+                const target = link.target;
+                const dx = target.x - x;
+                const dy = target.y - y;
+                const angle = Math.atan2(dy, dx);
+
+                const size = 1.5;
+                const w = size;
+                const h = size;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle + Math.PI / 2); // fix direction mismatch
+
+                // GTA-style arrow shape
+                ctx.beginPath();
+                ctx.moveTo(0, -h);                   // Tip
+                ctx.lineTo(w * 0.6, h * 0.4);        // Right wing
+                ctx.lineTo(0, h * 0.2);              // Tail center
+                ctx.lineTo(-w * 0.6, h * 0.4);       // Left wing
+
+                ctx.closePath();
+
+                // Fill and stroke
+                ctx.fill();
+                ctx.restore();
+              })
               .cooldownTicks(10);
 
           this.graph.onEngineStop(() => this.graph.zoomToFit(400, 20));
@@ -83,8 +113,6 @@ export default {
             this.graph.centerAt(node.x, node.y, 400);
             this.graph.zoom(8, 400);
 
-            // this.peer_selected = node.id;
-            // console.log(node.id)
             this.$emit('peer-selected', node.id);
           });
 
@@ -94,6 +122,33 @@ export default {
           console.log(e);
         }
       }
+    },
+    telemetry: {
+      handler() {
+        if (this.graph === null) return;
+        if (this.previous_telemetry === null) {
+          this.previous_telemetry = JSON.parse(JSON.stringify(this.telemetry));
+          return;
+        }
+
+        for (const [connection_id, telemetry_details] of Object.entries(this.telemetry.data)) {
+          for (const link of this.graph.graphData().links) {
+            if (link.source.id === undefined) continue;
+            if (connection_id !== WireGuardHelper.getConnectionId(link.source.id, link.target.id)) continue;
+
+            const trafficBytesPrev = connection_id.startsWith(link.source.id) ? this.previous_telemetry.data[connection_id].transfer_a_to_b : this.previous_telemetry.data[connection_id].transfer_b_to_a;
+            const trafficBytesCurr = connection_id.startsWith(link.source.id) ? telemetry_details.transfer_a_to_b : telemetry_details.transfer_b_to_a;
+            const trafficBytesDiff = trafficBytesCurr - trafficBytesPrev;
+            if (trafficBytesDiff === 0) continue;
+            const trafficBytesPerSecond = trafficBytesDiff * 1000 / ((new Date(Date.parse(this.telemetry.timestamp))) - (new Date(Date.parse(this.previous_telemetry.timestamp))));
+            // ~100Mb -> 10 particles
+            const particleCount = Math.ceil(Math.min(100. * trafficBytesPerSecond * 8. / 1024. / 1024. / 1024., 10));
+            this.graphEmitParticles(link, particleCount).then().catch();
+          }
+        }
+        this.previous_telemetry = JSON.parse(JSON.stringify(this.telemetry));
+      },
+      deep: true
     }
   },
   mounted: function () {
@@ -168,6 +223,12 @@ export default {
       tmpCtx.fillRect(0, 0, size, size);
       tmpCtx.drawImage(image, size / 4, size / 4, size / 2, size / 2);
       return tmpCanvas;
+    },
+    async graphEmitParticles(link, particleCount) {
+      for (let i = 0; i < particleCount; i++) {
+        this.graph.emitParticle(link);
+        await new Promise(r => setTimeout(r, 1000 / particleCount));
+      }
     },
   }
 }

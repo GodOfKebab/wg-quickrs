@@ -3,6 +3,7 @@ use crate::WIREGUARD_CONFIG_FILE;
 use config_wasm::get_peer_wg_config;
 use config_wasm::types::{TelemetryDatum, WireGuardStatus};
 use once_cell::sync::Lazy;
+use serde::__private::ser::constrain;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
@@ -21,17 +22,69 @@ pub(crate) fn status_wireguard() -> Result<WireGuardStatus, io::Error> {
     Ok(WireGuardStatus::UP)
 }
 
-pub(crate) fn show_dump_wireguard() -> Result<HashMap<String, TelemetryDatum>, io::Error> {
-    Ok(Default::default()) // TODO: implement me
+pub(crate) fn show_dump_wireguard(config: &config_wasm::types::Config) -> Result<HashMap<String, TelemetryDatum>, io::Error> {
+    let wg_interface_mut = match WG_INTERFACE.lock() {
+        Ok(lock) => { lock },
+        Err(_e) => { return Err(io::Error::from(io::ErrorKind::Other)); }
+    };
+    if *wg_interface_mut == "" { return Err(io::Error::from(io::ErrorKind::Other)); }
+
+    // sudo wg show INTERFACE dump
+    match Command::new("sudo")
+        .arg("wg")
+        .arg("show")
+        .arg(&*wg_interface_mut)
+        .arg("dump")
+        .output() {
+        Ok(output) => {
+            log::info!("$ sudo wg show {} dump", &*wg_interface_mut);
+            if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
+            if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
+            if output.status.success() {
+                let mut telemetry = HashMap::<String, TelemetryDatum>::new();
+
+                let dump = String::from_utf8_lossy(&output.stdout);
+                for line in dump.trim().lines().skip(1) {
+                    let parts: Vec<&str> = line.split('\t').collect();
+                    if parts.len() < 8 {
+                        continue;
+                    }
+                    let public_key = parts[0];
+
+                    for (peer_id, peer_details) in config.network.peers.clone() {
+                        if peer_details.public_key != public_key { continue; }
+                        let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
+                        let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
+                        let connection_id = config_wasm::get_connection_id(&config.network.this_peer, &peer_id);
+
+                        telemetry.insert(connection_id.clone(), TelemetryDatum {
+                            latest_handshake_at: parts[4].parse::<u64>().unwrap_or(0),
+                            transfer_a_to_b: if connection_id.starts_with(&config.network.this_peer) { transfer_tx } else { transfer_rx },
+                            transfer_b_to_a: if connection_id.starts_with(&config.network.this_peer) { transfer_rx } else { transfer_tx },
+                        });
+                        break;
+                    }
+                }
+
+                return Ok(telemetry);
+            }
+            return Err(io::Error::from(io::ErrorKind::Other));
+        }
+        Err(e) => {
+            return Err(e);
+        }
+    }
 }
 
 pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
-    match Command::new("wg-quick")
+    // sudo wg-quick down INTERFACE
+    match Command::new("sudo")
+        .arg("wg-quick")
         .arg("down")
         .arg(config.network.identifier.clone())
         .output() {
         Ok(output) => {
-            log::info!("$ wg-quick down {}", config.network.identifier.clone());
+            log::info!("$ sudo wg-quick down {}", config.network.identifier.clone());
             if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
             if output.status.success() {
@@ -50,12 +103,14 @@ pub(crate) fn disable_wireguard(config: &config_wasm::types::Config) -> Result<(
 }
 
 pub(crate) fn enable_wireguard(config: &config_wasm::types::Config) -> Result<(), io::Error> {
-    match Command::new("wg-quick")
+    // sudo wg-quick up INTERFACE
+    match Command::new("sudo")
+        .arg("wg-quick")
         .arg("up")
         .arg(config.network.identifier.clone())
         .output() {
         Ok(output) => {
-            log::info!("$ wg-quick up {}", config.network.identifier.clone());
+            log::info!("$ sudo wg-quick up {}", config.network.identifier.clone());
             if !output.stdout.is_empty() { log::info!("{}", String::from_utf8_lossy(&output.stdout)); }
             if !output.stderr.is_empty() { log::warn!("{}", String::from_utf8_lossy(&output.stderr)); }
             if !output.stderr.is_empty() {
@@ -155,6 +210,7 @@ pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io
         private_key: "".parse().unwrap(),
     };
 
+    // wg genkey
     match Command::new("wg")
         .arg("genkey")
         .output() {
@@ -170,6 +226,7 @@ pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io
         }
     };
 
+    // wg genkey | wg pubkey
     match Command::new("wg")
         .arg("pubkey")
         .stdin(Stdio::piped())
@@ -201,6 +258,7 @@ pub(crate) fn get_wireguard_public_private_keys() -> Result<PublicPrivateKey, io
 }
 
 pub(crate) fn get_wireguard_pre_shared_key() -> Result<String, io::Error> {
+    // wg genpsk
     match Command::new("wg")
         .arg("genpsk")
         .output() {

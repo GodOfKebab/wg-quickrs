@@ -86,6 +86,7 @@
   <!-- Map -->
   <div class="container mx-auto mt-3 max-w-6xl">
     <map-visual :network="network"
+                :telemetry="telemetry"
                 class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center"
                 style="max-height: 80vh"
                 @peer-selected="onPeerSelected"></map-visual>
@@ -116,11 +117,10 @@
     </small>
     <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
       last fetched:
-      <strong v-if="last_fetch.since <= refreshRate * 5"
-              class="text-green-400">{{ last_fetch.rfc3339 }}</strong>
+      <strong v-if="last_fetch.since < 0" class="text-red-400">Never</strong>
       <strong v-else-if="last_fetch.since > refreshRate * 5"
               class="text-yellow-400">{{ last_fetch.rfc3339 }}</strong>
-      <strong v-else class="text-red-400">Never</strong>
+      <strong v-else class="text-green-400">{{ last_fetch.rfc3339 }}</strong>
     </small>
     <br/>
     <small>&copy; Copyright 2024-2025, <a class="hover:underline" href="https://yasar.idikut.cc/">Yaşar
@@ -189,12 +189,13 @@ export default {
       requiresPassword: false,
       dialogId: '',
       network: {},
+      telemetry: {},
       digest: '',
       version: null,
       last_fetch: {
         rfc3339: "",
         readable: "",
-        since: Infinity,
+        since: -1,
       },
 
     }
@@ -209,7 +210,7 @@ export default {
   computed: {},
   methods: {
     async refresh() {
-      this.last_fetch.since = new Date() - new Date(this.last_fetch.rfc3339);
+      this.last_fetch.since = this.last_fetch.rfc3339 ? new Date() - new Date(this.last_fetch.rfc3339) : -1;
 
       let need_to_update_network = true;
       if (this.digest.length === 64) {
@@ -217,6 +218,7 @@ export default {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.wireguardStatus = summary.status;
           need_to_update_network = this.digest !== summary.digest;
+          this.telemetry = {data: summary.telemetry, timestamp: summary.timestamp};
 
           this.last_fetch.rfc3339 = summary.timestamp;
           const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
@@ -238,6 +240,7 @@ export default {
         await API.get_summary('?only_digest=false').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.digest = summary.digest;
+          this.telemetry = {data: summary.telemetry, timestamp: summary.timestamp};
           this.network = summary.network;
           this.network.static_peer_ids = [];
           this.network.roaming_peer_ids = [];

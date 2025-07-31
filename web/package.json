@@ -11,7 +11,7 @@
     "dayjs": "^1.11.13",
     "fast-deep-equal": "^3.1.3",
     "flowbite": "^2.5.2",
-    "force-graph": "^1.47.0",
+    "force-graph": "^1.50.1",
     "qrcode": "^1.5.4",
     "vue": "^3.3.4"
   },
