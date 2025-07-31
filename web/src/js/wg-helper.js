@@ -1,8 +1,6 @@
 'use strict';
 
-import init, {get_connection_id_frontend, get_peer_wg_config_frontend} from '../../pkg/config_wasm.js';
-
-await init();
+import {get_connection_id_frontend, get_peer_wg_config_frontend} from '../../pkg/config_wasm.js';
 
 export default class WireGuardHelper {
 

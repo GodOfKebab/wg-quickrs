@@ -167,6 +167,7 @@ import PeerCreateWindow from "./components/peer-create-window.vue";
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import init from '../pkg/config_wasm.js';
 
 dayjs.extend(relativeTime);
 
@@ -194,10 +195,19 @@ export default {
         readable: "",
         since: -1,
       },
-
+      wasmInitialized: false,
     }
   },
-  mounted: function () {
+  async mounted() {
+    if (!this.wasmInitialized) {
+      try {
+        await init();
+        this.wasmInitialized = true;
+      } catch (err) {
+        console.error('WASM failed to load:', err);
+      }
+    }
+
     initFlowbite();
 
     setInterval(() => {
