@@ -1,6 +1,3 @@
-#[cfg(debug_assertions)]
-use actix_cors::Cors;
-use actix_web::{App, HttpServer, middleware};
 use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
@@ -11,6 +8,7 @@ mod api;
 mod app;
 mod conf;
 mod macros;
+mod server;
 mod wireguard;
 
 #[derive(Parser, Debug)]
@@ -34,6 +32,18 @@ struct Args {
         value_name = "WIREGUARD_CONFIG_FOLDER_PATH"
     )]
     wireguard_config_folder: PathBuf,
+    #[arg(
+        long,
+        default_value = ".wg-rusteze/cert.pem",
+        value_name = "TLS_CERTIFICATE_FILE_PATH"
+    )]
+    tls_cert: PathBuf,
+    #[arg(
+        long,
+        default_value = ".wg-rusteze/key.pem",
+        value_name = "TLS_PRIVATE_KEY_FILE_PATH"
+    )]
+    tls_key: PathBuf,
 }
 
 pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
@@ -77,42 +87,6 @@ async fn main() -> std::io::Result<()> {
         log::error!("{e}");
     });
 
-    // start the HTTP server for frontend and API control
-    log::info!(
-        "frontend/API accessible at {}://{}:{}/",
-        config.agent.web.scheme,
-        config.agent.address,
-        config.agent.web.port
-    );
-    HttpServer::new(|| {
-        let app = App::new()
-            .wrap(middleware::Compress::default())
-            .service(app::web_ui_index)
-            .service(api::get_network_summary)
-            .service(api::get_network_lease_id_address)
-            .service(api::get_wireguard_pre_shared_key)
-            .service(api::get_wireguard_public_private_keys)
-            .service(api::get_version)
-            .service(api::patch_network_config)
-            .service(api::post_wireguard_server_status)
-            .service(app::web_ui_dist);
-
-        #[cfg(debug_assertions)]
-        {
-            let cors = Cors::default()
-                .allow_any_origin()
-                .allow_any_method()
-                .allow_any_header()
-                .max_age(3600);
-            app.wrap(cors)
-        }
-
-        #[cfg(not(debug_assertions))]
-        {
-            app
-        }
-    })
-    .bind((config.agent.address, config.agent.web.port))?
-    .run()
-    .await
+    // start the HTTP server with TLS for frontend and API control
+    server::run_http_server(&config, &args.tls_cert, &args.tls_key).await
 }
