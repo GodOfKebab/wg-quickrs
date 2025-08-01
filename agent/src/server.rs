@@ -1,6 +1,8 @@
 use crate::{api, app};
+#[cfg(debug_assertions)]
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware};
+use anyhow::Context;
 use config_wasm::types::Config;
 use rustls::{
     ServerConfig,
@@ -14,31 +16,10 @@ pub(crate) async fn run_http_server(
     tls_key: &PathBuf,
 ) -> std::io::Result<()> {
     // start the HTTP server with TLS for frontend and API control
-    rustls::crypto::aws_lc_rs::default_provider()
-        .install_default()
-        .expect("Failed to install aws-lc-rs default crypto provider");
+    let bind_addr = (config.agent.address.clone(), config.agent.web.port);
 
-    // load TLS key/cert files
-    let cert_chain = CertificateDer::pem_file_iter(tls_cert)
-        .expect("Failed to read TLS certificate file")
-        .flatten()
-        .collect();
-
-    let key_der = PrivateKeyDer::from_pem_file(tls_key)
-        .expect("Failed to read TLS private key (expecting PKCS#8 format)");
-
-    let tls_config = ServerConfig::builder()
-        .with_no_client_auth()
-        .with_single_cert(cert_chain, key_der)
-        .expect("Failed to build TLS config with provided certificate and key");
-
-    log::info!(
-        "frontend/API accessible at {}://{}:{}/",
-        config.agent.web.scheme.clone(),
-        config.agent.address.clone(),
-        config.agent.web.port.clone()
-    );
-    HttpServer::new(|| {
+    // Closure building your Actix app, reused for both HTTP and HTTPS
+    let app_factory = || {
         let app = App::new()
             .wrap(middleware::Compress::default())
             .service(app::web_ui_index)
@@ -65,11 +46,75 @@ pub(crate) async fn run_http_server(
         {
             app
         }
-    })
-    .bind_rustls_0_23(
-        (config.agent.address.clone(), config.agent.web.port),
-        tls_config,
-    )?
-    .run()
-    .await
+    };
+
+    // Try to build TLS config — if fails, fallback immediately
+    let tls_config = match load_tls_config(tls_cert, tls_key) {
+        Ok(cfg) => cfg,
+        Err(e) => {
+            log::warn!(
+                "Failed to load TLS config (cert/key), falling back to HTTP: {e}"
+            );
+            // Fallback to HTTP server immediately
+            let http_server = HttpServer::new(app_factory)
+                .bind(&bind_addr)
+                .expect("Failed to bind HTTP fallback server");
+            log::info!(
+                "Started HTTP frontend/API at http://{}:{}/",
+                bind_addr.0,
+                bind_addr.1
+            );
+            return http_server.run().await;
+        }
+    };
+
+    // Try to bind HTTPS server
+    match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr.clone(), tls_config) {
+        Ok(server) => {
+            log::info!(
+                "Started HTTPS frontend/API at https://{}:{}/",
+                bind_addr.0,
+                bind_addr.1
+            );
+            server.run().await
+        }
+        Err(err) => {
+            log::warn!(
+                "Failed to bind HTTPS server on {}:{}, falling back to HTTP: {}",
+                bind_addr.0,
+                bind_addr.1,
+                err
+            );
+            let http_server = HttpServer::new(app_factory)
+                .bind(&bind_addr)
+                .expect("Failed to bind HTTP fallback server");
+            log::info!(
+                "Started HTTP frontend/API at http://{}:{}/",
+                bind_addr.0,
+                bind_addr.1
+            );
+            http_server.run().await
+        }
+    }
+}
+
+fn load_tls_config(tls_cert: &PathBuf, tls_key: &PathBuf) -> Result<ServerConfig, anyhow::Error> {
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .expect("Failed to install aws-lc-rs default crypto provider");
+
+    let cert_chain = CertificateDer::pem_file_iter(tls_cert)
+        .context("Failed to read TLS certificate file")?
+        .flatten()
+        .collect();
+
+    let key_der = PrivateKeyDer::from_pem_file(tls_key)
+        .context("Failed to read TLS private key (expecting PKCS#8 format)")?;
+
+    let tls_config = ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert_chain, key_der)
+        .context("Failed to build TLS config with provided certificate and key")?;
+
+    Ok(tls_config)
 }
