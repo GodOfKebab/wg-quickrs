@@ -32,7 +32,7 @@ export default class API {
         });
     }
 
-    static async get_summary(url_encoded_params) {
+    static async get_network_summary(url_encoded_params) {
         return API.call({
             method: 'get',
             path: `/api/network/summary${url_encoded_params}`,
@@ -40,7 +40,7 @@ export default class API {
         });
     }
 
-    static async get_public_private_keys() {
+    static async get_wireguard_public_private_keys() {
         return API.call({
             method: 'get',
             path: `/api/wireguard/public_private_keys`,
@@ -48,7 +48,7 @@ export default class API {
         });
     }
 
-    static async get_pre_shared_key() {
+    static async get_wireguard_pre_shared_key() {
         return API.call({
             method: 'get',
             path: `/api/wireguard/pre_shared_key`,
@@ -65,7 +65,7 @@ export default class API {
         });
     }
 
-    static async get_lease_id_address() {
+    static async get_network_lease_id_address() {
         return API.call({
             method: 'get',
             path: `/api/network/lease/id-address`,

@@ -197,13 +197,13 @@ export default {
     this.default_peer_conf = JSON.parse(JSON.stringify(this.network.defaults.peer));
 
     this.default_peer_conf.name = ""
-    API.get_lease_id_address().then(response => {
+    API.get_network_lease_id_address().then(response => {
       this.peerId = response.peer_id;
       this.default_peer_conf.address = response.address;
       this.peer_id_address_valid_until = response.valid_until;
     });
 
-    API.get_public_private_keys().then(response => {
+    API.get_wireguard_public_private_keys().then(response => {
       this.default_peer_conf.public_key = response.public_key;
       this.default_peer_conf.private_key = response.private_key;
     });

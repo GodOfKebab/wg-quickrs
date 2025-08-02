@@ -221,7 +221,7 @@ export default {
 
       let need_to_update_network = true;
       if (this.digest.length === 64) {
-        await API.get_summary('?only_digest=true').then(summary => {
+        await API.get_network_summary('?only_digest=true').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.wireguardStatus = summary.status;
           need_to_update_network = this.digest !== summary.digest;
@@ -244,7 +244,7 @@ export default {
       }
 
       if (need_to_update_network) {
-        await API.get_summary('?only_digest=false').then(summary => {
+        await API.get_network_summary('?only_digest=false').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.digest = summary.digest;
           this.telemetry = {data: summary.telemetry, timestamp: summary.timestamp};
