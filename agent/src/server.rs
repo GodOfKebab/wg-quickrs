@@ -23,6 +23,7 @@ pub(crate) async fn run_http_server(
         let app = App::new()
             .wrap(middleware::Compress::default())
             .service(app::web_ui_index)
+            .service(api::post_token)
             .service(api::get_network_summary)
             .service(api::get_network_lease_id_address)
             .service(api::get_wireguard_pre_shared_key)
@@ -52,9 +53,7 @@ pub(crate) async fn run_http_server(
     let tls_config = match load_tls_config(tls_cert, tls_key) {
         Ok(cfg) => cfg,
         Err(e) => {
-            log::warn!(
-                "Failed to load TLS config (cert/key), falling back to HTTP: {e}"
-            );
+            log::warn!("Failed to load TLS config (cert/key), falling back to HTTP: {e}");
             // Fallback to HTTP server immediately
             let http_server = HttpServer::new(app_factory)
                 .bind(&bind_addr)

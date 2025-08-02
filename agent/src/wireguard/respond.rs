@@ -1,10 +1,10 @@
 use crate::conf;
 use crate::wireguard::cmd;
 use crate::wireguard::cmd::{disable_tunnel, enable_tunnel};
-use actix_web::{HttpResponse, Responder, web};
+use actix_web::{HttpResponse, web};
 use serde_json::json;
 
-pub(crate) fn get_wireguard_public_private_keys() -> impl Responder {
+pub(crate) fn get_wireguard_public_private_keys() -> HttpResponse {
     match cmd::get_public_private_keys() {
         Ok(keys) => HttpResponse::Ok().json(keys),
         Err(e) => {
@@ -14,7 +14,7 @@ pub(crate) fn get_wireguard_public_private_keys() -> impl Responder {
     }
 }
 
-pub(crate) fn get_wireguard_pre_shared_key() -> impl Responder {
+pub(crate) fn get_wireguard_pre_shared_key() -> HttpResponse {
     match cmd::get_pre_shared_key() {
         Ok(key) => HttpResponse::Ok().json(key),
         Err(e) => {
@@ -24,7 +24,7 @@ pub(crate) fn get_wireguard_pre_shared_key() -> impl Responder {
     }
 }
 
-pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> impl Responder {
+pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
     #[derive(serde::Serialize, serde::Deserialize)]
     struct StatusBody {
         status: u8,

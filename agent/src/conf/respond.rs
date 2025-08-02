@@ -12,8 +12,8 @@ use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
 
-pub(crate) fn get_network_summary(params: web::Query<crate::api::SummaryBody>) -> HttpResponse {
-    let response_data = if params.only_digest {
+pub(crate) fn get_network_summary(query: web::Query<crate::api::SummaryBody>) -> HttpResponse {
+    let response_data = if query.only_digest {
         json!(config_wasm::types::ConfigDigest::from(&get_config()))
     } else {
         json!(get_config())
