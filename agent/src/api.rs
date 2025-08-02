@@ -93,9 +93,9 @@ struct LoginRequest {
     password: String,
 }
 #[post("/api/token")]
-async fn post_token(form: web::Form<LoginRequest>) -> impl Responder {
-    let client_id = &form.client_id;
-    let password = &form.password;
+async fn post_token(query: web::Query<LoginRequest>) -> impl Responder {
+    let client_id = &query.client_id;
+    let password = &query.password;
     // TODO: change password check method
     if password != "secret" {
         return HttpResponse::Unauthorized().body("Invalid credentials");
