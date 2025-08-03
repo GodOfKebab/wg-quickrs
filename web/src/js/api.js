@@ -1,14 +1,40 @@
 'use strict';
 
 export default class API {
-    static async call({method, path, headers, body}) {
+    token;
+    password;
+    does_need_auth = false;
+
+    async call({method, path, headers, body}) {
+        if (this.does_need_auth && this.token === '') {
+            throw new Error(`A valid token required for ${method} ${path}!`);
+        }
+
+        headers = headers ? headers : {};
+        if (this.token !== '') {
+            headers["Authorization"] = `Bearer ${this.token}`;
+        }
         const res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}${path}`, {
             method,
-            headers,
+            headers: headers,
             body: body
                 ? JSON.stringify(body)
                 : undefined,
         });
+
+        // get a new token
+        if (res.status === 401) {
+            console.error(`Unauthorized: ${res.status}, requesting a new token...`);
+            this.does_need_auth = true;
+            this.token = '';
+            if (this.password === '') {
+                console.error(`Password is not entered yet`);
+                throw new Error(res.statusText);
+            }
+            await this.refresh_api_token(this.password); // errors out if not successful
+            return this.call({method, path, headers, body}); // retry call
+        }
+
 
         if (res.status === 204) {
             return undefined;
@@ -23,57 +49,67 @@ export default class API {
         return json;
     }
 
+    async refresh_api_token(password) {
+        this.password = password;
+        const token_res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}/api/token?client_id=web&password=${password}`, {
+            method: "post"
+        });
+        const token = await token_res.text();
+        if (token_res.status === 200) {
+            this.does_need_auth = false;
+            this.token = token;
+            console.log(`Received the new token. Retrying...`);
+        } else {
+            this.password = "";
+            throw new Error("Unauthorized access");
+        }
+    }
 
-    static async get_version() {
-        return API.call({
+    async get_version() {
+        return this.call({
             method: 'get',
             path: `/version`,
-            headers: {}
         });
     }
 
-    static async get_network_summary(url_encoded_params) {
-        return API.call({
+    async get_network_summary(url_encoded_params) {
+        return this.call({
             method: 'get',
             path: `/api/network/summary${url_encoded_params}`,
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
     }
 
-    static async get_wireguard_public_private_keys() {
-        return API.call({
+    async get_wireguard_public_private_keys() {
+        return this.call({
             method: 'get',
             path: `/api/wireguard/public_private_keys`,
-            headers: {}
         });
     }
 
-    static async get_wireguard_pre_shared_key() {
-        return API.call({
+    async get_wireguard_pre_shared_key() {
+        return this.call({
             method: 'get',
             path: `/api/wireguard/pre_shared_key`,
-            headers: {}
         });
     }
 
-    static async patch_network_config(change_sum) {
-        return API.call({
+    async patch_network_config(change_sum) {
+        return this.call({
             method: 'patch',
             path: `/api/network/config`,
-            headers: {},
             body: change_sum
         });
     }
 
-    static async get_network_lease_id_address() {
-        return API.call({
+    async get_network_lease_id_address() {
+        return this.call({
             method: 'get',
             path: `/api/network/lease/id-address`,
-            headers: {},
         });
     }
-    
-    static async post_wireguard_server_status(body) {
+
+    async post_wireguard_server_status(body) {
         return this.call({
             method: 'post',
             path: '/api/wireguard/server/status',

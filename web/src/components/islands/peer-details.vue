@@ -57,6 +57,10 @@ export default {
       type: Object,
       default: {},
     },
+    api: {
+      type: Object,
+      default: null,
+    }
   },
   data() {
     return {
@@ -75,7 +79,7 @@ export default {
   emits: ['updated-change-sum'],
   methods: {
     async refreshPeerEditKeys() {
-      await API.get_wireguard_public_private_keys().then(response => {
+      await this.api.get_wireguard_public_private_keys().then(response => {
         this.peer_local.public_key = response.public_key;
         this.peer_local.private_key = response.private_key;
         this.$emit("updated-change-sum", {

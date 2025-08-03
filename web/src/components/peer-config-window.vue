@@ -85,11 +85,13 @@
 
         <peer-details-island @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"
                              :peer="peer_conf"
+                             :api="api"
                              class="my-2 mr-2"></peer-details-island>
 
         <connection-islands @updated-change-sum="onUpdatedConnectionsIslandsChangeSum"
                             :network="network"
                             :peer-id="peerId"
+                            :api="api"
                             class="my-2 mr-2"></connection-islands>
       </div>
 
@@ -194,6 +196,10 @@ export default {
     version: {
       type: Object,
       default: {},
+    },
+    api: {
+      type: Object,
+      default: null,
     }
   },
   emits: ['update:dialogId'],
@@ -234,7 +240,7 @@ export default {
       this.connectionIslandsChangeSum = data;
     },
     updateConfiguration() {
-      API.patch_network_config(this.changeSum);
+      this.api.patch_network_config(this.changeSum);
     },
     deletePeer() {
       const changeSum = {
@@ -245,7 +251,7 @@ export default {
       for (const [connection_id, connection_details] of Object.entries(this.network.connections)) {
         if (connection_id.includes(this.peerId)) changeSum.removed_connections[connection_id] = connection_details;
       }
-      API.patch_network_config(changeSum);
+      this.api.patch_network_config(changeSum);
     },
     drawQRCode() {
       QRCode.toCanvas(document.getElementById('qr-canvas'), this.peer_wg_conf_file);

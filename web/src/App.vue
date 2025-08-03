@@ -124,7 +124,11 @@
       İdikut</a></small>
   </footer>
 
-  <!-- Dialog: WireGuard Enable/Disable -->
+  <!-- Dialog: Ask Password -->
+  <password-dialog v-if="api.does_need_auth"
+                   :api="api"></password-dialog>
+
+
   <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = '' }"
                  :left-button-text="'Cancel'"
                  :right-button-classes="wireguardStatus === ServerStatusEnum.up ? ['text-white', 'bg-red-600', 'hover:bg-red-700'] : ['text-white', 'bg-green-600', 'hover:bg-green-700']"
@@ -146,12 +150,14 @@
                       v-model:dialog-id="dialogId"
                       :network="network"
                       :version="version"
+                      :api="api"
                       :peer-id="dialogId.slice(17, dialogId.length)"></peer-config-window>
 
   <!-- Dialog: Peer Create -->
   <peer-create-window v-if="dialogId === 'create-peer'"
                       v-model:dialog-id="dialogId"
                       :network="network"
+                      :api="api"
                       :version="version"></peer-create-window>
 
 </template>
@@ -162,6 +168,7 @@ import {initFlowbite} from 'flowbite'
 import API from "./js/api.js";
 import MapVisual from "./components/map-visual.vue";
 import CustomDialog from "./components/custom-dialog.vue";
+import PasswordDialog from "./components/password-dialog.vue";
 import PeerConfigWindow from "./components/peer-config-window.vue";
 import PeerCreateWindow from "./components/peer-create-window.vue";
 
@@ -173,7 +180,7 @@ dayjs.extend(relativeTime);
 
 export default {
   name: "app",
-  components: {MapVisual, CustomDialog, PeerConfigWindow, PeerCreateWindow},
+  components: {PasswordDialog, MapVisual, CustomDialog, PeerConfigWindow, PeerCreateWindow},
   data() {
     return {
       refreshRate: 1000,
@@ -196,6 +203,8 @@ export default {
         since: -1,
       },
       wasmInitialized: false,
+      api: {does_need_auth: false},
+      temp_password: "",
     }
   },
   async mounted() {
@@ -206,6 +215,11 @@ export default {
       } catch (err) {
         console.error('WASM failed to load:', err);
       }
+    }
+
+    this.api = new API();
+    if (localStorage.getItem('remember') === 'true') {
+      this.api.token = localStorage.getItem('token') || '';
     }
 
     initFlowbite();
@@ -221,7 +235,7 @@ export default {
 
       let need_to_update_network = true;
       if (this.digest.length === 64) {
-        await API.get_network_summary('?only_digest=true').then(summary => {
+        await this.api.get_network_summary('?only_digest=true').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.wireguardStatus = summary.status;
           need_to_update_network = this.digest !== summary.digest;
@@ -235,16 +249,17 @@ export default {
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
             this.webServerStatus = this.ServerStatusEnum.down;
+          } else if (err.toString() === 'Error: Unauthorized access') {
+            this.webServerStatus = this.ServerStatusEnum.unknown;
           } else {
             this.webServerStatus = this.ServerStatusEnum.unknown;
-            console.log('getNetwork error =>');
             console.log(err);
           }
         });
       }
 
       if (need_to_update_network) {
-        await API.get_network_summary('?only_digest=false').then(summary => {
+        await this.api.get_network_summary('?only_digest=false').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.digest = summary.digest;
           this.telemetry = {data: summary.telemetry, timestamp: summary.timestamp};
@@ -268,16 +283,17 @@ export default {
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
             this.webServerStatus = this.ServerStatusEnum.down;
+          } else if (err.toString() === 'Error: Unauthorized access') {
+            this.webServerStatus = this.ServerStatusEnum.unknown;
           } else {
             this.webServerStatus = this.ServerStatusEnum.unknown;
-            console.log('getNetwork error =>');
             console.log(err);
           }
         });
       }
 
       if (this.version === null) {
-        API.get_version().then(response => {
+        this.api.get_version().then(response => {
           const last_built_date = (new Date(Date.parse(response.built)))
           this.version = {
             backend: response.backend,
@@ -291,7 +307,7 @@ export default {
     },
     toggleWireGuardNetworking() {
       const curr = this.wireguardStatus === this.ServerStatusEnum.up;
-      API.post_wireguard_server_status({status: curr ? this.ServerStatusEnum.down : this.ServerStatusEnum.up})
+      this.api.post_wireguard_server_status({status: curr ? this.ServerStatusEnum.down : this.ServerStatusEnum.up})
           .then(() => {
             this.refresh();
           }).catch(err => {

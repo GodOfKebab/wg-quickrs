@@ -90,6 +90,7 @@
         <peer-details-island v-if="default_peer_conf.private_key !== undefined
                                    && default_peer_conf.public_key !== undefined"
                              :peer="default_peer_conf"
+                             :api="api"
                              class="my-2 mr-2"
                              @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"></peer-details-island>
 
@@ -97,6 +98,7 @@
                             :is-new-peer="true"
                             :network="network_w_new_peer"
                             :peer-id="peerId"
+                            :api="api"
                             class="my-2 mr-2"
                             @updated-change-sum="onUpdatedConnectionsIslandsChangeSum"></connection-islands>
       </div>
@@ -168,6 +170,10 @@ export default {
     version: {
       type: Object,
       default: {},
+    },
+    api: {
+      type: Object,
+      default: null,
     }
   },
   emits: ['update:dialogId'],
@@ -197,13 +203,13 @@ export default {
     this.default_peer_conf = JSON.parse(JSON.stringify(this.network.defaults.peer));
 
     this.default_peer_conf.name = ""
-    API.get_network_lease_id_address().then(response => {
+    this.api.get_network_lease_id_address().then(response => {
       this.peerId = response.peer_id;
       this.default_peer_conf.address = response.address;
       this.peer_id_address_valid_until = response.valid_until;
     });
 
-    API.get_wireguard_public_private_keys().then(response => {
+    this.api.get_wireguard_public_private_keys().then(response => {
       this.default_peer_conf.public_key = response.public_key;
       this.default_peer_conf.private_key = response.private_key;
     });
@@ -225,7 +231,7 @@ export default {
       this.connectionIslandsChangeSum = data;
     },
     updateConfiguration() {
-      API.patch_network_config(this.change_sum);
+      this.api.patch_network_config(this.change_sum);
     },
   },
   computed: {
