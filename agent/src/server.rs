@@ -49,52 +49,54 @@ pub(crate) async fn run_http_server(
         }
     };
 
-    // Try to build TLS config — if fails, fallback immediately
-    let tls_config = match load_tls_config(tls_cert, tls_key) {
-        Ok(cfg) => cfg,
-        Err(e) => {
-            log::warn!("Failed to load TLS config (cert/key), falling back to HTTP: {e}");
-            // Fallback to HTTP server immediately
-            let http_server = HttpServer::new(app_factory)
-                .bind(&bind_addr)
-                .expect("Failed to bind HTTP fallback server");
-            log::info!(
-                "Started HTTP frontend/API at http://{}:{}/",
-                bind_addr.0,
-                bind_addr.1
-            );
-            return http_server.run().await;
-        }
-    };
+    if config.agent.web.use_tls {
+        // Try to build TLS config — if fails, fallback immediately
+        let tls_config = match load_tls_config(tls_cert, tls_key) {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                log::warn!("Failed to load TLS config (cert/key), falling back to HTTP: {e}");
+                // Fallback to HTTP server immediately
+                let http_server = HttpServer::new(app_factory)
+                    .bind(&bind_addr)
+                    .expect("Failed to bind HTTP fallback server");
+                log::info!(
+                    "Started HTTP frontend/API at http://{}:{}/",
+                    bind_addr.0,
+                    bind_addr.1
+                );
+                return http_server.run().await;
+            }
+        };
 
-    // Try to bind HTTPS server
-    match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr.clone(), tls_config) {
-        Ok(server) => {
-            log::info!(
-                "Started HTTPS frontend/API at https://{}:{}/",
-                bind_addr.0,
-                bind_addr.1
-            );
-            server.run().await
-        }
-        Err(err) => {
-            log::warn!(
-                "Failed to bind HTTPS server on {}:{}, falling back to HTTP: {}",
-                bind_addr.0,
-                bind_addr.1,
-                err
-            );
-            let http_server = HttpServer::new(app_factory)
-                .bind(&bind_addr)
-                .expect("Failed to bind HTTP fallback server");
-            log::info!(
-                "Started HTTP frontend/API at http://{}:{}/",
-                bind_addr.0,
-                bind_addr.1
-            );
-            http_server.run().await
-        }
+        // Try to bind HTTPS server
+        match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr.clone(), tls_config) {
+            Ok(server) => {
+                log::info!(
+                    "Started HTTPS frontend/API at https://{}:{}/",
+                    bind_addr.0,
+                    bind_addr.1
+                );
+                return server.run().await;
+            }
+            Err(err) => {
+                log::warn!(
+                    "Failed to bind HTTPS server on {}:{}, falling back to HTTP: {}",
+                    bind_addr.0,
+                    bind_addr.1,
+                    err
+                );
+            }
+        };
     }
+
+    let http_server = HttpServer::new(app_factory).bind(&bind_addr).unwrap_or_else(|_| panic!("Failed to bind HTTP server on {}:{}",
+            bind_addr.0, bind_addr.1));
+    log::info!(
+        "Started HTTP frontend/API at http://{}:{}/",
+        bind_addr.0,
+        bind_addr.1
+    );
+    http_server.run().await
 }
 
 fn load_tls_config(tls_cert: &PathBuf, tls_key: &PathBuf) -> Result<ServerConfig, anyhow::Error> {

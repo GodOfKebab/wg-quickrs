@@ -75,7 +75,7 @@ pub struct Agent {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentWeb {
-    pub scheme: String,
+    pub use_tls: bool,
     pub port: u16,
 }
 
