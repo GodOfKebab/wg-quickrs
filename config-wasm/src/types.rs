@@ -75,8 +75,15 @@ pub struct Agent {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentWeb {
-    pub use_tls: bool,
     pub port: u16,
+    pub use_tls: bool,
+    pub password: Password,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct Password {
+    pub enabled: bool,
+    pub hash: String,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

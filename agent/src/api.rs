@@ -2,6 +2,7 @@ use crate::conf;
 use crate::macros::*;
 use crate::wireguard;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, patch, post, web};
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use once_cell::sync::Lazy;
 use rand::{RngCore, rng};
@@ -96,12 +97,19 @@ struct LoginRequest {
 async fn post_token(query: web::Query<LoginRequest>) -> impl Responder {
     let client_id = &query.client_id;
     let password = &query.password;
-    // TODO: change password check method
-    if password != "secret" {
-        return HttpResponse::Unauthorized().body("Invalid credentials");
+
+    // check password-based auth
+    let config = conf::util::get_config();
+    if config.agent.web.password.enabled {
+        let parsed_hash =
+            PasswordHash::new(&config.agent.web.password.hash).expect("Invalid hash format");
+        if Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash).is_err()
+        {
+            return HttpResponse::Unauthorized().body("Invalid credentials");
+        }
     }
 
-    // no check now
     let expiration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()

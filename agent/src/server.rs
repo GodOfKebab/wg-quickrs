@@ -89,8 +89,14 @@ pub(crate) async fn run_http_server(
         };
     }
 
-    let http_server = HttpServer::new(app_factory).bind(&bind_addr).unwrap_or_else(|_| panic!("Failed to bind HTTP server on {}:{}",
-            bind_addr.0, bind_addr.1));
+    let http_server = HttpServer::new(app_factory)
+        .bind(&bind_addr)
+        .unwrap_or_else(|_| {
+            panic!(
+                "Failed to bind HTTP server on {}:{}",
+                bind_addr.0, bind_addr.1
+            )
+        });
     log::info!(
         "Started HTTP frontend/API at http://{}:{}/",
         bind_addr.0,

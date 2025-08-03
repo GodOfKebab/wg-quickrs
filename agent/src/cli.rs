@@ -21,6 +21,12 @@ pub(crate) enum Commands {
     Init {},
     #[command(about = "Run some convenience functions to edit config")]
     Config {
+        #[arg(
+            long,
+            default_value = ".wg-rusteze/conf.yml",
+            value_name = "WG_RUSTEZE_CONFIG_FILE_PATH"
+        )]
+        wg_rusteze_config_file: PathBuf,
         #[command(subcommand)]
         commands: ConfigCommands,
     },

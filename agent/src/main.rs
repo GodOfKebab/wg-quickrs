@@ -1,8 +1,15 @@
 use crate::cli::{AgentCommands, ConfigCommands};
+use argon2::{
+    password_hash::{PasswordHasher, SaltString},
+    Argon2,
+};
 use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
+use rand::{rng, RngCore};
 use simple_logger::SimpleLogger;
+use std::io;
+use std::io::Write;
 use std::path::PathBuf;
 
 mod api;
@@ -17,7 +24,7 @@ pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 pub static WIREGUARD_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> io::Result<()> {
     let args = cli::Cli::parse();
     println!(full_version!());
 
@@ -38,10 +45,47 @@ async fn main() -> std::io::Result<()> {
             log::info!("Initializing wg-rusteze agent..."); // TODO: implement me
             Ok(())
         }
-        cli::Commands::Config { commands } => {
+        cli::Commands::Config {
+            wg_rusteze_config_file,
+            commands,
+        } => {
+            // get the wg_rusteze config file path
+            WG_RUSTEZE_CONFIG_FILE
+                .set(wg_rusteze_config_file.clone())
+                .expect("Failed to set WG_RUSTEZE_CONFIG_FILE");
+            log::info!(
+                "using the wg-rusteze config file at \"{}\"",
+                WG_RUSTEZE_CONFIG_FILE.get().unwrap().display()
+            );
+
+            // get the wireguard config file path
+            let mut config = conf::util::get_config();
+
             match commands {
                 ConfigCommands::ResetWebPassword => {
                     log::info!("Resetting the web password..."); // TODO: implement me
+                    print!("Enter your new password: ");
+                    io::stdout().flush()?; // Ensure the prompt is shown before waiting for input
+
+                    let mut password = String::new();
+                    io::stdin()
+                        .read_line(&mut password)
+                        .expect("Failed to read input");
+                    let password = password.trim(); // Remove newline character
+
+                    let mut sbytes = [0; 8];
+                    rng().fill_bytes(&mut sbytes);
+                    let salt = SaltString::encode_b64(&sbytes).unwrap();
+
+                    let argon2 = Argon2::default();
+                    let password_hash = argon2
+                        .hash_password(password.as_ref(), &salt)
+                        .expect("Password hashing failed")
+                        .to_string();
+
+                    config.agent.web.password.enabled = true;
+                    config.agent.web.password.hash = password_hash;
+                    conf::util::set_config(&config);
                 }
             }
             Ok(())

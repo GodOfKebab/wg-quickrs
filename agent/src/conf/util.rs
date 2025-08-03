@@ -62,7 +62,7 @@ pub(crate) fn get_config() -> Config {
     config
 }
 
-fn set_config(config: &Config) {
+pub(crate) fn set_config(config: &Config) {
     let mut file_config = FileConfig::from(config);
     file_config.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&file_config).expect("Failed to serialize config");
