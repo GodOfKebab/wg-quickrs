@@ -11,8 +11,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
-    sub: String, // Subject (user id or username)
-    exp: usize,  // Expiration time as timestamp
+    sub: String, // Subject (user id)
+    exp: u64,    // Expiration time as timestamp
 }
 
 // Secret key for signing tokens
@@ -106,11 +106,11 @@ async fn post_token(query: web::Query<LoginRequest>) -> impl Responder {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs()
-        + 3600; // 1 hour expiry
+        + 3600; // 1-hour expiry
 
     let claims = Claims {
         sub: client_id.clone(),
-        exp: expiration as usize,
+        exp: expiration,
     };
 
     match encode(&Header::default(), &claims, &JWT_SECRETS.0) {
