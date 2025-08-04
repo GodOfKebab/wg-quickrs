@@ -1,9 +1,10 @@
 use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
-use config_wasm::types::{Config, FileConfig, Lease};
+use config_wasm::types::{Config, Lease};
 
 pub(crate) use crate::conf::util::get_config;
+use crate::conf::util::get_summary;
 use crate::wireguard::cmd::sync_conf;
 use actix_web::{HttpResponse, web};
 use chrono::Duration;
@@ -14,9 +15,9 @@ use uuid::Uuid;
 
 pub(crate) fn get_network_summary(query: web::Query<crate::api::SummaryBody>) -> HttpResponse {
     let response_data = if query.only_digest {
-        json!(config_wasm::types::ConfigDigest::from(&get_config()))
+        json!(config_wasm::types::SummaryDigest::from(&get_summary()))
     } else {
-        json!(get_config())
+        json!(get_summary())
     };
     HttpResponse::Ok().json(response_data)
 }
@@ -49,7 +50,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     config_file_reader
         .read_to_string(&mut config_str)
         .expect("Failed to read config file");
-    let config_file: FileConfig = serde_yml::from_str(&config_str).unwrap();
+    let config_file: Config = serde_yml::from_str(&config_str).unwrap();
     let mut config_value: Value = match serde_yml::from_str(&config_str) {
         Ok(val) => val,
         Err(_err) => {
@@ -251,7 +252,7 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     config_file_reader
         .read_to_string(&mut config_str)
         .expect("Failed to read config file");
-    let mut config_file: FileConfig = serde_yml::from_str(&config_str).unwrap();
+    let mut config_file: Config = serde_yml::from_str(&config_str).unwrap();
 
     let mut reserved_addresses = Vec::<String>::new();
     for peer in config_file.network.peers.values() {
@@ -282,7 +283,7 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     config_file.network.leases.push(body.clone());
     config_file.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&config_file).expect("Failed to serialize config");
-    // Move back to beginning and truncate before writing
+    // Move back to the beginning and truncate before writing
     config_file_reader
         .set_len(0)
         .expect("Failed to truncate config file");

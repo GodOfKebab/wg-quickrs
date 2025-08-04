@@ -35,5 +35,5 @@ pub(crate) fn reset_web_password() {
 
     config.agent.web.password.enabled = true;
     config.agent.web.password.hash = password_hash;
-    conf::util::set_config(&config);
+    conf::util::set_config(&mut config);
 }

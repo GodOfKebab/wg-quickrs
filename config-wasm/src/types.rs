@@ -19,13 +19,13 @@ impl WireGuardStatus {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct FileConfig {
+pub struct Config {
     pub agent: Agent,
     pub network: Network,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct Config {
+pub struct Summary {
     pub agent: Agent,
     pub network: Network,
     #[serde(default)]
@@ -38,9 +38,9 @@ pub struct Config {
     pub timestamp: String,
 }
 
-impl From<&Config> for FileConfig {
-    fn from(config: &Config) -> Self {
-        FileConfig {
+impl From<&Summary> for Config {
+    fn from(config: &Summary) -> Self {
+        Config {
             agent: config.agent.clone(),
             network: config.network.clone(),
         }
@@ -48,16 +48,16 @@ impl From<&Config> for FileConfig {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct ConfigDigest {
+pub struct SummaryDigest {
     pub telemetry: HashMap<String, TelemetryDatum>,
     pub digest: String,
     pub status: u8,
     pub timestamp: String,
 }
 
-impl From<&Config> for ConfigDigest {
-    fn from(config: &Config) -> Self {
-        ConfigDigest {
+impl From<&Summary> for SummaryDigest {
+    fn from(config: &Summary) -> Self {
+        SummaryDigest {
             telemetry: config.telemetry.clone(),
             digest: config.digest.clone(),
             status: config.status,

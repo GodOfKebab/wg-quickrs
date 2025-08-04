@@ -1,7 +1,7 @@
 use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{show_dump, status_tunnel};
-use config_wasm::types::{Config, FileConfig, WireGuardStatus};
+use config_wasm::types::{Config, Summary, WireGuardStatus};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::fs::File;
@@ -36,36 +36,54 @@ pub(crate) fn get_config() -> Config {
             .unwrap()
             .endpoint
             .value = format!("{}:{}", config.agent.address, config.agent.vpn.port);
-        set_config(&config);
+        set_config(&mut config);
     }
 
+    config
+}
+
+pub(crate) fn get_summary() -> Summary {
+    let config: Config = get_config();
+
     let mut buf = [0u8; 64];
-    let digest: &str =
-        base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf)
-            .expect("Unable to calculate network digest");
-    config.digest = digest.to_string();
-    config.status = match status_tunnel() {
+    let file_contents = fs::read_to_string(
+        WG_RUSTEZE_CONFIG_FILE
+            .get()
+            .expect("WG_RUSTEZE_CONFIG_FILE not set"),
+    )
+    .expect("Unable to open file");
+    let digest = base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf)
+        .expect("Unable to calculate network digest")
+        .to_string();
+    let status = match status_tunnel() {
         Ok(status) => status.value(),
         Err(e) => {
             log::error!("{e}");
             WireGuardStatus::UNKNOWN.value()
         }
     };
-    if config.status == WireGuardStatus::UP.value() {
-        config.telemetry = show_dump(&config).unwrap_or_else(|e| {
+    let mut telemetry = Default::default();
+    if status == WireGuardStatus::UP.value() {
+        telemetry = show_dump(&config).unwrap_or_else(|e| {
             log::error!("{e}");
             Default::default()
         });
     }
-    config.timestamp = timestamp::get_now_timestamp_formatted();
+    let timestamp = timestamp::get_now_timestamp_formatted();
 
-    config
+    Summary {
+        agent: config.agent,
+        network: config.network,
+        telemetry,
+        digest,
+        status,
+        timestamp,
+    }
 }
 
-pub(crate) fn set_config(config: &Config) {
-    let mut file_config = FileConfig::from(config);
-    file_config.network.updated_at = timestamp::get_now_timestamp_formatted();
-    let config_str = serde_yml::to_string(&file_config).expect("Failed to serialize config");
+pub(crate) fn set_config(config: &mut Config) {
+    config.network.updated_at = timestamp::get_now_timestamp_formatted();
+    let config_str = serde_yml::to_string(&config).expect("Failed to serialize config");
 
     let mut file = File::create(
         WG_RUSTEZE_CONFIG_FILE
