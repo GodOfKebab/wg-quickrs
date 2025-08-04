@@ -1,12 +1,12 @@
 use crate::cli::{AgentCommands, ConfigCommands};
 use argon2::{
-    password_hash::{PasswordHasher, SaltString},
     Argon2,
+    password_hash::{PasswordHasher, SaltString},
 };
 use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
-use rand::{rng, RngCore};
+use rand::{RngCore, rng};
 use simple_logger::SimpleLogger;
 use std::io;
 use std::io::Write;

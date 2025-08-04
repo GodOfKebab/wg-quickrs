@@ -104,7 +104,8 @@ async fn post_token(query: web::Query<LoginRequest>) -> impl Responder {
         let parsed_hash =
             PasswordHash::new(&config.agent.web.password.hash).expect("Invalid hash format");
         if Argon2::default()
-            .verify_password(password.as_bytes(), &parsed_hash).is_err()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .is_err()
         {
             return HttpResponse::Unauthorized().body("Invalid credentials");
         }
