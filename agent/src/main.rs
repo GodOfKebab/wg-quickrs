@@ -46,7 +46,7 @@ async fn main() -> io::Result<()> {
 
     match &args.command {
         cli::Commands::Init {} => {
-            log::info!("Initializing wg-rusteze agent..."); // TODO: implement me
+            commands::initialize_agent();
             Ok(())
         }
         cli::Commands::Config { commands } => {

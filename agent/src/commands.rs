@@ -5,6 +5,10 @@ use rand::{RngCore, rng};
 use std::io;
 use std::io::Write;
 
+pub(crate) fn initialize_agent() {
+    log::info!("Initializing wg-rusteze agent...");
+}
+
 pub(crate) fn reset_web_password() {
     // get the wireguard config file path
     let mut config = conf::util::get_config();
