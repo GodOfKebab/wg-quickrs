@@ -1,23 +1,27 @@
-use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
+use crate::WG_RUSTEZE_CONFIG_FILE;
 use config_wasm::types::{Config, Lease};
 
 pub(crate) use crate::conf::util::get_config;
 use crate::conf::util::get_summary;
 use crate::wireguard::cmd::sync_conf;
-use actix_web::{HttpResponse, web};
+use actix_web::{web, HttpResponse};
 use chrono::Duration;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
 
 pub(crate) fn get_network_summary(query: web::Query<crate::api::SummaryBody>) -> HttpResponse {
+    let summary = match get_summary() {
+        Ok(summary) => summary,
+        Err(_) => { return HttpResponse::InternalServerError().body("Unable to get config"); }
+    };
     let response_data = if query.only_digest {
-        json!(config_wasm::types::SummaryDigest::from(&get_summary()))
+        json!(config_wasm::types::SummaryDigest::from(&summary))
     } else {
-        json!(get_summary())
+        json!(summary)
     };
     HttpResponse::Ok().json(response_data)
 }

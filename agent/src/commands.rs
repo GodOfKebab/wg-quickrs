@@ -1,17 +1,31 @@
 use crate::conf;
+use crate::conf::util::ConfUtilError;
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
-use rand::{RngCore, rng};
+use rand::{rng, RngCore};
 use std::io;
 use std::io::Write;
 
 pub(crate) fn initialize_agent() {
+    match conf::util::get_config() {
+        Err(ConfUtilError::FileRead(_)) => {} // expected case if wg-rusteze config exists; do nothing
+        _ => {
+            log::error!("wg-rusteze agent is already initialized.");
+            return;
+        }
+    }
     log::info!("Initializing wg-rusteze agent...");
 }
 
 pub(crate) fn reset_web_password() {
     // get the wireguard config file path
-    let mut config = conf::util::get_config();
+    let mut config = match conf::util::get_config() {
+        Ok(config) => config,
+        Err(e) => {
+            log::error!("{e}");
+            return;
+        }
+    };
 
     log::info!("Resetting the web password...");
     print!("Enter your new password: ");
@@ -35,5 +49,5 @@ pub(crate) fn reset_web_password() {
 
     config.agent.web.password.enabled = true;
     config.agent.web.password.hash = password_hash;
-    conf::util::set_config(&mut config);
+    conf::util::set_config(&mut config).expect("Failed to set config");
 }

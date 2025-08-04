@@ -4,6 +4,7 @@ use log::LevelFilter;
 use once_cell::sync::OnceCell;
 use simple_logger::SimpleLogger;
 use std::io;
+use std::io::Error;
 use std::path::PathBuf;
 
 mod api;
@@ -64,7 +65,13 @@ async fn main() -> io::Result<()> {
             commands,
         } => {
             // get the wireguard config file path
-            let config = conf::util::get_config();
+            let config = match conf::util::get_config() {
+                Ok(config) => config,
+                Err(e) => {
+                    log::error!("{e}");
+                    return Err(Error::other("unable to get config!"));
+                }
+            };
 
             let mut run_wireguard = true;
             let mut run_web = true;

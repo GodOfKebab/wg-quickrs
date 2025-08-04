@@ -2302,6 +2302,7 @@ dependencies = [
  "sha2",
  "simple_logger",
  "tempfile",
+ "thiserror",
  "toml",
  "uuid",
 ]

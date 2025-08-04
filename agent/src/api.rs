@@ -1,11 +1,11 @@
 use crate::conf;
 use crate::macros::*;
 use crate::wireguard;
-use actix_web::{HttpRequest, HttpResponse, Responder, get, patch, post, web};
+use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
-use rand::{RngCore, rng};
+use rand::{rng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -99,7 +99,10 @@ async fn post_token(query: web::Query<LoginRequest>) -> impl Responder {
     let password = &query.password;
 
     // check password-based auth
-    let config = conf::util::get_config();
+    let config = match conf::util::get_config() {
+        Ok(config) => config,
+        Err(_) => { return HttpResponse::InternalServerError().body("Unable to get config"); }
+    };
     if config.agent.web.password.enabled {
         let parsed_hash =
             PasswordHash::new(&config.agent.web.password.hash).expect("Invalid hash format");
