@@ -1,20 +1,15 @@
 use crate::cli::{AgentCommands, ConfigCommands};
-use argon2::{
-    Argon2,
-    password_hash::{PasswordHasher, SaltString},
-};
 use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
-use rand::{RngCore, rng};
 use simple_logger::SimpleLogger;
 use std::io;
-use std::io::Write;
 use std::path::PathBuf;
 
 mod api;
 mod app;
 mod cli;
+mod commands;
 mod conf;
 mod macros;
 mod server;
@@ -40,72 +35,34 @@ async fn main() -> io::Result<()> {
             eprintln!("Logger init failed: {e}");
         });
 
+    // get the wg_rusteze config file path
+    WG_RUSTEZE_CONFIG_FILE
+        .set(args.wg_rusteze_config_file.clone())
+        .expect("Failed to set WG_RUSTEZE_CONFIG_FILE");
+    log::info!(
+        "using the wg-rusteze config file at \"{}\"",
+        WG_RUSTEZE_CONFIG_FILE.get().unwrap().display()
+    );
+
     match &args.command {
         cli::Commands::Init {} => {
             log::info!("Initializing wg-rusteze agent..."); // TODO: implement me
             Ok(())
         }
-        cli::Commands::Config {
-            wg_rusteze_config_file,
-            commands,
-        } => {
-            // get the wg_rusteze config file path
-            WG_RUSTEZE_CONFIG_FILE
-                .set(wg_rusteze_config_file.clone())
-                .expect("Failed to set WG_RUSTEZE_CONFIG_FILE");
-            log::info!(
-                "using the wg-rusteze config file at \"{}\"",
-                WG_RUSTEZE_CONFIG_FILE.get().unwrap().display()
-            );
-
-            // get the wireguard config file path
-            let mut config = conf::util::get_config();
-
+        cli::Commands::Config { commands } => {
             match commands {
                 ConfigCommands::ResetWebPassword => {
-                    log::info!("Resetting the web password..."); // TODO: implement me
-                    print!("Enter your new password: ");
-                    io::stdout().flush()?; // Ensure the prompt is shown before waiting for input
-
-                    let mut password = String::new();
-                    io::stdin()
-                        .read_line(&mut password)
-                        .expect("Failed to read input");
-                    let password = password.trim(); // Remove newline character
-
-                    let mut sbytes = [0; 8];
-                    rng().fill_bytes(&mut sbytes);
-                    let salt = SaltString::encode_b64(&sbytes).unwrap();
-
-                    let argon2 = Argon2::default();
-                    let password_hash = argon2
-                        .hash_password(password.as_ref(), &salt)
-                        .expect("Password hashing failed")
-                        .to_string();
-
-                    config.agent.web.password.enabled = true;
-                    config.agent.web.password.hash = password_hash;
-                    conf::util::set_config(&config);
+                    commands::reset_web_password();
                 }
             }
             Ok(())
         }
         cli::Commands::Agent {
-            wg_rusteze_config_file,
             wireguard_config_folder,
             tls_cert,
             tls_key,
             commands,
         } => {
-            // get the wg_rusteze config file path
-            WG_RUSTEZE_CONFIG_FILE
-                .set(wg_rusteze_config_file.clone())
-                .expect("Failed to set WG_RUSTEZE_CONFIG_FILE");
-            log::info!(
-                "using the wg-rusteze config file at \"{}\"",
-                WG_RUSTEZE_CONFIG_FILE.get().unwrap().display()
-            );
-
             // get the wireguard config file path
             let config = conf::util::get_config();
 
