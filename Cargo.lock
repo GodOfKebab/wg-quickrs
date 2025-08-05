@@ -616,6 +616,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde-wasm-bindgen",
+ "thiserror",
  "wasm-bindgen",
 ]
 

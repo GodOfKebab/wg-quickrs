@@ -1,44 +1,62 @@
-use crate::WIREGUARD_CONFIG_FILE;
 use crate::macros::*;
+use crate::WIREGUARD_CONFIG_FILE;
 use config_wasm::get_peer_wg_config;
 use config_wasm::types::{Config, TelemetryDatum, WireGuardStatus};
 use once_cell::sync::Lazy;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
-use std::{fs, io};
 use tempfile::NamedTempFile;
+use thiserror::Error;
+
+
+#[derive(Error, Debug)]
+pub enum WireGuardCommandError {
+    #[error("unable to acquire lock: {0}")]
+    LockUnavailable(String),
+    #[error("wireguard interface doesn't exist")]
+    InterfaceUnavailable,
+    #[error("the command for {0} failed: {1}")]
+    ExecutionFailed(String, String),
+    #[error("Folder create failed: {0}")]
+    FolderCreate(String),
+    #[error("File create failed: {0}")]
+    FileCreate(String),
+    #[error("File write failed: {0}")]
+    FileWrite(String),
+    #[error("Wireguard sync failed")]
+    InterfaceSyncFailed,
+    #[error("Other Error: {0}")]
+    Other(String),
+}
 
 static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
 
-pub(crate) fn status_tunnel() -> Result<WireGuardStatus, io::Error> {
-    let wg_interface_mut = match WG_INTERFACE.lock() {
-        Ok(lock) => lock,
-        Err(_e) => {
-            return Err(io::Error::from(io::ErrorKind::Other));
-        }
-    };
+pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> {
+    let wg_interface_mut = WG_INTERFACE
+        .lock()
+        .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
     if (*wg_interface_mut).is_empty() {
         return Ok(WireGuardStatus::DOWN);
     }
     Ok(WireGuardStatus::UP)
 }
 
-pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, io::Error> {
-    let wg_interface_mut = match WG_INTERFACE.lock() {
-        Ok(lock) => lock,
-        Err(_e) => {
-            return Err(io::Error::from(io::ErrorKind::Other));
-        }
-    };
+pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
+    let wg_interface_mut = WG_INTERFACE
+        .lock()
+        .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
+
     if (*wg_interface_mut).is_empty() {
-        return Err(io::Error::from(io::ErrorKind::Other));
+        return Err(WireGuardCommandError::InterfaceUnavailable);
     }
 
     // sudo wg show INTERFACE dump
+    let readable_command = format!("$ sudo wg show {} dump", &*wg_interface_mut);
     match Command::new("sudo")
         .arg("wg")
         .arg("show")
@@ -47,66 +65,67 @@ pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatu
         .output()
     {
         Ok(output) => {
-            log::info!("$ sudo wg show {} dump", &*wg_interface_mut);
+            log::info!("{}", readable_command);
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
             if !output.stderr.is_empty() {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
-            if output.status.success() {
-                let mut telemetry = HashMap::<String, TelemetryDatum>::new();
+            if !output.status.success() {
+                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()))
+            }
+            let mut telemetry = HashMap::<String, TelemetryDatum>::new();
 
-                let dump = String::from_utf8_lossy(&output.stdout);
-                for line in dump.trim().lines().skip(1) {
-                    let parts: Vec<&str> = line.split('\t').collect();
-                    if parts.len() < 8 {
+            let dump = String::from_utf8_lossy(&output.stdout);
+            for line in dump.trim().lines().skip(1) {
+                let parts: Vec<&str> = line.split('\t').collect();
+                if parts.len() < 8 {
+                    continue;
+                }
+                let public_key = parts[0];
+
+                for (peer_id, peer_details) in config.network.peers.clone() {
+                    if peer_details.public_key != public_key {
                         continue;
                     }
-                    let public_key = parts[0];
+                    let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
+                    let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
+                    let connection_id =
+                        config_wasm::get_connection_id(&config.network.this_peer, &peer_id);
 
-                    for (peer_id, peer_details) in config.network.peers.clone() {
-                        if peer_details.public_key != public_key {
-                            continue;
-                        }
-                        let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
-                        let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
-                        let connection_id =
-                            config_wasm::get_connection_id(&config.network.this_peer, &peer_id);
-
-                        telemetry.insert(
-                            connection_id.clone(),
-                            TelemetryDatum {
-                                latest_handshake_at: parts[4].parse::<u64>().unwrap_or(0),
-                                transfer_a_to_b: if connection_id
-                                    .starts_with(&config.network.this_peer)
-                                {
-                                    transfer_tx
-                                } else {
-                                    transfer_rx
-                                },
-                                transfer_b_to_a: if connection_id
-                                    .starts_with(&config.network.this_peer)
-                                {
-                                    transfer_rx
-                                } else {
-                                    transfer_tx
-                                },
+                    telemetry.insert(
+                        connection_id.clone(),
+                        TelemetryDatum {
+                            latest_handshake_at: parts[4].parse::<u64>().unwrap_or(0),
+                            transfer_a_to_b: if connection_id
+                                .starts_with(&config.network.this_peer)
+                            {
+                                transfer_tx
+                            } else {
+                                transfer_rx
                             },
-                        );
-                        break;
-                    }
+                            transfer_b_to_a: if connection_id
+                                .starts_with(&config.network.this_peer)
+                            {
+                                transfer_rx
+                            } else {
+                                transfer_tx
+                            },
+                        },
+                    );
+                    break;
                 }
-
-                return Ok(telemetry);
             }
-            Err(io::Error::from(io::ErrorKind::Other))
+            return Ok(telemetry);
         }
-        Err(e) => Err(e),
+        Err(e) => {
+            Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()))
+        },
     }
 }
 
-pub(crate) fn sync_conf(config: &Config) -> Result<(), io::Error> {
+pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     match update_conf_file(config) {
         Ok(_) => {}
         Err(e) => {
@@ -115,13 +134,14 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), io::Error> {
     };
 
     // wg-quick strip WG_INTERFACE
+    let readable_command = format!("$ wg-quick strip {}", config.network.identifier.clone());
     let stripped_output = match Command::new("wg-quick")
         .arg("strip")
         .arg(config.network.identifier.clone())
         .output()
     {
         Ok(output) => {
-            log::info!("$ wg-quick strip {}", config.network.identifier.clone());
+            log::info!("{}", readable_command);
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -129,12 +149,12 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), io::Error> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(io::Error::from(io::ErrorKind::Other));
+                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()))
             }
             output
         }
         Err(e) => {
-            return Err(e);
+            return Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()))
         }
     };
 
@@ -142,23 +162,20 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), io::Error> {
     let mut temp = match NamedTempFile::new() {
         Ok(file) => file,
         Err(e) => {
-            return Err(e);
+            return Err(WireGuardCommandError::FileCreate(e.to_string()))
         }
     };
     match temp.write_all(&stripped_output.stdout) {
         Ok(_) => {}
         Err(e) => {
-            return Err(e);
+            return Err(WireGuardCommandError::FileWrite(e.to_string()))
         }
     };
     let temp_path = temp.path().to_owned(); // Save path before drop
 
-    let wg_interface_mut = match WG_INTERFACE.lock() {
-        Ok(lock) => lock,
-        Err(_e) => {
-            return Err(io::Error::from(io::ErrorKind::Other));
-        }
-    };
+    let wg_interface_mut = WG_INTERFACE
+        .lock()
+        .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
 
     // wg syncconf WG_INTERFACE <(wg-quick strip WG_INTERFACE)
     match Command::new("sudo")
@@ -181,16 +198,17 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), io::Error> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(io::Error::from(io::ErrorKind::Other));
+                return Err(WireGuardCommandError::InterfaceSyncFailed);
             }
             Ok(())
         }
-        Err(e) => Err(e),
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()))
     }
 }
 
-pub(crate) fn disable_tunnel(config: &Config) -> Result<(), io::Error> {
+pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandError> {
     // sudo wg-quick down INTERFACE
+    let readable_command = format!("$ sudo wg-quick down {}", config.network.identifier.clone());
     match Command::new("sudo")
         .arg("wg-quick")
         .arg("down")
@@ -198,32 +216,28 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), io::Error> {
         .output()
     {
         Ok(output) => {
-            log::info!("$ sudo wg-quick down {}", config.network.identifier.clone());
+            log::info!("{}", readable_command);
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
             if !output.stderr.is_empty() {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
-            if output.status.success() {
-                match WG_INTERFACE.lock() {
-                    Ok(mut wg_interface_mut) => {
-                        *wg_interface_mut = "".to_string();
-                    }
-                    Err(_e) => {
-                        return Err(io::Error::from(io::ErrorKind::Other));
-                    }
-                };
-                return Ok(());
+            if !output.status.success() {
+                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
             }
-            Err(io::Error::from(io::ErrorKind::Other))
+            *WG_INTERFACE
+                .lock()
+                .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))? = String::new();
+            return Ok(());
         }
-        Err(e) => Err(e),
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string())),
     }
 }
 
-pub(crate) fn enable_tunnel(config: &Config) -> Result<(), io::Error> {
+pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError> {
     // sudo wg-quick up INTERFACE
+    let readable_command = format!("$ sudo wg-quick up {}", config.network.identifier.clone());
     match Command::new("sudo")
         .arg("wg-quick")
         .arg("up")
@@ -231,7 +245,7 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), io::Error> {
         .output()
     {
         Ok(output) => {
-            log::info!("$ sudo wg-quick up {}", config.network.identifier.clone());
+            log::info!("{}", readable_command);
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -239,12 +253,10 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), io::Error> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.stderr.is_empty() {
-                let mut wg_interface_mut = match WG_INTERFACE.lock() {
-                    Ok(lock) => lock,
-                    Err(_e) => {
-                        return Err(io::Error::from(io::ErrorKind::Other));
-                    }
-                };
+                let mut wg_interface_mut = WG_INTERFACE
+                    .lock()
+                    .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
+
                 match String::from_utf8_lossy(&output.stderr)
                     .lines()
                     .find(|line| line.contains("[+] Interface for wg-rusteze-home is"))
@@ -255,7 +267,7 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), io::Error> {
                             *wg_interface_mut = word.to_string();
                         }
                         None => {
-                            return Err(io::Error::from(io::ErrorKind::Other));
+                            return Err(WireGuardCommandError::InterfaceUnavailable);
                         }
                     },
                     None => {
@@ -263,16 +275,16 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), io::Error> {
                     }
                 }
             }
-            if output.status.success() {
-                return Ok(());
+            if !output.status.success() {
+                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
             }
-            Err(io::Error::from(io::ErrorKind::Other))
+            Ok(())
         }
-        Err(e) => Err(e),
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()))
     }
 }
 
-pub(crate) fn update_conf_file(config: &Config) -> Result<(), io::Error> {
+pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandError> {
     // generate .conf content
     let wg_conf = match get_peer_wg_config(
         &config.network,
@@ -281,7 +293,7 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), io::Error> {
     ) {
         Ok(n) => n,
         Err(e) => {
-            return Err(e);
+            return Err(WireGuardCommandError::Other(e.to_string()));
         }
     };
 
@@ -291,27 +303,27 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), io::Error> {
     match fs::create_dir_all(config_path.parent().unwrap()) {
         Ok(_) => {}
         Err(e) => {
-            return Err(e);
+            return Err(WireGuardCommandError::FolderCreate(e.to_string()));
         }
     };
     // open the file with write-only permissions
     let mut file = match File::create(config_path) {
         Ok(f) => f,
         Err(e) => {
-            return Err(e);
+            return Err(WireGuardCommandError::FileCreate(e.to_string()));
         }
     };
     // dump the new conf to the file
     match file.write_all(wg_conf.as_bytes()) {
         Ok(_) => {}
         Err(e) => {
-            return Err(e);
+            return Err(WireGuardCommandError::FileWrite(e.to_string()));
         }
     };
     Ok(())
 }
 
-pub(crate) fn start_tunnel(config: &Config) -> Result<(), io::Error> {
+pub(crate) fn start_tunnel(config: &Config) -> Result<(), WireGuardCommandError> {
     // override .conf from .yml
     update_conf_file(config)?;
 
@@ -327,14 +339,15 @@ pub(crate) fn start_tunnel(config: &Config) -> Result<(), io::Error> {
     Ok(())
 }
 
-pub(crate) fn get_public_private_keys() -> Result<Value, io::Error> {
+pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> {
     #[allow(unused_assignments)]
     let mut private_key = "".parse().unwrap();
 
     // wg genkey
+    let readable_command = "$ wg genkey".to_string();
     match Command::new("wg").arg("genkey").output() {
         Ok(output) => {
-            log::info!("$ wg genkey");
+            log::info!("{}", readable_command);
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -342,16 +355,17 @@ pub(crate) fn get_public_private_keys() -> Result<Value, io::Error> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(io::Error::from(io::ErrorKind::Other));
+                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
             }
             private_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
         }
         Err(e) => {
-            return Err(e);
+            return Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()));
         }
     };
 
     // wg genkey | wg pubkey
+    let readable_command = "$ wg genkey | wg pubkey".to_string();
     match Command::new("wg")
         .arg("pubkey")
         .stdin(Stdio::piped())
@@ -363,15 +377,15 @@ pub(crate) fn get_public_private_keys() -> Result<Value, io::Error> {
                 match stdin.write_all(private_key.as_bytes()) {
                     Ok(_) => {}
                     Err(e) => {
-                        return Err(e);
+                        return Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()));
                     }
                 }
             } else {
-                return Err(io::Error::from(io::ErrorKind::Other));
+                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "not able to create a pipe".to_string()));
             }
             match child.wait_with_output() {
                 Ok(output) => {
-                    log::info!("$ wg genkey");
+                    log::info!("{}", readable_command);
                     if !output.stdout.is_empty() {
                         log::debug!("{}", String::from_utf8_lossy(&output.stdout));
                     }
@@ -379,38 +393,37 @@ pub(crate) fn get_public_private_keys() -> Result<Value, io::Error> {
                         log::warn!("{}", String::from_utf8_lossy(&output.stderr));
                     }
                     if !output.status.success() {
-                        return Err(io::Error::from(io::ErrorKind::Other));
+                        return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
                     }
                     Ok(json!({
                         "private_key": private_key,
                         "public_key": String::from_utf8_lossy(&output.stdout).trim().to_string(),
                     }))
                 }
-                Err(e) => Err(e),
+                Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string())),
             }
         }
-        Err(e) => Err(e),
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string())),
     }
 }
 
-pub(crate) fn get_pre_shared_key() -> Result<Value, io::Error> {
+pub(crate) fn get_pre_shared_key() -> Result<Value, WireGuardCommandError> {
     // wg genpsk
+    let readable_command = "$ wg genpsk".to_string();
     match Command::new("wg").arg("genpsk").output() {
         Ok(output) => {
-            log::info!("$ wg genpsk");
+            log::info!("{}", readable_command);
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
             if !output.stderr.is_empty() {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
-            if output.status.success() {
-                return Ok(json!({
-                    "pre_shared_key": String::from_utf8_lossy(&output.stdout).trim().to_string(),
-                }));
+            if !output.status.success() {
+                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
             }
-            Err(io::Error::from(io::ErrorKind::Other))
+            Ok(json!({"pre_shared_key": String::from_utf8_lossy(&output.stdout).trim().to_string()}))
         }
-        Err(e) => Err(e),
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string())),
     }
 }

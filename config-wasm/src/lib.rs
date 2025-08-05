@@ -1,4 +1,3 @@
-use std::io;
 
 pub mod types;
 
@@ -6,11 +5,11 @@ pub fn get_peer_wg_config(
     network: &types::Network,
     peer_id: String,
     version: &str,
-) -> Result<String, io::Error> {
+) -> Result<String, WireGuardLibError> {
     let this_peer = match network.peers.get(&peer_id) {
         Some(n) => n,
         None => {
-            return Err(io::Error::new(io::ErrorKind::NotFound, "peer not found"));
+            return Err(WireGuardLibError::NotFound(format!("peer_id: {peer_id}")));
         }
     };
 
@@ -78,10 +77,7 @@ pub fn get_peer_wg_config(
         let other_peer_details = match network.peers.get(other_peer_id) {
             Some(n) => n,
             None => {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    "other peer not found",
-                ));
+                return Err(WireGuardLibError::NotFound(format!("peer_id: {peer_id}")));
             }
         };
         writeln!(
@@ -124,6 +120,7 @@ pub fn get_connection_id(peer1: &str, peer2: &str) -> String {
     }
 }
 
+use crate::types::WireGuardLibError;
 #[cfg(target_arch = "wasm32")]
 use serde_wasm_bindgen;
 // Only include this when compiling to wasm32

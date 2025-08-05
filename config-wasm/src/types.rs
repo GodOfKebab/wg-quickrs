@@ -1,5 +1,12 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum WireGuardLibError {
+    #[error("the following is not found: ")]
+    NotFound(String),
+}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum WireGuardStatus {
