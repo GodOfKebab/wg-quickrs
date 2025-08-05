@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use tempfile::NamedTempFile;
@@ -22,12 +23,12 @@ pub enum WireGuardCommandError {
     InterfaceUnavailable,
     #[error("the command for {0} failed: {1}")]
     ExecutionFailed(String, String),
-    #[error("Folder create failed: {0}")]
-    FolderCreate(String),
-    #[error("File create failed: {0}")]
-    FileCreate(String),
-    #[error("File write failed: {0}")]
-    FileWrite(String),
+    #[error("Folder create at {0} failed: {1}")]
+    FolderCreate(PathBuf, String),
+    #[error("File create at {0} failed: {1}")]
+    FileCreate(PathBuf, String),
+    #[error("File write at {0} failed: {1}")]
+    FileWrite(PathBuf, String),
     #[error("Wireguard sync failed")]
     InterfaceSyncFailed,
     #[error("Other Error: {0}")]
@@ -162,13 +163,13 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     let mut temp = match NamedTempFile::new() {
         Ok(file) => file,
         Err(e) => {
-            return Err(WireGuardCommandError::FileCreate(e.to_string()))
+            return Err(WireGuardCommandError::Other(e.to_string()));
         }
     };
     match temp.write_all(&stripped_output.stdout) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FileWrite(e.to_string()))
+            return Err(WireGuardCommandError::FileWrite(PathBuf::from(temp.path()), e.to_string()))
         }
     };
     let temp_path = temp.path().to_owned(); // Save path before drop
@@ -299,25 +300,26 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
 
     // write the content to the .conf file
     let config_path = WIREGUARD_CONFIG_FILE.get().unwrap();
+    let config_parent_path = config_path.parent().unwrap();
     // make sure the parent directory exists
-    match fs::create_dir_all(config_path.parent().unwrap()) {
+    match fs::create_dir_all(config_parent_path) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FolderCreate(e.to_string()));
+            return Err(WireGuardCommandError::FolderCreate(PathBuf::from(config_parent_path), e.to_string()));
         }
     };
     // open the file with write-only permissions
     let mut file = match File::create(config_path) {
         Ok(f) => f,
         Err(e) => {
-            return Err(WireGuardCommandError::FileCreate(e.to_string()));
+            return Err(WireGuardCommandError::FileCreate(config_path.clone(), e.to_string()));
         }
     };
     // dump the new conf to the file
     match file.write_all(wg_conf.as_bytes()) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FileWrite(e.to_string()));
+            return Err(WireGuardCommandError::FileWrite(config_path.clone(), e.to_string()));
         }
     };
     Ok(())

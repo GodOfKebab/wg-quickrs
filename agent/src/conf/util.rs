@@ -6,14 +6,15 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ConfUtilError {
-    #[error("unable to write to (update) the config file: {0}")]
-    FileWrite(String),
-    #[error("unable to read the config file: {0}")]
-    FileRead(String),
+    #[error("unable to write to (update) the config file at {0}: {1}")]
+    FileWrite(PathBuf, String),
+    #[error("unable to read the config file at {0}: {1}")]
+    FileRead(PathBuf, String),
     #[error("unable to parse the config file: {0}")]
     InvalidConfigFile(String),
     #[error("unable to serialize the config object: {0}")]
@@ -23,9 +24,10 @@ pub enum ConfUtilError {
 }
 
 pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
-    let file_contents = match fs::read_to_string(WG_RUSTEZE_CONFIG_FILE.get().unwrap()) {
+    let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
+    let file_contents = match fs::read_to_string(file_path) {
         Ok(contents) => contents,
-        Err(e) => { return Err(ConfUtilError::FileRead(e.to_string())); }
+        Err(e) => { return Err(ConfUtilError::FileRead(file_path.clone(), e.to_string())); }
     };
     let mut config: Config = match serde_yml::from_str(&file_contents) {
         Ok(c) => c,
@@ -62,9 +64,10 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
     let config: Config = get_config()?;
 
     let mut buf = [0u8; 64];
-    let file_contents = match fs::read_to_string(WG_RUSTEZE_CONFIG_FILE.get().unwrap()) {
+    let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
+    let file_contents = match fs::read_to_string(file_path) {
         Ok(contents) => contents,
-        Err(e) => { return Err(ConfUtilError::FileRead(e.to_string())); }
+        Err(e) => { return Err(ConfUtilError::FileRead(file_path.clone(), e.to_string())); }
     };
     let digest = match base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf) {
         Ok(digest) => digest.to_string(),
@@ -100,14 +103,15 @@ pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
         Err(e) => { return Err(ConfUtilError::InvalidSerialize(e.to_string())); }
     };
 
-    let mut file = match File::create(WG_RUSTEZE_CONFIG_FILE.get().unwrap()) {
+    let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
+    let mut file = match File::create(file_path) {
         Ok(f) => f,
-        Err(e) => { return Err(ConfUtilError::FileWrite(e.to_string())); }
+        Err(e) => { return Err(ConfUtilError::FileWrite(file_path.clone(), e.to_string())); }
     };
 
     match file.write_all(config_str.as_bytes()) {
         Ok(_) => {},
-        Err(e) => { return Err(ConfUtilError::FileWrite(e.to_string())); }
+        Err(e) => { return Err(ConfUtilError::FileWrite(file_path.clone(), e.to_string())); }
     };
 
     log::info!("updated config file");

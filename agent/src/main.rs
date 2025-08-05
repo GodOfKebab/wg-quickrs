@@ -47,16 +47,16 @@ async fn main() -> io::Result<()> {
 
     match &args.command {
         cli::Commands::Init {} => {
-            commands::initialize_agent();
-            Ok(())
+            let exit_code = commands::initialize_agent();
+            std::process::exit(exit_code);
         }
         cli::Commands::Config { commands } => {
-            match commands {
+            let exit_code = match commands {
                 ConfigCommands::ResetWebPassword => {
-                    commands::reset_web_password();
+                    commands::reset_web_password()
                 }
-            }
-            Ok(())
+            };
+            std::process::exit(exit_code);
         }
         cli::Commands::Agent {
             wireguard_config_folder,

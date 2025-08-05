@@ -114,11 +114,10 @@ async fn post_token(query: web::Query<LoginRequest>) -> impl Responder {
         }
     }
 
-    let expiration = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        + 3600; // 1-hour expiry
+    let expiration = match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(duration) => duration.as_secs() + 3600, // 1-hour expiry
+        Err(_) => return HttpResponse::InternalServerError().body("SystemTime before UNIX EPOCH!"),
+    };
 
     let claims = Claims {
         sub: client_id.clone(),
