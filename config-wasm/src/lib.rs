@@ -1,4 +1,3 @@
-
 pub mod types;
 
 pub fn get_peer_wg_config(

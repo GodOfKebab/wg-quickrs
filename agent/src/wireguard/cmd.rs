@@ -1,9 +1,9 @@
-use crate::macros::*;
 use crate::WIREGUARD_CONFIG_FILE;
+use crate::macros::*;
 use config_wasm::get_peer_wg_config;
 use config_wasm::types::{Config, TelemetryDatum, WireGuardStatus};
 use once_cell::sync::Lazy;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -13,7 +13,6 @@ use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use tempfile::NamedTempFile;
 use thiserror::Error;
-
 
 #[derive(Error, Debug)]
 pub enum WireGuardCommandError {
@@ -47,7 +46,9 @@ pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> 
     Ok(WireGuardStatus::UP)
 }
 
-pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
+pub(crate) fn show_dump(
+    config: &Config,
+) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
     let wg_interface_mut = WG_INTERFACE
         .lock()
         .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
@@ -66,7 +67,7 @@ pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatu
         .output()
     {
         Ok(output) => {
-            log::info!("{}", readable_command);
+            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -74,7 +75,10 @@ pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatu
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()))
+                return Err(WireGuardCommandError::ExecutionFailed(
+                    readable_command,
+                    "return not success".to_string(),
+                ));
             }
             let mut telemetry = HashMap::<String, TelemetryDatum>::new();
 
@@ -99,15 +103,13 @@ pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatu
                         connection_id.clone(),
                         TelemetryDatum {
                             latest_handshake_at: parts[4].parse::<u64>().unwrap_or(0),
-                            transfer_a_to_b: if connection_id
-                                .starts_with(&config.network.this_peer)
+                            transfer_a_to_b: if connection_id.starts_with(&config.network.this_peer)
                             {
                                 transfer_tx
                             } else {
                                 transfer_rx
                             },
-                            transfer_b_to_a: if connection_id
-                                .starts_with(&config.network.this_peer)
+                            transfer_b_to_a: if connection_id.starts_with(&config.network.this_peer)
                             {
                                 transfer_rx
                             } else {
@@ -118,11 +120,12 @@ pub(crate) fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatu
                     break;
                 }
             }
-            return Ok(telemetry);
+            Ok(telemetry)
         }
-        Err(e) => {
-            Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()))
-        },
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+            readable_command,
+            e.to_string(),
+        )),
     }
 }
 
@@ -142,7 +145,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
         .output()
     {
         Ok(output) => {
-            log::info!("{}", readable_command);
+            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -150,12 +153,18 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()))
+                return Err(WireGuardCommandError::ExecutionFailed(
+                    readable_command,
+                    "return not success".to_string(),
+                ));
             }
             output
         }
         Err(e) => {
-            return Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()))
+            return Err(WireGuardCommandError::ExecutionFailed(
+                readable_command,
+                e.to_string(),
+            ));
         }
     };
 
@@ -169,7 +178,10 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     match temp.write_all(&stripped_output.stdout) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FileWrite(PathBuf::from(temp.path()), e.to_string()))
+            return Err(WireGuardCommandError::FileWrite(
+                PathBuf::from(temp.path()),
+                e.to_string(),
+            ));
         }
     };
     let temp_path = temp.path().to_owned(); // Save path before drop
@@ -203,7 +215,10 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
             }
             Ok(())
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()))
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+            readable_command,
+            e.to_string(),
+        )),
     }
 }
 
@@ -217,7 +232,7 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
         .output()
     {
         Ok(output) => {
-            log::info!("{}", readable_command);
+            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -225,14 +240,21 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
+                return Err(WireGuardCommandError::ExecutionFailed(
+                    readable_command,
+                    "return not success".to_string(),
+                ));
             }
             *WG_INTERFACE
                 .lock()
-                .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))? = String::new();
-            return Ok(());
+                .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))? =
+                String::new();
+            Ok(())
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string())),
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+            readable_command,
+            e.to_string(),
+        )),
     }
 }
 
@@ -246,7 +268,7 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
         .output()
     {
         Ok(output) => {
-            log::info!("{}", readable_command);
+            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -277,11 +299,17 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
                 }
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
+                return Err(WireGuardCommandError::ExecutionFailed(
+                    readable_command,
+                    "return not success".to_string(),
+                ));
             }
             Ok(())
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()))
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+            readable_command,
+            e.to_string(),
+        )),
     }
 }
 
@@ -305,21 +333,30 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
     match fs::create_dir_all(config_parent_path) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FolderCreate(PathBuf::from(config_parent_path), e.to_string()));
+            return Err(WireGuardCommandError::FolderCreate(
+                PathBuf::from(config_parent_path),
+                e.to_string(),
+            ));
         }
     };
     // open the file with write-only permissions
     let mut file = match File::create(config_path) {
         Ok(f) => f,
         Err(e) => {
-            return Err(WireGuardCommandError::FileCreate(config_path.clone(), e.to_string()));
+            return Err(WireGuardCommandError::FileCreate(
+                config_path.clone(),
+                e.to_string(),
+            ));
         }
     };
     // dump the new conf to the file
     match file.write_all(wg_conf.as_bytes()) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FileWrite(config_path.clone(), e.to_string()));
+            return Err(WireGuardCommandError::FileWrite(
+                config_path.clone(),
+                e.to_string(),
+            ));
         }
     };
     Ok(())
@@ -349,7 +386,7 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
     let readable_command = "$ wg genkey".to_string();
     match Command::new("wg").arg("genkey").output() {
         Ok(output) => {
-            log::info!("{}", readable_command);
+            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -357,12 +394,18 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
+                return Err(WireGuardCommandError::ExecutionFailed(
+                    readable_command,
+                    "return not success".to_string(),
+                ));
             }
             private_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
         }
         Err(e) => {
-            return Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()));
+            return Err(WireGuardCommandError::ExecutionFailed(
+                readable_command,
+                e.to_string(),
+            ));
         }
     };
 
@@ -379,15 +422,21 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
                 match stdin.write_all(private_key.as_bytes()) {
                     Ok(_) => {}
                     Err(e) => {
-                        return Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string()));
+                        return Err(WireGuardCommandError::ExecutionFailed(
+                            readable_command,
+                            e.to_string(),
+                        ));
                     }
                 }
             } else {
-                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "not able to create a pipe".to_string()));
+                return Err(WireGuardCommandError::ExecutionFailed(
+                    readable_command,
+                    "not able to create a pipe".to_string(),
+                ));
             }
             match child.wait_with_output() {
                 Ok(output) => {
-                    log::info!("{}", readable_command);
+                    log::info!("{readable_command}");
                     if !output.stdout.is_empty() {
                         log::debug!("{}", String::from_utf8_lossy(&output.stdout));
                     }
@@ -395,17 +444,26 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
                         log::warn!("{}", String::from_utf8_lossy(&output.stderr));
                     }
                     if !output.status.success() {
-                        return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
+                        return Err(WireGuardCommandError::ExecutionFailed(
+                            readable_command,
+                            "return not success".to_string(),
+                        ));
                     }
                     Ok(json!({
                         "private_key": private_key,
                         "public_key": String::from_utf8_lossy(&output.stdout).trim().to_string(),
                     }))
                 }
-                Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string())),
+                Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+                    readable_command,
+                    e.to_string(),
+                )),
             }
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string())),
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+            readable_command,
+            e.to_string(),
+        )),
     }
 }
 
@@ -414,7 +472,7 @@ pub(crate) fn get_pre_shared_key() -> Result<Value, WireGuardCommandError> {
     let readable_command = "$ wg genpsk".to_string();
     match Command::new("wg").arg("genpsk").output() {
         Ok(output) => {
-            log::info!("{}", readable_command);
+            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -422,10 +480,18 @@ pub(crate) fn get_pre_shared_key() -> Result<Value, WireGuardCommandError> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(readable_command, "return not success".to_string()));
+                return Err(WireGuardCommandError::ExecutionFailed(
+                    readable_command,
+                    "return not success".to_string(),
+                ));
             }
-            Ok(json!({"pre_shared_key": String::from_utf8_lossy(&output.stdout).trim().to_string()}))
+            Ok(
+                json!({"pre_shared_key": String::from_utf8_lossy(&output.stdout).trim().to_string()}),
+            )
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(readable_command, e.to_string())),
+        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+            readable_command,
+            e.to_string(),
+        )),
     }
 }

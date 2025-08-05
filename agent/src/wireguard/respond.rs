@@ -1,7 +1,7 @@
 use crate::conf;
 use crate::wireguard::cmd;
 use crate::wireguard::cmd::{disable_tunnel, enable_tunnel};
-use actix_web::{web, HttpResponse};
+use actix_web::{HttpResponse, web};
 use serde_json::json;
 
 pub(crate) fn get_wireguard_public_private_keys() -> HttpResponse {
@@ -41,7 +41,9 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
 
     let conf = match conf::respond::get_config() {
         Ok(conf) => conf,
-        Err(_) => { return HttpResponse::InternalServerError().body("Unable to get config"); }
+        Err(_) => {
+            return HttpResponse::InternalServerError().body("Unable to get config");
+        }
     };
     let action = if status_body.status == config_wasm::types::WireGuardStatus::UP.value() {
         enable_tunnel

@@ -1,6 +1,6 @@
+use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{show_dump, status_tunnel};
-use crate::WG_RUSTEZE_CONFIG_FILE;
 use config_wasm::types::{Config, Summary, WireGuardStatus};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -27,11 +27,15 @@ pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
     let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
     let file_contents = match fs::read_to_string(file_path) {
         Ok(contents) => contents,
-        Err(e) => { return Err(ConfUtilError::FileRead(file_path.clone(), e.to_string())); }
+        Err(e) => {
+            return Err(ConfUtilError::FileRead(file_path.clone(), e.to_string()));
+        }
     };
     let mut config: Config = match serde_yml::from_str(&file_contents) {
         Ok(c) => c,
-        Err(e) => { return Err(ConfUtilError::InvalidConfigFile(e.to_string())); }
+        Err(e) => {
+            return Err(ConfUtilError::InvalidConfigFile(e.to_string()));
+        }
     };
 
     // Make sure agent fields get precedence over network fields
@@ -67,12 +71,17 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
     let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
     let file_contents = match fs::read_to_string(file_path) {
         Ok(contents) => contents,
-        Err(e) => { return Err(ConfUtilError::FileRead(file_path.clone(), e.to_string())); }
+        Err(e) => {
+            return Err(ConfUtilError::FileRead(file_path.clone(), e.to_string()));
+        }
     };
-    let digest = match base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf) {
-        Ok(digest) => digest.to_string(),
-        Err(e) => { return Err(ConfUtilError::DigestEncode(e.to_string())); }
-    };
+    let digest =
+        match base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf) {
+            Ok(digest) => digest.to_string(),
+            Err(e) => {
+                return Err(ConfUtilError::DigestEncode(e.to_string()));
+            }
+        };
     let status = status_tunnel().unwrap_or_else(|e| {
         log::error!("{e}");
         WireGuardStatus::UNKNOWN
@@ -100,18 +109,24 @@ pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
     config.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = match serde_yml::to_string(&config) {
         Ok(s) => s,
-        Err(e) => { return Err(ConfUtilError::InvalidSerialize(e.to_string())); }
+        Err(e) => {
+            return Err(ConfUtilError::InvalidSerialize(e.to_string()));
+        }
     };
 
     let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
     let mut file = match File::create(file_path) {
         Ok(f) => f,
-        Err(e) => { return Err(ConfUtilError::FileWrite(file_path.clone(), e.to_string())); }
+        Err(e) => {
+            return Err(ConfUtilError::FileWrite(file_path.clone(), e.to_string()));
+        }
     };
 
     match file.write_all(config_str.as_bytes()) {
-        Ok(_) => {},
-        Err(e) => { return Err(ConfUtilError::FileWrite(file_path.clone(), e.to_string())); }
+        Ok(_) => {}
+        Err(e) => {
+            return Err(ConfUtilError::FileWrite(file_path.clone(), e.to_string()));
+        }
     };
 
     log::info!("updated config file");

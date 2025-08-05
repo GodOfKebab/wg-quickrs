@@ -52,9 +52,7 @@ async fn main() -> io::Result<()> {
         }
         cli::Commands::Config { commands } => {
             let exit_code = match commands {
-                ConfigCommands::ResetWebPassword => {
-                    commands::reset_web_password()
-                }
+                ConfigCommands::ResetWebPassword => commands::reset_web_password(),
             };
             std::process::exit(exit_code);
         }
