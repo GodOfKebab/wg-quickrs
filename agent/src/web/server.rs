@@ -1,4 +1,5 @@
-use crate::{api, app};
+use crate::web::api;
+use crate::web::app;
 #[cfg(debug_assertions)]
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware};

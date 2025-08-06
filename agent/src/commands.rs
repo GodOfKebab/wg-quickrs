@@ -1,6 +1,7 @@
 use crate::cli::AgentCommands;
 use crate::conf::util::ConfUtilError;
-use crate::{WIREGUARD_CONFIG_FILE, conf, server, wireguard};
+use crate::web::server;
+use crate::{WIREGUARD_CONFIG_FILE, conf, wireguard};
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
 use rand::{RngCore, rng};

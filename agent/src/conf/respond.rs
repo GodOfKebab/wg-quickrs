@@ -13,7 +13,7 @@ use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
 
-pub(crate) fn get_network_summary(query: web::Query<crate::api::SummaryBody>) -> HttpResponse {
+pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody>) -> HttpResponse {
     let summary = match get_summary() {
         Ok(summary) => summary,
         Err(_) => {

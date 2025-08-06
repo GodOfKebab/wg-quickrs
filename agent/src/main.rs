@@ -6,13 +6,11 @@ use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-mod api;
-mod app;
 mod cli;
 mod commands;
 mod conf;
 mod macros;
-mod server;
+mod web;
 mod wireguard;
 
 pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
