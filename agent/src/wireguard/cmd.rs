@@ -16,21 +16,21 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum WireGuardCommandError {
-    #[error("unable to acquire lock: {0}")]
-    LockUnavailable(String),
+    #[error("failed to acquire lock: {0}")]
+    LockFailed(String),
     #[error("wireguard interface doesn't exist")]
-    InterfaceUnavailable,
-    #[error("the command for {0} failed: {1}")]
-    ExecutionFailed(String, String),
-    #[error("Folder create at {0} failed: {1}")]
-    FolderCreate(PathBuf, String),
-    #[error("File create at {0} failed: {1}")]
-    FileCreate(PathBuf, String),
-    #[error("File write at {0} failed: {1}")]
-    FileWrite(PathBuf, String),
-    #[error("Wireguard sync failed")]
+    InterfaceMissing,
+    #[error("command for {0} failed: {1}")]
+    CommandFailed(String, String),
+    #[error("failed to create folder at {0} failed: {1}")]
+    FolderCreationFailed(PathBuf, String),
+    #[error("failed to create file at {0} failed: {1}")]
+    FileCreationFailed(PathBuf, String),
+    #[error("failed to write file at {0} failed: {1}")]
+    FileWriteFailed(PathBuf, String),
+    #[error("failed to sync wireguard interface")]
     InterfaceSyncFailed,
-    #[error("Other Error: {0}")]
+    #[error("unexpected error: {0}")]
     Other(String),
 }
 
@@ -39,7 +39,7 @@ static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string(
 pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> {
     let wg_interface_mut = WG_INTERFACE
         .lock()
-        .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
+        .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
     if (*wg_interface_mut).is_empty() {
         return Ok(WireGuardStatus::DOWN);
     }
@@ -51,10 +51,10 @@ pub(crate) fn show_dump(
 ) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
     let wg_interface_mut = WG_INTERFACE
         .lock()
-        .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
+        .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
 
     if (*wg_interface_mut).is_empty() {
-        return Err(WireGuardCommandError::InterfaceUnavailable);
+        return Err(WireGuardCommandError::InterfaceMissing);
     }
 
     // sudo wg show INTERFACE dump
@@ -75,7 +75,7 @@ pub(crate) fn show_dump(
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(
+                return Err(WireGuardCommandError::CommandFailed(
                     readable_command,
                     "return not success".to_string(),
                 ));
@@ -122,7 +122,7 @@ pub(crate) fn show_dump(
             }
             Ok(telemetry)
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+        Err(e) => Err(WireGuardCommandError::CommandFailed(
             readable_command,
             e.to_string(),
         )),
@@ -153,7 +153,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(
+                return Err(WireGuardCommandError::CommandFailed(
                     readable_command,
                     "return not success".to_string(),
                 ));
@@ -161,7 +161,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
             output
         }
         Err(e) => {
-            return Err(WireGuardCommandError::ExecutionFailed(
+            return Err(WireGuardCommandError::CommandFailed(
                 readable_command,
                 e.to_string(),
             ));
@@ -178,7 +178,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     match temp.write_all(&stripped_output.stdout) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FileWrite(
+            return Err(WireGuardCommandError::FileWriteFailed(
                 PathBuf::from(temp.path()),
                 e.to_string(),
             ));
@@ -188,7 +188,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
 
     let wg_interface_mut = WG_INTERFACE
         .lock()
-        .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
+        .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
 
     // wg syncconf WG_INTERFACE <(wg-quick strip WG_INTERFACE)
     match Command::new("sudo")
@@ -215,7 +215,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
             }
             Ok(())
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+        Err(e) => Err(WireGuardCommandError::CommandFailed(
             readable_command,
             e.to_string(),
         )),
@@ -240,18 +240,17 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(
+                return Err(WireGuardCommandError::CommandFailed(
                     readable_command,
                     "return not success".to_string(),
                 ));
             }
             *WG_INTERFACE
                 .lock()
-                .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))? =
-                String::new();
+                .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))? = String::new();
             Ok(())
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+        Err(e) => Err(WireGuardCommandError::CommandFailed(
             readable_command,
             e.to_string(),
         )),
@@ -278,7 +277,7 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
             if !output.stderr.is_empty() {
                 let mut wg_interface_mut = WG_INTERFACE
                     .lock()
-                    .map_err(|e| WireGuardCommandError::LockUnavailable(e.to_string()))?;
+                    .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
 
                 match String::from_utf8_lossy(&output.stderr)
                     .lines()
@@ -290,7 +289,7 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
                             *wg_interface_mut = word.to_string();
                         }
                         None => {
-                            return Err(WireGuardCommandError::InterfaceUnavailable);
+                            return Err(WireGuardCommandError::InterfaceMissing);
                         }
                     },
                     None => {
@@ -299,14 +298,14 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
                 }
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(
+                return Err(WireGuardCommandError::CommandFailed(
                     readable_command,
                     "return not success".to_string(),
                 ));
             }
             Ok(())
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+        Err(e) => Err(WireGuardCommandError::CommandFailed(
             readable_command,
             e.to_string(),
         )),
@@ -333,7 +332,7 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
     match fs::create_dir_all(config_parent_path) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FolderCreate(
+            return Err(WireGuardCommandError::FolderCreationFailed(
                 PathBuf::from(config_parent_path),
                 e.to_string(),
             ));
@@ -343,7 +342,7 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
     let mut file = match File::create(config_path) {
         Ok(f) => f,
         Err(e) => {
-            return Err(WireGuardCommandError::FileCreate(
+            return Err(WireGuardCommandError::FileCreationFailed(
                 config_path.clone(),
                 e.to_string(),
             ));
@@ -353,7 +352,7 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
     match file.write_all(wg_conf.as_bytes()) {
         Ok(_) => {}
         Err(e) => {
-            return Err(WireGuardCommandError::FileWrite(
+            return Err(WireGuardCommandError::FileWriteFailed(
                 config_path.clone(),
                 e.to_string(),
             ));
@@ -394,7 +393,7 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(
+                return Err(WireGuardCommandError::CommandFailed(
                     readable_command,
                     "return not success".to_string(),
                 ));
@@ -402,7 +401,7 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
             private_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
         }
         Err(e) => {
-            return Err(WireGuardCommandError::ExecutionFailed(
+            return Err(WireGuardCommandError::CommandFailed(
                 readable_command,
                 e.to_string(),
             ));
@@ -422,14 +421,14 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
                 match stdin.write_all(private_key.as_bytes()) {
                     Ok(_) => {}
                     Err(e) => {
-                        return Err(WireGuardCommandError::ExecutionFailed(
+                        return Err(WireGuardCommandError::CommandFailed(
                             readable_command,
                             e.to_string(),
                         ));
                     }
                 }
             } else {
-                return Err(WireGuardCommandError::ExecutionFailed(
+                return Err(WireGuardCommandError::CommandFailed(
                     readable_command,
                     "not able to create a pipe".to_string(),
                 ));
@@ -444,7 +443,7 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
                         log::warn!("{}", String::from_utf8_lossy(&output.stderr));
                     }
                     if !output.status.success() {
-                        return Err(WireGuardCommandError::ExecutionFailed(
+                        return Err(WireGuardCommandError::CommandFailed(
                             readable_command,
                             "return not success".to_string(),
                         ));
@@ -454,13 +453,13 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
                         "public_key": String::from_utf8_lossy(&output.stdout).trim().to_string(),
                     }))
                 }
-                Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+                Err(e) => Err(WireGuardCommandError::CommandFailed(
                     readable_command,
                     e.to_string(),
                 )),
             }
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+        Err(e) => Err(WireGuardCommandError::CommandFailed(
             readable_command,
             e.to_string(),
         )),
@@ -480,7 +479,7 @@ pub(crate) fn get_pre_shared_key() -> Result<Value, WireGuardCommandError> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::ExecutionFailed(
+                return Err(WireGuardCommandError::CommandFailed(
                     readable_command,
                     "return not success".to_string(),
                 ));
@@ -489,7 +488,7 @@ pub(crate) fn get_pre_shared_key() -> Result<Value, WireGuardCommandError> {
                 json!({"pre_shared_key": String::from_utf8_lossy(&output.stdout).trim().to_string()}),
             )
         }
-        Err(e) => Err(WireGuardCommandError::ExecutionFailed(
+        Err(e) => Err(WireGuardCommandError::CommandFailed(
             readable_command,
             e.to_string(),
         )),

@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 pub(crate) fn initialize_agent() -> ExitCode {
-    if let Err(ConfUtilError::FileRead(_, _)) = conf::util::get_config() {
+    if let Err(ConfUtilError::Read(_, _)) = conf::util::get_config() {
     } else {
         log::error!("wg-rusteze agent is already initialized.");
         return ExitCode::FAILURE;

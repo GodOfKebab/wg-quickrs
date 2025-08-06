@@ -13,8 +13,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ServerError {
-    #[error("unable to configure TLS setup for HTTPS: {0}")]
-    TLSConfiguration(String),
+    #[error("failed to configure TLS for HTTPS: {0}")]
+    TlsSetupFailed(String),
 }
 
 pub(crate) async fn run_http_server(
@@ -116,20 +116,20 @@ fn load_tls_config(tls_cert: &PathBuf, tls_key: &PathBuf) -> Result<ServerConfig
     rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
         .map_err(|_e| {
-            ServerError::TLSConfiguration(
+            ServerError::TlsSetupFailed(
                 "Failed to install aws-lc-rs default crypto provider".to_string(),
             )
         })?;
 
     let cert_chain = CertificateDer::pem_file_iter(tls_cert)
         .map_err(|_e| {
-            ServerError::TLSConfiguration("Failed to read TLS certificate file".to_string())
+            ServerError::TlsSetupFailed("Failed to read TLS certificate file".to_string())
         })?
         .flatten()
         .collect();
 
     let key_der = PrivateKeyDer::from_pem_file(tls_key).map_err(|_e| {
-        ServerError::TLSConfiguration(
+        ServerError::TlsSetupFailed(
             "Failed to read TLS private key (expecting PKCS#8 format)".to_string(),
         )
     })?;
@@ -138,7 +138,7 @@ fn load_tls_config(tls_cert: &PathBuf, tls_key: &PathBuf) -> Result<ServerConfig
         .with_no_client_auth()
         .with_single_cert(cert_chain, key_der)
         .map_err(|_e| {
-            ServerError::TLSConfiguration(
+            ServerError::TlsSetupFailed(
                 "Failed to build TLS config with provided certificate and key".to_string(),
             )
         })?;
