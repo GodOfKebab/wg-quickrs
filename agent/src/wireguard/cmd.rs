@@ -281,7 +281,12 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
 
                 match String::from_utf8_lossy(&output.stderr)
                     .lines()
-                    .find(|line| line.contains("[+] Interface for wg-rusteze-home is"))
+                    .find(|line| {
+                        line.contains(&format!(
+                            "[+] Interface for {} is",
+                            config.network.identifier.clone()
+                        ))
+                    })
                     .map(|line| line.to_string())
                 {
                     Some(line) => match line.split_whitespace().last() {
