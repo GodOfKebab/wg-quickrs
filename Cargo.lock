@@ -2284,7 +2284,6 @@ version = "0.1.0"
 dependencies = [
  "actix-cors",
  "actix-web",
- "anyhow",
  "argon2",
  "base16ct",
  "chrono",

@@ -2,13 +2,19 @@ use crate::{api, app};
 #[cfg(debug_assertions)]
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware};
-use anyhow::Context;
 use config_wasm::types::Config;
 use rustls::{
     ServerConfig,
     pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 use std::path::PathBuf;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum ServerError {
+    #[error("unable to configure TLS setup for HTTPS: {0}")]
+    TLSConfiguration(String),
+}
 
 pub(crate) async fn run_http_server(
     config: &Config,
@@ -105,23 +111,36 @@ pub(crate) async fn run_http_server(
     http_server.run().await
 }
 
-fn load_tls_config(tls_cert: &PathBuf, tls_key: &PathBuf) -> Result<ServerConfig, anyhow::Error> {
+fn load_tls_config(tls_cert: &PathBuf, tls_key: &PathBuf) -> Result<ServerConfig, ServerError> {
     rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
-        .expect("Failed to install aws-lc-rs default crypto provider");
+        .map_err(|_e| {
+            ServerError::TLSConfiguration(
+                "Failed to install aws-lc-rs default crypto provider".to_string(),
+            )
+        })?;
 
     let cert_chain = CertificateDer::pem_file_iter(tls_cert)
-        .context("Failed to read TLS certificate file")?
+        .map_err(|_e| {
+            ServerError::TLSConfiguration("Failed to read TLS certificate file".to_string())
+        })?
         .flatten()
         .collect();
 
-    let key_der = PrivateKeyDer::from_pem_file(tls_key)
-        .context("Failed to read TLS private key (expecting PKCS#8 format)")?;
+    let key_der = PrivateKeyDer::from_pem_file(tls_key).map_err(|_e| {
+        ServerError::TLSConfiguration(
+            "Failed to read TLS private key (expecting PKCS#8 format)".to_string(),
+        )
+    })?;
 
     let tls_config = ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(cert_chain, key_der)
-        .context("Failed to build TLS config with provided certificate and key")?;
+        .map_err(|_e| {
+            ServerError::TLSConfiguration(
+                "Failed to build TLS config with provided certificate and key".to_string(),
+            )
+        })?;
 
     Ok(tls_config)
 }

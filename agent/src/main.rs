@@ -67,7 +67,7 @@ async fn main() -> io::Result<()> {
                 Ok(config) => config,
                 Err(e) => {
                     log::error!("{e}");
-                    return Err(Error::other("unable to get config!"));
+                    return std::process::exit(1);
                 }
             };
 
