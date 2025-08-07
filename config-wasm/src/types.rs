@@ -4,8 +4,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum WireGuardLibError {
-    #[error("the following is not found: ")]
-    NotFound(String),
+    #[error("types::error::peer_not_found -> peer {0} is not found")]
+    PeerNotFound(String),
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

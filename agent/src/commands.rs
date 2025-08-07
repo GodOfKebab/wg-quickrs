@@ -2,17 +2,14 @@ use crate::cli::AgentCommands;
 use crate::conf::util::ConfUtilError;
 use crate::web::server;
 use crate::wireguard::cmd::get_public_private_keys;
-use crate::{WG_RUSTEZE_CONFIG_FILE, WIREGUARD_CONFIG_FILE, conf, wireguard};
+use crate::{conf, wireguard, WG_RUSTEZE_CONFIG_FILE, WIREGUARD_CONFIG_FILE};
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
-use config_wasm::types::{
-    Agent, AgentVpn, AgentWeb, Config, DefaultConnection, DefaultPeer, Defaults, EnabledValue,
-    Network, Password, Peer, Scripts,
-};
+use config_wasm::types::{Agent, AgentVpn, AgentWeb, Config, DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts, WireGuardStatus};
 use dialoguer::{Confirm, Input};
 use get_if_addrs::get_if_addrs;
 use ipnetwork::IpNetwork;
-use rand::{RngCore, rng};
+use rand::{rng, RngCore};
 use std::collections::HashMap;
 use std::io;
 use std::io::Write;
@@ -49,18 +46,20 @@ fn first_ip(subnet: &str) -> String {
 }
 
 // Get primary IP of the current machine
-fn primary_ip() -> String {
-    let addrs = get_if_addrs().unwrap();
-    addrs
+fn primary_ip() -> Option<String> {
+    match get_if_addrs().unwrap()
         .into_iter()
-        .find(|a| !a.is_loopback() && a.ip().is_ipv4())
-        .expect("No valid network interface found")
-        .ip()
-        .to_string()
+        .find(|a| !a.is_loopback() && a.ip().is_ipv4()) {
+        Some(addr) => Some(addr.ip().to_string()),
+        None => {
+            log::error!("No valid network interface found");
+            None
+        },
+    }
 }
 
 pub(crate) fn initialize_agent() -> ExitCode {
-    if let Err(ConfUtilError::Read(_, _)) = conf::util::get_config() {
+    if let Err(ConfUtilError::Read(..)) = conf::util::get_config() {
     } else {
         log::error!("wg-rusteze agent is already initialized.");
         return ExitCode::FAILURE;
@@ -69,7 +68,7 @@ pub(crate) fn initialize_agent() -> ExitCode {
 
     let identifier: String = prompt("Enter network identifier", Some("wg-rusteze"));
     let peer_name: String = prompt("Enter peer name", Some("wg-rusteze-host"));
-    let agent_address: String = prompt("Enter agent's public IPv4 address", Some(&*primary_ip()));
+    let agent_address: String = prompt("Enter agent's public IPv4 address", primary_ip().as_deref());
     let web_port: u16 = prompt("Enter web port", Some("8080"));
     let vpn_port: u16 = prompt("Enter VPN port", Some("51820"));
 

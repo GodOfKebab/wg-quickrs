@@ -8,7 +8,7 @@ pub fn get_peer_wg_config(
     let this_peer = match network.peers.get(&peer_id) {
         Some(n) => n,
         None => {
-            return Err(WireGuardLibError::NotFound(format!("peer_id: {peer_id}")));
+            return Err(WireGuardLibError::PeerNotFound(format!("peer_id: {peer_id}")));
         }
     };
 
@@ -76,7 +76,7 @@ pub fn get_peer_wg_config(
         let other_peer_details = match network.peers.get(other_peer_id) {
             Some(n) => n,
             None => {
-                return Err(WireGuardLibError::NotFound(format!("peer_id: {peer_id}")));
+                return Err(WireGuardLibError::PeerNotFound(format!("peer_id: {peer_id}")));
             }
         };
         writeln!(

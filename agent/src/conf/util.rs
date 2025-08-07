@@ -1,6 +1,6 @@
-use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{show_dump, status_tunnel};
+use crate::WG_RUSTEZE_CONFIG_FILE;
 use config_wasm::types::{Config, Summary, WireGuardStatus};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -11,16 +11,16 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ConfUtilError {
-    #[error("failed to write config file file at {0}: {1}")]
-    Write(PathBuf, String),
-    #[error("failed to read config file at {0}: {1}")]
-    Read(PathBuf, String),
-    #[error("invalid config file format: {0}")]
-    Parse(String),
-    #[error("failed to serialize config object: {0}")]
-    Serialization(String),
-    #[error("failed to encode digest: {0}")]
-    DigestEncoding(String),
+    #[error("conf::util::error::write -> failed to write config file file at {0}: {1}")]
+    Write(PathBuf, std::io::Error),
+    #[error("conf::util::error::read -> failed to read config file at {0}: {1}")]
+    Read(PathBuf, std::io::Error),
+    #[error("conf::util::error::parse -> invalid config file format: {0}")]
+    Parse(serde_yml::Error),
+    #[error("conf::util::error::serialization -> failed to serialize config object: {0}")]
+    Serialization(serde_yml::Error),
+    #[error("conf::util::error::digest_encoding -> failed to encode digest: {0}")]
+    DigestEncoding(base16ct::Error),
 }
 
 pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
@@ -28,13 +28,13 @@ pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
     let file_contents = match fs::read_to_string(file_path) {
         Ok(contents) => contents,
         Err(e) => {
-            return Err(ConfUtilError::Read(file_path.clone(), e.to_string()));
+            return Err(ConfUtilError::Read(file_path.clone(), e));
         }
     };
     let mut config: Config = match serde_yml::from_str(&file_contents) {
         Ok(c) => c,
         Err(e) => {
-            return Err(ConfUtilError::Parse(e.to_string()));
+            return Err(ConfUtilError::Parse(e));
         }
     };
 
@@ -72,14 +72,14 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
     let file_contents = match fs::read_to_string(file_path) {
         Ok(contents) => contents,
         Err(e) => {
-            return Err(ConfUtilError::Read(file_path.clone(), e.to_string()));
+            return Err(ConfUtilError::Read(file_path.clone(), e));
         }
     };
     let digest =
         match base16ct::lower::encode_str(&Sha256::digest(file_contents.as_bytes()), &mut buf) {
             Ok(digest) => digest.to_string(),
             Err(e) => {
-                return Err(ConfUtilError::DigestEncoding(e.to_string()));
+                return Err(ConfUtilError::DigestEncoding(e));
             }
         };
     let status = status_tunnel().unwrap_or_else(|e| {
@@ -110,7 +110,7 @@ pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
     let config_str = match serde_yml::to_string(&config) {
         Ok(s) => s,
         Err(e) => {
-            return Err(ConfUtilError::Serialization(e.to_string()));
+            return Err(ConfUtilError::Serialization(e));
         }
     };
 
@@ -118,14 +118,14 @@ pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
     let mut file = match File::create(file_path) {
         Ok(f) => f,
         Err(e) => {
-            return Err(ConfUtilError::Write(file_path.clone(), e.to_string()));
+            return Err(ConfUtilError::Write(file_path.clone(), e));
         }
     };
 
     match file.write_all(config_str.as_bytes()) {
         Ok(_) => {}
         Err(e) => {
-            return Err(ConfUtilError::Write(file_path.clone(), e.to_string()));
+            return Err(ConfUtilError::Write(file_path.clone(), e));
         }
     };
 

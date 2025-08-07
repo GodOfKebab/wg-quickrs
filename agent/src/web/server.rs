@@ -2,18 +2,18 @@ use crate::web::api;
 use crate::web::app;
 #[cfg(debug_assertions)]
 use actix_cors::Cors;
-use actix_web::{App, HttpServer, middleware};
+use actix_web::{middleware, App, HttpServer};
 use config_wasm::types::Config;
 use rustls::{
+    pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer},
     ServerConfig,
-    pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ServerError {
-    #[error("failed to configure TLS for HTTPS: {0}")]
+    #[error("web::server::error::tls_setup_failed -> failed to configure TLS for HTTPS: {0}")]
     TlsSetupFailed(String),
 }
 
