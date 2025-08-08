@@ -1,9 +1,9 @@
-use crate::WIREGUARD_CONFIG_FILE;
 use crate::macros::*;
+use crate::WIREGUARD_CONFIG_FILE;
 use once_cell::sync::Lazy;
-use rust_wasm::get_peer_wg_config;
+use rust_wasm::helpers::get_peer_wg_config;
 use rust_wasm::types::{Config, TelemetryDatum, WireGuardStatus};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -104,7 +104,7 @@ pub(crate) fn show_dump(
                     let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
                     let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
                     let connection_id =
-                        rust_wasm::get_connection_id(&config.network.this_peer, &peer_id);
+                        rust_wasm::helpers::get_connection_id(&config.network.this_peer, &peer_id);
 
                     telemetry.insert(
                         connection_id.clone(),
