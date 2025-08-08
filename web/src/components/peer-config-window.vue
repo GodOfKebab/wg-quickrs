@@ -243,18 +243,14 @@ export default {
       this.api.patch_network_config({
         changed_fields: this.changeSum.changed_fields,
         added_connections: this.changeSum.added_connections,
-        removed_connections: this.changeSum.removed_connections
+        removed_connections: Object.keys(this.changeSum.removed_connections)
       });
     },
     deletePeer() {
       const changeSum = {
-        removed_peers: {},
-        removed_connections: {}
+        removed_peers: [this.peerId],
+        removed_connections: Object.keys(this.network.connections).filter(id => id.includes(this.peerId))
       };
-      changeSum.removed_peers[this.peerId] = this.peer_conf;
-      for (const [connection_id, connection_details] of Object.entries(this.network.connections)) {
-        if (connection_id.includes(this.peerId)) changeSum.removed_connections[connection_id] = connection_details;
-      }
       this.api.patch_network_config(changeSum);
     },
     drawQRCode() {

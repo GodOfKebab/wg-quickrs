@@ -1,14 +1,14 @@
-use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
+use crate::WG_RUSTEZE_CONFIG_FILE;
 use rust_wasm::types::{Config, Lease};
 
 pub(crate) use crate::conf::util::get_config;
 use crate::conf::util::get_summary;
 use crate::wireguard::cmd::sync_conf;
-use actix_web::{HttpResponse, web};
+use actix_web::{web, HttpResponse};
 use chrono::Duration;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
@@ -131,12 +131,14 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 
     // process removed_peers
     if let Some(removed_peers) = change_sum.get("removed_peers") {
-        if let Some(removed_peers_map) = removed_peers.as_object() {
-            for (peer_id, _peer_details) in removed_peers_map {
-                {
-                    if let Some(peers) = network_config.get_mut("peers") {
-                        if let Some(peers_map) = peers.as_object_mut() {
-                            peers_map.remove(peer_id);
+        if let Some(removed_peers_array) = removed_peers.as_array() {
+            for peer_id in removed_peers_array {
+                if let Some(id_str) = peer_id.as_str() {
+                    {
+                        if let Some(peers) = network_config.get_mut("peers") {
+                            if let Some(peers_map) = peers.as_object_mut() {
+                                peers_map.remove(id_str);
+                            }
                         }
                     }
                 }
@@ -159,12 +161,14 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 
     // process removed_connections
     if let Some(removed_connections) = change_sum.get("removed_connections") {
-        if let Some(removed_connections_map) = removed_connections.as_object() {
-            for (connection_id, _connection_details) in removed_connections_map {
-                {
-                    if let Some(connections) = network_config.get_mut("connections") {
-                        if let Some(connections_map) = connections.as_object_mut() {
-                            connections_map.remove(connection_id);
+        if let Some(removed_connections_array) = removed_connections.as_array() {
+            for connection_id in removed_connections_array {
+                if let Some(id_str) = connection_id.as_str() {
+                    {
+                        if let Some(connections) = network_config.get_mut("connections") {
+                            if let Some(connections_map) = connections.as_object_mut() {
+                                connections_map.remove(id_str);
+                            }
                         }
                     }
                 }
