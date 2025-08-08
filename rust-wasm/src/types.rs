@@ -114,14 +114,14 @@ pub struct Network {
 pub struct Peer {
     pub name: String,
     pub address: String,
-    pub public_key: String,
-    pub private_key: String,
-    pub created_at: String,
-    pub updated_at: String,
     pub endpoint: EnabledValue,
     pub dns: EnabledValue,
     pub mtu: EnabledValue,
     pub scripts: Scripts,
+    pub public_key: String,
+    pub private_key: String,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -181,17 +181,23 @@ pub struct TelemetryDatum {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalScripts {
+    pub pre_up: Option<EnabledValue>,
+    pub post_up: Option<EnabledValue>,
+    pub pre_down: Option<EnabledValue>,
+    pub post_down: Option<EnabledValue>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct OptionalPeer {
     pub name: Option<String>,
     pub address: Option<String>,
-    pub public_key: Option<String>,
-    pub private_key: Option<String>,
-    pub created_at: Option<String>,
-    pub updated_at: Option<String>,
     pub endpoint: Option<EnabledValue>,
     pub dns: Option<EnabledValue>,
     pub mtu: Option<EnabledValue>,
-    pub scripts: Option<Scripts>,
+    pub scripts: Option<OptionalScripts>,
+    pub public_key: Option<String>,
+    pub private_key: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

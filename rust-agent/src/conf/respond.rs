@@ -1,7 +1,7 @@
 use crate::conf::network;
 use crate::conf::timestamp;
 use crate::WG_RUSTEZE_CONFIG_FILE;
-use rust_wasm::types::{ChangeSum, Config, Lease};
+use rust_wasm::types::{ChangeSum, ChangedFields, Config, Lease, Network, Peer};
 
 pub(crate) use crate::conf::util::get_config;
 use crate::conf::util::get_summary;
@@ -60,29 +60,55 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     // TODO: process errors
 
     // process changed_fields
-    // if let Some(changed_fields) = change_sum.get("changed_fields") {
-    //     {
-    //         if changed_fields
-    //             .get("peers")
-    //             .and_then(|p| p.as_object())
-    //             .and_then(|peers| peers.get(config_file.network.this_peer.as_str()))
-    //             .and_then(|this_peer| this_peer.get("endpoint"))
-    //             .is_some()
-    //         {
-    //             log::info!("A client tried to change the host's endpoint! (forbidden)");
-    //             return HttpResponse::Forbidden().json(json!({
-    //                 "status": "forbidden",
-    //                 "message": "can't change the host's endpoint"
-    //             }));
-    //         }
-    //     }
-    //     {
-    //         apply_changes(network_config, "peers", changed_fields);
-    //     }
-    //     {
-    //         apply_changes(network_config, "connections", changed_fields);
-    //     }
-    // }
+    macro_rules! update_if_some {
+        ($target:expr, $source:expr, $field:ident) => {
+            if let Some(val) = $source.$field {
+                $target.$field = val;
+            }
+        };
+    }
+
+    if let Some(changed_fields) = change_sum.changed_fields {
+        if let Some(changed_fields_peers) = changed_fields.peers {
+            for (peer_id, peer_details) in changed_fields_peers {
+                if let Some(peer_config) = config.network.peers.get_mut(&peer_id) {
+                    if peer_id == config.network.this_peer && peer_details.endpoint.is_some() {
+                        log::info!("A client tried to change the host's endpoint! (forbidden)");
+                        return HttpResponse::Forbidden().json(json!({
+                            "status": "forbidden",
+                            "message": "can't change the host's endpoint"
+                        }));
+                    }
+
+                    update_if_some!(peer_config, peer_details, name);
+                    update_if_some!(peer_config, peer_details, address);
+                    update_if_some!(peer_config, peer_details, endpoint);
+                    update_if_some!(peer_config, peer_details, dns);
+                    update_if_some!(peer_config, peer_details, mtu);
+                    update_if_some!(peer_config, peer_details, public_key);
+                    update_if_some!(peer_config, peer_details, private_key);
+
+                    if let Some(scripts) = peer_details.scripts {
+                        update_if_some!(peer_config.scripts, scripts, pre_up);
+                        update_if_some!(peer_config.scripts, scripts, post_up);
+                        update_if_some!(peer_config.scripts, scripts, pre_down);
+                        update_if_some!(peer_config.scripts, scripts, post_down);
+                    }
+                }
+            }
+        }
+        if let Some(changed_fields_connections) = changed_fields.connections {
+            for (connection_id, connection_details) in changed_fields_connections {
+                if let Some(connection_config) = config.network.connections.get_mut(&connection_id) {
+                    update_if_some!(connection_config, connection_details, enabled);
+                    update_if_some!(connection_config, connection_details, pre_shared_key);
+                    update_if_some!(connection_config, connection_details, allowed_ips_a_to_b);
+                    update_if_some!(connection_config, connection_details, allowed_ips_b_to_a);
+                    update_if_some!(connection_config, connection_details, persistent_keepalive);
+                }
+            }
+        }
+    }
 
     // process added_peers
     if let Some(added_peers) = change_sum.added_peers {
@@ -153,42 +179,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     HttpResponse::Ok().json(json!({
         "status": "ok"
     }))
-}
-
-fn apply_changes(network_config: &mut Value, section_name: &str, changed_fields: &Value) {
-    if let Some(config_section) = network_config.get_mut(section_name) {
-        if let Some(section) = changed_fields.get(section_name) {
-            if let Some(section_map) = section.as_object() {
-                for (item_id, item_changes) in section_map {
-                    let item_config = match config_section.get_mut(item_id) {
-                        Some(cfg) => cfg,
-                        None => continue,
-                    };
-
-                    let item_changes_map = match item_changes.as_object() {
-                        Some(map) => map,
-                        None => continue,
-                    };
-
-                    for (field_key, field_value) in item_changes_map {
-                        if field_key.eq("scripts") {
-                            if let Some(scripts_map) = field_value.as_object() {
-                                for (script_key, script_value) in scripts_map {
-                                    let scripts_config = match item_config.get_mut("scripts") {
-                                        Some(cfg) => cfg,
-                                        None => continue,
-                                    };
-                                    scripts_config[script_key] = script_value.clone();
-                                }
-                            }
-                        } else {
-                            item_config[field_key] = field_value.clone();
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 pub(crate) fn get_network_lease_id_address() -> HttpResponse {
