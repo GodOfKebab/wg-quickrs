@@ -1,7 +1,7 @@
 use crate::conf::network;
 use crate::conf::timestamp;
 use crate::WG_RUSTEZE_CONFIG_FILE;
-use rust_wasm::types::{Config, Lease};
+use rust_wasm::types::{ChangeSum, Config, Lease};
 
 pub(crate) use crate::conf::util::get_config;
 use crate::conf::util::get_summary;
@@ -30,7 +30,7 @@ pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody
 
 pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     let body_raw = String::from_utf8_lossy(&body);
-    let change_sum: Value = match serde_json::from_str(&body_raw) {
+    let change_sum: ChangeSum = match serde_json::from_str(&body_raw) {
         Ok(val) => val,
         Err(err) => {
             return HttpResponse::BadRequest().json(json!({
@@ -39,7 +39,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         }
     };
 
-    log::info!("update_config with the change_sum = \n{change_sum}");
+    log::info!("update_config with the change_sum = \n{:?}", change_sum);
     // Open the config file for reading and writing
     let mut config_file_reader = OpenOptions::new()
         .read(true)
@@ -56,131 +56,78 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     config_file_reader
         .read_to_string(&mut config_str)
         .expect("Failed to read config file");
-    let config_file: Config = serde_yml::from_str(&config_str).unwrap();
-    let mut config_value: Value = match serde_yml::from_str(&config_str) {
-        Ok(val) => val,
-        Err(_err) => {
-            return HttpResponse::NotFound().json(json!({
-                "status": "forbidden",
-                "message": "Unable to parse config file"
-            }));
-        }
-    };
-
-    let network_config = match config_value.get_mut("network") {
-        Some(n) => n,
-        None => {
-            return HttpResponse::NotFound().json(json!({
-                "status": "forbidden",
-                "message": "Unable to parse config file"
-            }));
-        }
-    };
-
+    let mut config: Config = serde_yml::from_str(&config_str).unwrap();
     // TODO: process errors
 
     // process changed_fields
-    if let Some(changed_fields) = change_sum.get("changed_fields") {
-        {
-            if changed_fields
-                .get("peers")
-                .and_then(|p| p.as_object())
-                .and_then(|peers| peers.get(config_file.network.this_peer.as_str()))
-                .and_then(|this_peer| this_peer.get("endpoint"))
-                .is_some()
-            {
-                log::info!("A client tried to change the host's endpoint! (forbidden)");
-                return HttpResponse::Forbidden().json(json!({
-                    "status": "forbidden",
-                    "message": "can't change the host's endpoint"
-                }));
-            }
-        }
-        {
-            apply_changes(network_config, "peers", changed_fields);
-        }
-        {
-            apply_changes(network_config, "connections", changed_fields);
-        }
-    }
+    // if let Some(changed_fields) = change_sum.get("changed_fields") {
+    //     {
+    //         if changed_fields
+    //             .get("peers")
+    //             .and_then(|p| p.as_object())
+    //             .and_then(|peers| peers.get(config_file.network.this_peer.as_str()))
+    //             .and_then(|this_peer| this_peer.get("endpoint"))
+    //             .is_some()
+    //         {
+    //             log::info!("A client tried to change the host's endpoint! (forbidden)");
+    //             return HttpResponse::Forbidden().json(json!({
+    //                 "status": "forbidden",
+    //                 "message": "can't change the host's endpoint"
+    //             }));
+    //         }
+    //     }
+    //     {
+    //         apply_changes(network_config, "peers", changed_fields);
+    //     }
+    //     {
+    //         apply_changes(network_config, "connections", changed_fields);
+    //     }
+    // }
 
     // process added_peers
-    if let Some(added_peers) = change_sum.get("added_peers") {
-        if let Some(added_peers_map) = added_peers.as_object() {
-            for (peer_id, peer_details) in added_peers_map {
-                {
-                    if let Some(peers) = network_config.get_mut("peers") {
-                        peers[peer_id] = peer_details.clone();
-                        peers[peer_id]["created_at"] =
-                            Value::String(timestamp::get_now_timestamp_formatted());
-                        peers[peer_id]["updated_at"] = peers[peer_id]["created_at"].clone();
-                    }
-                    // remove leased id/address
-                    if let Some(leases_array) = network_config
-                        .get_mut("leases")
-                        .and_then(|v| v.as_array_mut())
-                    {
-                        leases_array.retain(|lease| {
-                            lease.get("peer_id").and_then(|v| v.as_str()) != Some(peer_id)
-                        });
-                    }
-                }
+    if let Some(added_peers) = change_sum.added_peers {
+        for (peer_id, peer_details) in added_peers {
+            {
+                config.network.peers.insert(peer_id.clone(), peer_details);
+                // remove leased id/address
+                config.network.leases.retain(|lease| { lease.peer_id != peer_id });
             }
         }
     }
 
     // process removed_peers
-    if let Some(removed_peers) = change_sum.get("removed_peers") {
-        if let Some(removed_peers_array) = removed_peers.as_array() {
-            for peer_id in removed_peers_array {
-                if let Some(id_str) = peer_id.as_str() {
-                    {
-                        if let Some(peers) = network_config.get_mut("peers") {
-                            if let Some(peers_map) = peers.as_object_mut() {
-                                peers_map.remove(id_str);
-                            }
-                        }
-                    }
-                }
+    if let Some(removed_peers) = change_sum.removed_peers {
+        for peer_id in removed_peers {
+            {
+                config.network.peers.remove(peer_id.as_str());
             }
         }
     }
 
     // process added_connections
-    if let Some(added_connections) = change_sum.get("added_connections") {
-        if let Some(added_connections_map) = added_connections.as_object() {
-            for (connection_id, connection_details) in added_connections_map {
-                {
-                    if let Some(connections) = network_config.get_mut("connections") {
-                        connections[connection_id] = connection_details.clone();
-                    }
-                }
+    if let Some(added_connections) = change_sum.added_connections {
+        for (connection_id, connection_details) in added_connections {
+            {
+                config.network.connections.insert(
+                    connection_id.clone(),
+                    connection_details,
+                );
             }
         }
     }
 
     // process removed_connections
-    if let Some(removed_connections) = change_sum.get("removed_connections") {
-        if let Some(removed_connections_array) = removed_connections.as_array() {
-            for connection_id in removed_connections_array {
-                if let Some(id_str) = connection_id.as_str() {
-                    {
-                        if let Some(connections) = network_config.get_mut("connections") {
-                            if let Some(connections_map) = connections.as_object_mut() {
-                                connections_map.remove(id_str);
-                            }
-                        }
-                    }
-                }
+    if let Some(removed_connections) = change_sum.removed_connections {
+        for connection_id in removed_connections {
+            {
+                config.network.connections.remove(connection_id.as_str());
             }
         }
     }
 
-    if let Some(updated_at) = network_config.get_mut("updated_at") {
-        *updated_at = Value::String(timestamp::get_now_timestamp_formatted());
-    }
+    config.network.updated_at = timestamp::get_now_timestamp_formatted();
 
-    let config_str = serde_yml::to_string(&config_value).expect("Failed to serialize config");
+    let config_str = serde_yml::to_string(&config).expect("Failed to serialize config");
 
     // Move back to the beginning and truncate before writing
     config_file_reader
@@ -194,7 +141,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         .expect("Failed to write to config file");
     log::info!("updated config file");
 
-    let config: Config = serde_yml::from_str(&config_str).unwrap();
     match sync_conf(&config) {
         Ok(_) => {}
         Err(e) => {

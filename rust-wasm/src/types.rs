@@ -179,3 +179,41 @@ pub struct TelemetryDatum {
     pub transfer_a_to_b: u64,
     pub transfer_b_to_a: u64,
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalPeer {
+    pub name: Option<String>,
+    pub address: Option<String>,
+    pub public_key: Option<String>,
+    pub private_key: Option<String>,
+    pub created_at: Option<String>,
+    pub updated_at: Option<String>,
+    pub endpoint: Option<EnabledValue>,
+    pub dns: Option<EnabledValue>,
+    pub mtu: Option<EnabledValue>,
+    pub scripts: Option<Scripts>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalConnection {
+    pub enabled: Option<bool>,
+    pub pre_shared_key: Option<String>,
+    pub allowed_ips_a_to_b: Option<String>,
+    pub allowed_ips_b_to_a: Option<String>,
+    pub persistent_keepalive: Option<EnabledValue>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct ChangedFields {
+    pub peers: Option<HashMap<String, OptionalPeer>>,
+    pub connections: Option<HashMap<String, OptionalConnection>>,
+}
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct ChangeSum {
+    pub changed_fields: Option<ChangedFields>,
+    pub added_peers: Option<HashMap<String, Peer>>,
+    pub added_connections: Option<HashMap<String, Connection>>,
+    pub removed_peers: Option<Vec<String>>,
+    pub removed_connections: Option<Vec<String>>,
+}
+
