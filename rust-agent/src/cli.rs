@@ -23,14 +23,14 @@ pub(crate) struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum Commands {
-    #[command(about = "Initialize the wg-rusteze agent")]
+    #[command(about = "Initialize the wg-rusteze rust-agent")]
     Init {},
     #[command(about = "Run some convenience functions to edit config")]
     Config {
         #[command(subcommand)]
         commands: ConfigCommands,
     },
-    #[command(about = "Configure and run the wg-rusteze agent")]
+    #[command(about = "Configure and run the wg-rusteze rust-agent")]
     Agent {
         #[arg(
             long,
@@ -57,7 +57,7 @@ pub(crate) enum Commands {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum AgentCommands {
-    #[command(about = "Runs the agent")]
+    #[command(about = "Runs the rust-agent")]
     Run(AgentRunOptions),
 }
 

@@ -31,7 +31,7 @@ uuid = { version = "1.17.0", features = ["v4"] }
 chrono = "0.4.41"
 clap = { version = "4.5.41", features = ["derive"] }
 once_cell = "1.20.2"
-config-wasm = { path = "../config-wasm", default-features = false }
+rust-wasm = { path = "../rust-wasm", default-features = false }
 tempfile = "3"
 rustls = "0.23.31"
 jsonwebtoken = "9.3.1"

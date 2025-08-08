@@ -174,7 +174,7 @@ import PeerCreateWindow from "./components/peer-create-window.vue";
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import init from '../pkg/config_wasm.js';
+import init from '../pkg/rust_wasm.js';
 
 dayjs.extend(relativeTime);
 

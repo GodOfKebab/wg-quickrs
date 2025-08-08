@@ -617,20 +617,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "config-wasm"
-version = "0.1.0"
-dependencies = [
- "hostname-validator",
- "ipnet",
- "regex",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "thiserror 2.0.12",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "console"
 version = "0.15.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1712,6 +1698,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-wasm"
+version = "0.1.0"
+dependencies = [
+ "hostname-validator",
+ "ipnet",
+ "regex",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "thiserror 2.0.12",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2408,7 +2408,6 @@ dependencies = [
  "base16ct",
  "chrono",
  "clap",
- "config-wasm",
  "dialoguer",
  "get_if_addrs",
  "ipnetwork",
@@ -2418,6 +2417,7 @@ dependencies = [
  "once_cell",
  "rand",
  "rust-embed",
+ "rust-wasm",
  "rustls",
  "serde",
  "serde_json",

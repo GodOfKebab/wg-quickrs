@@ -1,8 +1,6 @@
-use hostname_validator::is_valid;
 use ipnet::Ipv4Net;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
 pub mod types;
@@ -15,7 +13,9 @@ pub fn get_peer_wg_config(
     let this_peer = match network.peers.get(&peer_id) {
         Some(n) => n,
         None => {
-            return Err(WireGuardLibError::PeerNotFound(format!("peer_id: {peer_id}")));
+            return Err(WireGuardLibError::PeerNotFound(format!(
+                "peer_id: {peer_id}"
+            )));
         }
     };
 
@@ -83,7 +83,9 @@ pub fn get_peer_wg_config(
         let other_peer_details = match network.peers.get(other_peer_id) {
             Some(n) => n,
             None => {
-                return Err(WireGuardLibError::PeerNotFound(format!("peer_id: {peer_id}")));
+                return Err(WireGuardLibError::PeerNotFound(format!(
+                    "peer_id: {peer_id}"
+                )));
             }
         };
         writeln!(
@@ -126,7 +128,6 @@ pub fn get_connection_id(peer1: &str, peer2: &str) -> String {
     }
 }
 
-
 #[derive(Debug, Serialize)]
 struct CheckResult {
     status: bool,
@@ -159,15 +160,12 @@ fn is_fqdn_with_port(s: &str) -> bool {
     // Split on the last colon to separate the hostname and port
     match s.rsplit_once(':') {
         Some((hostname, port_str)) => {
-            // Validate hostname with validate-hostname crate
-            if is_valid(hostname) {
-                // Validate port is a valid u16 number
-                if let Ok(port) = port_str.parse::<u16>() {
-                    // port 0-65535 is valid
-                    return port <= 65535;
-                }
+            // port 0-65535 is valid: comparison is useless due to type limits
+            if port_str.parse::<u16>().is_err() {
+                return false;
             }
-            false
+            // Validate hostname with validate-hostname crate
+            hostname_validator::is_valid(hostname)
         }
         None => false, // no colon, no port
     }
@@ -179,15 +177,18 @@ fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult {
         msg: String::new(),
     };
 
-    println!("Checking field: {} with value: {:?}", field_name, field_variable);
+    println!(
+        "Checking field: {field_name} with value: {field_variable:?}"
+    );
 
     match field_name {
         // UUID v4 check
         "peerId" => {
             let re_uuid = Regex::new(
-                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-            ).unwrap();
-            ret.status = re_uuid.is_match(&*field_variable.str);
+                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            )
+            .unwrap();
+            ret.status = re_uuid.is_match(&field_variable.str);
             if !ret.status {
                 ret.msg = "peerId needs to follow uuid4 standards".into();
             }
@@ -203,15 +204,17 @@ fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult {
         // TODO: check subnet
         // TODO: check to see if a duplicate exists
         "address" => {
-            ret.status = is_ipv4(&*field_variable.str);
+            ret.status = is_ipv4(&field_variable.str);
             if !ret.status {
                 ret.msg = "address is not IPv4".into();
             }
         }
 
         "endpoint" => {
-            if field_variable.enabled_value.enabled &&
-                !(is_ipv4_with_port(&field_variable.enabled_value.value) || is_fqdn_with_port(&field_variable.enabled_value.value)) {
+            if field_variable.enabled_value.enabled
+                && !(is_ipv4_with_port(&field_variable.enabled_value.value)
+                    || is_fqdn_with_port(&field_variable.enabled_value.value))
+            {
                 ret.status = false;
                 ret.msg = "endpoint is not IPv4 nor an FQDN".into();
             } else {
@@ -223,7 +226,9 @@ fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult {
             ret.status = true;
             if field_variable.enabled_value.enabled {
                 // Allow multiple DNS servers, comma-separated
-                ret.status = field_variable.enabled_value.value
+                ret.status = field_variable
+                    .enabled_value
+                    .value
                     .split(',')
                     .all(|addr| is_ipv4(addr.trim()));
             }
@@ -248,7 +253,7 @@ fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult {
             ret.status = true;
             if field_variable.enabled_value.enabled {
                 let re = Regex::new(r"^.*;\s*$").unwrap();
-                if !re.is_match(&*field_variable.enabled_value.value) {
+                if !re.is_match(&field_variable.enabled_value.value) {
                     ret.status = false;
                 }
             }
@@ -258,7 +263,8 @@ fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult {
         }
 
         "allowed_ips_a_to_b" | "allowed_ips_b_to_a" => {
-            ret.status = field_variable.str
+            ret.status = field_variable
+                .str
                 .split(',')
                 .all(|cidr| is_cidr(cidr.trim()));
             if !ret.status {
@@ -309,13 +315,15 @@ pub fn get_connection_id_frontend(peer1: &str, peer2: &str) -> String {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn check_field_frontend(field_name: &str, field_variable_json: &str) -> String {
-    println!("Checking field: {} with value: {}", field_name, field_variable_json);
+    println!(
+        "Checking field: {} with value: {}",
+        field_name, field_variable_json
+    );
     match serde_json::from_str::<FieldValue>(field_variable_json) {
         Ok(field_variable) => {
             let ret = check_field(field_name, &field_variable);
-            serde_json::to_string(&ret).unwrap_or_else(|_| {
-                r#"{"status":false,"msg":"Failed to serialize result"}"#.into()
-            })
+            serde_json::to_string(&ret)
+                .unwrap_or_else(|_| r#"{"status":false,"msg":"Failed to serialize result"}"#.into())
         }
         Err(_) => r#"{"status":false,"msg":"Invalid JSON input"}"#.into(),
     }

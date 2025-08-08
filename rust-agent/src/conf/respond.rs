@@ -1,7 +1,7 @@
 use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
-use config_wasm::types::{Config, Lease};
+use rust_wasm::types::{Config, Lease};
 
 pub(crate) use crate::conf::util::get_config;
 use crate::conf::util::get_summary;
@@ -21,7 +21,7 @@ pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody
         }
     };
     let response_data = if query.only_digest {
-        json!(config_wasm::types::SummaryDigest::from(&summary))
+        json!(rust_wasm::types::SummaryDigest::from(&summary))
     } else {
         json!(summary)
     };

@@ -1,6 +1,6 @@
 'use strict';
 
-import {check_field_frontend, get_connection_id_frontend, get_peer_wg_config_frontend} from '../../pkg/config_wasm.js';
+import {check_field_frontend, get_connection_id_frontend, get_peer_wg_config_frontend} from '../../pkg/rust_wasm.js';
 
 export default class WireGuardHelper {
 

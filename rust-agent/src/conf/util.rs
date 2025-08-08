@@ -1,7 +1,7 @@
+use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{show_dump, status_tunnel};
-use crate::WG_RUSTEZE_CONFIG_FILE;
-use config_wasm::types::{Config, Summary, WireGuardStatus};
+use rust_wasm::types::{Config, Summary, WireGuardStatus};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::fs::File;
@@ -38,7 +38,7 @@ pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
         }
     };
 
-    // Make sure agent fields get precedence over network fields
+    // Make sure rust-agent fields get precedence over network fields
     if config
         .network
         .peers
@@ -49,7 +49,7 @@ pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
         != format!("{}:{}", config.agent.address, config.agent.vpn.port)
     {
         log::warn!(
-            "detected mismatch between configured wg-rusteze agent endpoints and wireguard peer endpoints! overriding wireguard peer endpoints"
+            "detected mismatch between configured wg-rusteze rust-agent endpoints and wireguard peer endpoints! overriding wireguard peer endpoints"
         );
         config
             .network

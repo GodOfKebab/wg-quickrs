@@ -11,6 +11,6 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.wasm'],
   optimizeDeps: {
-    exclude: ['config-wasm'],
+      exclude: ['rust-wasm'],
   }
 });

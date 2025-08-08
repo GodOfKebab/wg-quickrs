@@ -5,11 +5,14 @@ use crate::wireguard::cmd::get_public_private_keys;
 use crate::{conf, wireguard, WG_RUSTEZE_CONFIG_FILE, WIREGUARD_CONFIG_FILE};
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
-use config_wasm::types::{Agent, AgentVpn, AgentWeb, Config, DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts, WireGuardStatus};
 use dialoguer::{Confirm, Input};
 use get_if_addrs::get_if_addrs;
 use ipnetwork::IpNetwork;
 use rand::{rng, RngCore};
+use rust_wasm::types::{
+    Agent, AgentVpn, AgentWeb, Config, DefaultConnection, DefaultPeer, Defaults, EnabledValue,
+    Network, Password, Peer, Scripts,
+};
 use std::collections::HashMap;
 use std::io;
 use std::io::Write;
@@ -47,33 +50,38 @@ fn first_ip(subnet: &str) -> String {
 
 // Get primary IP of the current machine
 fn primary_ip() -> Option<String> {
-    match get_if_addrs().unwrap()
+    match get_if_addrs()
+        .unwrap()
         .into_iter()
-        .find(|a| !a.is_loopback() && a.ip().is_ipv4()) {
+        .find(|a| !a.is_loopback() && a.ip().is_ipv4())
+    {
         Some(addr) => Some(addr.ip().to_string()),
         None => {
             log::error!("No valid network interface found");
             None
-        },
+        }
     }
 }
 
 pub(crate) fn initialize_agent() -> ExitCode {
     if let Err(ConfUtilError::Read(..)) = conf::util::get_config() {
     } else {
-        log::error!("wg-rusteze agent is already initialized.");
+        log::error!("wg-rusteze rust-agent is already initialized.");
         return ExitCode::FAILURE;
     }
-    log::info!("Initializing wg-rusteze agent...");
+    log::info!("Initializing wg-rusteze rust-agent...");
 
     let identifier: String = prompt("Enter network identifier", Some("wg-rusteze"));
     let peer_name: String = prompt("Enter peer name", Some("wg-rusteze-host"));
-    let agent_address: String = prompt("Enter agent's public IPv4 address", primary_ip().as_deref());
+    let agent_address: String = prompt(
+        "Enter rust-agent's public IPv4 address",
+        primary_ip().as_deref(),
+    );
     let web_port: u16 = prompt("Enter web port", Some("8080"));
     let vpn_port: u16 = prompt("Enter VPN port", Some("51820"));
 
     let subnet: String = prompt("Enter network CIDR subnet mask", Some("10.0.34.0/24"));
-    let vpn_address: String = prompt("Enter agent address", Some(&*first_ip(&subnet)));
+    let vpn_address: String = prompt("Enter rust-agent address", Some(&*first_ip(&subnet)));
 
     let use_tls: bool = Confirm::new()
         .with_prompt("Use TLS?")
@@ -137,7 +145,7 @@ pub(crate) fn initialize_agent() -> ExitCode {
         "".into()
     };
     println!(
-        "✅ This was all the information required to initialize the agent. Finalizing the configuration..."
+        "✅ This was all the information required to initialize the rust-agent. Finalizing the configuration..."
     );
 
     let peer_id = Uuid::new_v4().to_string();
@@ -293,7 +301,7 @@ pub(crate) fn calculate_password_hash(password: &str) -> Result<String, ExitCode
 }
 
 pub(crate) fn reset_web_password() -> ExitCode {
-    // get the wireguard config file path
+    // get the wireguard config a file path
     let mut config = match conf::util::get_config() {
         Ok(config) => config,
         Err(e) => {
