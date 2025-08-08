@@ -620,6 +620,7 @@ dependencies = [
 name = "config-wasm"
 version = "0.1.0"
 dependencies = [
+ "hostname-validator",
  "ipnet",
  "regex",
  "serde",
@@ -983,6 +984,12 @@ checksum = "589533453244b0995c858700322199b2becb13b627df2851f64a2775d024abcf"
 dependencies = [
  "windows-sys 0.59.0",
 ]
+
+[[package]]
+name = "hostname-validator"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f558a64ac9af88b5ba400d99b579451af0d39c6d360980045b91aac966d705e2"
 
 [[package]]
 name = "http"

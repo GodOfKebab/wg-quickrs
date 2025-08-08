@@ -1,3 +1,4 @@
+use hostname_validator::is_valid;
 use ipnet::Ipv4Net;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -155,13 +156,20 @@ fn is_cidr(s: &str) -> bool {
 
 // Helper: FQDN + port
 fn is_fqdn_with_port(s: &str) -> bool {
-    let re_fqdn = Regex::new(
-        r"^(((?!\\-))(xn\\-\\-)?[a-z0-9\\-_]{0,61}[a-z0-9]{1,1}\\.)*(xn\\-\\-)?([a-z0-9\\-]{1,61}|[a-z0-9\\-]{1,30})\\.[a-z]{2,}:(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$"
-    ); // TODO: fix
-
-    match re_fqdn {
-        Ok(re) => re.is_match(s),
-        Err(_) => false,
+    // Split on the last colon to separate the hostname and port
+    match s.rsplit_once(':') {
+        Some((hostname, port_str)) => {
+            // Validate hostname with validate-hostname crate
+            if is_valid(hostname) {
+                // Validate port is a valid u16 number
+                if let Ok(port) = port_str.parse::<u16>() {
+                    // port 0-65535 is valid
+                    return port <= 65535;
+                }
+            }
+            false
+        }
+        None => false, // no colon, no port
     }
 }
 
