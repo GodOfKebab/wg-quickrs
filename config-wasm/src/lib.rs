@@ -1,3 +1,9 @@
+use ipnet::Ipv4Net;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::net::{Ipv4Addr, SocketAddrV4};
+
 pub mod types;
 
 pub fn get_peer_wg_config(
@@ -119,10 +125,163 @@ pub fn get_connection_id(peer1: &str, peer2: &str) -> String {
     }
 }
 
+
+#[derive(Debug, Serialize)]
+struct CheckResult {
+    status: bool,
+    msg: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct FieldValue {
+    str: String,
+    enabled_value: types::EnabledValue,
+}
+
+// Helper: plain IPv4
+fn is_ipv4(s: &str) -> bool {
+    s.parse::<Ipv4Addr>().is_ok()
+}
+
+// Helper: IPv4 + port
+fn is_ipv4_with_port(s: &str) -> bool {
+    s.parse::<SocketAddrV4>().is_ok()
+}
+
+// Helper: CIDR IPv4 network
+fn is_cidr(s: &str) -> bool {
+    s.parse::<Ipv4Net>().is_ok()
+}
+
+// Helper: FQDN + port
+fn is_fqdn_with_port(s: &str) -> bool {
+    let re_fqdn = Regex::new(
+        r"^(((?!\\-))(xn\\-\\-)?[a-z0-9\\-_]{0,61}[a-z0-9]{1,1}\\.)*(xn\\-\\-)?([a-z0-9\\-]{1,61}|[a-z0-9\\-]{1,30})\\.[a-z]{2,}:(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$"
+    ); // TODO: fix
+
+    match re_fqdn {
+        Ok(re) => re.is_match(s),
+        Err(_) => false,
+    }
+}
+
+fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult {
+    let mut ret = CheckResult {
+        status: false,
+        msg: String::new(),
+    };
+
+    println!("Checking field: {} with value: {:?}", field_name, field_variable);
+
+    match field_name {
+        // UUID v4 check
+        "peerId" => {
+            let re_uuid = Regex::new(
+                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            ).unwrap();
+            ret.status = re_uuid.is_match(&*field_variable.str);
+            if !ret.status {
+                ret.msg = "peerId needs to follow uuid4 standards".into();
+            }
+        }
+
+        "name" => {
+            ret.status = !field_variable.str.is_empty();
+            if !ret.status {
+                ret.msg = "name cannot be empty".into();
+            }
+        }
+
+        // TODO: check subnet
+        // TODO: check to see if a duplicate exists
+        "address" => {
+            ret.status = is_ipv4(&*field_variable.str);
+            if !ret.status {
+                ret.msg = "address is not IPv4".into();
+            }
+        }
+
+        "endpoint" => {
+            if field_variable.enabled_value.enabled &&
+                !(is_ipv4_with_port(&field_variable.enabled_value.value) || is_fqdn_with_port(&field_variable.enabled_value.value)) {
+                ret.status = false;
+                ret.msg = "endpoint is not IPv4 nor an FQDN".into();
+            } else {
+                ret.status = true;
+            }
+        }
+
+        "dns" => {
+            ret.status = true;
+            if field_variable.enabled_value.enabled {
+                // Allow multiple DNS servers, comma-separated
+                ret.status = field_variable.enabled_value.value
+                    .split(',')
+                    .all(|addr| is_ipv4(addr.trim()));
+            }
+            if !ret.status {
+                ret.msg = "DNS is invalid".into();
+            }
+        }
+
+        "mtu" => {
+            ret.status = true;
+            if let Ok(v) = field_variable.enabled_value.value.parse::<i32>() {
+                ret.status = v > 0 && v < 65536;
+            } else {
+                ret.status = false; // not a number
+            }
+            if !ret.status {
+                ret.msg = "MTU is invalid".into();
+            }
+        }
+
+        "script" => {
+            ret.status = true;
+            if field_variable.enabled_value.enabled {
+                let re = Regex::new(r"^.*;\s*$").unwrap();
+                if !re.is_match(&*field_variable.enabled_value.value) {
+                    ret.status = false;
+                }
+            }
+            if !ret.status {
+                ret.msg = "script needs to end with a semicolon".into();
+            }
+        }
+
+        "allowed_ips_a_to_b" | "allowed_ips_b_to_a" => {
+            ret.status = field_variable.str
+                .split(',')
+                .all(|cidr| is_cidr(cidr.trim()));
+            if !ret.status {
+                ret.msg = "AllowedIPs is not in CIDR format".into();
+            }
+        }
+
+        "persistent_keepalive" => {
+            ret.status = true;
+            if let Ok(v) = field_variable.enabled_value.value.parse::<i32>() {
+                ret.status = v > 0 && v < 65536;
+            } else {
+                ret.status = false; // not a number
+            }
+            if !ret.status {
+                ret.msg = "Persistent Keepalive is invalid".into();
+            }
+        }
+
+        _ => {
+            ret.status = false;
+            ret.msg = "field doesn't exist".into();
+        }
+    }
+
+    ret
+}
 use crate::types::WireGuardLibError;
+// Only include these when compiling to wasm32
 #[cfg(target_arch = "wasm32")]
 use serde_wasm_bindgen;
-// Only include this when compiling to wasm32
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -137,4 +296,19 @@ pub fn get_peer_wg_config_frontend(network_js: JsValue, peer_id: String, version
 #[wasm_bindgen]
 pub fn get_connection_id_frontend(peer1: &str, peer2: &str) -> String {
     get_connection_id(peer1, peer2)
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn check_field_frontend(field_name: &str, field_variable_json: &str) -> String {
+    println!("Checking field: {} with value: {}", field_name, field_variable_json);
+    match serde_json::from_str::<FieldValue>(field_variable_json) {
+        Ok(field_variable) => {
+            let ret = check_field(field_name, &field_variable);
+            serde_json::to_string(&ret).unwrap_or_else(|_| {
+                r#"{"status":false,"msg":"Failed to serialize result"}"#.into()
+            })
+        }
+        Err(_) => r#"{"status":false,"msg":"Invalid JSON input"}"#.into(),
+    }
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-import {get_connection_id_frontend, get_peer_wg_config_frontend} from '../../pkg/config_wasm.js';
+import {check_field_frontend, get_connection_id_frontend, get_peer_wg_config_frontend} from '../../pkg/config_wasm.js';
 
 export default class WireGuardHelper {
 
@@ -25,100 +25,19 @@ export default class WireGuardHelper {
     }
 
     static checkField(fieldName, fieldVariable) {
-        const ret = {status: false, msg: ""};
-        // check peerId
-        if (fieldName === 'peerId') {
-            ret.status = fieldVariable.match('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
-            if (!ret.status) ret.msg = "peerId needs to follow uuid4 standards"
-            return ret;
-        }
+        let rs_field_variable = {
+            str: '',
+            enabled_value: {enabled: false, value: ''},
+        };
+        if (typeof fieldVariable === 'string')
+            rs_field_variable.str = fieldVariable;
+        else if (fieldVariable.enabled !== undefined && fieldVariable.value !== undefined)
+            rs_field_variable.enabled_value = fieldVariable;
+        else
+            return false;
 
-        // check name
-        if (fieldName === 'name') {
-            ret.status = fieldVariable.length > 0;
-            if (!ret.status) ret.msg = "name cannot be empty";
-            return ret;
-        }
-
-        // TODO: check subnet
-        // TODO: check to see if a duplicate exists
-        if (fieldName === 'address') {
-            ret.status = fieldVariable.match('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
-            if (!ret.status) ret.msg = "address is not IPv4";
-            return ret;
-        }
-
-        // check endpoint
-        if (fieldName === 'endpoint') {
-            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
-            let endpointStrCheck = fieldVariable.value.toString().match('^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
-            endpointStrCheck ||= fieldVariable.value.toString().match('^(((?!\\-))(xn\\-\\-)?[a-z0-9\\-_]{0,61}[a-z0-9]{1,1}\\.)*(xn\\-\\-)?([a-z0-9\\-]{1,61}|[a-z0-9\\-]{1,30})\\.[a-z]{2,}:(0|6[0-5][0-5][0-3][0-5]|[1-5][0-9][0-9][0-9][0-9]|[1-9][0-9]{0,3})$');
-            ret.status &&= !(fieldVariable.enabled === true && !endpointStrCheck);
-            if (!ret.status) ret.msg = "endpoint is not IPv4 nor an FQDN";
-            return ret;
-        }
-
-        // check dns
-        if (fieldName === 'dns') {
-            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
-            ret.status &&= !(fieldVariable.enabled === true && !fieldVariable.value.toString().match('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(,(|\\s)*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)))*$'));
-            if (!ret.status) ret.msg = "DNS is invalid";
-            return ret;
-        }
-
-        // check mtu
-        if (fieldName === 'mtu') {
-            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
-            ret.status &&= !(fieldVariable.enabled === true && !(fieldVariable.value > 0 && fieldVariable.value < 65536));
-            if (!ret.status) ret.msg = "MTU is invalid";
-            return ret;
-        }
-
-        // check script
-        if (fieldName === 'script') {
-            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
-            if ((typeof fieldVariable.value === 'string' || fieldVariable.value instanceof String)) {
-                ret.status &&= fieldVariable.value.match('^.*;\\s*$') !== null;
-            }
-            if (!ret.status) ret.msg = "script needs to end with a semicolon";
-            return ret;
-        }
-
-        // check scripts
-        if (fieldName === 'scripts') {
-            ret.status = true;
-            for (const scriptField of ['pre_up', 'post_up', 'pre_down', 'post_down']) {
-                if (Object.keys(fieldVariable).includes(scriptField)) {
-                    if (fieldVariable[scriptField].enabled) {
-                        const _ret = WireGuardHelper.checkField('script', fieldVariable[scriptField]);
-                        ret.status &&= _ret.status;
-                        if (!_ret.status) ret.msg = _ret.msg;
-                    }
-                } else {
-                    ret.status = false;
-                    ret.msg = `'scripts' must include '${scriptField}'`;
-                    return ret;
-                }
-            }
-            return ret;
-        }
-
-        // check allowedIPs
-        if (fieldName === 'allowed_ips_a_to_b' || fieldName === 'allowed_ips_b_to_a') {
-            ret.status = fieldVariable.match('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9]))(,(|\\s)*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|2[0-9]|1[0-9]|[0-9])))*$');
-            if (!ret.status) ret.msg = "AllowedIPs is not in the 'X[X][X].X[X][X].X[X][X].X[X][X]/[1-32]' format";
-            return ret;
-        }
-
-        // check persistent_keepalive
-        if (fieldName === 'persistent_keepalive') {
-            ret.status = fieldVariable.enabled === true || fieldVariable.enabled === false;
-            ret.status &&= !(fieldVariable.enabled === true && !(fieldVariable.value > 0 && fieldVariable.value < 65536));
-            if (!ret.status) ret.msg = "Persistent Keepalive is invalid";
-            return ret;
-        }
-
-        return {status: false, msg: "field doesn't exist"};
+        console.log(JSON.stringify(rs_field_variable));
+        return JSON.parse(check_field_frontend(fieldName, JSON.stringify(rs_field_variable)));
     }
 
     static getConnectionId(peer1, peer2) {
