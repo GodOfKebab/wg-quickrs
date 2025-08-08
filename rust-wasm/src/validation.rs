@@ -4,16 +4,16 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddrV4};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CheckResult {
-    status: bool,
-    msg: String,
+    pub status: bool,
+    pub msg: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldValue {
-    str: String,
-    enabled_value: types::EnabledValue,
+    pub str: String,
+    pub enabled_value: types::EnabledValue,
 }
 
 // Helper: plain IPv4
@@ -125,7 +125,7 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
             }
         }
 
-        "script" => {
+        "script" | "pre_up" | "post_up" | "pre_down" | "post_down" => {
             ret.status = true;
             if field_variable.enabled_value.enabled {
                 let re = Regex::new(r"^.*;\s*$").unwrap();
@@ -135,6 +135,22 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
             }
             if !ret.status {
                 ret.msg = "script needs to end with a semicolon".into();
+            }
+        }
+
+        // TODO: implement me
+        "public_key" => {
+            ret.status = !field_variable.str.is_empty();
+            if !ret.status {
+                ret.msg = "public_key cannot be empty".into();
+            }
+        }
+
+        // TODO: implement me
+        "private_key" => {
+            ret.status = !field_variable.str.is_empty();
+            if !ret.status {
+                ret.msg = "private_key cannot be empty".into();
             }
         }
 

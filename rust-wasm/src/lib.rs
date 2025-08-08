@@ -1,7 +1,7 @@
 
 pub mod types;
 pub mod helpers;
-mod validation;
+pub mod validation;
 
 
 // Only include these when compiling to wasm32
