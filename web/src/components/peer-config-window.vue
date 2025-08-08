@@ -240,7 +240,11 @@ export default {
       this.connectionIslandsChangeSum = data;
     },
     updateConfiguration() {
-      this.api.patch_network_config(this.changeSum);
+      this.api.patch_network_config({
+        changed_fields: this.changeSum.changed_fields,
+        added_connections: this.changeSum.added_connections,
+        removed_connections: this.changeSum.removed_connections
+      });
     },
     deletePeer() {
       const changeSum = {

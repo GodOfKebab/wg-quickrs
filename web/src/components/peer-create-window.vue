@@ -231,7 +231,10 @@ export default {
       this.connectionIslandsChangeSum = data;
     },
     updateConfiguration() {
-      this.api.patch_network_config(this.change_sum);
+      this.api.patch_network_config({
+        added_peers: this.change_sum.added_peers,
+        added_connections: this.change_sum.added_connections,
+      });
     },
   },
   computed: {
