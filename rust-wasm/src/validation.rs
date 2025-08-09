@@ -184,3 +184,23 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
 
     ret
 }
+
+#[macro_export]
+macro_rules! validation_check_field_str {
+    ($field:ident, $value:expr) => {
+        check_field(stringify!($field), &FieldValue {
+            str: $value.clone(),
+            enabled_value: EnabledValue {enabled: false, value: String::new()},
+        });
+    }
+}
+
+#[macro_export]
+macro_rules! validation_check_field_enabled_value {
+    ($field:ident, $value:expr) => {
+        check_field(stringify!($field), &FieldValue {
+            str: String::new(),
+            enabled_value: $value.clone(),
+        });
+    }
+}
