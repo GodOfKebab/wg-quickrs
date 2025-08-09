@@ -1,8 +1,6 @@
-
-pub mod types;
 pub mod helpers;
+pub mod types;
 pub mod validation;
-
 
 // Only include these when compiling to wasm32
 #[cfg(target_arch = "wasm32")]

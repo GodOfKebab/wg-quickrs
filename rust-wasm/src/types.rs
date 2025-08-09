@@ -222,4 +222,3 @@ pub struct ChangeSum {
     pub removed_peers: Option<Vec<String>>,
     pub removed_connections: Option<Vec<String>>,
 }
-

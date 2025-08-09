@@ -1,6 +1,6 @@
+use crate::WG_RUSTEZE_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
-use crate::WG_RUSTEZE_CONFIG_FILE;
 use rust_wasm::types::*;
 use rust_wasm::validation::*;
 use rust_wasm::*;
@@ -8,7 +8,7 @@ use rust_wasm::*;
 pub(crate) use crate::conf::util::get_config;
 use crate::conf::util::get_summary;
 use crate::wireguard::cmd::sync_conf;
-use actix_web::{web, HttpResponse};
+use actix_web::{HttpResponse, web};
 use chrono::Duration;
 use serde_json::json;
 use std::fs::OpenOptions;
@@ -85,20 +85,24 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         ($value:expr, $field_parent:expr, $field:ident) => {
             let val_res = validation_check_field_str!($field, $value);
             validate_return_400!(val_res, $field_parent, $field);
-        }
+        };
     }
 
     macro_rules! validate_enabled_value {
         ($value:expr, $field_parent:expr, $field:ident) => {
             let val_res = validation_check_field_enabled_value!($field, $value);
             validate_return_400!(val_res, $field_parent, $field);
-        }
+        };
     }
 
     macro_rules! validate_then_update_str {
         ($target:expr, $source:expr, $subtype:ident, $id:expr, $field:ident) => {
             if let Some(value) = $source.$field {
-                validate_str!(value, format!("changed_fields.{}.{}", stringify!($subtype), $id), $field);
+                validate_str!(
+                    value,
+                    format!("changed_fields.{}.{}", stringify!($subtype), $id),
+                    $field
+                );
                 $target.$field = value;
             }
         };
@@ -107,7 +111,11 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     macro_rules! validate_then_update_enabled_value {
         ($target:expr, $source:expr, $subtype:ident, $id:expr, $field:ident) => {
             if let Some(value) = $source.$field {
-                validate_enabled_value!(value, format!("changed_fields.{}.{}", stringify!($subtype), $id), $field);
+                validate_enabled_value!(
+                    value,
+                    format!("changed_fields.{}.{}", stringify!($subtype), $id),
+                    $field
+                );
                 $target.$field = value;
             }
         };
@@ -127,29 +135,102 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 
                     validate_then_update_str!(peer_config, peer_details, peer, peer_id, name);
                     validate_then_update_str!(peer_config, peer_details, peer, peer_id, address);
-                    validate_then_update_enabled_value!(peer_config, peer_details, peer, peer_id, endpoint);
-                    validate_then_update_enabled_value!(peer_config, peer_details, peer, peer_id, dns);
-                    validate_then_update_enabled_value!(peer_config, peer_details, peer, peer_id, mtu);
+                    validate_then_update_enabled_value!(
+                        peer_config,
+                        peer_details,
+                        peer,
+                        peer_id,
+                        endpoint
+                    );
+                    validate_then_update_enabled_value!(
+                        peer_config,
+                        peer_details,
+                        peer,
+                        peer_id,
+                        dns
+                    );
+                    validate_then_update_enabled_value!(
+                        peer_config,
+                        peer_details,
+                        peer,
+                        peer_id,
+                        mtu
+                    );
                     validate_then_update_str!(peer_config, peer_details, peer, peer_id, public_key);
-                    validate_then_update_str!(peer_config, peer_details, peer, peer_id, private_key);
+                    validate_then_update_str!(
+                        peer_config,
+                        peer_details,
+                        peer,
+                        peer_id,
+                        private_key
+                    );
 
                     if let Some(scripts) = peer_details.scripts {
-                        validate_then_update_enabled_value!(peer_config.scripts, scripts, peer, format!("{peer_id}.scripts"), pre_up);
-                        validate_then_update_enabled_value!(peer_config.scripts, scripts, peer, format!("{peer_id}.scripts"), post_up);
-                        validate_then_update_enabled_value!(peer_config.scripts, scripts, peer, format!("{peer_id}.scripts"), pre_down);
-                        validate_then_update_enabled_value!(peer_config.scripts, scripts, peer, format!("{peer_id}.scripts"), post_down);
+                        validate_then_update_enabled_value!(
+                            peer_config.scripts,
+                            scripts,
+                            peer,
+                            format!("{peer_id}.scripts"),
+                            pre_up
+                        );
+                        validate_then_update_enabled_value!(
+                            peer_config.scripts,
+                            scripts,
+                            peer,
+                            format!("{peer_id}.scripts"),
+                            post_up
+                        );
+                        validate_then_update_enabled_value!(
+                            peer_config.scripts,
+                            scripts,
+                            peer,
+                            format!("{peer_id}.scripts"),
+                            pre_down
+                        );
+                        validate_then_update_enabled_value!(
+                            peer_config.scripts,
+                            scripts,
+                            peer,
+                            format!("{peer_id}.scripts"),
+                            post_down
+                        );
                     }
                 }
             }
         }
         if let Some(changed_fields_connections) = changed_fields.connections {
             for (connection_id, connection_details) in changed_fields_connections {
-                if let Some(connection_config) = config.network.connections.get_mut(&connection_id) {
+                if let Some(connection_config) = config.network.connections.get_mut(&connection_id)
+                {
                     update_bool!(connection_config, connection_details, enabled);
-                    validate_then_update_str!(connection_config, connection_details, connection, connection_id, pre_shared_key);
-                    validate_then_update_str!(connection_config, connection_details, connection, connection_id, allowed_ips_a_to_b);
-                    validate_then_update_str!(connection_config, connection_details, connection, connection_id, allowed_ips_b_to_a);
-                    validate_then_update_enabled_value!(connection_config, connection_details, connection, connection_id, persistent_keepalive);
+                    validate_then_update_str!(
+                        connection_config,
+                        connection_details,
+                        connection,
+                        connection_id,
+                        pre_shared_key
+                    );
+                    validate_then_update_str!(
+                        connection_config,
+                        connection_details,
+                        connection,
+                        connection_id,
+                        allowed_ips_a_to_b
+                    );
+                    validate_then_update_str!(
+                        connection_config,
+                        connection_details,
+                        connection,
+                        connection_id,
+                        allowed_ips_b_to_a
+                    );
+                    validate_then_update_enabled_value!(
+                        connection_config,
+                        connection_details,
+                        connection,
+                        connection_id,
+                        persistent_keepalive
+                    );
                 }
             }
         }
@@ -160,19 +241,54 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         for (peer_id, peer_details) in added_peers {
             {
                 validate_str!(peer_details.name, format!("added_peers.{}", peer_id), name);
-                validate_str!(peer_details.address, format!("added_peers.{}", peer_id), address);
-                validate_enabled_value!(peer_details.endpoint, format!("added_peers.{}", peer_id), endpoint);
+                validate_str!(
+                    peer_details.address,
+                    format!("added_peers.{}", peer_id),
+                    address
+                );
+                validate_enabled_value!(
+                    peer_details.endpoint,
+                    format!("added_peers.{}", peer_id),
+                    endpoint
+                );
                 validate_enabled_value!(peer_details.dns, format!("added_peers.{}", peer_id), dns);
                 validate_enabled_value!(peer_details.mtu, format!("added_peers.{}", peer_id), mtu);
-                validate_str!(peer_details.public_key, format!("added_peers.{}", peer_id), public_key);
-                validate_str!(peer_details.private_key, format!("added_peers.{}", peer_id), private_key);
-                validate_enabled_value!(peer_details.scripts.pre_up, format!("added_peers.{}.scripts", peer_id), pre_up);
-                validate_enabled_value!(peer_details.scripts.post_up, format!("added_peers.{}.scripts", peer_id), post_up);
-                validate_enabled_value!(peer_details.scripts.pre_down, format!("added_peers.{}.scripts", peer_id), pre_down);
-                validate_enabled_value!(peer_details.scripts.post_down, format!("added_peers.{}.scripts", peer_id), post_down);
+                validate_str!(
+                    peer_details.public_key,
+                    format!("added_peers.{}", peer_id),
+                    public_key
+                );
+                validate_str!(
+                    peer_details.private_key,
+                    format!("added_peers.{}", peer_id),
+                    private_key
+                );
+                validate_enabled_value!(
+                    peer_details.scripts.pre_up,
+                    format!("added_peers.{}.scripts", peer_id),
+                    pre_up
+                );
+                validate_enabled_value!(
+                    peer_details.scripts.post_up,
+                    format!("added_peers.{}.scripts", peer_id),
+                    post_up
+                );
+                validate_enabled_value!(
+                    peer_details.scripts.pre_down,
+                    format!("added_peers.{}.scripts", peer_id),
+                    pre_down
+                );
+                validate_enabled_value!(
+                    peer_details.scripts.post_down,
+                    format!("added_peers.{}.scripts", peer_id),
+                    post_down
+                );
                 config.network.peers.insert(peer_id.clone(), peer_details);
                 // remove the new peer id/address from the lease
-                config.network.leases.retain(|lease| { lease.peer_id != peer_id });
+                config
+                    .network
+                    .leases
+                    .retain(|lease| lease.peer_id != peer_id);
             }
         }
     }
@@ -190,14 +306,30 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(added_connections) = change_sum.added_connections {
         for (connection_id, connection_details) in added_connections {
             {
-                validate_str!(connection_details.pre_shared_key, format!("added_connections.{}", connection_id), pre_shared_key);
-                validate_str!(connection_details.allowed_ips_a_to_b, format!("added_connections.{}", connection_id), allowed_ips_a_to_b);
-                validate_str!(connection_details.allowed_ips_b_to_a, format!("added_connections.{}", connection_id), allowed_ips_b_to_a);
-                validate_enabled_value!(connection_details.persistent_keepalive, format!("added_connections.{}", connection_id), persistent_keepalive);
-                config.network.connections.insert(
-                    connection_id.clone(),
-                    connection_details,
+                validate_str!(
+                    connection_details.pre_shared_key,
+                    format!("added_connections.{}", connection_id),
+                    pre_shared_key
                 );
+                validate_str!(
+                    connection_details.allowed_ips_a_to_b,
+                    format!("added_connections.{}", connection_id),
+                    allowed_ips_a_to_b
+                );
+                validate_str!(
+                    connection_details.allowed_ips_b_to_a,
+                    format!("added_connections.{}", connection_id),
+                    allowed_ips_b_to_a
+                );
+                validate_enabled_value!(
+                    connection_details.persistent_keepalive,
+                    format!("added_connections.{}", connection_id),
+                    persistent_keepalive
+                );
+                config
+                    .network
+                    .connections
+                    .insert(connection_id.clone(), connection_details);
             }
         }
     }

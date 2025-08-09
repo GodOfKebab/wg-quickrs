@@ -59,7 +59,7 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
             let re_uuid = Regex::new(
                 r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
             )
-                .unwrap();
+            .unwrap();
             ret.status = re_uuid.is_match(&field_variable.str);
             if !ret.status {
                 ret.msg = "peerId needs to follow uuid4 standards".into();
@@ -85,7 +85,7 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
         "endpoint" => {
             if field_variable.enabled_value.enabled
                 && !(is_ipv4_with_port(&field_variable.enabled_value.value)
-                || is_fqdn_with_port(&field_variable.enabled_value.value))
+                    || is_fqdn_with_port(&field_variable.enabled_value.value))
             {
                 ret.status = false;
                 ret.msg = "endpoint is not IPv4 nor an FQDN".into();
@@ -192,19 +192,28 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
 #[macro_export]
 macro_rules! validation_check_field_str {
     ($field:ident, $value:expr) => {
-        check_field(stringify!($field), &FieldValue {
-            str: $value.clone(),
-            enabled_value: EnabledValue {enabled: false, value: String::new()},
-        });
-    }
+        check_field(
+            stringify!($field),
+            &FieldValue {
+                str: $value.clone(),
+                enabled_value: EnabledValue {
+                    enabled: false,
+                    value: String::new(),
+                },
+            },
+        );
+    };
 }
 
 #[macro_export]
 macro_rules! validation_check_field_enabled_value {
     ($field:ident, $value:expr) => {
-        check_field(stringify!($field), &FieldValue {
-            str: String::new(),
-            enabled_value: $value.clone(),
-        });
-    }
+        check_field(
+            stringify!($field),
+            &FieldValue {
+                str: String::new(),
+                enabled_value: $value.clone(),
+            },
+        );
+    };
 }

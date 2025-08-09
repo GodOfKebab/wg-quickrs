@@ -1,9 +1,9 @@
-use crate::macros::*;
 use crate::WIREGUARD_CONFIG_FILE;
+use crate::macros::*;
 use once_cell::sync::Lazy;
 use rust_wasm::helpers::get_peer_wg_config;
 use rust_wasm::types::{Config, TelemetryDatum, WireGuardStatus};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
