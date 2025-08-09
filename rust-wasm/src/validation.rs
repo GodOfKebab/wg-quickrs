@@ -53,10 +53,6 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
         msg: String::new(),
     };
 
-    println!(
-        "Checking field: {field_name} with value: {field_variable:?}"
-    );
-
     match field_name {
         // UUID v4 check
         "peerId" => {
@@ -151,6 +147,14 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
             ret.status = !field_variable.str.is_empty();
             if !ret.status {
                 ret.msg = "private_key cannot be empty".into();
+            }
+        }
+
+        // TODO: implement me
+        "pre_shared_key" => {
+            ret.status = !field_variable.str.is_empty();
+            if !ret.status {
+                ret.msg = "pre_shared_key cannot be empty".into();
             }
         }
 
