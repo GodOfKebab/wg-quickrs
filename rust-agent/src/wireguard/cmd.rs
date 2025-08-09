@@ -307,6 +307,18 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
 }
 
 pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandError> {
+    match status_tunnel() {
+        Ok(status) => {
+            if status.value() == WireGuardStatus::DOWN.value() {
+                return Err(WireGuardCommandError::InterfaceMissing);
+            }
+        }
+        Err(e) => {
+            log::error!("{e}");
+            return Err(WireGuardCommandError::Other(e.to_string()));
+        }
+    };
+
     // generate .conf content
     let wg_conf = match get_peer_wg_config(
         &config.network,
