@@ -2,13 +2,13 @@ use crate::cli::AgentCommands;
 use crate::conf::util::ConfUtilError;
 use crate::web::server;
 use crate::wireguard::cmd::get_public_private_keys;
-use crate::{conf, wireguard, WG_RUSTEZE_CONFIG_FILE, WIREGUARD_CONFIG_FILE};
+use crate::{WG_RUSTEZE_CONFIG_FILE, WIREGUARD_CONFIG_FILE, conf, wireguard};
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
 use dialoguer::{Confirm, Input};
 use get_if_addrs::get_if_addrs;
 use ipnetwork::IpNetwork;
-use rand::{rng, RngCore};
+use rand::{RngCore, rng};
 use rust_wasm::types::{
     Agent, AgentVpn, AgentWeb, Config, DefaultConnection, DefaultPeer, Defaults, EnabledValue,
     Network, Password, Peer, Scripts,
@@ -63,7 +63,20 @@ fn primary_ip() -> Option<String> {
     }
 }
 
-pub(crate) fn initialize_agent() -> ExitCode {
+pub(crate) fn initialize_agent(
+    cli_network_identifier: Option<String>,
+    cli_peer_name: Option<String>,
+    cli_public_address: Option<String>,
+    cli_web_port: Option<u16>,
+    cli_vpn_port: Option<u16>,
+    cli_subnet: Option<String>,
+    cli_vpn_address: Option<String>,
+    cli_use_tls: Option<bool>,
+    cli_password: Option<String>,
+    cli_dns_server: Option<String>,
+    cli_mtu_value: Option<String>,
+    cli_persistent_keepalive_seconds: Option<String>,
+) -> ExitCode {
     if let Err(ConfUtilError::Read(..)) = conf::util::get_config() {
     } else {
         log::error!("wg-rusteze rust-agent is already initialized.");
@@ -71,36 +84,109 @@ pub(crate) fn initialize_agent() -> ExitCode {
     }
     log::info!("Initializing wg-rusteze rust-agent...");
 
-    let identifier: String = prompt("Enter network identifier", Some("wg-rusteze"));
-    let peer_name: String = prompt("Enter peer name", Some("wg-rusteze-host"));
-    let agent_address: String = prompt(
-        "Enter rust-agent's public IPv4 address",
-        primary_ip().as_deref(),
-    );
-    let web_port: u16 = prompt("Enter web port", Some("8080"));
-    let vpn_port: u16 = prompt("Enter VPN port", Some("51820"));
-
-    let subnet: String = prompt("Enter network CIDR subnet mask", Some("10.0.34.0/24"));
-    let vpn_address: String = prompt("Enter rust-agent address", Some(&*first_ip(&subnet)));
-
-    let use_tls: bool = Confirm::new()
-        .with_prompt("Use TLS?")
-        .default(true)
-        .interact()
-        .unwrap();
-    let pwd_enabled: bool = Confirm::new()
-        .with_prompt("Enable password?")
-        .default(true)
-        .interact()
-        .unwrap();
-    let pwd: String = if pwd_enabled {
-        dialoguer::Password::new()
-            .with_prompt("Enter password")
-            .interact()
-            .unwrap()
-    } else {
-        "".into()
+    let identifier = match cli_network_identifier {
+        Some(v) => {
+            println!("[1/12] Using network identifier from CLI argument: {}", v);
+            v.clone()
+        }
+        _ => prompt("[1/12] Enter network identifier", Some("wg-rusteze")),
     };
+    let peer_name = match cli_peer_name {
+        Some(v) => {
+            println!("[2/12] Using peer name from CLI argument: {}", v);
+            v.clone()
+        }
+        _ => prompt("[2/12] Enter peer name", Some("wg-rusteze-host")),
+    };
+    let public_address = match cli_public_address {
+        Some(v) => {
+            println!("[3/12] Using public IPv4 address from CLI argument: {}", v);
+            v.clone()
+        }
+        _ => prompt(
+            "[3/12] Enter public IPv4 address for rust-agent",
+            primary_ip().as_deref(),
+        ),
+    };
+    let web_port = match cli_web_port {
+        Some(v) => {
+            println!("[4/12] Using web port from CLI argument: {}", v);
+            v.clone()
+        }
+        _ => prompt("[4/12] Enter web port", Some("8080")),
+    };
+    let vpn_port = match cli_vpn_port {
+        Some(v) => {
+            println!("[5/12] Using VPN port from CLI argument: {}", v);
+            v.clone()
+        }
+        _ => prompt("[5/12] Enter VPN port", Some("51820")),
+    };
+    let subnet = match cli_subnet {
+        Some(v) => {
+            println!(
+                "[6/12] Using network CIDR subnet mask from CLI argument: {}",
+                v
+            );
+            v.clone()
+        }
+        _ => prompt(
+            "[6/12] Enter network CIDR subnet mask",
+            Some("10.0.34.0/24"),
+        ),
+    };
+    let vpn_address = match cli_vpn_address {
+        Some(v) => {
+            println!(
+                "[7/12] Using VPN address for rust-agent from CLI argument: {}",
+                v
+            );
+            v.clone()
+        }
+        _ => prompt(
+            "[7/12] Enter VPN address for rust-agent",
+            Some(&*first_ip(&subnet)),
+        ),
+    };
+    let use_tls = match cli_use_tls {
+        Some(v) => {
+            println!(
+                "[8/12] TLS is {} from CLI argument",
+                if v { "enabled" } else { "disabled" }
+            );
+            v.clone()
+        }
+        _ => Confirm::new()
+            .with_prompt("[8/12] Use TLS?")
+            .default(true)
+            .interact()
+            .unwrap(),
+    };
+    // TODO: add --no-password flag
+    let pwd_enabled: bool;
+    let pwd = match cli_password {
+        Some(v) => {
+            println!("[9/12] Using password from CLI argument: ***hidden***");
+            pwd_enabled = true;
+            v.clone()
+        }
+        _ => {
+            pwd_enabled = Confirm::new()
+                .with_prompt("[9/12] Enable password?")
+                .default(true)
+                .interact()
+                .unwrap();
+            if pwd_enabled {
+                dialoguer::Password::new()
+                    .with_prompt("[9/12]\t Enter password")
+                    .interact()
+                    .unwrap()
+            } else {
+                "".to_string()
+            }
+        }
+    };
+
     let pwd_hash = match calculate_password_hash(pwd.trim()) {
         Ok(p) => {
             if pwd_enabled {
@@ -114,35 +200,69 @@ pub(crate) fn initialize_agent() -> ExitCode {
         }
     };
 
-    let dns_enabled: bool = Confirm::new()
-        .with_prompt("Enable DNS?")
-        .default(true)
-        .interact()
-        .unwrap();
-    let dns_value: String = if dns_enabled {
-        prompt("DNS value", Some("1.1.1.1"))
-    } else {
-        "".into()
+    // TODO: add --no-dns flag
+    let dns_enabled: bool;
+    let dns_value = match cli_dns_server {
+        Some(v) => {
+            println!("[10/12] Using DNS server from CLI argument: {}", v);
+            dns_enabled = true;
+            v.clone()
+        }
+        _ => {
+            dns_enabled = Confirm::new()
+                .with_prompt("[10/12] Enable DNS?")
+                .default(true)
+                .interact()
+                .unwrap();
+            if dns_enabled {
+                prompt("[10/12]\t DNS value", Some("1.1.1.1"))
+            } else {
+                "".to_string()
+            }
+        }
     };
-    let mtu_enabled: bool = Confirm::new()
-        .with_prompt("Enable MTU?")
-        .default(false)
-        .interact()
-        .unwrap();
-    let mtu_value: String = if mtu_enabled {
-        prompt("MTU value", Some("1420"))
-    } else {
-        "".into()
+
+    // TODO: add --no-mtu flag
+    let mtu_enabled: bool;
+    let mtu_value = match cli_mtu_value {
+        Some(v) => {
+            println!("[11/12] Using MTU value from CLI argument: {}", v);
+            mtu_enabled = true;
+            v.clone()
+        }
+        _ => {
+            mtu_enabled = Confirm::new()
+                .with_prompt("[11/12] Enable MTU?")
+                .default(false)
+                .interact()
+                .unwrap();
+            if mtu_enabled {
+                prompt("[11/12]\t MTU value", Some("1420"))
+            } else {
+                "".to_string()
+            }
+        }
     };
-    let pk_enabled: bool = Confirm::new()
-        .with_prompt("Enable PersistentKeepalive in connections?")
-        .default(true)
-        .interact()
-        .unwrap();
-    let pk_value: String = if pk_enabled {
-        prompt("PersistentKeepalive value (seconds)", Some("25"))
-    } else {
-        "".into()
+
+    // TODO: add --no-persistent-keepalive flag
+    let pk_enabled: bool;
+    let pk_value = match cli_persistent_keepalive_seconds {
+        Some(v) => {
+            pk_enabled = true;
+            v.clone()
+        }
+        _ => {
+            pk_enabled = Confirm::new()
+                .with_prompt("[12/12] Enable PersistentKeepalive in connections?")
+                .default(true)
+                .interact()
+                .unwrap();
+            if pk_enabled {
+                prompt("[12/12]\t PersistentKeepalive value (seconds)", Some("25"))
+            } else {
+                "".to_string()
+            }
+        }
     };
     println!(
         "✅ This was all the information required to initialize the rust-agent. Finalizing the configuration..."
@@ -173,7 +293,7 @@ pub(crate) fn initialize_agent() -> ExitCode {
         updated_at: now.clone(),
         endpoint: EnabledValue {
             enabled: true,
-            value: format!("{agent_address}:{vpn_port}"),
+            value: format!("{public_address}:{vpn_port}"),
         },
         dns: EnabledValue {
             enabled: dns_enabled,
@@ -205,7 +325,7 @@ pub(crate) fn initialize_agent() -> ExitCode {
 
     let config = Config {
         agent: Agent {
-            address: agent_address,
+            address: public_address,
             web: AgentWeb {
                 port: web_port,
                 use_tls,

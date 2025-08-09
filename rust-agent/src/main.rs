@@ -43,7 +43,33 @@ async fn main() -> ExitCode {
     );
 
     match &args.command {
-        cli::Commands::Init {} => commands::initialize_agent(),
+        cli::Commands::Init {
+            network_identifier,
+            peer_name,
+            public_address,
+            web_port,
+            vpn_port,
+            subnet,
+            vpn_address,
+            use_tls,
+            password,
+            dns_server,
+            mtu_value,
+            persistent_keepalive_seconds,
+        } => commands::initialize_agent(
+            network_identifier.clone(),
+            peer_name.clone(),
+            public_address.clone(),
+            web_port.clone(),
+            vpn_port.clone(),
+            subnet.clone(),
+            vpn_address.clone(),
+            use_tls.clone(),
+            password.clone(),
+            dns_server.clone(),
+            mtu_value.clone(),
+            persistent_keepalive_seconds.clone(),
+        ),
         cli::Commands::Config { commands } => match commands {
             ConfigCommands::ResetWebPassword => commands::reset_web_password(),
         },

@@ -23,8 +23,83 @@ pub(crate) struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum Commands {
-    #[command(about = "Initialize the wg-rusteze rust-agent")]
-    Init {},
+    #[command(
+        about = "Initialize the wg-rusteze rust-agent.\nConfiguration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command"
+    )]
+    Init {
+        #[arg(
+            long,
+            default_value = None,
+            help = "Network identifier (e.g. wg-rusteze)"
+        )]
+        network_identifier: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Peer name (e.g. wg-rusteze-host)"
+        )]
+        peer_name: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Public IPv4 address for rust-agent"
+        )]
+        public_address: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "HTTP(S) port for rust-agent (e.g. 80)"
+        )]
+        web_port: Option<u16>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "VPN port for rust-agent (e.g. 51820)"
+        )]
+        vpn_port: Option<u16>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "CIDR subnet mask for VPN network (e.g. 10.0.34.0/24)"
+        )]
+        subnet: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Internal IPv4 address for VPN network (e.g. 10.0.34.1)"
+        )]
+        vpn_address: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable TLS for HTTP server"
+        )]
+        use_tls: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Password for HTTP server"
+        )]
+        password: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "DNS IPv4 address for VPN network (e.g. 1.1.1.1)"
+        )]
+        dns_server: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "MTU for VPN network (e.g. 1420)"
+        )]
+        mtu_value: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "PersistentKeepalive value in seconds (e.g. 25)"
+        )]
+        persistent_keepalive_seconds: Option<String>,
+    },
     #[command(about = "Run some convenience functions to edit config")]
     Config {
         #[command(subcommand)]
