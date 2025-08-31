@@ -24,18 +24,20 @@ COPY web/package.json /app/web/package.json
 RUN cargo build --bin wg-rusteze --profile release
 
 FROM docker.io/library/debian:trixie-slim AS initializer
-COPY --from=rust-agent-builder /app/target/release/wg-rusteze /app/wg-rusteze
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y wireguard-tools
+COPY --from=rust-agent-builder /app/target/release/wg-rusteze /app/wg-rusteze
 
 CMD /app/wg-rusteze init --no-prompt true \
   --network-identifier "$NETWORK_IDENTIFIER" \
   --network-subnet "$NETWORK_SUBNET" \
   --agent-peer-name "$AGENT_PEER_NAME" \
+  --agent-local-address "$AGENT_LOCAL_ADDRESS" \
+  --agent-local-web-port "$AGENT_LOCAL_WEB_PORT" \
+  --agent-local-vpn-port "$AGENT_LOCAL_VPN_PORT" \
   --agent-public-address "$AGENT_PUBLIC_ADDRESS" \
-  --agent-web-port "$AGENT_WEB_PORT" \
-  --agent-vpn-port "$AGENT_VPN_PORT" \
+  --agent-public-vpn-port "$AGENT_PUBLIC_VPN_PORT" \
   --agent-internal-vpn-address "$AGENT_INTERNAL_VPN_ADDRESS" \
   --agent-use-tls "$AGENT_USE_TLS" \
   --agent-enable-web-password "$AGENT_ENABLE_WEB_PASSWORD" \

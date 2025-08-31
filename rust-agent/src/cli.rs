@@ -48,21 +48,33 @@ pub(crate) enum Commands {
         #[arg(
             long,
             default_value = None,
-            help = "Agent's publicly accessible IPv4 address"
+            help = "Agent's local IPv4 address for the web server to bind"
+        )]
+        agent_local_address: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's local web port for the web server to bind (e.g. 80)"
+        )]
+        agent_local_web_port: Option<u16>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's local VPN port for the VPN server listen (e.g. 51820)"
+        )]
+        agent_local_vpn_port: Option<u16>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement"
         )]
         agent_public_address: Option<String>,
         #[arg(
             long,
             default_value = None,
-            help = "Agent's web port (e.g. 80)"
+            help = "Agent's publicly accessible port to be used in the VPN endpoint advertisement (e.g. 51820)"
         )]
-        agent_web_port: Option<u16>,
-        #[arg(
-            long,
-            default_value = None,
-            help = "Agent's VPN port (e.g. 51820)"
-        )]
-        agent_vpn_port: Option<u16>,
+        agent_public_vpn_port: Option<u16>,
         #[arg(
             long,
             default_value = None,

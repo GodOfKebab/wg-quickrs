@@ -187,9 +187,11 @@ pub(crate) fn initialize_agent(
     cli_network_identifier: Option<String>,
     cli_network_subnet: Option<String>,
     cli_agent_peer_name: Option<String>,
+    cli_agent_local_address: Option<String>,
+    cli_agent_local_web_port: Option<u16>,
+    cli_agent_local_vpn_port: Option<u16>,
     cli_agent_public_address: Option<String>,
-    cli_agent_web_port: Option<u16>,
-    cli_agent_vpn_port: Option<u16>,
+    cli_agent_public_vpn_port: Option<u16>,
     cli_agent_internal_vpn_address: Option<String>,
     cli_agent_use_tls: Option<bool>,
     cli_agent_enable_web_password: Option<bool>,
@@ -266,35 +268,57 @@ pub(crate) fn initialize_agent(
         Some("wg-rusteze-host"),
     );
 
-    // [4/22] --agent-public-address
-    let agent_public_address = get_init_enabled_value_option(
+    // [4/22] --agent-local-address
+    let agent_local_address = get_init_enabled_value_option(
         cli_no_prompt,
         4,
-        cli_agent_public_address,
-        "--agent-public-address",
-        "Enter agent's publicly accessible IPv4 address",
+        cli_agent_local_address,
+        "--agent-local-address",
+        "Enter agent's local IPv4 address for the web server to bind",
         true,
         primary_ip().as_deref(),
     );
 
-    // [5/22] --agent-web-port
-    let agent_web_port = get_init_enabled_value_option(
+    // [5/22] --agent-local-web-port
+    let agent_local_web_port = get_init_enabled_value_option(
         cli_no_prompt,
         5,
-        cli_agent_web_port,
-        "--agent-web-port",
-        "Enter agent's web port",
+        cli_agent_local_web_port,
+        "--agent-local-web-port",
+        "Enter agent's local web port for the web server to bind",
         true,
         Some("8080"),
     );
 
-    // [6/22] --agent-vpn-port
-    let agent_vpn_port = get_init_enabled_value_option(
+    // [6/22] --agent-local-vpn-port
+    let agent_local_vpn_port = get_init_enabled_value_option(
         cli_no_prompt,
         6,
-        cli_agent_vpn_port,
-        "--agent-vpn-port",
-        "Enter agent's VPN port",
+        cli_agent_local_vpn_port,
+        "--agent-local-vpn-port",
+        "Enter agent's local vpn port for the vpn server to bind",
+        true,
+        Some("8080"),
+    );
+
+    // [7/22] --agent-public-address
+    let agent_public_address = get_init_enabled_value_option(
+        cli_no_prompt,
+        7,
+        cli_agent_public_address,
+        "--agent-public-address",
+        "Enter agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement",
+        true,
+        primary_ip().as_deref(),
+    );
+
+    // [8/22] --agent-public-vpn-port
+    let agent_public_vpn_port = get_init_enabled_value_option(
+        cli_no_prompt,
+        8,
+        cli_agent_public_vpn_port,
+        "--agent-public-vpn-port",
+        "Enter agent's publicly accessible port to be used in the VPN endpoint advertisement",
         true,
         Some("51820"),
     );
@@ -591,7 +615,7 @@ pub(crate) fn initialize_agent(
         updated_at: now.clone(),
         endpoint: EnabledValue {
             enabled: true,
-            value: format!("{agent_public_address}:{agent_vpn_port}"),
+            value: format!("{agent_public_address}:{agent_public_vpn_port}"),
         },
         dns: EnabledValue {
             enabled: agent_enable_dns,
@@ -623,9 +647,9 @@ pub(crate) fn initialize_agent(
 
     let config = Config {
         agent: Agent {
-            address: agent_public_address,
+            address: agent_local_address,
             web: AgentWeb {
-                port: agent_web_port,
+                port: agent_local_web_port,
                 use_tls: agent_use_tls,
                 password: Password {
                     enabled: agent_enable_web_password,
@@ -633,7 +657,7 @@ pub(crate) fn initialize_agent(
                 },
             },
             vpn: AgentVpn {
-                port: agent_vpn_port,
+                port: agent_local_vpn_port,
             },
         },
         network: Network {
