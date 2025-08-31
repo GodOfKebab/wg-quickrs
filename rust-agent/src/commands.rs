@@ -645,7 +645,7 @@ pub(crate) fn initialize_agent(
         },
     };
 
-    let config = Config {
+    let mut config = Config {
         agent: Agent {
             address: agent_local_address,
             web: AgentWeb {
@@ -715,9 +715,7 @@ pub(crate) fn initialize_agent(
         },
     };
 
-    let yaml = serde_yml::to_string(&config).unwrap();
-    let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
-    std::fs::write(file_path, yaml).expect("Failed to write config.yml");
+    conf::util::set_config(&mut config).expect("Failed to write config.yml");
     println!("✅ Configuration saved to `config.yml`.");
 
     ExitCode::SUCCESS

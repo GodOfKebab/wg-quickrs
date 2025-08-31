@@ -38,29 +38,6 @@ pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
         }
     };
 
-    // Make sure rust-agent fields get precedence over network fields
-    if config
-        .network
-        .peers
-        .get(&config.network.this_peer)
-        .unwrap()
-        .endpoint
-        .value
-        != format!("{}:{}", config.agent.address, config.agent.vpn.port)
-    {
-        log::warn!(
-            "detected mismatch between configured wg-rusteze rust-agent endpoints and wireguard peer endpoints! overriding wireguard peer endpoints"
-        );
-        config
-            .network
-            .peers
-            .get_mut(&config.network.this_peer)
-            .unwrap()
-            .endpoint
-            .value = format!("{}:{}", config.agent.address, config.agent.vpn.port);
-        set_config(&mut config)?;
-    }
-
     Ok(config)
 }
 
