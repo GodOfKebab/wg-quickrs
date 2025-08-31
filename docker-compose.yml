@@ -1,0 +1,60 @@
+services:
+
+  wg-rusteze-agent-init:
+    container_name: wg-rusteze-agent-init-cnt
+    build:
+      context: .
+      target: initializer
+    environment:
+      NETWORK_IDENTIFIER: wg-rusteze
+      NETWORK_SUBNET: 10.0.34.0/24
+
+      AGENT_PEER_NAME: wg-rusteze-host
+      AGENT_PUBLIC_ADDRESS: 127.0.0.1
+      AGENT_WEB_PORT: 8080
+      AGENT_VPN_PORT: 51820
+      AGENT_INTERNAL_VPN_ADDRESS: 10.0.34.1
+      AGENT_USE_TLS: true
+      AGENT_ENABLE_WEB_PASSWORD: false
+      AGENT_WEB_PASSWORD: ""
+      AGENT_ENABLE_DNS: true
+      AGENT_DNS_SERVER: 1.1.1.1
+      AGENT_ENABLE_MTU: false
+      AGENT_MTU_VALUE: ""
+      AGENT_ENABLE_SCRIPT_PRE_UP: false
+      AGENT_SCRIPT_PRE_UP_LINE: ""
+      AGENT_ENABLE_SCRIPT_POST_UP: false
+      AGENT_SCRIPT_POST_UP_LINE: ""
+      AGENT_ENABLE_SCRIPT_PRE_DOWN: false
+      AGENT_SCRIPT_PRE_DOWN_LINE: ""
+      AGENT_ENABLE_SCRIPT_POST_DOWN: false
+      AGENT_SCRIPT_POST_DOWN_LINE: ""
+
+      DEFAULT_ENABLE_DNS: true
+      DEFAULT_DNS_SERVER: 1.1.1.1
+      DEFAULT_ENABLE_MTU: false
+      DEFAULT_MTU_VALUE: ""
+      DEFAULT_ENABLE_SCRIPT_PRE_UP: false
+      DEFAULT_SCRIPT_PRE_UP_LINE: ""
+      DEFAULT_ENABLE_SCRIPT_POST_UP: false
+      DEFAULT_SCRIPT_POST_UP_LINE: ""
+      DEFAULT_ENABLE_SCRIPT_PRE_DOWN: false
+      DEFAULT_SCRIPT_PRE_DOWN_LINE: ""
+      DEFAULT_ENABLE_SCRIPT_POST_DOWN: false
+      DEFAULT_SCRIPT_POST_DOWN_LINE: ""
+      DEFAULT_ENABLE_PERSISTENT_KEEPALIVE: true
+      DEFAULT_PERSISTENT_KEEPALIVE_PERIOD: 25
+    volumes:
+      - .wg-rusteze-docker:/app/.wg-rusteze
+    ports:
+      - "8080:8080"
+      - "51820:51820"
+
+#  wg-rusteze-agent-run-only-web:
+#    container_name: wg-rusteze-agent-run-only-web
+#    build: .
+#    volumes:
+#      - .wg-rusteze-docker:/app/.wg-rusteze
+#    ports:
+#      - "8080:8080"
+#    command: [ "agent", "run", "--only-web" ]
