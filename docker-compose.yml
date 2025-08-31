@@ -52,11 +52,13 @@ services:
       - "8080:8080"
       - "51820:51820"
 
-#  wg-rusteze-agent-run-only-web:
-#    container_name: wg-rusteze-agent-run-only-web
-#    build: .
-#    volumes:
-#      - .wg-rusteze-docker:/app/.wg-rusteze
-#    ports:
-#      - "8080:8080"
-#    command: [ "agent", "run", "--only-web" ]
+  wg-rusteze-agent-run-only-web:
+    container_name: wg-rusteze-agent-run-only-web-cnt
+    build:
+      context: .
+      target: runner
+    volumes:
+      - .wg-rusteze-docker:/app/.wg-rusteze
+    ports:
+      - "80:80"
+    command: [ "/app/wg-rusteze", "agent", "run", "--only-web" ]

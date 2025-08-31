@@ -1,21 +1,23 @@
-FROM docker.io/library/rust:1.89.0-trixie AS rust-wasm-builder
+FROM rust:1.89-slim AS rust-wasm-builder
 
 WORKDIR /app/rust-wasm
 COPY rust-wasm/ /app/rust-wasm
 RUN cargo install wasm-pack
 RUN wasm-pack build --target web --out-dir /app/web/pkg -- --features wasm
 
-FROM docker.io/library/node:24-alpine AS node-builder
-COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
-
+FROM node:24-alpine AS node-builder
 WORKDIR /app/web
-COPY web/ /app/web
+COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
+COPY web/ .
 RUN npm ci --production
 
-FROM docker.io/library/rust:1.89.0-trixie AS rust-agent-builder
-COPY --from=node-builder /app/web/dist /app/web/dist
-
+FROM rust:1.89-alpine3.22 AS rust-agent-builder
 WORKDIR /app
+
+# Install musl cross-compile dependencies
+RUN apk add --no-cache musl-dev gcc
+
+COPY --from=node-builder /app/web/dist /app/web/dist
 COPY Cargo.toml /app/Cargo.toml
 COPY Cargo.lock /app/Cargo.lock
 COPY rust-wasm/ /app/rust-wasm
@@ -23,12 +25,15 @@ COPY rust-agent/ /app/rust-agent
 COPY web/package.json /app/web/package.json
 RUN cargo build --bin wg-rusteze --profile release
 
-FROM docker.io/library/debian:trixie-slim AS initializer
+FROM alpine:3.22 AS runner
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y wireguard-tools
+RUN apk add -U --no-cache wireguard-tools
 COPY --from=rust-agent-builder /app/target/release/wg-rusteze /app/wg-rusteze
 
+#CMD ["tail", "-f", "/dev/null"]
+
+FROM runner as initializer
 CMD /app/wg-rusteze init --no-prompt true \
   --network-identifier "$NETWORK_IDENTIFIER" \
   --network-subnet "$NETWORK_SUBNET" \
@@ -68,10 +73,3 @@ CMD /app/wg-rusteze init --no-prompt true \
   --default-script-post-down-line "$DEFAULT_SCRIPT_POST_DOWN_LINE" \
   --default-enable-persistent-keepalive "$DEFAULT_ENABLE_PERSISTENT_KEEPALIVE" \
   --default-persistent-keepalive-period "$DEFAULT_PERSISTENT_KEEPALIVE_PERIOD"
-
-FROM docker.io/library/debian:trixie-slim AS runner
-COPY --from=rust-agent-builder /app/target/release/wg-rusteze /app/wg-rusteze
-WORKDIR /app
-
-#CMD ["tail", "-f", "/dev/null"]
-ENTRYPOINT ["/app/wg-rusteze"]
