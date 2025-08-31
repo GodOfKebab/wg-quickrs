@@ -31,7 +31,7 @@ pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
             return Err(ConfUtilError::Read(file_path.clone(), e));
         }
     };
-    let mut config: Config = match serde_yml::from_str(&file_contents) {
+    let config: Config = match serde_yml::from_str(&file_contents) {
         Ok(c) => c,
         Err(e) => {
             return Err(ConfUtilError::Parse(e));

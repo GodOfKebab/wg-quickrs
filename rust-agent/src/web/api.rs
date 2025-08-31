@@ -133,19 +133,18 @@ async fn post_token(query: web::Query<LoginRequest>) -> impl Responder {
 }
 
 fn enforce_auth(req: HttpRequest) -> Result<(), HttpResponse> {
-    if let Some(auth_header) = req.headers().get("Authorization") {
-        if let Ok(auth_str) = auth_header.to_str() {
-            if let Some(token) = auth_str.strip_prefix("Bearer ") {
-                let validation = Validation::new(Algorithm::HS256);
+    if let Some(auth_header) = req.headers().get("Authorization")
+        && let Ok(auth_str) = auth_header.to_str()
+        && let Some(token) = auth_str.strip_prefix("Bearer ")
+    {
+        let validation = Validation::new(Algorithm::HS256);
 
-                return match decode::<Claims>(token, &JWT_SECRETS.1, &validation) {
-                    Ok(_) => Ok(()),
-                    Err(_) => Err(HttpResponse::Unauthorized()
-                        .content_type("text/plain; charset=utf-8")
-                        .body("Invalid token")),
-                };
-            }
-        }
+        return match decode::<Claims>(token, &JWT_SECRETS.1, &validation) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(HttpResponse::Unauthorized()
+                .content_type("text/plain; charset=utf-8")
+                .body("Invalid token")),
+        };
     }
 
     Err(HttpResponse::Unauthorized()

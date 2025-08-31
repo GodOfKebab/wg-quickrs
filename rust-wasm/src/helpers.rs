@@ -24,7 +24,7 @@ pub fn get_peer_wg_config(
         "# wg-rusteze network identifier: {}\n",
         network.identifier
     )
-        .unwrap();
+    .unwrap();
 
     // Peer fields
     writeln!(wg_conf, "# Peer: {} ({})", this_peer.name, peer_id).unwrap();
@@ -32,10 +32,10 @@ pub fn get_peer_wg_config(
     writeln!(wg_conf, "PrivateKey = {}", this_peer.private_key).unwrap();
     writeln!(wg_conf, "Address = {}/24", this_peer.address).unwrap();
 
-    if this_peer.endpoint.enabled {
-        if let Some((_host, port)) = this_peer.endpoint.value.rsplit_once(':') {
-            writeln!(wg_conf, "ListenPort = {port}").unwrap();
-        }
+    if this_peer.endpoint.enabled
+        && let Some((_host, port)) = this_peer.endpoint.value.rsplit_once(':')
+    {
+        writeln!(wg_conf, "ListenPort = {port}").unwrap();
     }
     if this_peer.dns.enabled {
         writeln!(wg_conf, "DNS = {}", this_peer.dns.value).unwrap();
@@ -89,7 +89,7 @@ pub fn get_peer_wg_config(
             "# Linked Peer: {} ({})",
             other_peer_details.name, other_peer_id
         )
-            .unwrap();
+        .unwrap();
         writeln!(wg_conf, "[Peer]").unwrap();
         writeln!(wg_conf, "PublicKey = {}", other_peer_details.public_key).unwrap();
         writeln!(
@@ -97,7 +97,7 @@ pub fn get_peer_wg_config(
             "PresharedKey = {}",
             connection_details.pre_shared_key
         )
-            .unwrap();
+        .unwrap();
         writeln!(wg_conf, "AllowedIPs = {allowed_ips}").unwrap();
 
         if connection_details.persistent_keepalive.enabled {
@@ -106,7 +106,7 @@ pub fn get_peer_wg_config(
                 "PersistentKeepalive = {}",
                 connection_details.persistent_keepalive.value
             )
-                .unwrap();
+            .unwrap();
         }
         if other_peer_details.endpoint.enabled {
             writeln!(wg_conf, "Endpoint = {}", other_peer_details.endpoint.value).unwrap();

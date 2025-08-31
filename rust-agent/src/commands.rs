@@ -2,7 +2,7 @@ use crate::cli::AgentCommands;
 use crate::conf::util::ConfUtilError;
 use crate::web::server;
 use crate::wireguard::cmd::get_public_private_keys;
-use crate::{WG_RUSTEZE_CONFIG_FILE, WIREGUARD_CONFIG_FILE, conf, wireguard};
+use crate::{WIREGUARD_CONFIG_FILE, conf, wireguard};
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
 use dialoguer::{Confirm, Input};
@@ -176,7 +176,7 @@ fn get_init_pair_option<T: std::str::FromStr + std::fmt::Display + Clone + Defau
         cli_value,
         cli_value_option,
         description_value,
-        enabled.clone(),
+        enabled,
         default_value,
     );
 
