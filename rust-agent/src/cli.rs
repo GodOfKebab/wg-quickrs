@@ -30,75 +30,226 @@ pub(crate) enum Commands {
         #[arg(
             long,
             default_value = None,
-            help = "Network identifier (e.g. wg-rusteze)"
+            help = "VPN network's identifier (e.g. wg-rusteze)"
         )]
         network_identifier: Option<String>,
         #[arg(
             long,
             default_value = None,
-            help = "Peer name (e.g. wg-rusteze-host)"
+            help = "VPN network's CIDR subnet mask (e.g. 10.0.34.0/24)"
         )]
-        peer_name: Option<String>,
+        network_subnet: Option<String>,
         #[arg(
             long,
             default_value = None,
-            help = "Public IPv4 address for rust-agent"
+            help = "Agent's peer name (e.g. wg-rusteze-host)"
         )]
-        public_address: Option<String>,
+        agent_peer_name: Option<String>,
         #[arg(
             long,
             default_value = None,
-            help = "HTTP(S) port for rust-agent (e.g. 80)"
+            help = "Agent's publicly accessible IPv4 address"
         )]
-        web_port: Option<u16>,
+        agent_public_address: Option<String>,
         #[arg(
             long,
             default_value = None,
-            help = "VPN port for rust-agent (e.g. 51820)"
+            help = "Agent's web port (e.g. 80)"
         )]
-        vpn_port: Option<u16>,
+        agent_web_port: Option<u16>,
         #[arg(
             long,
             default_value = None,
-            help = "CIDR subnet mask for VPN network (e.g. 10.0.34.0/24)"
+            help = "Agent's VPN port (e.g. 51820)"
         )]
-        subnet: Option<String>,
+        agent_vpn_port: Option<u16>,
         #[arg(
             long,
             default_value = None,
-            help = "Internal IPv4 address for VPN network (e.g. 10.0.34.1)"
+            help = "Agent's internal IPv4 address for VPN network (e.g. 10.0.34.1)"
         )]
-        vpn_address: Option<String>,
+        agent_internal_vpn_address: Option<String>,
         #[arg(
             long,
             default_value = None,
-            help = "Enable/Disable TLS for HTTP server"
+            help = "Enable/Disable TLS for the web server"
         )]
-        use_tls: Option<bool>,
+        agent_use_tls: Option<bool>,
         #[arg(
             long,
             default_value = None,
-            help = "Password for HTTP server"
+            help = "Enable/Disable password for the web server"
         )]
-        password: Option<String>,
+        agent_enable_web_password: Option<bool>,
         #[arg(
             long,
             default_value = None,
-            help = "DNS IPv4 address for VPN network (e.g. 1.1.1.1)"
+            help = "Agent's password for the web server"
         )]
-        dns_server: Option<String>,
+        agent_web_password: Option<String>,
         #[arg(
             long,
             default_value = None,
-            help = "MTU for VPN network (e.g. 1420)"
+            help = "Enable/Disable DNS field for the agent"
         )]
-        mtu_value: Option<String>,
+        agent_enable_dns: Option<bool>,
         #[arg(
             long,
             default_value = None,
-            help = "PersistentKeepalive value in seconds (e.g. 25)"
+            help = "Agent's DNS field setting as an IPv4 address (e.g. 1.1.1.1)"
         )]
-        persistent_keepalive_seconds: Option<String>,
+        agent_dns_server: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable MTU field for the agent"
+        )]
+        agent_enable_mtu: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's MTU field setting as a value (e.g. 1420)"
+        )]
+        agent_mtu_value: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PreUp scripting field for the agent"
+        )]
+        agent_enable_script_pre_up: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's PreUp scripting field setting as a line of script (e.g. sysctl -w net.ipv4.ip_forward=1)"
+        )]
+        agent_script_pre_up_line: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PostUp scripting field for the agent"
+        )]
+        agent_enable_script_post_up: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's PostUp scripting field setting as a line of script (e.g. echo 'Network is up')"
+        )]
+        agent_script_post_up_line: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PreDown scripting field for the agent"
+        )]
+        agent_enable_script_pre_down: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's PreDown scripting field setting as a line of script (e.g. echo 'Network is going down')"
+        )]
+        agent_script_pre_down_line: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PostDown scripting field for the agent"
+        )]
+        agent_enable_script_post_down: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's PostDown scripting field setting as a line of script (e.g. sysctl -w net.ipv4.ip_forward=0)"
+        )]
+        agent_script_post_down_line: Option<String>,
+        // default settings for new peers/connections
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable DNS field for new peers by default"
+        )]
+        default_enable_dns: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Default DNS field setting as an IPv4 address for the new peer (e.g. 1.1.1.1)"
+        )]
+        default_dns_server: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable MTU field for new peers by default"
+        )]
+        default_enable_mtu: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Default MTU field setting as a value for the new peer (e.g. 1420)"
+        )]
+        default_mtu_value: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PreUp scripting field for new peers by default"
+        )]
+        default_enable_script_pre_up: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "New Peer's default PreUp scripting field setting as a line of script (e.g. sysctl -w net.ipv4.ip_forward=1)"
+        )]
+        default_script_pre_up_line: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PostUp scripting field for new peers by default"
+        )]
+        default_enable_script_post_up: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "New Peer's default PostUp scripting field setting as a line of script (e.g. echo 'Network is up')"
+        )]
+        default_script_post_up_line: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PreDown scripting field for new peers by default"
+        )]
+        default_enable_script_pre_down: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "New Peer's default PreDown scripting field setting as a line of script (e.g. echo 'Network is going down')"
+        )]
+        default_script_pre_down_line: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PostDown scripting field for the agent"
+        )]
+        default_enable_script_post_down: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Agent's PostDown scripting field setting as a line of script (e.g. sysctl -w net.ipv4.ip_forward=0)"
+        )]
+        default_script_post_down_line: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Enable/Disable PersistentKeepalive field for new connections by default"
+        )]
+        default_enable_persistent_keepalive: Option<bool>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Default PersistentKeepalive period in seconds (e.g. 25)"
+        )]
+        default_persistent_keepalive_period: Option<String>,
+        #[arg(
+            long,
+            default_value = None,
+            help = "Disable setting up the agent with prompts"
+        )]
+        no_prompt: Option<bool>,
     },
     #[command(about = "Run some convenience functions to edit config")]
     Config {
