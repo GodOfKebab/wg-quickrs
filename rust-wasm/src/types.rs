@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -82,9 +83,23 @@ pub struct Agent {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentWeb {
-    pub port: u16,
-    pub use_tls: bool,
+    pub http: AgentWebHttp,
+    pub https: AgentWebHttps,
     pub password: Password,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AgentWebHttp {
+    pub enabled: bool,
+    pub port: u16,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AgentWebHttps {
+    pub enabled: bool,
+    pub port: u16,
+    pub tls_cert: PathBuf,
+    pub tls_key: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -95,6 +110,7 @@ pub struct Password {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentVpn {
+    pub enabled: bool,
     pub port: u16,
 }
 

@@ -53,9 +53,7 @@ async fn main() -> ExitCode {
         },
         cli::Commands::Agent {
             wireguard_config_folder,
-            tls_cert,
-            tls_key,
             commands,
-        } => commands::agent::run_agent(wireguard_config_folder, tls_cert, tls_key, commands).await,
+        } => commands::agent::run_agent(wireguard_config_folder, commands).await,
     }
 }

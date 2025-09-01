@@ -10,6 +10,7 @@ use rustls::{
 };
 use std::path::PathBuf;
 use thiserror::Error;
+use tokio::try_join;
 
 #[derive(Error, Debug)]
 pub enum ServerError {
@@ -17,14 +18,7 @@ pub enum ServerError {
     TlsSetupFailed(String),
 }
 
-pub(crate) async fn run_http_server(
-    config: &Config,
-    tls_cert: &PathBuf,
-    tls_key: &PathBuf,
-) -> std::io::Result<()> {
-    // start the HTTP server with TLS for frontend and API control
-    let bind_addr = (config.agent.address.clone(), config.agent.web.port);
-
+pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
     // Closure building your Actix app, reused for both HTTP and HTTPS
     let app_factory = || {
         let app = App::new()
@@ -56,60 +50,68 @@ pub(crate) async fn run_http_server(
         }
     };
 
-    if config.agent.web.use_tls {
-        // Try to build TLS config — if fails, fallback immediately
-        let tls_config = match load_tls_config(tls_cert, tls_key) {
-            Ok(cfg) => cfg,
-            Err(e) => {
-                log::warn!("Failed to load TLS config (cert/key), falling back to HTTP: {e}");
-                // Fallback to HTTP server immediately
-                let http_server = HttpServer::new(app_factory)
-                    .bind(&bind_addr)
-                    .expect("Failed to bind HTTP fallback server");
-                log::info!(
-                    "Started HTTP frontend/API at http://{}:{}/",
-                    bind_addr.0,
-                    bind_addr.1
-                );
-                return http_server.run().await;
-            }
-        };
+    // Futures for HTTP/HTTPS servers
+    let http_future = if config.agent.web.http.enabled {
+        let http_bind_addr = (config.agent.address.clone(), config.agent.web.http.port);
+        let http_server = HttpServer::new(app_factory)
+            .bind(http_bind_addr.clone())
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Failed to bind HTTP server on {}:{}",
+                    http_bind_addr.0, http_bind_addr.1
+                )
+            });
+        log::info!(
+            "Started HTTP frontend/API at http://{}:{}/",
+            http_bind_addr.0,
+            http_bind_addr.1
+        );
+        Some(http_server.run())
+    } else {
+        None
+    };
 
-        // Try to bind HTTPS server
-        match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr.clone(), tls_config) {
-            Ok(server) => {
+    let https_future = if config.agent.web.https.enabled {
+        let https_bind_addr = (config.agent.address.clone(), config.agent.web.https.port);
+        match load_tls_config(
+            &config.agent.web.https.tls_cert,
+            &config.agent.web.https.tls_key,
+        ) {
+            Ok(tls_config) => {
+                let https_server = HttpServer::new(app_factory)
+                    .bind_rustls_0_23(https_bind_addr.clone(), tls_config)
+                    .unwrap_or_else(|_| {
+                        panic!(
+                            "Failed to bind HTTPS server on {}:{}",
+                            https_bind_addr.0, https_bind_addr.1
+                        )
+                    });
                 log::info!(
                     "Started HTTPS frontend/API at https://{}:{}/",
-                    bind_addr.0,
-                    bind_addr.1
+                    https_bind_addr.0,
+                    https_bind_addr.1
                 );
-                return server.run().await;
+                Some(https_server.run())
             }
-            Err(err) => {
-                log::warn!(
-                    "Failed to bind HTTPS server on {}:{}, falling back to HTTP: {}",
-                    bind_addr.0,
-                    bind_addr.1,
-                    err
-                );
+            Err(e) => {
+                log::error!("Failed to load TLS config (cert/key), HTTPS disabled: {e}");
+                None
             }
-        };
-    }
+        }
+    } else {
+        None
+    };
 
-    let http_server = HttpServer::new(app_factory)
-        .bind(&bind_addr)
-        .unwrap_or_else(|_| {
-            panic!(
-                "Failed to bind HTTP server on {}:{}",
-                bind_addr.0, bind_addr.1
-            )
-        });
-    log::info!(
-        "Started HTTP frontend/API at http://{}:{}/",
-        bind_addr.0,
-        bind_addr.1
-    );
-    http_server.run().await
+    // Run both concurrently if enabled
+    match (http_future, https_future) {
+        (Some(http), Some(https)) => try_join!(http, https).map(|_| ()),
+        (Some(http), None) => http.await,
+        (None, Some(https)) => https.await,
+        (None, None) => {
+            log::warn!("Neither HTTP nor HTTPS server is enabled.");
+            Ok(())
+        }
+    }
 }
 
 fn load_tls_config(tls_cert: &PathBuf, tls_key: &PathBuf) -> Result<ServerConfig, ServerError> {

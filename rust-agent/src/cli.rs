@@ -1,5 +1,5 @@
 use crate::macros::*;
-use clap::{ArgGroup, Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -40,18 +40,6 @@ pub(crate) enum Commands {
             value_name = "WIREGUARD_CONFIG_FOLDER_PATH"
         )]
         wireguard_config_folder: PathBuf,
-        #[arg(
-            long,
-            default_value = ".wg-rusteze/cert.pem",
-            value_name = "TLS_CERTIFICATE_FILE_PATH"
-        )]
-        tls_cert: PathBuf,
-        #[arg(
-            long,
-            default_value = ".wg-rusteze/key.pem",
-            value_name = "TLS_PRIVATE_KEY_FILE_PATH"
-        )]
-        tls_key: PathBuf,
         #[command(subcommand)]
         commands: AgentCommands,
     },
@@ -72,9 +60,29 @@ pub struct InitOptions {
     )]
     pub agent_local_address: Option<String>,
 
-    #[arg(long, default_value = None, help = "Agent's local web port for the web server to bind (e.g. 80)"
+    #[arg(long, default_value = None, help = "Enable/Disable HTTP for the web server")]
+    pub agent_local_enable_web_http: Option<bool>,
+
+    #[arg(long, default_value = None, help = "Agent's local web port for the web server (HTTP) to bind (e.g. 80)"
     )]
-    pub agent_local_web_port: Option<u16>,
+    pub agent_local_web_http_port: Option<u16>,
+
+    #[arg(long, default_value = None, help = "Enable/Disable HTTPS for the web server")]
+    pub agent_local_enable_web_https: Option<bool>,
+
+    #[arg(long, default_value = None, help = "Agent's local web port for the web server (HTTPS) to bind (e.g. 443)"
+    )]
+    pub agent_local_web_https_port: Option<u16>,
+
+    #[arg(long, default_value = None, help = "TLS certificate file path for HTTPS")]
+    pub agent_local_web_https_tls_cert: Option<PathBuf>,
+
+    #[arg(long, default_value = None, help = "TLS signing key file path for HTTPS")]
+    pub agent_local_web_https_tls_key: Option<PathBuf>,
+
+    #[arg(long, default_value = None, help = "Enable/Disable VPN server"
+    )]
+    pub agent_local_enable_vpn: Option<bool>,
 
     #[arg(long, default_value = None, help = "Agent's local VPN port for the VPN server listen (e.g. 51820)"
     )]
@@ -91,9 +99,6 @@ pub struct InitOptions {
     #[arg(long, default_value = None, help = "Agent's internal IPv4 address for VPN network (e.g. 10.0.34.1)"
     )]
     pub agent_internal_vpn_address: Option<String>,
-
-    #[arg(long, default_value = None, help = "Enable/Disable TLS for the web server")]
-    pub agent_use_tls: Option<bool>,
 
     #[arg(long, default_value = None, help = "Enable/Disable password for the web server")]
     pub agent_enable_web_password: Option<bool>,
@@ -210,23 +215,7 @@ pub(crate) enum AgentCommands {
 }
 
 #[derive(Args, Debug)]
-#[command(group(
-    ArgGroup::new("mode")
-        .args(&["all", "only_web", "only_wireguard"])
-        .multiple(false)
-        .required(false)
-))]
-pub(crate) struct AgentRunOptions {
-    #[arg(
-        long,
-        help = "Start the wireguard server and run the web configuration portal"
-    )]
-    pub(crate) all: bool,
-    #[arg(long, help = "Run only the web configuration portal")]
-    pub(crate) only_web: bool,
-    #[arg(long, help = "Start only the wireguard server")]
-    pub(crate) only_wireguard: bool,
-}
+pub(crate) struct AgentRunOptions {}
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum ConfigCommands {

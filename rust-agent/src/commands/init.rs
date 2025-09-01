@@ -7,8 +7,8 @@ use dialoguer::{Confirm, Input};
 use get_if_addrs::get_if_addrs;
 use ipnetwork::IpNetwork;
 use rust_wasm::types::{
-    Agent, AgentVpn, AgentWeb, Config, DefaultConnection, DefaultPeer, Defaults, EnabledValue,
-    Network, Password, Peer, Scripts,
+    Agent, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config, DefaultConnection, DefaultPeer,
+    Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
@@ -236,26 +236,74 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         primary_ip().as_deref(),
     );
 
-    // [5/22] --agent-local-web-port
-    let agent_local_web_port = get_init_enabled_value_option(
+    // [5/22] --agent-local-enable-web-http & --agent-local-web-http-port
+    let (agent_local_enable_web_http, agent_local_web_http_port) = get_init_pair_option!(
         init_opts.no_prompt,
         5,
-        init_opts.agent_local_web_port,
-        "--agent-local-web-port",
-        "Enter agent's local web port for the web server to bind",
+        init_opts.agent_local_enable_web_http,
+        init_opts.agent_local_web_http_port.clone(),
+        "--agent-local-enable-web-http",
+        "--agent-local-web-http-port",
+        "Enable/Disable HTTP for the web server",
+        "\tEnter agent's local HTTP port for the web server to bind",
         true,
-        Some("8080"),
+        Some("80")
     );
 
-    // [6/22] --agent-local-vpn-port
-    let agent_local_vpn_port = get_init_enabled_value_option(
+    // [6/22] --agent-local-enable-web-https & --agent-local-web-https-port
+    let (agent_local_enable_web_https, agent_local_web_https_port) = get_init_pair_option!(
         init_opts.no_prompt,
         6,
-        init_opts.agent_local_vpn_port,
-        "--agent-local-vpn-port",
-        "Enter agent's local vpn port for the vpn server to bind",
+        init_opts.agent_local_enable_web_https,
+        init_opts.agent_local_web_https_port.clone(),
+        "--agent-local-enable-web-https",
+        "--agent-local-web-https-port",
+        "Enable/Disable HTTPS for the web server",
+        "\tEnter agent's local HTTPS port for the web server to bind",
         true,
-        Some("8080"),
+        Some("443")
+    );
+
+    // [6/22] --agent-local-web-https-tls-cert
+    let agent_local_web_https_tls_cert = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        6,
+        init_opts
+            .agent_local_web_https_tls_cert
+            .as_ref()
+            .and_then(|p| p.to_str().map(|s| s.to_string())),
+        "--agent-local-web-https-tls-cert",
+        "\tEnter TLS certificate file path for HTTPS",
+        agent_local_enable_web_https,
+        Some(".wg-rusteze/cert.pem"),
+    );
+
+    // [6/22] --agent-local-web-https-tls-key
+    let agent_local_web_https_tls_key = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        6,
+        init_opts
+            .agent_local_web_https_tls_key
+            .as_ref()
+            .and_then(|p| p.to_str().map(|s| s.to_string())),
+        "--agent-local-web-https-tls-key",
+        "\tEnter TLS signing key file path for HTTPS",
+        agent_local_enable_web_https,
+        Some(".wg-rusteze/key.pem"),
+    );
+
+    // [6/22] --agent-local-enable-vpn & --agent-local-vpn-port
+    let (agent_local_enable_vpn, agent_local_vpn_port) = get_init_pair_option!(
+        init_opts.no_prompt,
+        7,
+        init_opts.agent_local_enable_vpn,
+        init_opts.agent_local_vpn_port.clone(),
+        "--agent-local-enable-vpn",
+        "--agent-local-vpn-port",
+        "Enable/Disable VPN server",
+        "\tEnter agent's local VPN port for the vpn server to bind",
+        true,
+        Some("51820")
     );
 
     // [7/22] --agent-public-address
@@ -289,16 +337,6 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         "Enter agent's internal IPv4 address for VPN network",
         true,
         Some(&*first_ip(&network_subnet)),
-    );
-
-    // [8/22] --agent-use-tls
-    let agent_use_tls = get_init_bool_option(
-        init_opts.no_prompt,
-        8,
-        init_opts.agent_use_tls,
-        "--agent-use-tls",
-        "TLS for this agent's web server",
-        true,
     );
 
     // [9/22] --agent-enable-web-password
@@ -606,14 +644,23 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         agent: Agent {
             address: agent_local_address,
             web: AgentWeb {
-                port: agent_local_web_port,
-                use_tls: agent_use_tls,
+                http: AgentWebHttp {
+                    enabled: agent_local_enable_web_http,
+                    port: agent_local_web_http_port,
+                },
+                https: AgentWebHttps {
+                    enabled: agent_local_enable_web_https,
+                    port: agent_local_web_https_port,
+                    tls_cert: agent_local_web_https_tls_cert.into(),
+                    tls_key: agent_local_web_https_tls_key.into(),
+                },
                 password: Password {
                     enabled: agent_enable_web_password,
                     hash: agent_web_password_hash,
                 },
             },
             vpn: AgentVpn {
+                enabled: agent_local_enable_vpn,
                 port: agent_local_vpn_port,
             },
         },

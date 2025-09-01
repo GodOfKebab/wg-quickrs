@@ -41,4 +41,5 @@ thiserror = "2.0.12"
 dialoguer = "0.11.0"
 ipnetwork = "0.21.1"
 get_if_addrs = "0.5.3"
+tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
 
