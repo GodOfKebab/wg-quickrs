@@ -231,5 +231,16 @@ pub(crate) struct AgentRunOptions {
 #[derive(Subcommand, Debug)]
 pub(crate) enum ConfigCommands {
     #[command(about = "Reset the web password")]
-    ResetWebPassword,
+    ResetWebPassword(ResetWebPasswordOptions),
+    #[command(about = "Enable the web password")]
+    EnableWebPassword,
+    #[command(about = "Disable the web password")]
+    DisableWebPassword,
+}
+
+#[derive(Args, Debug)]
+pub(crate) struct ResetWebPasswordOptions {
+    #[arg(long, default_value = None, help = "The use of this option is HIGHLY DISCOURAGED because the plaintext password might show up in the shell history! THIS IS HIGHLY INSECURE! Please set the password without the --password flag, and the script will prompt for the password."
+    )]
+    pub password: Option<String>,
 }

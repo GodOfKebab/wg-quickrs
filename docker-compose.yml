@@ -1,9 +1,8 @@
 services:
 
-  wg-rusteze-agent-init:
-    container_name: wg-rusteze-agent-init-cnt
+  wg-rusteze-init:
+    container_name: wg-rusteze-init-cnt
     build:
-      context: .
       target: initializer
     environment:
       NETWORK_IDENTIFIER: wg-rusteze
@@ -48,17 +47,37 @@ services:
       DEFAULT_PERSISTENT_KEEPALIVE_PERIOD: 25
     volumes:
       - .wg-rusteze-docker:/app/.wg-rusteze
-    ports:
-      - "8080:8080"
-      - "51820:51820"
 
-  wg-rusteze-agent-run-only-web:
-    container_name: wg-rusteze-agent-run-only-web-cnt
+  # create cert using mkcert
+  # install cert using a wg-rusteze command
+  wg-rusteze-runner:
     build:
-      context: .
       target: runner
     volumes:
       - .wg-rusteze-docker:/app/.wg-rusteze
+
+  wg-rusteze-config-reset-web-password:
+    container_name: wg-rusteze-config-reset-web-password-cnt
+    extends:
+      service: wg-rusteze-runner
+    command: [ "/app/wg-rusteze", "config", "reset-web-password", "--password", "test" ]
+
+  wg-rusteze-config-enable-web-password:
+    container_name: wg-rusteze-config-enable-web-password-cnt
+    extends:
+      service: wg-rusteze-runner
+    command: [ "/app/wg-rusteze", "config", "enable-web-password" ]
+
+  wg-rusteze-config-disable-web-password:
+    container_name: wg-rusteze-config-disable-web-password-cnt
+    extends:
+      service: wg-rusteze-runner
+    command: [ "/app/wg-rusteze", "config", "disable-web-password" ]
+
+  wg-rusteze-agent-run-only-web:
+    container_name: wg-rusteze-agent-run-only-web-cnt
+    extends:
+      service: wg-rusteze-runner
     ports:
       - "80:80"
     command: [ "/app/wg-rusteze", "agent", "run", "--only-web" ]

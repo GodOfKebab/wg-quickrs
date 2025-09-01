@@ -45,7 +45,11 @@ async fn main() -> ExitCode {
     match &args.command {
         cli::Commands::Init(init_opts) => commands::init::initialize_agent(init_opts),
         cli::Commands::Config { commands } => match commands {
-            ConfigCommands::ResetWebPassword => commands::config::reset_web_password(),
+            ConfigCommands::ResetWebPassword(reset_web_password_opts) => {
+                commands::config::reset_web_password(reset_web_password_opts)
+            }
+            ConfigCommands::EnableWebPassword => commands::config::toggle_web_password(true),
+            ConfigCommands::DisableWebPassword => commands::config::toggle_web_password(false),
         },
         cli::Commands::Agent {
             wireguard_config_folder,

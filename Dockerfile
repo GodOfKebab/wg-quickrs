@@ -33,7 +33,7 @@ COPY --from=rust-agent-builder /app/target/release/wg-rusteze /app/wg-rusteze
 
 #CMD ["tail", "-f", "/dev/null"]
 
-FROM runner as initializer
+FROM runner AS initializer
 CMD /app/wg-rusteze init --no-prompt true \
   --network-identifier "$NETWORK_IDENTIFIER" \
   --network-subnet "$NETWORK_SUBNET" \
