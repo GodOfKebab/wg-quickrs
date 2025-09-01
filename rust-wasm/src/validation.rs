@@ -111,10 +111,12 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
 
         "mtu" => {
             ret.status = true;
-            if let Ok(v) = field_variable.enabled_value.value.parse::<i32>() {
-                ret.status = v > 0 && v < 65536;
-            } else {
-                ret.status = false; // not a number
+            if field_variable.enabled_value.enabled {
+                if let Ok(v) = field_variable.enabled_value.value.parse::<i32>() {
+                    ret.status = v > 0 && v < 65536;
+                } else {
+                    ret.status = false; // not a number
+                }
             }
             if !ret.status {
                 ret.msg = "MTU is invalid".into();
@@ -170,10 +172,12 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
 
         "persistent_keepalive" => {
             ret.status = true;
-            if let Ok(v) = field_variable.enabled_value.value.parse::<i32>() {
-                ret.status = v > 0 && v < 65536;
-            } else {
-                ret.status = false; // not a number
+            if field_variable.enabled_value.enabled {
+                if let Ok(v) = field_variable.enabled_value.value.parse::<i32>() {
+                    ret.status = v > 0 && v < 65536;
+                } else {
+                    ret.status = false; // not a number
+                }
             }
             if !ret.status {
                 ret.msg = "Persistent Keepalive is invalid".into();
