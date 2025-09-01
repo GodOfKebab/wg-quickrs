@@ -261,7 +261,7 @@ export default {
 
       const element = document.createElement('a');
       element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(this.peer_wg_conf_file)}`);
-      element.setAttribute('download', `${peerConfigFileName}.conf`);
+      element.setAttribute('download', `${this.network.identifier}-${peerConfigFileName}.conf`);
 
       element.style.display = 'none';
       document.body.appendChild(element);
