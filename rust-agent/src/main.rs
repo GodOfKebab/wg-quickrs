@@ -83,7 +83,7 @@ async fn main() -> ExitCode {
             default_enable_persistent_keepalive,
             default_persistent_keepalive_period,
             no_prompt,
-        } => commands::initialize_agent(
+        } => commands::init::initialize_agent(
             network_identifier.clone(),
             network_subnet.clone(),
             agent_peer_name.clone(),
@@ -125,13 +125,13 @@ async fn main() -> ExitCode {
             *no_prompt,
         ),
         cli::Commands::Config { commands } => match commands {
-            ConfigCommands::ResetWebPassword => commands::reset_web_password(),
+            ConfigCommands::ResetWebPassword => commands::config::reset_web_password(),
         },
         cli::Commands::Agent {
             wireguard_config_folder,
             tls_cert,
             tls_key,
             commands,
-        } => commands::run_agent(wireguard_config_folder, tls_cert, tls_key, commands).await,
+        } => commands::agent::run_agent(wireguard_config_folder, tls_cert, tls_key, commands).await,
     }
 }

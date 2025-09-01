@@ -1,23 +1,16 @@
-use crate::cli::AgentCommands;
+use crate::commands::helpers;
+use crate::conf;
 use crate::conf::util::ConfUtilError;
-use crate::web::server;
 use crate::wireguard::cmd::get_public_private_keys;
-use crate::{WIREGUARD_CONFIG_FILE, conf, wireguard};
-use argon2::password_hash::SaltString;
-use argon2::{Argon2, PasswordHasher};
 use dialoguer::{Confirm, Input};
 use get_if_addrs::get_if_addrs;
 use ipnetwork::IpNetwork;
-use rand::{RngCore, rng};
 use rust_wasm::types::{
     Agent, AgentVpn, AgentWeb, Config, DefaultConnection, DefaultPeer, Defaults, EnabledValue,
     Network, Password, Peer, Scripts,
 };
 use std::collections::HashMap;
-use std::io;
-use std::io::Write;
 use std::net::Ipv4Addr;
-use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use uuid::Uuid;
 
@@ -385,7 +378,8 @@ pub(crate) fn initialize_agent(
             }
         },
     };
-    let agent_web_password_hash = match calculate_password_hash(agent_web_password.trim()) {
+    let agent_web_password_hash = match helpers::calculate_password_hash(agent_web_password.trim())
+    {
         Ok(p) => {
             if agent_enable_web_password {
                 p
@@ -718,124 +712,5 @@ pub(crate) fn initialize_agent(
     conf::util::set_config(&mut config).expect("Failed to write config.yml");
     println!("✅ Configuration saved to `config.yml`.");
 
-    ExitCode::SUCCESS
-}
-
-pub(crate) fn calculate_password_hash(password: &str) -> Result<String, ExitCode> {
-    let mut sbytes = [0; 8];
-    rng().fill_bytes(&mut sbytes);
-    let salt = match SaltString::encode_b64(&sbytes) {
-        Ok(config) => config,
-        Err(e) => {
-            log::error!("{e}");
-            return Err(ExitCode::FAILURE);
-        }
-    };
-
-    let argon2 = Argon2::default();
-    match argon2.hash_password(password.as_ref(), &salt) {
-        Ok(password_hash) => Ok(password_hash.to_string()),
-        Err(e) => {
-            log::error!("Password hashing failed: {e}");
-            Err(ExitCode::FAILURE)
-        }
-    }
-}
-
-pub(crate) fn reset_web_password() -> ExitCode {
-    // get the wireguard config a file path
-    let mut config = match conf::util::get_config() {
-        Ok(config) => config,
-        Err(e) => {
-            log::error!("{e}");
-            return ExitCode::FAILURE;
-        }
-    };
-
-    log::info!("Resetting the web password...");
-    print!("Enter your new password: ");
-    io::stdout().flush().unwrap(); // Ensure the prompt is shown before waiting for input
-
-    let mut password = String::new();
-    match io::stdin().read_line(&mut password) {
-        Ok(_) => {}
-        Err(e) => {
-            log::error!("Failed to read input: {e}");
-            return ExitCode::FAILURE;
-        }
-    }
-    let password_hash = match calculate_password_hash(password.trim()) {
-        // Remove newline character
-        Ok(p) => p,
-        Err(e) => {
-            return e;
-        }
-    };
-
-    config.agent.web.password.enabled = true;
-    config.agent.web.password.hash = password_hash;
-    conf::util::set_config(&mut config).expect("Failed to set config");
-
-    ExitCode::SUCCESS
-}
-
-pub(crate) async fn run_agent(
-    wireguard_config_folder: &Path,
-    tls_cert: &PathBuf,
-    tls_key: &PathBuf,
-    commands: &AgentCommands,
-) -> ExitCode {
-    // get the wireguard config file path
-    let config = match conf::util::get_config() {
-        Ok(config) => config,
-        Err(e) => {
-            log::error!("{e}");
-            return ExitCode::FAILURE;
-        }
-    };
-
-    let mut run_wireguard = true;
-    let mut run_web = true;
-    match commands {
-        AgentCommands::Run(opts) => {
-            if opts.only_wireguard {
-                run_web = false;
-                log::info!("--only-wireguard flag detected. Starting only the wireguard server...")
-            } else if opts.only_web {
-                run_wireguard = false;
-                log::info!("--only-web flag detected. Running only the web configuration portal...")
-            } else if opts.all {
-                log::info!(
-                    "--all flag detected. Starting the wireguard server and running the web configuration portal..."
-                )
-            } else {
-                log::info!(
-                    "No run mode selected. Defaulting to --all (Starting the wireguard server and running the web configuration portal...)"
-                );
-            }
-        }
-    }
-
-    if run_wireguard {
-        WIREGUARD_CONFIG_FILE
-            .set(wireguard_config_folder.join(format!("{}.conf", config.network.identifier)))
-            .expect("Failed to set WIREGUARD_CONFIG_FILE");
-        log::info!(
-            "using the wireguard config file at \"{}\"",
-            WIREGUARD_CONFIG_FILE.get().unwrap().display()
-        );
-
-        // start the tunnel
-        wireguard::cmd::start_tunnel(&config).unwrap_or_else(|e| {
-            log::error!("{e}");
-        });
-    }
-
-    if run_web {
-        // start the HTTP server with TLS for server and API control
-        server::run_http_server(&config, tls_cert, tls_key)
-            .await
-            .expect("HTTP server failed to start");
-    }
     ExitCode::SUCCESS
 }
