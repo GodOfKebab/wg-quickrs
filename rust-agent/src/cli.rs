@@ -11,12 +11,8 @@ use std::path::PathBuf;
 pub(crate) struct Cli {
     #[arg(short, long, help = "Increase verbosity level from Info to Debug")]
     pub(crate) verbose: bool,
-    #[arg(
-        long,
-        default_value = ".wg-rusteze/conf.yml",
-        value_name = "WG_RUSTEZE_CONFIG_FILE_PATH"
-    )]
-    pub(crate) wg_rusteze_config_file: PathBuf,
+    #[arg(long, default_value = ".wg-rusteze")]
+    pub(crate) wg_rusteze_config_folder: PathBuf,
     #[command(subcommand)]
     pub(crate) command: Commands,
 }
@@ -34,11 +30,7 @@ pub(crate) enum Commands {
     },
     #[command(about = "Configure and run the wg-rusteze rust-agent")]
     Agent {
-        #[arg(
-            long,
-            default_value = "/opt/homebrew/etc/wireguard/",
-            value_name = "WIREGUARD_CONFIG_FOLDER_PATH"
-        )]
+        #[arg(long, default_value = "/opt/homebrew/etc/wireguard/")]
         wireguard_config_folder: PathBuf,
         #[command(subcommand)]
         commands: AgentCommands,

@@ -13,6 +13,7 @@ mod macros;
 mod web;
 mod wireguard;
 
+pub static WG_RUSTEZE_CONFIG_FOLDER: OnceCell<PathBuf> = OnceCell::new();
 pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 pub static WIREGUARD_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
@@ -34,8 +35,13 @@ async fn main() -> ExitCode {
         });
 
     // get the wg_rusteze config file path
+    WG_RUSTEZE_CONFIG_FOLDER
+        .set(args.wg_rusteze_config_folder.clone())
+        .expect("Failed to set WG_RUSTEZE_CONFIG_FOLDER");
+    let mut wg_rusteze_config_file = args.wg_rusteze_config_folder;
+    wg_rusteze_config_file.push("conf.yml");
     WG_RUSTEZE_CONFIG_FILE
-        .set(args.wg_rusteze_config_file.clone())
+        .set(wg_rusteze_config_file)
         .expect("Failed to set WG_RUSTEZE_CONFIG_FILE");
     log::info!(
         "using the wg-rusteze config file at \"{}\"",

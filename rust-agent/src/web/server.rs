@@ -1,3 +1,4 @@
+use crate::WG_RUSTEZE_CONFIG_FOLDER;
 use crate::web::api;
 use crate::web::app;
 #[cfg(debug_assertions)]
@@ -73,10 +74,11 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
 
     let https_future = if config.agent.web.https.enabled {
         let https_bind_addr = (config.agent.address.clone(), config.agent.web.https.port);
-        match load_tls_config(
-            &config.agent.web.https.tls_cert,
-            &config.agent.web.https.tls_key,
-        ) {
+        let mut tls_cert = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap().clone();
+        tls_cert.push(config.agent.web.https.tls_cert.clone());
+        let mut tls_key = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap().clone();
+        tls_key.push(config.agent.web.https.tls_key.clone());
+        match load_tls_config(&tls_cert, &tls_key) {
             Ok(tls_config) => {
                 let https_server = HttpServer::new(app_factory)
                     .bind_rustls_0_23(https_bind_addr.clone(), tls_config)

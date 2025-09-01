@@ -275,7 +275,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         "--agent-local-web-https-tls-cert",
         "\tEnter TLS certificate file path for HTTPS",
         agent_local_enable_web_https,
-        Some(".wg-rusteze/cert.pem"),
+        Some("cert.pem"),
     );
 
     // [6/22] --agent-local-web-https-tls-key
@@ -289,7 +289,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         "--agent-local-web-https-tls-key",
         "\tEnter TLS signing key file path for HTTPS",
         agent_local_enable_web_https,
-        Some(".wg-rusteze/key.pem"),
+        Some("key.pem"),
     );
 
     // [6/22] --agent-local-enable-vpn & --agent-local-vpn-port
