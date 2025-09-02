@@ -60,9 +60,9 @@ fn primary_ip() -> Option<String> {
 /// Format step string with padding if single-digit
 fn step_str(step: usize) -> String {
     if step < 10 {
-        format!("\t[ {}/22]", step)
+        format!("\t[ {}/25]", step)
     } else {
-        format!("\t[{}/22]", step)
+        format!("\t[{}/25]", step)
     }
 }
 
@@ -188,8 +188,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     }
     log::info!("Initializing wg-rusteze rust-agent...");
 
-    println!("[general network settings 1-2/22]");
-    // [1/22] --network-identifier
+    println!("[general network settings 1-2/25]");
+    // [1/25] --network-identifier
     let network_identifier = get_init_enabled_value_option(
         init_opts.no_prompt,
         1,
@@ -200,7 +200,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("wg-rusteze"),
     );
 
-    // [2/22] --network-subnet
+    // [2/25] --network-subnet
     let network_subnet = get_init_enabled_value_option(
         init_opts.no_prompt,
         2,
@@ -212,9 +212,9 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
 
     println!("[general network settings complete]");
-    println!("[agent settings 3-15/22]");
+    println!("[agent settings 3-18/25]");
 
-    // [3/22] --agent-peer-name
+    // [3/25] --agent-peer-name
     let agent_peer_name = get_init_enabled_value_option(
         init_opts.no_prompt,
         3,
@@ -225,7 +225,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("wg-rusteze-host"),
     );
 
-    // [4/22] --agent-local-address
+    // [4/25] --agent-local-address
     let agent_local_address = get_init_enabled_value_option(
         init_opts.no_prompt,
         4,
@@ -236,7 +236,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         primary_ip().as_deref(),
     );
 
-    // [5/22] --agent-local-enable-web-http & --agent-local-web-http-port
+    // [5/25] --agent-local-enable-web-http & --agent-local-web-http-port
     let (agent_local_enable_web_http, agent_local_web_http_port) = get_init_pair_option!(
         init_opts.no_prompt,
         5,
@@ -250,7 +250,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("80")
     );
 
-    // [6/22] --agent-local-enable-web-https & --agent-local-web-https-port
+    // [6/25] --agent-local-enable-web-https & --agent-local-web-https-port
     let (agent_local_enable_web_https, agent_local_web_https_port) = get_init_pair_option!(
         init_opts.no_prompt,
         6,
@@ -264,7 +264,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("443")
     );
 
-    // [6/22] --agent-local-web-https-tls-cert
+    // [6/25] --agent-local-web-https-tls-cert
     let agent_local_web_https_tls_cert = get_init_enabled_value_option(
         init_opts.no_prompt,
         6,
@@ -278,7 +278,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("cert.pem"),
     );
 
-    // [6/22] --agent-local-web-https-tls-key
+    // [6/25] --agent-local-web-https-tls-key
     let agent_local_web_https_tls_key = get_init_enabled_value_option(
         init_opts.no_prompt,
         6,
@@ -292,7 +292,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("key.pem"),
     );
 
-    // [6/22] --agent-local-enable-vpn & --agent-local-vpn-port
+    // [7/25] --agent-local-enable-vpn & --agent-local-vpn-port
     let (agent_local_enable_vpn, agent_local_vpn_port) = get_init_pair_option!(
         init_opts.no_prompt,
         7,
@@ -306,10 +306,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("51820")
     );
 
-    // [7/22] --agent-public-address
+    // [8/25] --agent-public-address
     let agent_public_address = get_init_enabled_value_option(
         init_opts.no_prompt,
-        7,
+        8,
         init_opts.agent_public_address.clone(),
         "--agent-public-address",
         "Enter agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement",
@@ -317,10 +317,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         primary_ip().as_deref(),
     );
 
-    // [8/22] --agent-public-vpn-port
+    // [9/25] --agent-public-vpn-port
     let agent_public_vpn_port = get_init_enabled_value_option(
         init_opts.no_prompt,
-        8,
+        9,
         init_opts.agent_public_vpn_port,
         "--agent-public-vpn-port",
         "Enter agent's publicly accessible port to be used in the VPN endpoint advertisement",
@@ -328,10 +328,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("51820"),
     );
 
-    // [7/22] --agent-internal-vpn-address
+    // [10/25] --agent-internal-vpn-address
     let agent_internal_vpn_address = get_init_enabled_value_option(
         init_opts.no_prompt,
-        7,
+        10,
         init_opts.agent_internal_vpn_address.clone(),
         "--agent-internal-vpn-address",
         "Enter agent's internal IPv4 address for VPN network",
@@ -339,21 +339,21 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some(&*first_ip(&network_subnet)),
     );
 
-    // [9/22] --agent-enable-web-password
+    // [11/25] --agent-enable-web-password
     let agent_enable_web_password = get_init_bool_option(
         init_opts.no_prompt,
-        9,
+        11,
         init_opts.agent_enable_web_password,
         "--agent-enable-web-password",
         "password for this agent's web server",
         true,
     );
-    // [9/22] --agent-web-password
+    // [12/25] --agent-web-password
     let agent_web_password = match init_opts.agent_web_password.clone() {
         Some(v) => {
             println!(
                 "{}  Using password for the web server from CLI argument: ***hidden***",
-                step_str(9)
+                step_str(12)
             );
             v.clone()
         }
@@ -370,7 +370,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
                     dialoguer::Password::new()
                         .with_prompt(format!(
                             "{} \tEnter password for this agent's web server",
-                            step_str(9)
+                            step_str(12)
                         ))
                         .interact()
                         .unwrap()
@@ -394,10 +394,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         }
     };
 
-    // [10/22] --agent-enable-dns & --agent-dns-server
+    // [13/25] --agent-enable-dns & --agent-dns-server
     let (agent_enable_dns, agent_dns_server) = get_init_pair_option!(
         init_opts.no_prompt,
-        10,
+        13,
         init_opts.agent_enable_dns,
         init_opts.agent_dns_server.clone(),
         "--agent-enable-dns",
@@ -408,10 +408,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("1.1.1.1")
     );
 
-    // [11/22] --agent-enable-mtu & --agent-mtu-value
+    // [14/25] --agent-enable-mtu & --agent-mtu-value
     let (agent_enable_mtu, agent_mtu_value) = get_init_pair_option!(
         init_opts.no_prompt,
-        11,
+        14,
         init_opts.agent_enable_mtu,
         init_opts.agent_mtu_value.clone(),
         "--agent-enable-mtu",
@@ -422,10 +422,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("1420")
     );
 
-    // [12/22] --agent-enable-script-pre-up & --agent-script-pre-up-line
+    // [15/25] --agent-enable-script-pre-up & --agent-script-pre-up-line
     let (agent_enable_script_pre_up, agent_script_pre_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
-        12,
+        15,
         init_opts.agent_enable_script_pre_up,
         init_opts.agent_script_pre_up_line.clone(),
         "--agent-enable-script-pre-up",
@@ -436,10 +436,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("TODO")
     );
 
-    // [13/22] --agent-enable-script-post-up & --agent-script-post-up-line
+    // [16/25] --agent-enable-script-post-up & --agent-script-post-up-line
     let (agent_enable_script_post_up, agent_script_post_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
-        13,
+        16,
         init_opts.agent_enable_script_post_up,
         init_opts.agent_script_post_up_line.clone(),
         "--agent-enable-script-post-up",
@@ -450,10 +450,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("TODO")
     );
 
-    // [14/22] --agent-enable-script-pre-down & --agent-script-pre-down-line
+    // [17/25] --agent-enable-script-pre-down & --agent-script-pre-down-line
     let (agent_enable_script_pre_down, agent_script_pre_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
-        14,
+        17,
         init_opts.agent_enable_script_pre_down,
         init_opts.agent_script_pre_down_line.clone(),
         "--agent-enable-script-pre-down",
@@ -464,10 +464,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("TODO")
     );
 
-    // [15/22] --agent-enable-script-post-down & --agent-script-post-down-line
+    // [18/25] --agent-enable-script-post-down & --agent-script-post-down-line
     let (agent_enable_script_post_down, agent_script_post_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
-        15,
+        18,
         init_opts.agent_enable_script_post_down,
         init_opts.agent_script_post_down_line.clone(),
         "--agent-enable-script-post-down",
@@ -479,12 +479,12 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
 
     println!("[agent settings complete]");
-    println!("[new peer/connection default settings 16-22/22]");
+    println!("[new peer/connection default settings 19-25/25]");
 
-    // [16/22] --default-enable-dns & --default-dns-server
+    // [19/25] --default-enable-dns & --default-dns-server
     let (default_enable_dns, default_dns_server) = get_init_pair_option!(
         init_opts.no_prompt,
-        16,
+        19,
         init_opts.default_enable_dns,
         init_opts.default_dns_server.clone(),
         "--default-enable-dns",
@@ -495,10 +495,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("1.1.1.1")
     );
 
-    // [17/22] --default-enable-mtu & --default-mtu-value
+    // [20/25] --default-enable-mtu & --default-mtu-value
     let (default_enable_mtu, default_mtu_value) = get_init_pair_option!(
         init_opts.no_prompt,
-        17,
+        20,
         init_opts.default_enable_mtu,
         init_opts.default_mtu_value.clone(),
         "--default-enable-mtu",
@@ -509,10 +509,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("1420")
     );
 
-    // [18/22] --default-enable-script-pre-up & --default-script-pre-up-line
+    // [21/25] --default-enable-script-pre-up & --default-script-pre-up-line
     let (default_enable_script_pre_up, default_script_pre_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
-        18,
+        21,
         init_opts.default_enable_script_pre_up,
         init_opts.default_script_pre_up_line.clone(),
         "--default-enable-script-pre-up",
@@ -523,10 +523,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("TODO")
     );
 
-    // [19/22] --default-enable-script-post-up & --default-script-post-up-line
+    // [22/25] --default-enable-script-post-up & --default-script-post-up-line
     let (default_enable_script_post_up, default_script_post_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
-        19,
+        22,
         init_opts.default_enable_script_post_up,
         init_opts.default_script_post_up_line.clone(),
         "--default-enable-script-post-up",
@@ -537,10 +537,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("TODO")
     );
 
-    // [20/22] --default-enable-script-pre-down & --default-script-pre-down-line
+    // [23/25] --default-enable-script-pre-down & --default-script-pre-down-line
     let (default_enable_script_pre_down, default_script_pre_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
-        20,
+        23,
         init_opts.default_enable_script_pre_down,
         init_opts.default_script_pre_down_line.clone(),
         "--default-enable-script-pre-down",
@@ -551,10 +551,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("TODO")
     );
 
-    // [21/22] --default-enable-script-post-down & --default-script-post-down-line
+    // [24/25] --default-enable-script-post-down & --default-script-post-down-line
     let (default_enable_script_post_down, default_script_post_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
-        21,
+        24,
         init_opts.default_enable_script_post_down,
         init_opts.default_script_post_down_line.clone(),
         "--default-enable-script-post-down",
@@ -565,10 +565,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("TODO")
     );
 
-    // [22/22] --default-enable-persistent-keepalive & --default-persistent-keepalive-period
+    // [25/25] --default-enable-persistent-keepalive & --default-persistent-keepalive-period
     let (default_enable_persistent_keepalive, default_persistent_keepalive_period) = get_init_pair_option!(
         init_opts.no_prompt,
-        22,
+        25,
         init_opts.default_enable_persistent_keepalive,
         init_opts.default_persistent_keepalive_period.clone(),
         "--default-enable-persistent-keepalive",
