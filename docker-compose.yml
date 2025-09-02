@@ -1,5 +1,21 @@
 services:
 
+  certificate-manager:
+    container_name: certificate-manager-cnt
+    build:
+      context: ./cert
+    volumes:
+      - .wg-rusteze-docker/certs:/app/certs
+    environment:
+      # TLS Certificate settings...
+      COUNTRY: "XX"
+      STATE: "XXX"
+      LOCALITY: "XXX"
+      ORGANIZATION: "XXX"
+      ORGANIZATIONAL_UNIT: "XXX"
+      ROOT_CN: "certificate-manager@XXX"
+    command: [ "127.0.0.1", "localhost" ]  # use comma-seperated FQDNs to create TLS certificates
+
   wg-rusteze-init:
     container_name: wg-rusteze-init-cnt
     build:
@@ -10,14 +26,19 @@ services:
 
       AGENT_PEER_NAME: wg-rusteze-host
       AGENT_LOCAL_ADDRESS: 0.0.0.0
-      AGENT_LOCAL_WEB_PORT: 80
+      AGENT_LOCAL_ENABLE_WEB_HTTP: true
+      AGENT_LOCAL_WEB_HTTP_PORT: 80
+      AGENT_LOCAL_ENABLE_WEB_HTTPS: true
+      AGENT_LOCAL_WEB_HTTPS_PORT: 443
+      AGENT_LOCAL_WEB_HTTPS_TLS_CERT: certs/servers/localhost/cert.pem
+      AGENT_LOCAL_WEB_HTTPS_TLS_KEY: certs/servers/localhost/key.pem
+      AGENT_LOCAL_ENABLE_VPN: true
       AGENT_LOCAL_VPN_PORT: 51820
       AGENT_PUBLIC_ADDRESS: 1.2.3.4
       AGENT_PUBLIC_VPN_PORT: 51820
       AGENT_INTERNAL_VPN_ADDRESS: 10.0.34.1
-      AGENT_USE_TLS: true
-      AGENT_ENABLE_WEB_PASSWORD: false
-      AGENT_WEB_PASSWORD: ""
+      AGENT_ENABLE_WEB_PASSWORD: true
+      AGENT_WEB_PASSWORD: "secret"
       AGENT_ENABLE_DNS: true
       AGENT_DNS_SERVER: 1.1.1.1
       AGENT_ENABLE_MTU: false
@@ -48,8 +69,6 @@ services:
     volumes:
       - .wg-rusteze-docker:/app/.wg-rusteze
 
-  # create cert using mkcert
-  # install cert using a wg-rusteze command
   wg-rusteze-runner:
     build:
       target: runner
@@ -79,5 +98,6 @@ services:
     extends:
       service: wg-rusteze-runner
     ports:
-      - "80:80"
-    command: [ "/app/wg-rusteze", "agent", "run", "--only-web" ]
+      - "8080:80"
+      - "8443:443"
+    command: [ "/app/wg-rusteze", "agent", "run" ]

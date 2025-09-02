@@ -39,12 +39,17 @@ CMD /app/wg-rusteze init --no-prompt true \
   --network-subnet "$NETWORK_SUBNET" \
   --agent-peer-name "$AGENT_PEER_NAME" \
   --agent-local-address "$AGENT_LOCAL_ADDRESS" \
-  --agent-local-web-port "$AGENT_LOCAL_WEB_PORT" \
+  --agent-local-enable-web-http "$AGENT_LOCAL_ENABLE_WEB_HTTP" \
+  --agent-local-web-http-port "$AGENT_LOCAL_WEB_HTTP_PORT" \
+  --agent-local-enable-web-https "$AGENT_LOCAL_ENABLE_WEB_HTTPS" \
+  --agent-local-web-https-port "$AGENT_LOCAL_WEB_HTTPS_PORT" \
+  --agent-local-web-https-tls-cert "$AGENT_LOCAL_WEB_HTTPS_TLS_CERT" \
+  --agent-local-web-https-tls-key "$AGENT_LOCAL_WEB_HTTPS_TLS_KEY" \
+  --agent-local-enable-vpn "$AGENT_LOCAL_ENABLE_VPN" \
   --agent-local-vpn-port "$AGENT_LOCAL_VPN_PORT" \
   --agent-public-address "$AGENT_PUBLIC_ADDRESS" \
   --agent-public-vpn-port "$AGENT_PUBLIC_VPN_PORT" \
   --agent-internal-vpn-address "$AGENT_INTERNAL_VPN_ADDRESS" \
-  --agent-use-tls "$AGENT_USE_TLS" \
   --agent-enable-web-password "$AGENT_ENABLE_WEB_PASSWORD" \
   --agent-web-password "$AGENT_WEB_PASSWORD" \
   --agent-enable-dns "$AGENT_ENABLE_DNS" \
