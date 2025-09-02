@@ -23,11 +23,6 @@ pub(crate) enum Commands {
         about = "Initialize the wg-rusteze rust-agent.\nConfiguration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command"
     )]
     Init(Box<InitOptions>),
-    #[command(about = "Run some convenience functions to edit config")]
-    Config {
-        #[command(subcommand)]
-        commands: ConfigCommands,
-    },
     #[command(about = "Configure and run the wg-rusteze rust-agent")]
     Agent {
         #[arg(long, default_value = "/opt/homebrew/etc/wireguard/")]
@@ -203,20 +198,66 @@ pub struct InitOptions {
 #[derive(Subcommand, Debug)]
 pub(crate) enum AgentCommands {
     #[command(about = "Runs the rust-agent")]
-    Run(AgentRunOptions),
-}
-
-#[derive(Args, Debug)]
-pub(crate) struct AgentRunOptions {}
-
-#[derive(Subcommand, Debug)]
-pub(crate) enum ConfigCommands {
-    #[command(about = "Reset the web password")]
-    ResetWebPassword(ResetWebPasswordOptions),
+    Run,
+    // setting: address
+    #[command(
+        about = "Set the local IPv4 address for the web server to bind and vpn server to listen"
+    )]
+    SetAddress(AddressArg),
+    // settings: http
+    #[command(about = "Enable the HTTP web server")]
+    EnableWebHttp,
+    #[command(about = "Disable the HTTP web server")]
+    DisableWebHttp,
+    #[command(about = "Set port for the HTTP web server")]
+    SetHttpWebPort(PortArg),
+    // settings: https
+    #[command(about = "Enable the HTTPS web server")]
+    EnableWebHttps,
+    #[command(about = "Disable the HTTPS web server")]
+    DisableWebHttps,
+    #[command(about = "Set port for the HTTPS web server")]
+    SetWebHttpsPort(PortArg),
+    #[command(
+        about = "Set TLS certificate file path (relative to the wg-rusteze home directory) for HTTPS web server"
+    )]
+    SetWebHttpsTlsCert(PathArg),
+    #[command(
+        about = "Set TLS signing key file path (relative to the wg-rusteze home directory) for HTTPS web server"
+    )]
+    SetWebHttpsTlsKey(PathArg),
+    // setting: VPN
+    #[command(about = "Enable the VPN server")]
+    EnableVpn,
+    #[command(about = "Disable the VPN server")]
+    DisableVpn,
+    #[command(about = "Set port for the VPN server")]
+    SetVpnPort(PortArg),
+    // settings: password
     #[command(about = "Enable the web password")]
     EnableWebPassword,
     #[command(about = "Disable the web password")]
     DisableWebPassword,
+    #[command(about = "Reset the web password")]
+    ResetWebPassword(ResetWebPasswordOptions),
+}
+
+#[derive(Debug, Args)]
+pub struct AddressArg {
+    #[arg(help = "IPv4 address")]
+    pub address: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PortArg {
+    #[arg(help = "Port number(0-65535)")]
+    pub port: u16,
+}
+
+#[derive(Debug, Args)]
+pub struct PathArg {
+    #[arg(help = "File path")]
+    pub path: PathBuf,
 }
 
 #[derive(Args, Debug)]

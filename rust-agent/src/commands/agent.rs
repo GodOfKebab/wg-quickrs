@@ -1,13 +1,9 @@
-use crate::cli::AgentCommands;
 use crate::web::server;
 use crate::{WIREGUARD_CONFIG_FILE, conf, wireguard};
 use std::path::Path;
 use std::process::ExitCode;
 
-pub(crate) async fn run_agent(
-    wireguard_config_folder: &Path,
-    commands: &AgentCommands,
-) -> ExitCode {
+pub(crate) async fn run_agent(wireguard_config_folder: &Path) -> ExitCode {
     // get the wireguard config file path
     let config = match conf::util::get_config() {
         Ok(config) => config,

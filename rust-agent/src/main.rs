@@ -1,4 +1,5 @@
-use crate::cli::ConfigCommands;
+use crate::cli::AgentCommands;
+use crate::commands::config::AgentFieldValue;
 use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
@@ -50,16 +51,63 @@ async fn main() -> ExitCode {
 
     match &args.command {
         cli::Commands::Init(init_opts) => commands::init::initialize_agent(init_opts),
-        cli::Commands::Config { commands } => match commands {
-            ConfigCommands::ResetWebPassword(reset_web_password_opts) => {
-                commands::config::reset_web_password(reset_web_password_opts)
-            }
-            ConfigCommands::EnableWebPassword => commands::config::toggle_web_password(true),
-            ConfigCommands::DisableWebPassword => commands::config::toggle_web_password(false),
-        },
         cli::Commands::Agent {
             wireguard_config_folder,
             commands,
-        } => commands::agent::run_agent(wireguard_config_folder, commands).await,
+        } => match commands {
+            // wg-rusteze agent run
+            AgentCommands::Run => commands::agent::run_agent(wireguard_config_folder).await,
+            // wg-rusteze agent set-address
+            AgentCommands::SetAddress(v) => commands::config::set_agent_fields(
+                "address",
+                AgentFieldValue::Text(v.address.clone()),
+            ),
+            // wg-rusteze agent enable-web-http
+            AgentCommands::EnableWebHttp => commands::config::toggle_agent_fields("http", true),
+            // wg-rusteze agent disable-web-http
+            AgentCommands::DisableWebHttp => commands::config::toggle_agent_fields("http", false),
+            // wg-rusteze agent set-http-web-port
+            AgentCommands::SetHttpWebPort(v) => {
+                commands::config::set_agent_fields("http-port", AgentFieldValue::Port(v.port))
+            }
+            // wg-rusteze agent enable-web-https
+            AgentCommands::EnableWebHttps => commands::config::toggle_agent_fields("https", true),
+            // wg-rusteze agent disable-web-https
+            AgentCommands::DisableWebHttps => commands::config::toggle_agent_fields("https", false),
+            // wg-rusteze agent set-web-https-port
+            AgentCommands::SetWebHttpsPort(v) => {
+                commands::config::set_agent_fields("https-port", AgentFieldValue::Port(v.port))
+            }
+            // wg-rusteze agent set-web-https-tls-cert
+            AgentCommands::SetWebHttpsTlsCert(v) => commands::config::set_agent_fields(
+                "https-tls-cert",
+                AgentFieldValue::Path(v.path.clone()),
+            ),
+            // wg-rusteze agent set-web-https-tls-key
+            AgentCommands::SetWebHttpsTlsKey(v) => commands::config::set_agent_fields(
+                "https-tls-key",
+                AgentFieldValue::Path(v.path.clone()),
+            ),
+            // wg-rusteze agent enable-vpn
+            AgentCommands::EnableVpn => commands::config::toggle_agent_fields("vpn", true),
+            // wg-rusteze agent disable-vpn
+            AgentCommands::DisableVpn => commands::config::toggle_agent_fields("vpn", false),
+            // wg-rusteze agent set-vpn-port
+            AgentCommands::SetVpnPort(v) => {
+                commands::config::set_agent_fields("vpn-port", AgentFieldValue::Port(v.port))
+            }
+            // wg-rusteze agent enable-web-password
+            AgentCommands::EnableWebPassword => {
+                commands::config::toggle_agent_fields("password", true)
+            }
+            // wg-rusteze agent disable-web-password
+            AgentCommands::DisableWebPassword => {
+                commands::config::toggle_agent_fields("password", false)
+            }
+            // wg-rusteze agent reset-web-password
+            AgentCommands::ResetWebPassword(reset_web_password_opts) => {
+                commands::config::reset_web_password(reset_web_password_opts)
+            }
+        },
     }
 }
