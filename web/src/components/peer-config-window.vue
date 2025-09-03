@@ -185,6 +185,10 @@ export default {
       type: String,
       default: "",
     },
+    agent: {
+      type: Object,
+      default: {},
+    },
     network: {
       type: Object,
       default: {},
@@ -257,18 +261,7 @@ export default {
       QRCode.toCanvas(document.getElementById('qr-canvas'), this.peer_wg_conf_file);
     },
     downloadPeerConfig() {
-      const peerConfigFileName = this.peer_conf.name.replace(/[^a-zA-Z0-9_=+.-]/g, '-').replace(/(-{2,}|-$)/g, '-').replace(/-$/, '').substring(0, 32);
-
-      const element = document.createElement('a');
-      element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(this.peer_wg_conf_file)}`);
-      element.setAttribute('download', `${this.network.identifier}-${peerConfigFileName}.conf`);
-
-      element.style.display = 'none';
-      document.body.appendChild(element);
-
-      element.click();
-
-      document.body.removeChild(element);
+      WireGuardHelper.downloadPeerConfig(this.agent, this.network, this.peerId, this.version);
     }
   },
   computed: {
@@ -276,7 +269,7 @@ export default {
       return this.network.peers[this.peerId];
     },
     peer_wg_conf_file() {
-      return WireGuardHelper.getPeerConfig(this.network, this.peerId, this.version.full_version);
+      return WireGuardHelper.getPeerConfig(this.agent, this.network, this.peerId, this.version.full_version);
     },
     changeSum() {
       const data = {

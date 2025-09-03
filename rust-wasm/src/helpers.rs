@@ -2,6 +2,7 @@ use crate::types;
 use crate::types::WireGuardLibError;
 
 pub fn get_peer_wg_config(
+    agent: &types::Agent,
     network: &types::Network,
     peer_id: String,
     version: &str,
@@ -47,8 +48,35 @@ pub fn get_peer_wg_config(
     if script_fields.pre_up.enabled {
         writeln!(wg_conf, "PreUp = {}", script_fields.pre_up.value).unwrap();
     }
-    if script_fields.post_up.enabled {
-        writeln!(wg_conf, "PostUp = {}", script_fields.post_up.value).unwrap();
+    if peer_id == network.this_peer {
+        let host_iptables_rules = format!(
+            "
+iptables -t nat -A POSTROUTING -s {} -o {} -j MASQUERADE;
+iptables -A INPUT -p udp -m udp --dport {} -j ACCEPT;
+iptables -A FORWARD -i {} -j ACCEPT;
+iptables -A FORWARD -o {} -j ACCEPT;",
+            network.subnet,
+            agent.vpn.interface,
+            agent.vpn.port,
+            network.identifier,
+            network.identifier
+        )
+        .replace("\r\n", " ")
+        .replace("\n", "");
+
+        writeln!(
+            wg_conf,
+            "PostUp = {}",
+            format!(
+                "\"{} {}\"",
+                host_iptables_rules, script_fields.post_up.value
+            )
+        )
+        .unwrap();
+    } else {
+        if script_fields.post_up.enabled {
+            writeln!(wg_conf, "PostUp = {}", script_fields.post_up.value).unwrap();
+        }
     }
     if script_fields.pre_down.enabled {
         writeln!(wg_conf, "PreDown = {}", script_fields.pre_down.value).unwrap();

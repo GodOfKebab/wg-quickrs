@@ -159,6 +159,10 @@ export default {
     'change-sum': ChangeSum,
   },
   props: {
+    agent: {
+      type: Object,
+      default: {},
+    },
     network: {
       type: Object,
       default: {},
@@ -295,7 +299,7 @@ export default {
     peer_wg_conf_file() {
       const wg_network = this.network_w_new_peer;
       wg_network.connections = this.change_sum.added_connections;
-      return WireGuardHelper.getPeerConfig(wg_network, this.peerId, this.version.full_version);
+      return WireGuardHelper.getPeerConfig(this.agent, wg_network, this.peerId, this.version.full_version);
     },
   },
 }

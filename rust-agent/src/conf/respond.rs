@@ -375,6 +375,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 
 pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     // Open the config file for reading and writing
+    // Can't use get_config and set_config to prevent race issues.
     let mut config_file_reader = match OpenOptions::new()
         .read(true)
         .write(true)

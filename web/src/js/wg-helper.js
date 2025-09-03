@@ -4,17 +4,17 @@ import {check_field_frontend, get_connection_id_frontend, get_peer_wg_config_fro
 
 export default class WireGuardHelper {
 
-    static getPeerConfig(network, peerId, version) {
-        return get_peer_wg_config_frontend(network, peerId, version);
+    static getPeerConfig(agent, network, peerId, version) {
+        return get_peer_wg_config_frontend(agent, network, peerId, version);
     }
 
-    static downloadPeerConfig(network, peerId) {
-        const peerConfigFileContents = WireGuardHelper.getPeerConfig(network, peerId);
+    static downloadPeerConfig(agent, network, peerId, version) {
+        const peerConfigFileContents = WireGuardHelper.getPeerConfig(agent, network, peerId, version);
         const peerConfigFileName = network.peers[peerId].name.replace(/[^a-zA-Z0-9_=+.-]/g, '-').replace(/(-{2,}|-$)/g, '-').replace(/-$/, '').substring(0, 32);
 
         const element = document.createElement('a');
         element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(peerConfigFileContents)}`);
-        element.setAttribute('download', `${peerConfigFileName}.conf`);
+        element.setAttribute('download', `${this.network.identifier}-${peerConfigFileName}.conf`);
 
         element.style.display = 'none';
         document.body.appendChild(element);
@@ -36,7 +36,6 @@ export default class WireGuardHelper {
         else
             return false;
 
-        console.log(JSON.stringify(rs_field_variable));
         return JSON.parse(check_field_frontend(fieldName, JSON.stringify(rs_field_variable)));
     }
 

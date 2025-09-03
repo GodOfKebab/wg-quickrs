@@ -306,6 +306,17 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("51820")
     );
 
+    // [7/25] --agent-local-vpn-interface
+    let agent_local_vpn_interface = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        7,
+        init_opts.agent_local_vpn_interface.clone(),
+        "--agent-local-vpn-interface",
+        "\tEnter interface for the VPN server's packet forwarding setup",
+        agent_local_enable_vpn,
+        Some("eth0"),
+    );
+
     // [8/25] --agent-public-address
     let agent_public_address = get_init_enabled_value_option(
         init_opts.no_prompt,
@@ -661,6 +672,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
             },
             vpn: AgentVpn {
                 enabled: agent_local_enable_vpn,
+                interface: agent_local_vpn_interface,
                 port: agent_local_vpn_port,
             },
         },

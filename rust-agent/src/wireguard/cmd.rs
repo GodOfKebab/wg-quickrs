@@ -321,6 +321,7 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
 
     // generate .conf content
     let wg_conf = match get_peer_wg_config(
+        &config.agent,
         &config.network,
         config.network.this_peer.clone(),
         full_version!(),
