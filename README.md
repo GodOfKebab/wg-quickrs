@@ -148,6 +148,10 @@ Folder structure before initialization:
 ├── bin
 │   └── wg-rusteze
 ├── cert.pem
+├── completions
+│   ├── _wg-rusteze
+│   └── wg-rusteze.bash
+├── conf.yml
 └── key.pem
 ```
 
