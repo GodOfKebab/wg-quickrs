@@ -4,70 +4,84 @@
 
 An intuitive and feature-rich WireGuard configuration management tool written mainly in Rust.
 
+---
+
 ## 1. Installation
 
-You can build from scratch or Docker.
+You can either build from scratch or use Docker.
 
-Install the repo:
+Clone the repository:
 
-```aiignore
+```bash
 sudo apt install git
 git clone https://github.com/GodOfKebab/wg-rusteze.git
 cd wg-rusteze
 ```
 
-### 1.1 Build from scratch
+---
+
+### 1.1 Build from Scratch
 
 #### Requirements
 
-- `iptables`
+* `iptables`
+* Rust and Cargo
+* Node.js/npm (for the web frontend)
 
-Building from scratch involves three main steps.
-`rust-wasm` includes the rust component for the web frontend.
-`web` folder includes all the _rest_ of the files for the web frontend.
-`rust-agent` embeds the web server backend, web frontend, and scripting tools in a single binary (`wg-rusteze`).
+The project is split into:
 
-Install Rust/Cargo:
+* **`rust-wasm`** – Rust code for the web frontend
+* **`web`** – frontend assets
+* **`rust-agent`** – backend, frontend server, and scripting tools bundled in `wg-rusteze` binary
 
-```aiignore
-# Install rust/cargo
+---
+
+#### 1.1.1 Install Rust/Cargo
+
+```bash
 curl https://sh.rustup.rs -sSf | sh
-# Source rust/cargo
 . "$HOME/.cargo/env"
 ```
 
-### 1.1.1 Build rust-wasm
+---
 
-Install wasm-pack and build `rust-wasm`:
+#### 1.1.2 Build `rust-wasm`
 
-```aiignore
-# Install wasm-pack
+```bash
 cargo install wasm-pack
-# Build rust-wasm
-cd rust-wasm && wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always && cd ..
+cd rust-wasm
+wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
+cd ..
 ```
 
-### 1.1.2 Build the web folder
+---
 
-Install npm and 'build' (create a `dist` folder) `web` frontend:
+#### 1.1.3 Build the web frontend
 
-```aiignore
-# Install wasm-pack
+```bash
 sudo apt install npm
-# Build rust-wasm
-cd web && npm install && npm run build && cd ..
+cd web
+npm install
+npm run build
+cd ..
 ```
 
-### 1.1.3 Build wg-rusteze
+---
 
-Build and install `wg-rusteze`:
+#### 1.1.4 Build `wg-rusteze` binary
 
-```aiignore
-# Build wg-rusteze (might take some time on slower machines)
+This might take some time on slower machines.
+
+```bash
 cargo build --profile release --package wg-rusteze --bin wg-rusteze
-# Install the binary to the folder
-mkdir -p ~/.wg-rusteze/bin && cp target/release/wg-rusteze ~/.wg-rusteze/bin/wg-rusteze
-echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+
+mkdir -p ~/.wg-rusteze/bin
+cp target/release/wg-rusteze ~/.wg-rusteze/bin/wg-rusteze
+
+echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+wg-rusteze --help
 # $ wg-rusteze
 # A tool to manage the peer and network configuration of the WireGuard-based overlay network over the web console
 # 
@@ -90,12 +104,13 @@ echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.bashrc && source ~/.bashr
 #           Print version
 ```
 
-### 1.1.4 Configure
+---
 
-Configure TLS/HTTPS certificates
+#### 1.1.5 Configure TLS/HTTPS Certificates
 
-```aiignore
+```bash
 chmod +x cert/make-tls-certs.sh
+
 COUNTRY="XX" \
 STATE="XXX" \
 LOCALITY="XXX" \
@@ -103,34 +118,42 @@ ORGANIZATION="XXX" \
 ORGANIZATIONAL_UNIT="XXX" \
 ROOT_CN="certificate-manager@XXX" \
 ./cert/make-tls-certs.sh $(hostname -I | awk '{print $1}')
+
 # If successful, you should see the certificates at
 ls -1d certs/servers/$(hostname -I | awk '{print $1}')/*
 ```
 
-Create the `~/.wg-rusteze` folder and move certs/keys there
+Move the certificates to `~/.wg-rusteze`:
 
-```aiignore
-cp certs/servers/$(hostname -I | awk '{print $1}')/* ~/.wg-rusteze
-/root/.wg-rusteze
+```bash
+cp certs/servers/$(hostname -I | awk '{print $1}')/* ~/.wg-rusteze/
+```
+
+Folder structure before initialization:
+
+```
+~/.wg-rusteze
 ├── bin
 │   └── wg-rusteze
 ├── cert.pem
 └── key.pem
-
-2 directories, 3 files
 ```
 
-Install wireguard
+---
 
-```aiignore
+#### 1.1.6 Install WireGuard
+
+```bash
 sudo apt install -y wireguard wireguard-tools
 ```
 
-Initialize and configure the agent using prompts
+---
 
-```aiignore
+#### 1.1.7 Initialize and Configure the Agent
+
+```bash
 wg-rusteze init
-# root@vultr:~/wg-rusteze# wg-rusteze init
+# $ wg-rusteze init
 # backend: v0.1.0, frontend: v0.0.0, built: 2025-09-04T02:19:14Z
 # 2025-09-04T02:25:13.293Z INFO  [wg_rusteze] using the wg-rusteze config file at "/root/.wg-rusteze/conf.yml"
 # 2025-09-04T02:25:13.293Z INFO  [wg_rusteze::commands::init] Initializing wg-rusteze rust-agent...
@@ -181,16 +204,22 @@ wg-rusteze init
 # ✅ Configuration saved to `config.yml`.
 ```
 
-Setup the firewall to accept HTTP and HTTPS ports
+Follow the prompts to configure network, agent, and default peer settings. This generates `~/.wg-rusteze/conf.yml`.
 
-```aiignore
+---
+
+#### 1.1.8 Set Firewall Rules
+
+```bash
 sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
 ```
 
-Finally, run the agent
+---
 
-```aiignore
+#### 1.1.9 Run the Agent
+
+```bash
 wg-rusteze agent run
 # $ wg-rusteze agent run
 # backend: v0.1.0, frontend: v0.0.0, built: 2025-09-04T03:23:38Z
@@ -228,26 +257,25 @@ wg-rusteze agent run
 # 2025-09-04T03:27:40.900Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg show wg-rusteze dump
 ```
 
-### 1.2 Run using Docker
+* HTTP frontend/API: `http://<your-ip>:80/`
+* HTTPS frontend/API: `https://<your-ip>:443/`
+* WireGuard tunnel: `<public-ip>:51820`
 
-Install Docker:
+---
 
-```aiignore
-# Remove old versions
+### 1.2 Using Docker
+
+Install Docker on Debian 12:
+
+```bash
 for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
-# Install Docker using the apt repository
-# Add Docker's official GPG key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
