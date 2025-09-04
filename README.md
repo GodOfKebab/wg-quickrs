@@ -151,7 +151,6 @@ Folder structure before initialization:
 ├── completions
 │   ├── _wg-rusteze
 │   └── wg-rusteze.bash
-├── conf.yml
 └── key.pem
 ```
 
