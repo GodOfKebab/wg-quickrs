@@ -50,35 +50,62 @@ pub fn get_peer_wg_config(
     }
     // TODO: fix error on MacOS
     if peer_id == network.this_peer {
-        let host_iptables_rules = format!(
-            "
-iptables -t nat -A POSTROUTING -s {} -o {} -j MASQUERADE;
-iptables -A INPUT -p udp -m udp --dport {} -j ACCEPT;
-iptables -A FORWARD -i {} -j ACCEPT;
-iptables -A FORWARD -o {} -j ACCEPT;",
-            network.subnet,
-            agent.vpn.interface,
-            agent.vpn.port,
-            network.identifier,
-            network.identifier
-        )
-        .replace("\r\n", " ")
-        .replace("\n", "");
-
         writeln!(
             wg_conf,
-            "PostUp = {}",
-            format!(
-                "\"{} {}\"",
-                host_iptables_rules, script_fields.post_up.value
-            )
+            "PostUp = iptables -t nat -A POSTROUTING -s {} -o {} -j MASQUERADE;",
+            network.subnet, agent.vpn.interface
         )
         .unwrap();
-    } else if script_fields.post_up.enabled {
+        writeln!(
+            wg_conf,
+            "PostUp = iptables -A INPUT -p udp -m udp --dport {} -j ACCEPT;",
+            agent.vpn.port
+        )
+        .unwrap();
+        writeln!(
+            wg_conf,
+            "PostUp = iptables -A FORWARD -i {} -j ACCEPT;",
+            network.identifier
+        )
+        .unwrap();
+        writeln!(
+            wg_conf,
+            "PostUp = iptables -A FORWARD -o {} -j ACCEPT;",
+            network.identifier
+        )
+        .unwrap();
+    }
+    if script_fields.post_up.enabled {
         writeln!(wg_conf, "PostUp = {}", script_fields.post_up.value).unwrap();
     }
     if script_fields.pre_down.enabled {
         writeln!(wg_conf, "PreDown = {}", script_fields.pre_down.value).unwrap();
+    }
+    if peer_id == network.this_peer {
+        writeln!(
+            wg_conf,
+            "PostDown = iptables -t nat -D POSTROUTING -s {} -o {} -j MASQUERADE;",
+            network.subnet, agent.vpn.interface
+        )
+        .unwrap();
+        writeln!(
+            wg_conf,
+            "PostDown = iptables -D INPUT -p udp -m udp --dport {} -j ACCEPT;",
+            agent.vpn.port
+        )
+        .unwrap();
+        writeln!(
+            wg_conf,
+            "PostDown = iptables -D FORWARD -i {} -j ACCEPT;",
+            network.identifier
+        )
+        .unwrap();
+        writeln!(
+            wg_conf,
+            "PostDown = iptables -D FORWARD -o {} -j ACCEPT;",
+            network.identifier
+        )
+        .unwrap();
     }
     if script_fields.post_down.enabled {
         writeln!(wg_conf, "PostDown = {}", script_fields.post_down.value).unwrap();
