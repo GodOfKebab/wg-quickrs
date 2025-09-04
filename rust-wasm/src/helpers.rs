@@ -48,6 +48,7 @@ pub fn get_peer_wg_config(
     if script_fields.pre_up.enabled {
         writeln!(wg_conf, "PreUp = {}", script_fields.pre_up.value).unwrap();
     }
+    // TODO: fix error on MacOS
     if peer_id == network.this_peer {
         let host_iptables_rules = format!(
             "
@@ -73,10 +74,8 @@ iptables -A FORWARD -o {} -j ACCEPT;",
             )
         )
         .unwrap();
-    } else {
-        if script_fields.post_up.enabled {
-            writeln!(wg_conf, "PostUp = {}", script_fields.post_up.value).unwrap();
-        }
+    } else if script_fields.post_up.enabled {
+        writeln!(wg_conf, "PostUp = {}", script_fields.post_up.value).unwrap();
     }
     if script_fields.pre_down.enabled {
         writeln!(wg_conf, "PreDown = {}", script_fields.pre_down.value).unwrap();

@@ -25,7 +25,14 @@ pub(crate) enum Commands {
     Init(Box<InitOptions>),
     #[command(about = "Configure and run the wg-rusteze rust-agent")]
     Agent {
+        #[cfg(target_os = "macos")]
         #[arg(long, default_value = "/opt/homebrew/etc/wireguard/")]
+        wireguard_config_folder: PathBuf,
+        #[cfg(target_os = "linux")]
+        #[arg(long, default_value = "/etc/wireguard/")]
+        wireguard_config_folder: PathBuf,
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        #[arg(long, default_value = "/tmp/wireguard/")]
         wireguard_config_folder: PathBuf,
         #[command(subcommand)]
         commands: AgentCommands,
