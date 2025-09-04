@@ -18,6 +18,18 @@ pub static WG_RUSTEZE_CONFIG_FOLDER: OnceCell<PathBuf> = OnceCell::new();
 pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 pub static WIREGUARD_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
+fn expand_tilde(path: PathBuf) -> PathBuf {
+    if let Some(s) = path.to_str()
+        && s.starts_with("~")
+    {
+        let home = dirs::home_dir().expect("Could not get home directory");
+        let mut expanded = home;
+        expanded.push(s.trim_start_matches("~/"));
+        return expanded;
+    }
+    path
+}
+
 #[actix_web::main]
 async fn main() -> ExitCode {
     let args = cli::Cli::parse();
@@ -36,10 +48,11 @@ async fn main() -> ExitCode {
         });
 
     // get the wg_rusteze config file path
+    let config_folder = expand_tilde(args.wg_rusteze_config_folder.clone());
     WG_RUSTEZE_CONFIG_FOLDER
-        .set(args.wg_rusteze_config_folder.clone())
+        .set(config_folder.clone())
         .expect("Failed to set WG_RUSTEZE_CONFIG_FOLDER");
-    let mut wg_rusteze_config_file = args.wg_rusteze_config_folder;
+    let mut wg_rusteze_config_file = config_folder;
     wg_rusteze_config_file.push("conf.yml");
     WG_RUSTEZE_CONFIG_FILE
         .set(wg_rusteze_config_file)
