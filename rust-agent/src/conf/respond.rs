@@ -363,14 +363,16 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         .expect("Failed to write to config file");
     log::info!("updated config file");
 
-    match sync_conf(&config) {
-        Ok(_) => {}
-        Err(e) => {
-            log::error!("{e}");
-            return HttpResponse::InternalServerError().into();
-        }
-    };
-    log::info!("synchronized config file");
+    if config.agent.vpn.enabled {
+        match sync_conf(&config) {
+            Ok(_) => {}
+            Err(e) => {
+                log::error!("{e}");
+                return HttpResponse::InternalServerError().into();
+            }
+        };
+        log::info!("synchronized config file");
+    }
 
     HttpResponse::Ok().json(json!({
         "status": "ok"
