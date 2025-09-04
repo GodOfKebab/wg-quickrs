@@ -11,7 +11,7 @@ use std::path::PathBuf;
 pub(crate) struct Cli {
     #[arg(short, long, help = "Increase verbosity level from Info to Debug")]
     pub(crate) verbose: bool,
-    #[arg(long, default_value = ".wg-rusteze")]
+    #[arg(long, default_value = "~/.wg-rusteze")]
     pub(crate) wg_rusteze_config_folder: PathBuf,
     #[command(subcommand)]
     pub(crate) command: Commands,
