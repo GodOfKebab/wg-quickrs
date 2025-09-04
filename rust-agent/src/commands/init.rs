@@ -1,4 +1,3 @@
-use crate::cli::InitOptions;
 use crate::commands::helpers;
 use crate::conf;
 use crate::conf::util::ConfUtilError;
@@ -6,6 +5,7 @@ use crate::wireguard::cmd::get_public_private_keys;
 use dialoguer::{Confirm, Input};
 use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
+use rust_cli::InitOptions;
 use rust_wasm::types::{
     Agent, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config, DefaultConnection, DefaultPeer,
     Defaults, EnabledValue, Network, Password, Peer, Scripts,

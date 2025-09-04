@@ -1,8 +1,7 @@
-use crate::cli::AgentCommands;
 use crate::commands::config::AgentFieldValue;
-use clap::Parser;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
+use rust_cli::AgentCommands;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -32,7 +31,7 @@ fn expand_tilde(path: PathBuf) -> PathBuf {
 
 #[actix_web::main]
 async fn main() -> ExitCode {
-    let args = cli::Cli::parse();
+    let args = cli::parse();
     println!(full_version!());
 
     // start logger
@@ -63,8 +62,8 @@ async fn main() -> ExitCode {
     );
 
     match &args.command {
-        cli::Commands::Init(init_opts) => commands::init::initialize_agent(init_opts),
-        cli::Commands::Agent {
+        rust_cli::Commands::Init(init_opts) => commands::init::initialize_agent(init_opts),
+        rust_cli::Commands::Agent {
             wireguard_config_folder,
             commands,
         } => match commands {

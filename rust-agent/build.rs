@@ -1,11 +1,16 @@
 // build.rs: create macros to embed the version info and build time into the executable
+// and generate bash completion script
 use chrono::SecondsFormat;
+use clap::CommandFactory;
+use clap_complete::generate_to;
+use rust_cli::Cli;
 use serde_json::Value as JsonValue;
 use std::fs;
 use std::path::Path;
 use toml::Value as TomlValue;
 
 fn main() {
+    // Generate version macros
     let frontend_version = fs::read_to_string("../web/package.json")
         .ok()
         .and_then(|content| {
@@ -68,4 +73,31 @@ macro_rules! full_version {{
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("version_macro.rs");
     fs::write(dest_path, content).expect("Could not write version macro");
+
+    // Generate bash completion script
+    let cli = Cli::command();
+    let mut cmd = cli;
+
+    // Create completions directory in OUT_DIR
+    let completions_dir = Path::new(&out_dir)
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("completions");
+    fs::create_dir_all(&completions_dir).expect("Could not create completions directory");
+
+    // Generate bash completion script
+    let shells: &[clap_complete::Shell] = &[clap_complete::Shell::Bash, clap_complete::Shell::Zsh];
+    for &shell in shells {
+        let _completion_file_path = generate_to(shell, &mut cmd, "wg-rusteze", &completions_dir)
+            .expect("Failed to generate bash completion script");
+        // .../target/release/completions/...
+        // println!("cargo:warning=Generated {} completion script at: {:?}", shell, _completion_file_path);
+    }
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=../web/package.json");
+    println!("cargo:rerun-if-changed=Cargo.toml");
 }

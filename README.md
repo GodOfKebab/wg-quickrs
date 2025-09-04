@@ -68,7 +68,7 @@ cd ..
 
 ---
 
-#### 1.1.4 Build `wg-rusteze` binary
+#### 1.1.4 Build and Install `wg-rusteze`
 
 This might take some time on slower machines.
 
@@ -77,9 +77,17 @@ cargo build --profile release --package wg-rusteze --bin wg-rusteze
 
 mkdir -p ~/.wg-rusteze/bin
 cp target/release/wg-rusteze ~/.wg-rusteze/bin/wg-rusteze
+cp -r target/release/completions ~/.wg-rusteze/completions
 
+# Bash
 echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.bashrc
+echo 'source $HOME/.wg-rusteze/completions/wg-rusteze.bash' >> ~/.bashrc
 source ~/.bashrc
+
+# ZSH
+echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.zshrc
+echo 'source $HOME/.wg-rusteze/completions/_wg-rusteze' >> ~/.zshrc
+source ~/.zshrc
 
 wg-rusteze --help
 # $ wg-rusteze
@@ -102,6 +110,10 @@ wg-rusteze --help
 #           Print help
 #   -V, --version
 #           Print version
+
+wg-rusteze <TAB>           # Shows available commands (init, agent)
+wg-rusteze agent <TAB>     # Shows available agent subcommands
+wg-rusteze init --<TAB>    # Shows available options for the init command
 ```
 
 ---

@@ -1,7 +1,7 @@
-use crate::cli::ResetWebPasswordOptions;
 use crate::commands::helpers;
 use crate::conf;
 use argon2::PasswordHash;
+use rust_cli::ResetWebPasswordOptions;
 use std::io;
 use std::io::Write;
 use std::path::PathBuf;
