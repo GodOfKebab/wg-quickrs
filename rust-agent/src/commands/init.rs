@@ -4,7 +4,7 @@ use crate::conf;
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
 use dialoguer::{Confirm, Input};
-use get_if_addrs::get_if_addrs;
+use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
 use rust_wasm::types::{
     Agent, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config, DefaultConnection, DefaultPeer,
@@ -43,13 +43,13 @@ fn first_ip(subnet: &str) -> String {
 }
 
 // Get primary IP of the current machine
-fn primary_ip() -> Option<String> {
+fn primary_ip_interface() -> Option<Interface> {
     match get_if_addrs()
         .unwrap()
         .into_iter()
         .find(|a| !a.is_loopback() && a.ip().is_ipv4())
     {
-        Some(addr) => Some(addr.ip().to_string()),
+        Some(addr) => Some(addr),
         None => {
             log::error!("No valid network interface found");
             None
@@ -225,6 +225,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("wg-rusteze-host"),
     );
 
+    let iface_opt = primary_ip_interface();
+    let iface_name = iface_opt.as_ref().map(|iface| iface.name.clone());
+    let iface_ip = iface_opt.map(|iface| iface.ip().to_string());
+
     // [4/25] --agent-local-address
     let agent_local_address = get_init_enabled_value_option(
         init_opts.no_prompt,
@@ -233,7 +237,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         "--agent-local-address",
         "Enter agent's local IPv4 address for the web server to bind and vpn server to listen",
         true,
-        primary_ip().as_deref(),
+        iface_ip.as_deref(),
     );
 
     // [5/25] --agent-local-enable-web-http & --agent-local-web-http-port
@@ -314,7 +318,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         "--agent-local-vpn-interface",
         "\tEnter interface for the VPN server's packet forwarding setup",
         agent_local_enable_vpn,
-        Some("eth0"),
+        iface_name.as_deref(),
     );
 
     // [8/25] --agent-public-address
@@ -325,7 +329,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         "--agent-public-address",
         "Enter agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement",
         true,
-        primary_ip().as_deref(),
+        iface_ip.as_deref(),
     );
 
     // [9/25] --agent-public-vpn-port
