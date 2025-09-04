@@ -121,6 +121,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         };
     }
 
+    // TODO: updated_at not updating
     if let Some(changed_fields) = change_sum.changed_fields {
         if let Some(changed_fields_peers) = changed_fields.peers {
             for (peer_id, peer_details) in changed_fields_peers {
@@ -283,7 +284,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     format!("added_peers.{}.scripts", peer_id),
                     post_down
                 );
-                config.network.peers.insert(peer_id.clone(), peer_details);
+                let mut added_peer = rust_wasm::types::Peer::from(&peer_details);
+                added_peer.created_at = timestamp::get_now_timestamp_formatted();
+                added_peer.updated_at = added_peer.created_at.clone();
+                config.network.peers.insert(peer_id.clone(), added_peer);
                 // remove the new peer id/address from the lease
                 config
                     .network

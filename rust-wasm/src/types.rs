@@ -231,10 +231,40 @@ pub struct ChangedFields {
     pub peers: Option<HashMap<String, OptionalPeer>>,
     pub connections: Option<HashMap<String, OptionalConnection>>,
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AddedPeer {
+    pub name: String,
+    pub address: String,
+    pub endpoint: EnabledValue,
+    pub dns: EnabledValue,
+    pub mtu: EnabledValue,
+    pub scripts: Scripts,
+    pub public_key: String,
+    pub private_key: String,
+}
+
+impl From<&AddedPeer> for Peer {
+    fn from(added_peer: &AddedPeer) -> Self {
+        Peer {
+            name: added_peer.name.clone(),
+            address: added_peer.address.clone(),
+            endpoint: added_peer.endpoint.clone(),
+            dns: added_peer.dns.clone(),
+            mtu: added_peer.mtu.clone(),
+            scripts: added_peer.scripts.clone(),
+            public_key: added_peer.public_key.clone(),
+            private_key: added_peer.private_key.clone(),
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ChangeSum {
     pub changed_fields: Option<ChangedFields>,
-    pub added_peers: Option<HashMap<String, Peer>>,
+    pub added_peers: Option<HashMap<String, AddedPeer>>,
     pub added_connections: Option<HashMap<String, Connection>>,
     pub removed_peers: Option<Vec<String>>,
     pub removed_connections: Option<Vec<String>>,
