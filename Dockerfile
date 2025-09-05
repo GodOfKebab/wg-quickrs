@@ -22,6 +22,7 @@ COPY Cargo.toml /app/Cargo.toml
 COPY Cargo.lock /app/Cargo.lock
 COPY rust-wasm/ /app/rust-wasm
 COPY rust-agent/ /app/rust-agent
+COPY rust-cli/ /app/rust-cli
 COPY web/package.json /app/web/package.json
 RUN cargo build --bin wg-rusteze --profile release
 
