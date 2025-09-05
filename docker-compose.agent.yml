@@ -13,96 +13,96 @@ services:
     ports:
       - "8080:80"
       - "8443:443"
-    command: [ "/app/wg-rusteze", "agent", "run" ]
+    command: [ "agent", "run" ]
 
   wg-rusteze-agent-set-address:
     container_name: wg-rusteze-agent-enable-set-address-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "set-address", "0.0.0.0" ]
+    command: [ "agent", "set-address", "0.0.0.0" ]
 
   wg-rusteze-agent-enable-web-http:
     container_name: wg-rusteze-agent-enable-web-http-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "enable-web-http" ]
+    command: [ "agent", "enable-web-http" ]
 
   wg-rusteze-agent-disable-web-http:
     container_name: wg-rusteze-agent-disable-web-http-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "disable-web-http" ]
+    command: [ "agent", "disable-web-http" ]
 
   wg-rusteze-agent-set-http-web-port:
     container_name: wg-rusteze-agent-set-http-web-port-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "set-http-web-port", "80" ]
+    command: [ "agent", "set-http-web-port", "80" ]
 
   wg-rusteze-agent-enable-web-https:
     container_name: wg-rusteze-agent-enable-web-https-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "enable-web-https" ]
+    command: [ "agent", "enable-web-https" ]
 
   wg-rusteze-agent-disable-web-https:
     container_name: wg-rusteze-agent-disable-web-https-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "disable-web-https" ]
+    command: [ "agent", "disable-web-https" ]
 
   wg-rusteze-agent-set-https-web-port:
     container_name: wg-rusteze-agent-set-https-web-port-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "set-https-web-port", "443" ]
+    command: [ "agent", "set-https-web-port", "443" ]
 
   wg-rusteze-agent-set-web-https-tls-cert:
     container_name: wg-rusteze-agent-set-web-https-tls-cert-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "set-web-https-tls-cert", "certs/servers/localhost/cert.pem" ]
+    command: [ "agent", "set-web-https-tls-cert", "certs/servers/localhost/cert.pem" ]
 
   wg-rusteze-agent-set-web-https-tls-key:
     container_name: wg-rusteze-agent-set-web-https-tls-key-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "set-web-https-tls-key", "certs/servers/localhost/key.pem" ]
+    command: [ "agent", "set-web-https-tls-key", "certs/servers/localhost/key.pem" ]
 
   wg-rusteze-agent-enable-vpn:
     container_name: wg-rusteze-agent-enable-vpn-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "enable-vpn" ]
+    command: [ "agent", "enable-vpn" ]
 
   wg-rusteze-agent-disable-vpn:
     container_name: wg-rusteze-agent-disable-vpn-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "disable-vpn" ]
+    command: [ "agent", "disable-vpn" ]
 
   wg-rusteze-agent-set-vpn-port:
     container_name: wg-rusteze-agent-set-vpn-port-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "set-vpn-port", "51820" ]
+    command: [ "agent", "set-vpn-port", "51820" ]
 
   wg-rusteze-agent-enable-web-password:
     container_name: wg-rusteze-agent-enable-web-password-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "enable-web-password" ]
+    command: [ "agent", "enable-web-password" ]
 
   wg-rusteze-agent-disable-web-password:
     container_name: wg-rusteze-agent-disable-web-password-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "disable-web-password" ]
+    command: [ "agent", "disable-web-password" ]
 
   wg-rusteze-agent-reset-web-password:
     container_name: wg-rusteze-agent-reset-web-password-cnt
     extends:
       service: wg-rusteze-runner
-    command: [ "/app/wg-rusteze", "agent", "reset-web-password", "--password", "test" ]
+    command: [ "agent", "reset-web-password", "--password", "test" ]
 
 

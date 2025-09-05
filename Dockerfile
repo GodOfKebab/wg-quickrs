@@ -32,10 +32,11 @@ WORKDIR /app
 RUN apk add -U --no-cache wireguard-tools
 COPY --from=rust-agent-builder /app/target/release/wg-rusteze /app/wg-rusteze
 
+ENTRYPOINT ["/app/wg-rusteze", "--wg-rusteze-config-folder", ".wg-rusteze"]
 #CMD ["tail", "-f", "/dev/null"]
 
 FROM runner AS initializer
-CMD /app/wg-rusteze init --no-prompt true \
+CMD /app/wg-rusteze --wg-rusteze-config-folder .wg-rusteze init --no-prompt true \
   --network-identifier "$NETWORK_IDENTIFIER" \
   --network-subnet "$NETWORK_SUBNET" \
   --agent-peer-name "$AGENT_PEER_NAME" \
