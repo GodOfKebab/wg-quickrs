@@ -1,0 +1,306 @@
+{
+  "info": {
+    "_postman_id": "f44d55c4-2333-4776-aabc-7c5b3f369322",
+    "name": "wg-rusteze",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "29369016"
+  },
+  "item": [
+    {
+      "name": "Get JWT",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let token = pm.response.text(); ",
+              "pm.environment.set(\"token\", token.trim());",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseURL}}/api/token?client_id=postman&password=k",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "api",
+            "token"
+          ],
+          "query": [
+            {
+              "key": "client_id",
+              "value": "postman"
+            },
+            {
+              "key": "password",
+              "value": "k"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Summary",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        },
+        "url": {
+          "raw": "{{baseURL}}/api/network/summary?only_digest=false",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "api",
+            "network",
+            "summary"
+          ],
+          "query": [
+            {
+              "key": "only_digest",
+              "value": "false"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Lease ID/Address Pair",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseURL}}/api/network/lease/id-address",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "api",
+            "network",
+            "lease",
+            "id-address"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get PreSharedKey",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseURL}}/api/wireguard/pre_shared_key",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "api",
+            "wireguard",
+            "pre_shared_key"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get PublicKey/PrivateKey",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        },
+        "url": {
+          "raw": "{{baseURL}}/api/wireguard/public_private_keys",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "api",
+            "wireguard",
+            "public_private_keys"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Version",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseURL}}/version",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "version"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Patch Network",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"changed_fields\": {\n        \"peers\": {\n            \"1ee5f074-d4cf-4414-9b05-2f5768a9786f\": {\n                \"dns\": {\n                    \"enabled\": true,\n                    \"value\": \"1.1.1.1\"\n                }\n            }\n        }\n    }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseURL}}/api/network/config",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "api",
+            "network",
+            "config"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Enable/Disable VPN",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"status\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseURL}}/api/wireguard/server/status?status=true",
+          "host": [
+            "{{baseURL}}"
+          ],
+          "path": [
+            "api",
+            "wireguard",
+            "server",
+            "status"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseURL",
+      "value": "https://127.0.0.1:8080",
+      "type": "default"
+    }
+  ]
+}
