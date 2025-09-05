@@ -48,7 +48,7 @@ pub fn get_peer_wg_config(
     if script_fields.pre_up.enabled {
         writeln!(wg_conf, "PreUp = {}", script_fields.pre_up.value).unwrap();
     }
-    // TODO: fix error on MacOS
+    #[cfg(target_os = "linux")]
     if peer_id == network.this_peer {
         writeln!(
             wg_conf,
@@ -81,6 +81,7 @@ pub fn get_peer_wg_config(
     if script_fields.pre_down.enabled {
         writeln!(wg_conf, "PreDown = {}", script_fields.pre_down.value).unwrap();
     }
+    #[cfg(target_os = "linux")]
     if peer_id == network.this_peer {
         writeln!(
             wg_conf,
