@@ -29,10 +29,26 @@ RUN cargo build --bin wg-rusteze --profile release
 FROM alpine:3.22 AS runner
 WORKDIR /app
 
-RUN apk add -U --no-cache wireguard-tools
+RUN apk add -U --no-cache wireguard-tools iptables
 COPY --from=rust-agent-builder /app/target/release/wg-rusteze /app/wg-rusteze
 
-ENTRYPOINT ["/app/wg-rusteze", "--wg-rusteze-config-folder", ".wg-rusteze"]
+RUN cat > /app/entrypoint.sh <<'EOF'
+#!/bin/bash
+# ensure PATH includes system sbin/bin
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# create a dummy sudo if missing
+if [ ! -x /usr/bin/sudo ]; then
+  echo '#!/bin/sh' > /usr/bin/sudo
+  echo 'exec "$@"' >> /usr/bin/sudo
+  chmod +x /usr/bin/sudo
+fi
+
+# run the actual app
+exec /app/wg-rusteze --wg-rusteze-config-folder .wg-rusteze "$@"
+EOF
+
+ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
 #CMD ["tail", "-f", "/dev/null"]
 
 FROM runner AS initializer
@@ -54,6 +70,7 @@ CMD /app/wg-rusteze --wg-rusteze-config-folder .wg-rusteze init --no-prompt true
   --agent-public-address "$AGENT_PUBLIC_ADDRESS" \
   --agent-public-vpn-port "$AGENT_PUBLIC_VPN_PORT" \
   --agent-internal-vpn-address "$AGENT_INTERNAL_VPN_ADDRESS" \
+  --agent-local-vpn-interface "$AGENT_LOCAL_VPN_INTERFACE" \
   --agent-enable-web-password "$AGENT_ENABLE_WEB_PASSWORD" \
   --agent-web-password "$AGENT_WEB_PASSWORD" \
   --agent-enable-dns "$AGENT_ENABLE_DNS" \

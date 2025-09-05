@@ -3,6 +3,10 @@ services:
   wg-rusteze-runner:
     build:
       target: runner
+    # grant only what WireGuard needs
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
     volumes:
       - .wg-rusteze-docker:/app/.wg-rusteze
 
