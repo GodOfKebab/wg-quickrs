@@ -13,6 +13,7 @@ services:
     ports:
       - "8080:80"
       - "8443:443"
+      - "51820:51820"
     command: [ "agent", "run" ]
 
   wg-rusteze-agent-set-address:

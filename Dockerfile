@@ -36,6 +36,8 @@ ENTRYPOINT ["/app/wg-rusteze", "--wg-rusteze-config-folder", ".wg-rusteze"]
 #CMD ["tail", "-f", "/dev/null"]
 
 FROM runner AS initializer
+
+ENTRYPOINT []
 CMD /app/wg-rusteze --wg-rusteze-config-folder .wg-rusteze init --no-prompt true \
   --network-identifier "$NETWORK_IDENTIFIER" \
   --network-subnet "$NETWORK_SUBNET" \
