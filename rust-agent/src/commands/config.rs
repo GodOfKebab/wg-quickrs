@@ -133,8 +133,8 @@ pub(crate) fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode 
     };
     match (field, value) {
         ("address", AgentFieldValue::Text(addr)) => {
-            config.agent.address = addr;
-            log::info!("Setting agent address to {}", config.agent.address);
+            config.agent.web.address = addr;
+            log::info!("Setting agent address to {}", config.agent.web.address);
         }
         ("http-port", AgentFieldValue::Port(port)) => {
             config.agent.web.http.port = port;

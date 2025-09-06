@@ -42,168 +42,181 @@ pub enum Commands {
 
 #[derive(Debug, Args)]
 pub struct InitOptions {
-    #[arg(long, default_value = None, help = "VPN network's identifier (e.g. wg-rusteze)")]
+    #[arg(long, default_value = None, long_help = "Set VPN network identifier", value_name = "wg-rusteze"
+    )]
     pub network_identifier: Option<String>,
 
-    #[arg(long, default_value = None, help = "VPN network's CIDR subnet mask (e.g. 10.0.34.0/24)")]
+    #[arg(long, default_value = None, long_help = "Set VPN network CIDR subnet", value_name = "10.0.34.0/24"
+    )]
     pub network_subnet: Option<String>,
 
-    #[arg(long, default_value = None, help = "Agent's peer name (e.g. wg-rusteze-host)")]
-    pub agent_peer_name: Option<String>,
-
-    #[arg(long, default_value = None, help = "Agent's local IPv4 address for the web server to bind"
+    #[arg(long, default_value = None, long_help = "Set agent web server bind IPv4 address"
     )]
-    pub agent_local_address: Option<String>,
+    pub agent_web_address: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable HTTP for the web server")]
-    pub agent_local_enable_web_http: Option<bool>,
+    #[arg(long, default_value = None, long_help = "Enable HTTP on web server")]
+    pub agent_web_http_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Agent's local web port for the web server (HTTP) to bind (e.g. 80)"
+    #[arg(long, default_value = None, long_help = "Set web server HTTP port", value_name = "80"
     )]
-    pub agent_local_web_http_port: Option<u16>,
+    pub agent_web_http_port: Option<u16>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable HTTPS for the web server")]
-    pub agent_local_enable_web_https: Option<bool>,
+    #[arg(long, default_value = None, long_help = "Enable HTTPS on web server")]
+    pub agent_web_https_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Agent's local web port for the web server (HTTPS) to bind (e.g. 443)"
+    #[arg(long, default_value = None, long_help = "Set web server HTTPS port", value_name = "443"
     )]
-    pub agent_local_web_https_port: Option<u16>,
+    pub agent_web_https_port: Option<u16>,
 
-    #[arg(long, default_value = None, help = "TLS certificate file path for HTTPS")]
-    pub agent_local_web_https_tls_cert: Option<PathBuf>,
-
-    #[arg(long, default_value = None, help = "TLS signing key file path for HTTPS")]
-    pub agent_local_web_https_tls_key: Option<PathBuf>,
-
-    #[arg(long, default_value = None, help = "Enable/Disable VPN server"
+    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-rusteze home directory) to TLS certificate file for HTTPS", value_name = "certs/servers/localhost/cert.pem"
     )]
-    pub agent_local_enable_vpn: Option<bool>,
+    pub agent_web_https_tls_cert: Option<PathBuf>,
 
-    #[arg(long, default_value = None, help = "Agent's local VPN port for the VPN server listen (e.g. 51820)"
+    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-rusteze home directory) to TLS private key file for HTTPS", value_name = "certs/servers/localhost/key.pem"
     )]
-    pub agent_local_vpn_port: Option<u16>,
+    pub agent_web_https_tls_key: Option<PathBuf>,
 
-    #[arg(long, default_value = None, help = "Agent's outbound interface for the VPN server's packet forwarding setup (e.g. eth0)"
-    )]
-    pub agent_local_vpn_outbound_interface: Option<String>,
+    #[arg(long, default_value = None, long_help = "Enable password authentication for web server")]
+    pub agent_web_password_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement"
-    )]
-    pub agent_public_address: Option<String>,
-
-    #[arg(long, default_value = None, help = "Agent's publicly accessible port to be used in the VPN endpoint advertisement (e.g. 51820)"
-    )]
-    pub agent_public_vpn_port: Option<u16>,
-
-    #[arg(long, default_value = None, help = "Agent's internal IPv4 address for VPN network (e.g. 10.0.34.1)"
-    )]
-    pub agent_internal_vpn_address: Option<String>,
-
-    #[arg(long, default_value = None, help = "Enable/Disable password for the web server")]
-    pub agent_enable_web_password: Option<bool>,
-
-    #[arg(long, default_value = None, help = "Agent's password for the web server")]
+    #[arg(long, default_value = None, long_help = "Set password for web server access")]
     pub agent_web_password: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable DNS field for the agent")]
-    pub agent_enable_dns: Option<bool>,
-
-    #[arg(long, default_value = None, help = "Agent's DNS field setting as an IPv4 address (e.g. 1.1.1.1)"
+    #[arg(long, default_value = None, long_help = "Enable VPN server"
     )]
-    pub agent_dns_server: Option<String>,
+    pub agent_vpn_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable MTU field for the agent")]
-    pub agent_enable_mtu: Option<bool>,
-
-    #[arg(long, default_value = None, help = "Agent's MTU field setting as a value (e.g. 1420)")]
-    pub agent_mtu_value: Option<String>,
-
-    #[arg(long, default_value = None, help = "Enable/Disable PreUp scripting field for the agent")]
-    pub agent_enable_script_pre_up: Option<bool>,
-
-    #[arg(long, default_value = None, help = "Agent's PreUp scripting field setting as a line of script (e.g. sysctl -w net.ipv4.ip_forward=1)"
+    #[arg(long, default_value = None, long_help = "Set VPN server listening port", value_name = "51820"
     )]
-    pub agent_script_pre_up_line: Option<String>,
+    pub agent_vpn_port: Option<u16>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable PostUp scripting field for the agent")]
-    pub agent_enable_script_post_up: Option<bool>,
-
-    #[arg(long, default_value = None, help = "Agent's PostUp scripting field setting as a line of script (e.g. echo 'Network is up')"
+    #[arg(long, default_value = None, long_help = "Set gateway (outbound interface) for VPN packet forwarding", value_name = "eth0"
     )]
-    pub agent_script_post_up_line: Option<String>,
+    pub agent_vpn_gateway: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable PreDown scripting field for the agent"
+    #[arg(long, default_value = None, long_help = "Enable running firewall commands for setting up NAT and input rules"
     )]
-    pub agent_enable_script_pre_down: Option<bool>,
+    pub agent_firewall_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Agent's PreDown scripting field setting as a line of script (e.g. echo 'Network is going down')"
+    #[arg(long, default_value = None, long_help = "Set the utility used to configure firewall NAT and input rules", value_name = "iptables"
     )]
-    pub agent_script_pre_down_line: Option<String>,
+    pub agent_firewall_utility: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable PostDown scripting field for the agent"
+    #[arg(long, default_value = None, long_help = "Set agent peer name", value_name = "wg-rusteze-host"
     )]
-    pub agent_enable_script_post_down: Option<bool>,
+    pub agent_peer_name: Option<String>,
 
-    #[arg(long, default_value = None, help = "Agent's PostDown scripting field setting as a line of script (e.g. sysctl -w net.ipv4.ip_forward=0)"
+    #[arg(long, default_value = None, long_help = "Set publicly accessible IPv4 address for VPN endpoint"
     )]
-    pub agent_script_post_down_line: Option<String>,
+    pub agent_peer_vpn_public_address: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Set publicly accessible VPN port", value_name = "51820"
+    )]
+    pub agent_peer_vpn_public_port: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set internal IPv4 address for agent in VPN network", value_name = "10.0.34.1"
+    )]
+    pub agent_peer_vpn_internal_address: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable DNS configuration for agent")]
+    pub agent_peer_dns_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set DNS server for agent", value_name = "1.1.1.1"
+    )]
+    pub agent_peer_dns_server: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable MTU configuration for agent")]
+    pub agent_peer_mtu_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set MTU value for agent", value_name = "1420")]
+    pub agent_peer_mtu_value: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable PreUp script for agent")]
+    pub agent_peer_script_pre_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set PreUp script line for agent"
+    )]
+    pub agent_peer_script_pre_up_line: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable PostUp script for agent")]
+    pub agent_peer_script_post_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set PostUp script line for agent"
+    )]
+    pub agent_peer_script_post_up_line: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable PreDown script for agent"
+    )]
+    pub agent_peer_script_pre_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set PreDown script line for agent"
+    )]
+    pub agent_peer_script_pre_down_line: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable PostDown script for agent"
+    )]
+    pub agent_peer_script_post_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set PostDown script line for agent"
+    )]
+    pub agent_peer_script_post_down_line: Option<String>,
 
     // default settings for new peers/connections
-    #[arg(long, default_value = None, help = "Enable/Disable DNS field for new peers by default")]
-    pub default_enable_dns: Option<bool>,
+    #[arg(long, default_value = None, long_help = "Enable DNS for new peers by default")]
+    pub default_peer_dns_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Default DNS field setting as an IPv4 address for the new peer (e.g. 1.1.1.1)"
+    #[arg(long, default_value = None, long_help = "Set default DNS server for new peers", value_name = "1.1.1.1"
     )]
-    pub default_dns_server: Option<String>,
+    pub default_peer_dns_server: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable MTU field for new peers by default")]
-    pub default_enable_mtu: Option<bool>,
+    #[arg(long, default_value = None, long_help = "Enable MTU for new peers by default")]
+    pub default_peer_mtu_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Default MTU field setting as a value for the new peer (e.g. 1420)"
+    #[arg(long, default_value = None, long_help = "Set default MTU value for new peers", value_name = "1420"
     )]
-    pub default_mtu_value: Option<String>,
+    pub default_peer_mtu_value: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable PreUp scripting field for new peers by default"
+    #[arg(long, default_value = None, long_help = "Enable PreUp script for new peers by default"
     )]
-    pub default_enable_script_pre_up: Option<bool>,
+    pub default_peer_script_pre_up_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "New Peer's default PreUp scripting field setting as a line of script (e.g. sysctl -w net.ipv4.ip_forward=1)"
+    #[arg(long, default_value = None, long_help = "Set default PreUp script line for new peers"
     )]
-    pub default_script_pre_up_line: Option<String>,
+    pub default_peer_script_pre_up_line: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable PostUp scripting field for new peers by default"
+    #[arg(long, default_value = None, long_help = "Enable PostUp script for new peers by default"
     )]
-    pub default_enable_script_post_up: Option<bool>,
+    pub default_peer_script_post_up_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "New Peer's default PostUp scripting field setting as a line of script (e.g. echo 'Network is up')"
+    #[arg(long, default_value = None, long_help = "Set default PostUp script line for new peers"
     )]
-    pub default_script_post_up_line: Option<String>,
+    pub default_peer_script_post_up_line: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable PreDown scripting field for new peers by default"
+    #[arg(long, default_value = None, long_help = "Enable PreDown script for new peers by default"
     )]
-    pub default_enable_script_pre_down: Option<bool>,
+    pub default_peer_script_pre_down_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "New Peer's default PreDown scripting field setting as a line of script (e.g. echo 'Network is going down')"
+    #[arg(long, default_value = None, long_help = "Set default PreDown script line for new peers"
     )]
-    pub default_script_pre_down_line: Option<String>,
+    pub default_peer_script_pre_down_line: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable PostDown scripting field for the agent"
+    #[arg(long, default_value = None, long_help = "Enable PostDown script for new peers by default"
     )]
-    pub default_enable_script_post_down: Option<bool>,
+    pub default_peer_script_post_down_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Agent's PostDown scripting field setting as a line of script (e.g. sysctl -w net.ipv4.ip_forward=0)"
+    #[arg(long, default_value = None, long_help = "Set default PostDown script line for new peers"
     )]
-    pub default_script_post_down_line: Option<String>,
+    pub default_peer_script_post_down_line: Option<String>,
 
-    #[arg(long, default_value = None, help = "Enable/Disable PersistentKeepalive field for new connections by default"
+    #[arg(long, default_value = None, long_help = "Enable PersistentKeepalive for new connections by default"
     )]
-    pub default_enable_persistent_keepalive: Option<bool>,
+    pub default_connection_persistent_keepalive_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, help = "Default PersistentKeepalive period in seconds (e.g. 25)"
+    #[arg(long, default_value = None, long_help = "Set default PersistentKeepalive period in seconds", value_name = "25"
     )]
-    pub default_persistent_keepalive_period: Option<String>,
+    pub default_connection_persistent_keepalive_period: Option<String>,
 
-    #[arg(long, default_value = None, help = "Disable setting up the agent with prompts")]
+    #[arg(long, default_value = None, long_help = "Disable interactive setup prompts")]
     pub no_prompt: Option<bool>,
 }
 

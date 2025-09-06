@@ -1,9 +1,9 @@
 // build.rs: create macros to embed the version info and build time into the executable
 // and generate bash completion script
 use chrono::SecondsFormat;
-use clap::CommandFactory;
+use clap::{CommandFactory, Parser};
 use clap_complete::generate_to;
-use rust_cli::Cli;
+use rust_cli::{Cli, InitOptions};
 use serde_json::Value as JsonValue;
 use std::fs;
 use std::path::Path;
@@ -73,6 +73,38 @@ macro_rules! full_version {{
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("version_macro.rs");
     fs::write(dest_path, content).expect("Could not write version macro");
+
+    // flag/help generator for cli
+    #[derive(Parser, Debug)]
+    struct InitOptionsWrapper {
+        #[command(flatten)]
+        opts: InitOptions,
+    }
+    let cmd = InitOptionsWrapper::command();
+
+    let flags = cmd
+        .get_arguments()
+        .filter_map(|arg| arg.get_long().map(|long| format!("--{}", long)))
+        .collect::<Vec<String>>();
+
+    let helps = cmd
+        .get_arguments()
+        .map(|arg| arg.get_long_help().unwrap_or_default().to_string())
+        .collect::<Vec<String>>();
+
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join("init_options_generated.rs");
+
+    let content = format!(
+        r#"
+pub const INIT_FLAGS: &[&str] = &{flags:?};
+pub const INIT_HELPS: &[&str] = &{helps:?};
+        "#,
+        flags = flags,
+        helps = helps,
+    );
+
+    fs::write(dest_path, content).expect("Could not write init_options_generated.rs");
 
     // Generate bash completion script
     let cli = Cli::command();

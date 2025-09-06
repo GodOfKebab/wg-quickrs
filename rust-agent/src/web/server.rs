@@ -53,7 +53,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
 
     // Futures for HTTP/HTTPS servers
     let http_future = if config.agent.web.http.enabled {
-        let http_bind_addr = (config.agent.address.clone(), config.agent.web.http.port);
+        let http_bind_addr = (config.agent.web.address.clone(), config.agent.web.http.port);
         let http_server = HttpServer::new(app_factory)
             .bind(http_bind_addr.clone())
             .unwrap_or_else(|_| {
@@ -73,7 +73,10 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
     };
 
     let https_future = if config.agent.web.https.enabled {
-        let https_bind_addr = (config.agent.address.clone(), config.agent.web.https.port);
+        let https_bind_addr = (
+            config.agent.web.address.clone(),
+            config.agent.web.https.port,
+        );
         let mut tls_cert = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap().clone();
         tls_cert.push(config.agent.web.https.tls_cert.clone());
         let mut tls_key = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap().clone();

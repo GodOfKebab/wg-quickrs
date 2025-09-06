@@ -366,7 +366,7 @@ pub(crate) fn start_tunnel(config: &Config) -> Result<(), WireGuardCommandError>
 
     log::info!(
         "wireguard tunnel accessible at {}:{}",
-        config.agent.address,
+        config.agent.web.address,
         config.agent.vpn.port
     );
     Ok(())

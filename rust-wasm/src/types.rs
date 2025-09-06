@@ -76,13 +76,14 @@ impl From<&Summary> for SummaryDigest {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Agent {
-    pub address: String,
     pub web: AgentWeb,
     pub vpn: AgentVpn,
+    pub firewall: AgentFirewall,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentWeb {
+    pub address: String,
     pub http: AgentWebHttp,
     pub https: AgentWebHttps,
     pub password: Password,
@@ -111,8 +112,14 @@ pub struct Password {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentVpn {
     pub enabled: bool,
-    pub outbound_interface: String,
+    pub gateway: String,
     pub port: u16,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AgentFirewall {
+    pub enabled: bool,
+    pub utility: String,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

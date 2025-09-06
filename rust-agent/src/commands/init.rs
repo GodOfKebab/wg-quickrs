@@ -7,19 +7,20 @@ use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
 use rust_cli::InitOptions;
 use rust_wasm::types::{
-    Agent, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config, DefaultConnection, DefaultPeer,
-    Defaults, EnabledValue, Network, Password, Peer, Scripts,
+    Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
+    DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::process::ExitCode;
 use uuid::Uuid;
+include!(concat!(env!("OUT_DIR"), "/init_options_generated.rs"));
 
 // Helper to prompt a value with optional default
 fn prompt<T: std::str::FromStr>(msg: &str, default: Option<&str>) -> T {
     let input = if let Some(d) = default {
         Input::new()
-            .with_prompt(format!("{msg} (e.g. {d})"))
+            .with_prompt(msg.to_string())
             .default(d.to_string())
             .interact_text()
     } else {
@@ -91,7 +92,7 @@ fn get_init_bool_option(
             Some(true) => panic!("Error: CLI option '{}' is not set", cli_option),
             _ => Confirm::new()
                 .with_prompt(format!(
-                    "{} Enable {} (CLI option '{}')?",
+                    "{} {} (CLI option '{}')?",
                     step_str, description, cli_option
                 ))
                 .default(default)
@@ -194,8 +195,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         init_opts.no_prompt,
         1,
         init_opts.network_identifier.clone(),
-        "--network-identifier",
-        "Enter VPN network's identifier",
+        INIT_FLAGS[0],
+        INIT_HELPS[0],
         true,
         Some("wg-rusteze"),
     );
@@ -205,8 +206,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         init_opts.no_prompt,
         2,
         init_opts.network_subnet.clone(),
-        "--network-subnet",
-        "Enter VPN network's CIDR subnet mask",
+        INIT_FLAGS[1],
+        INIT_HELPS[1],
         true,
         Some("10.0.34.0/24"),
     );
@@ -214,179 +215,107 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     println!("[general network settings complete]");
     println!("[agent settings 3-18/25]");
 
-    // [3/25] --agent-peer-name
-    let agent_peer_name = get_init_enabled_value_option(
-        init_opts.no_prompt,
-        3,
-        init_opts.agent_peer_name.clone(),
-        "--agent-peer-name",
-        "Enter agent's peer name",
-        true,
-        Some("wg-rusteze-host"),
-    );
-
     let iface_opt = primary_ip_interface();
     let iface_name = iface_opt.as_ref().map(|iface| iface.name.clone());
     let iface_ip = iface_opt.map(|iface| iface.ip().to_string());
 
-    // [4/25] --agent-local-address
-    let agent_local_address = get_init_enabled_value_option(
+    // [3/25] --agent-web-address
+    let agent_web_address = get_init_enabled_value_option(
         init_opts.no_prompt,
-        4,
-        init_opts.agent_local_address.clone(),
-        "--agent-local-address",
-        "Enter agent's local IPv4 address for the web server to bind and vpn server to listen",
+        3,
+        init_opts.agent_web_address.clone(),
+        INIT_FLAGS[2],
+        INIT_HELPS[2],
         true,
         iface_ip.as_deref(),
     );
 
-    // [5/25] --agent-local-enable-web-http & --agent-local-web-http-port
-    let (agent_local_enable_web_http, agent_local_web_http_port) = get_init_pair_option!(
+    // [4/25] --agent_web_http_enabled & --agent_web_http_port
+    let (agent_web_http_enabled, agent_web_http_port) = get_init_pair_option!(
         init_opts.no_prompt,
-        5,
-        init_opts.agent_local_enable_web_http,
-        init_opts.agent_local_web_http_port,
-        "--agent-local-enable-web-http",
-        "--agent-local-web-http-port",
-        "Enable/Disable HTTP for the web server",
-        "\tEnter agent's local HTTP port for the web server to bind",
+        4,
+        init_opts.agent_web_http_enabled,
+        init_opts.agent_web_http_port,
+        INIT_FLAGS[3],
+        INIT_FLAGS[4],
+        INIT_HELPS[3],
+        format!("\t{}", INIT_HELPS[4]).as_str(),
         true,
         Some("80")
     );
 
-    // [6/25] --agent-local-enable-web-https & --agent-local-web-https-port
-    let (agent_local_enable_web_https, agent_local_web_https_port) = get_init_pair_option!(
+    // [5/25] --agent_web_https_enabled & --agent_web_https_port
+    let (agent_web_https_enabled, agent_web_https_port) = get_init_pair_option!(
         init_opts.no_prompt,
-        6,
-        init_opts.agent_local_enable_web_https,
-        init_opts.agent_local_web_https_port,
-        "--agent-local-enable-web-https",
-        "--agent-local-web-https-port",
-        "Enable/Disable HTTPS for the web server",
-        "\tEnter agent's local HTTPS port for the web server to bind",
+        5,
+        init_opts.agent_web_https_enabled,
+        init_opts.agent_web_https_port,
+        INIT_FLAGS[5],
+        INIT_FLAGS[6],
+        INIT_HELPS[5],
+        format!("\t{}", INIT_HELPS[6]).as_str(),
         true,
         Some("443")
     );
 
-    // [6/25] --agent-local-web-https-tls-cert
-    let agent_local_web_https_tls_cert = get_init_enabled_value_option(
+    // [5/25] --agent_web_https_tls_cert
+    let agent_web_https_tls_cert = get_init_enabled_value_option(
         init_opts.no_prompt,
-        6,
+        5,
         init_opts
-            .agent_local_web_https_tls_cert
+            .agent_web_https_tls_cert
             .as_ref()
             .and_then(|p| p.to_str().map(|s| s.to_string())),
-        "--agent-local-web-https-tls-cert",
-        "\tEnter TLS certificate file path for HTTPS",
-        agent_local_enable_web_https,
+        INIT_FLAGS[7],
+        format!("\t{}", INIT_HELPS[7]).as_str(),
+        agent_web_https_enabled,
         Some("cert.pem"),
-    );
+    ); // TODO: auto find cert.pem
 
-    // [6/25] --agent-local-web-https-tls-key
-    let agent_local_web_https_tls_key = get_init_enabled_value_option(
+    // [5/25] --agent_web_https_tls_key
+    let agent_web_https_tls_key = get_init_enabled_value_option(
         init_opts.no_prompt,
-        6,
+        5,
         init_opts
-            .agent_local_web_https_tls_key
+            .agent_web_https_tls_key
             .as_ref()
             .and_then(|p| p.to_str().map(|s| s.to_string())),
-        "--agent-local-web-https-tls-key",
-        "\tEnter TLS signing key file path for HTTPS",
-        agent_local_enable_web_https,
+        INIT_FLAGS[8],
+        format!("\t{}", INIT_HELPS[8]).as_str(),
+        agent_web_https_enabled,
         Some("key.pem"),
-    );
+    ); // TODO: auto find key.pem
 
-    // [7/25] --agent-local-enable-vpn & --agent-local-vpn-port
-    let (agent_local_enable_vpn, agent_local_vpn_port) = get_init_pair_option!(
+    // [6/25] --agent-enable-web-password
+    let agent_web_password_enabled = get_init_bool_option(
         init_opts.no_prompt,
-        7,
-        init_opts.agent_local_enable_vpn,
-        init_opts.agent_local_vpn_port,
-        "--agent-local-enable-vpn",
-        "--agent-local-vpn-port",
-        "Enable/Disable VPN server",
-        "\tEnter agent's local VPN port for the vpn server to bind",
-        true,
-        Some("51820")
-    );
-
-    // [7/25] --agent-local-vpn-outbound-interface
-    let agent_local_vpn_outbound_interface = get_init_enabled_value_option(
-        init_opts.no_prompt,
-        7,
-        init_opts.agent_local_vpn_outbound_interface.clone(),
-        "--agent-local-vpn-outbound-interface",
-        "\tEnter outbound interface for the VPN server's packet forwarding setup",
-        agent_local_enable_vpn,
-        iface_name.as_deref(),
-    );
-
-    // [8/25] --agent-public-address
-    let agent_public_address = get_init_enabled_value_option(
-        init_opts.no_prompt,
-        8,
-        init_opts.agent_public_address.clone(),
-        "--agent-public-address",
-        "Enter agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement",
-        true,
-        iface_ip.as_deref(),
-    );
-
-    // [9/25] --agent-public-vpn-port
-    let agent_public_vpn_port = get_init_enabled_value_option(
-        init_opts.no_prompt,
-        9,
-        init_opts.agent_public_vpn_port,
-        "--agent-public-vpn-port",
-        "Enter agent's publicly accessible port to be used in the VPN endpoint advertisement",
-        true,
-        Some("51820"),
-    );
-
-    // [10/25] --agent-internal-vpn-address
-    let agent_internal_vpn_address = get_init_enabled_value_option(
-        init_opts.no_prompt,
-        10,
-        init_opts.agent_internal_vpn_address.clone(),
-        "--agent-internal-vpn-address",
-        "Enter agent's internal IPv4 address for VPN network",
-        true,
-        Some(&*first_ip(&network_subnet)),
-    );
-
-    // [11/25] --agent-enable-web-password
-    let agent_enable_web_password = get_init_bool_option(
-        init_opts.no_prompt,
-        11,
-        init_opts.agent_enable_web_password,
-        "--agent-enable-web-password",
-        "password for this agent's web server",
+        6,
+        init_opts.agent_web_password_enabled,
+        INIT_FLAGS[9],
+        INIT_HELPS[9],
         true,
     );
-    // [12/25] --agent-web-password
+    // [6/25] --agent-web-password
     let agent_web_password = match init_opts.agent_web_password.clone() {
         Some(v) => {
             println!(
                 "{}  Using password for the web server from CLI argument: ***hidden***",
-                step_str(12)
+                step_str(6)
             );
             v.clone()
         }
         _ => match init_opts.no_prompt {
             Some(true) => {
-                if agent_enable_web_password {
+                if agent_web_password_enabled {
                     "".into()
                 } else {
-                    panic!("Error: --agent-web-password option is not set")
+                    panic!("Error: {} option is not set", INIT_FLAGS[10])
                 }
             }
             _ => {
-                if agent_enable_web_password {
+                if agent_web_password_enabled {
                     dialoguer::Password::new()
-                        .with_prompt(format!(
-                            "{} \tEnter password for this agent's web server",
-                            step_str(12)
-                        ))
+                        .with_prompt(format!("{} \t{}", step_str(6), INIT_HELPS[10]))
                         .interact()
                         .unwrap()
                 } else {
@@ -398,7 +327,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_web_password_hash = match helpers::calculate_password_hash(agent_web_password.trim())
     {
         Ok(p) => {
-            if agent_enable_web_password {
+            if agent_web_password_enabled {
                 p
             } else {
                 "".into()
@@ -409,187 +338,275 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         }
     };
 
-    // [13/25] --agent-enable-dns & --agent-dns-server
-    let (agent_enable_dns, agent_dns_server) = get_init_pair_option!(
+    // [7/25] --agent_vpn_enabled & --agent_vpn_port
+    let (agent_vpn_enabled, agent_vpn_port) = get_init_pair_option!(
+        init_opts.no_prompt,
+        7,
+        init_opts.agent_vpn_enabled,
+        init_opts.agent_vpn_port,
+        INIT_FLAGS[11],
+        INIT_FLAGS[12],
+        INIT_HELPS[11],
+        format!("\t{}", INIT_HELPS[12]).as_str(),
+        true,
+        Some("51820")
+    );
+
+    // [7/25] --agent_vpn_gateway
+    let agent_vpn_gateway = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        7,
+        init_opts.agent_vpn_gateway.clone(),
+        INIT_FLAGS[13],
+        format!("\t{}", INIT_HELPS[13]).as_str(),
+        agent_vpn_enabled,
+        iface_name.as_deref(),
+    );
+
+    // [8/25] --agent_firewall_enabled & --agent_firewall_utility
+    let (agent_firewall_enabled, agent_firewall_utility) = get_init_pair_option!(
+        init_opts.no_prompt,
+        8,
+        init_opts.agent_firewall_enabled,
+        init_opts.agent_firewall_utility.clone(),
+        INIT_FLAGS[14],
+        INIT_FLAGS[15],
+        INIT_HELPS[14],
+        format!("\t{}", INIT_HELPS[15]).as_str(),
+        true,
+        Some("iptables")
+    ); // TODO: auto-detect
+
+    // [9/25] --agent-peer-name
+    let agent_peer_name = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        9,
+        init_opts.agent_peer_name.clone(),
+        INIT_FLAGS[16],
+        INIT_HELPS[16],
+        true,
+        Some("wg-rusteze-host"),
+    );
+
+    // [10/25] --agent_peer_vpn_public_address
+    let agent_peer_vpn_public_address = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        10,
+        init_opts.agent_peer_vpn_public_address.clone(),
+        INIT_FLAGS[17],
+        INIT_HELPS[17],
+        true,
+        iface_ip.as_deref(),
+    );
+
+    // [11/25] --agent-public-vpn-port
+    let agent_peer_vpn_public_port = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        11,
+        init_opts.agent_peer_vpn_public_port,
+        INIT_FLAGS[18],
+        INIT_HELPS[18],
+        true,
+        Some("51820"),
+    );
+
+    // [12/25] --agent_peer_vpn_internal_address
+    let agent_peer_vpn_internal_address = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        12,
+        init_opts.agent_peer_vpn_internal_address.clone(),
+        INIT_FLAGS[19],
+        INIT_HELPS[19],
+        true,
+        Some(&*first_ip(&network_subnet)),
+    );
+
+    // [13/25] --agent_peer_dns_enabled & --agent_peer_dns_server
+    let (agent_peer_dns_enabled, agent_peer_dns_server) = get_init_pair_option!(
         init_opts.no_prompt,
         13,
-        init_opts.agent_enable_dns,
-        init_opts.agent_dns_server.clone(),
-        "--agent-enable-dns",
-        "--agent-dns-server",
-        "DNS server field for this agent",
-        "\tEnter DNS server for this agent",
+        init_opts.agent_peer_dns_enabled,
+        init_opts.agent_peer_dns_server.clone(),
+        INIT_FLAGS[20],
+        INIT_FLAGS[21],
+        INIT_HELPS[20],
+        format!("\t{}", INIT_HELPS[21]).as_str(),
         true,
         Some("1.1.1.1")
     );
 
-    // [14/25] --agent-enable-mtu & --agent-mtu-value
-    let (agent_enable_mtu, agent_mtu_value) = get_init_pair_option!(
+    // [14/25] --agent_peer_mtu_enabled & --agent_peer_mtu_value
+    let (agent_peer_mtu_enabled, agent_peer_mtu_value) = get_init_pair_option!(
         init_opts.no_prompt,
         14,
-        init_opts.agent_enable_mtu,
-        init_opts.agent_mtu_value.clone(),
-        "--agent-enable-mtu",
-        "--agent-mtu-value",
-        "MTU value field for this agent",
-        "\tEnter MTU value for this agent",
+        init_opts.agent_peer_mtu_enabled,
+        init_opts.agent_peer_mtu_value.clone(),
+        INIT_FLAGS[22],
+        INIT_FLAGS[23],
+        INIT_HELPS[22],
+        format!("\t{}", INIT_HELPS[23]).as_str(),
         false,
         Some("1420")
     );
 
-    // [15/25] --agent-enable-script-pre-up & --agent-script-pre-up-line
-    let (agent_enable_script_pre_up, agent_script_pre_up_line) = get_init_pair_option!(
+    // [15/25] --agent_peer_script_pre_up_enabled & --agent_peer_script_pre_up_line
+    let (agent_peer_script_pre_up_enabled, agent_peer_script_pre_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         15,
-        init_opts.agent_enable_script_pre_up,
-        init_opts.agent_script_pre_up_line.clone(),
-        "--agent-enable-script-pre-up",
-        "--agent-script-pre-up-line",
-        "PreUp scripting field for this agent",
-        "\tEnter PreUp scripting line for this agent",
+        init_opts.agent_peer_script_pre_up_enabled,
+        init_opts.agent_peer_script_pre_up_line.clone(),
+        INIT_FLAGS[24],
+        INIT_FLAGS[25],
+        INIT_HELPS[24],
+        format!("\t{}", INIT_HELPS[25]).as_str(),
         false,
-        Some("TODO")
+        Some("")
     );
 
-    // [16/25] --agent-enable-script-post-up & --agent-script-post-up-line
-    let (agent_enable_script_post_up, agent_script_post_up_line) = get_init_pair_option!(
+    // [16/25] --agent_peer_script_post_up_enabled & --agent_peer_script_post_up_line
+    let (agent_peer_script_post_up_enabled, agent_peer_script_post_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         16,
-        init_opts.agent_enable_script_post_up,
-        init_opts.agent_script_post_up_line.clone(),
-        "--agent-enable-script-post-up",
-        "--agent-script-post-up-line",
-        "PostUp scripting field for this agent",
-        "\tEnter PostUp scripting line for this agent",
+        init_opts.agent_peer_script_post_up_enabled,
+        init_opts.agent_peer_script_post_up_line.clone(),
+        INIT_FLAGS[26],
+        INIT_FLAGS[27],
+        INIT_HELPS[26],
+        format!("\t{}", INIT_HELPS[27]).as_str(),
         false,
-        Some("TODO")
+        Some("")
     );
 
-    // [17/25] --agent-enable-script-pre-down & --agent-script-pre-down-line
-    let (agent_enable_script_pre_down, agent_script_pre_down_line) = get_init_pair_option!(
+    // [17/25] --agent_peer_script_pre_down_enabled & --agent_peer_script_pre_down_line
+    let (agent_peer_script_pre_down_enabled, agent_peer_script_pre_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         17,
-        init_opts.agent_enable_script_pre_down,
-        init_opts.agent_script_pre_down_line.clone(),
-        "--agent-enable-script-pre-down",
-        "--agent-script-pre-down-line",
-        "PreDown scripting field for this agent",
-        "\tEnter PreDown scripting line for this agent",
+        init_opts.agent_peer_script_pre_down_enabled,
+        init_opts.agent_peer_script_pre_down_line.clone(),
+        INIT_FLAGS[28],
+        INIT_FLAGS[29],
+        INIT_HELPS[28],
+        format!("\t{}", INIT_HELPS[29]).as_str(),
         false,
-        Some("TODO")
+        Some("")
     );
 
-    // [18/25] --agent-enable-script-post-down & --agent-script-post-down-line
-    let (agent_enable_script_post_down, agent_script_post_down_line) = get_init_pair_option!(
+    // [18/25] --agent_peer_script_post_down_enabled & --agent_peer_script_post_down_line
+    let (agent_peer_script_post_down_enabled, agent_peer_script_post_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         18,
-        init_opts.agent_enable_script_post_down,
-        init_opts.agent_script_post_down_line.clone(),
-        "--agent-enable-script-post-down",
-        "--agent-script-post-down-line",
-        "PostDown scripting field for this agent",
-        "\tEnter PostDown scripting line for this agent",
+        init_opts.agent_peer_script_post_down_enabled,
+        init_opts.agent_peer_script_post_down_line.clone(),
+        INIT_FLAGS[30],
+        INIT_FLAGS[31],
+        INIT_HELPS[30],
+        format!("\t{}", INIT_HELPS[31]).as_str(),
         false,
-        Some("TODO")
+        Some("")
     );
 
     println!("[agent settings complete]");
     println!("[new peer/connection default settings 19-25/25]");
 
-    // [19/25] --default-enable-dns & --default-dns-server
-    let (default_enable_dns, default_dns_server) = get_init_pair_option!(
+    // [19/25] --default_peer_dns_enabled & --default_peer_dns_server
+    let (default_peer_dns_enabled, default_peer_dns_server) = get_init_pair_option!(
         init_opts.no_prompt,
         19,
-        init_opts.default_enable_dns,
-        init_opts.default_dns_server.clone(),
-        "--default-enable-dns",
-        "--default-dns-server",
-        "DNS field for new peers by default",
-        "\tEnter DNS server for new peers by default",
+        init_opts.default_peer_dns_enabled,
+        init_opts.default_peer_dns_server.clone(),
+        INIT_FLAGS[32],
+        INIT_FLAGS[33],
+        INIT_HELPS[32],
+        format!("\t{}", INIT_HELPS[33]).as_str(),
         true,
         Some("1.1.1.1")
     );
 
-    // [20/25] --default-enable-mtu & --default-mtu-value
-    let (default_enable_mtu, default_mtu_value) = get_init_pair_option!(
+    // [20/25] --default_peer_mtu_enabled & --default_peer_mtu_value
+    let (default_peer_mtu_enabled, default_peer_mtu_value) = get_init_pair_option!(
         init_opts.no_prompt,
         20,
-        init_opts.default_enable_mtu,
-        init_opts.default_mtu_value.clone(),
-        "--default-enable-mtu",
-        "--default-mtu-value",
-        "MTU field for new peers by default",
-        "\tEnter MTU value for new peers by default",
+        init_opts.default_peer_mtu_enabled,
+        init_opts.default_peer_mtu_value.clone(),
+        INIT_FLAGS[34],
+        INIT_FLAGS[35],
+        INIT_HELPS[34],
+        format!("\t{}", INIT_HELPS[35]).as_str(),
         false,
         Some("1420")
     );
 
-    // [21/25] --default-enable-script-pre-up & --default-script-pre-up-line
-    let (default_enable_script_pre_up, default_script_pre_up_line) = get_init_pair_option!(
+    // [21/25] --default_peer_script_pre_up_enabled & --default_peer_script_pre_up_line
+    let (default_peer_script_pre_up_enabled, default_peer_script_pre_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         21,
-        init_opts.default_enable_script_pre_up,
-        init_opts.default_script_pre_up_line.clone(),
-        "--default-enable-script-pre-up",
-        "--default-script-pre-up-line",
-        "PreUp scripting field for new peers by default",
-        "\tEnter PreUp scripting line for new peers by default",
+        init_opts.default_peer_script_pre_up_enabled,
+        init_opts.default_peer_script_pre_up_line.clone(),
+        INIT_FLAGS[36],
+        INIT_FLAGS[37],
+        INIT_HELPS[36],
+        format!("\t{}", INIT_HELPS[37]).as_str(),
         false,
-        Some("TODO")
+        Some("")
     );
 
-    // [22/25] --default-enable-script-post-up & --default-script-post-up-line
-    let (default_enable_script_post_up, default_script_post_up_line) = get_init_pair_option!(
+    // [22/25] --default_peer_script_post_up_enabled & --default_peer_script_post_up_line
+    let (default_peer_script_post_up_enabled, default_peer_script_post_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         22,
-        init_opts.default_enable_script_post_up,
-        init_opts.default_script_post_up_line.clone(),
-        "--default-enable-script-post-up",
-        "--default-script-post-up-line",
-        "PostUp scripting field for this default",
-        "\tEnter PostUp scripting line for this default",
+        init_opts.default_peer_script_post_up_enabled,
+        init_opts.default_peer_script_post_up_line.clone(),
+        INIT_FLAGS[38],
+        INIT_FLAGS[39],
+        INIT_HELPS[38],
+        format!("\t{}", INIT_HELPS[39]).as_str(),
         false,
-        Some("TODO")
+        Some("")
     );
 
-    // [23/25] --default-enable-script-pre-down & --default-script-pre-down-line
-    let (default_enable_script_pre_down, default_script_pre_down_line) = get_init_pair_option!(
+    // [23/25] --default_peer_script_pre_down_enabled & --default_peer_script_pre_down_line
+    let (default_peer_script_pre_down_enabled, default_peer_script_pre_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         23,
-        init_opts.default_enable_script_pre_down,
-        init_opts.default_script_pre_down_line.clone(),
-        "--default-enable-script-pre-down",
-        "--default-script-pre-down-line",
-        "PreDown scripting field for this default",
-        "\tEnter PreDown scripting line for this default",
+        init_opts.default_peer_script_pre_down_enabled,
+        init_opts.default_peer_script_pre_down_line.clone(),
+        INIT_FLAGS[40],
+        INIT_FLAGS[41],
+        INIT_HELPS[40],
+        format!("\t{}", INIT_HELPS[41]).as_str(),
         false,
-        Some("TODO")
+        Some("")
     );
 
-    // [24/25] --default-enable-script-post-down & --default-script-post-down-line
-    let (default_enable_script_post_down, default_script_post_down_line) = get_init_pair_option!(
+    // [24/25] --default_peer_script_post_down_enabled & --default_peer_script_post_down_line
+    let (default_peer_script_post_down_enabled, default_peer_script_post_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         24,
-        init_opts.default_enable_script_post_down,
-        init_opts.default_script_post_down_line.clone(),
-        "--default-enable-script-post-down",
-        "--default-script-post-down-line",
-        "PostDown scripting field for this default",
-        "\tEnter PostDown scripting line for this default",
+        init_opts.default_peer_script_post_down_enabled,
+        init_opts.default_peer_script_post_down_line.clone(),
+        INIT_FLAGS[42],
+        INIT_FLAGS[43],
+        INIT_HELPS[42],
+        format!("\t{}", INIT_HELPS[43]).as_str(),
         false,
-        Some("TODO")
+        Some("")
     );
 
-    // [25/25] --default-enable-persistent-keepalive & --default-persistent-keepalive-period
-    let (default_enable_persistent_keepalive, default_persistent_keepalive_period) = get_init_pair_option!(
+    // [25/25] --default_connection_persistent_keepalive_enabled & --default_connection_persistent_keepalive_period
+    let (
+        default_connection_persistent_keepalive_enabled,
+        default_connection_persistent_keepalive_period,
+    ) = get_init_pair_option!(
         init_opts.no_prompt,
         25,
-        init_opts.default_enable_persistent_keepalive,
-        init_opts.default_persistent_keepalive_period.clone(),
-        "--default-enable-persistent-keepalive",
-        "--default-persistent-keepalive-period",
-        "PersistentKeepalive field for new connections by default",
-        "\tEnter PersistentKeepalive period (seconds) for new connections by default",
+        init_opts.default_connection_persistent_keepalive_enabled,
+        init_opts
+            .default_connection_persistent_keepalive_period
+            .clone(),
+        INIT_FLAGS[44],
+        INIT_FLAGS[45],
+        INIT_HELPS[44],
+        format!("\t{}", INIT_HELPS[45]).as_str(),
         true,
         Some("25")
     );
@@ -606,7 +623,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
 
     let peer = Peer {
         name: agent_peer_name,
-        address: agent_internal_vpn_address,
+        address: agent_peer_vpn_internal_address,
         public_key: pub_priv_key
             .get("public_key")
             .unwrap()
@@ -625,59 +642,63 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         updated_at: now.clone(),
         endpoint: EnabledValue {
             enabled: true,
-            value: format!("{agent_public_address}:{agent_public_vpn_port}"),
+            value: format!("{agent_peer_vpn_public_address}:{agent_peer_vpn_public_port}"),
         },
         dns: EnabledValue {
-            enabled: agent_enable_dns,
-            value: agent_dns_server.clone(),
+            enabled: agent_peer_dns_enabled,
+            value: agent_peer_dns_server.clone(),
         },
         mtu: EnabledValue {
-            enabled: agent_enable_mtu,
-            value: agent_mtu_value,
+            enabled: agent_peer_mtu_enabled,
+            value: agent_peer_mtu_value,
         },
         scripts: Scripts {
             pre_up: EnabledValue {
-                enabled: agent_enable_script_pre_up,
-                value: agent_script_pre_up_line,
+                enabled: agent_peer_script_pre_up_enabled,
+                value: agent_peer_script_pre_up_line,
             },
             post_up: EnabledValue {
-                enabled: agent_enable_script_post_up,
-                value: agent_script_post_up_line,
+                enabled: agent_peer_script_post_up_enabled,
+                value: agent_peer_script_post_up_line,
             },
             pre_down: EnabledValue {
-                enabled: agent_enable_script_pre_down,
-                value: agent_script_pre_down_line,
+                enabled: agent_peer_script_pre_down_enabled,
+                value: agent_peer_script_pre_down_line,
             },
             post_down: EnabledValue {
-                enabled: agent_enable_script_post_down,
-                value: agent_script_post_down_line,
+                enabled: agent_peer_script_post_down_enabled,
+                value: agent_peer_script_post_down_line,
             },
         },
     };
 
     let mut config = Config {
         agent: Agent {
-            address: agent_local_address,
             web: AgentWeb {
+                address: agent_web_address,
                 http: AgentWebHttp {
-                    enabled: agent_local_enable_web_http,
-                    port: agent_local_web_http_port,
+                    enabled: agent_web_http_enabled,
+                    port: agent_web_http_port,
                 },
                 https: AgentWebHttps {
-                    enabled: agent_local_enable_web_https,
-                    port: agent_local_web_https_port,
-                    tls_cert: agent_local_web_https_tls_cert.into(),
-                    tls_key: agent_local_web_https_tls_key.into(),
+                    enabled: agent_web_https_enabled,
+                    port: agent_web_https_port,
+                    tls_cert: agent_web_https_tls_cert.into(),
+                    tls_key: agent_web_https_tls_key.into(),
                 },
                 password: Password {
-                    enabled: agent_enable_web_password,
+                    enabled: agent_web_password_enabled,
                     hash: agent_web_password_hash,
                 },
             },
             vpn: AgentVpn {
-                enabled: agent_local_enable_vpn,
-                outbound_interface: agent_local_vpn_outbound_interface,
-                port: agent_local_vpn_port,
+                enabled: agent_vpn_enabled,
+                gateway: agent_vpn_gateway,
+                port: agent_vpn_port,
+            },
+            firewall: AgentFirewall {
+                enabled: agent_firewall_enabled,
+                utility: agent_firewall_utility,
             },
         },
         network: Network {
@@ -699,36 +720,36 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
                         value: "".into(),
                     },
                     dns: EnabledValue {
-                        enabled: default_enable_dns,
-                        value: default_dns_server,
+                        enabled: default_peer_dns_enabled,
+                        value: default_peer_dns_server,
                     },
                     mtu: EnabledValue {
-                        enabled: default_enable_mtu,
-                        value: default_mtu_value,
+                        enabled: default_peer_mtu_enabled,
+                        value: default_peer_mtu_value,
                     },
                     scripts: Scripts {
                         pre_up: EnabledValue {
-                            enabled: default_enable_script_pre_up,
-                            value: default_script_pre_up_line,
+                            enabled: default_peer_script_pre_up_enabled,
+                            value: default_peer_script_pre_up_line,
                         },
                         post_up: EnabledValue {
-                            enabled: default_enable_script_post_up,
-                            value: default_script_post_up_line,
+                            enabled: default_peer_script_post_up_enabled,
+                            value: default_peer_script_post_up_line,
                         },
                         pre_down: EnabledValue {
-                            enabled: default_enable_script_pre_down,
-                            value: default_script_pre_down_line,
+                            enabled: default_peer_script_pre_down_enabled,
+                            value: default_peer_script_pre_down_line,
                         },
                         post_down: EnabledValue {
-                            enabled: default_enable_script_post_down,
-                            value: default_script_post_down_line,
+                            enabled: default_peer_script_post_down_enabled,
+                            value: default_peer_script_post_down_line,
                         },
                     },
                 },
                 connection: DefaultConnection {
                     persistent_keepalive: EnabledValue {
-                        enabled: default_enable_persistent_keepalive,
-                        value: default_persistent_keepalive_period,
+                        enabled: default_connection_persistent_keepalive_enabled,
+                        value: default_connection_persistent_keepalive_period,
                     },
                 },
             },
