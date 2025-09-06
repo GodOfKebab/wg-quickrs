@@ -141,19 +141,6 @@ Move the certificates to `~/.wg-rusteze`:
 cp certs/servers/$(hostname -I | awk '{print $1}')/* ~/.wg-rusteze/
 ```
 
-Folder structure before initialization:
-
-```
-~/.wg-rusteze
-├── bin
-│   └── wg-rusteze
-├── cert.pem
-├── completions
-│   ├── _wg-rusteze
-│   └── wg-rusteze.bash
-└── key.pem
-```
-
 ---
 
 #### 1.1.6 Install WireGuard
@@ -220,6 +207,23 @@ wg-rusteze init
 ```
 
 Follow the prompts to configure network, agent, and default peer settings. This generates `~/.wg-rusteze/conf.yml`.
+
+Folder structure after initialization:
+
+```bash
+tree ~/.wg-rusteze
+# ~/.wg-rusteze
+# ├── bin
+# │   └── wg-rusteze
+# ├── cert.pem
+# ├── completions
+# │   ├── _wg-rusteze
+# │   └── wg-rusteze.bash
+# ├── conf.yml
+# └── key.pem
+# 
+# 3 directories, 6 files
+```
 
 ---
 
@@ -294,3 +298,50 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
 sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
+
+Edit the TLS certificate settings and enter the FQDN/Domain names for the certificates from `certificate-manager`
+service in `docker-compose.init.yml`.
+
+```bash
+docker compose -f docker-compose.init.yml up certificate-manager
+tree .wg-rusteze-docker
+# .wg-rusteze-docker
+# └── certs
+#     ├── root
+#     │   ├── rootCA.crt
+#     │   └── rootCA.key
+#     └── servers
+#         ├── 127.0.0.1
+#         │   ├── cert.pem
+#         │   └── key.pem
+#         └── localhost
+#             ├── cert.pem
+#             └── key.pem
+```
+
+Edit the wg-rusteze settings from `wg-rusteze-init` service in `docker-compose.init.yml`.
+Especially make sure that the IP addresses are updated and correct TLS cert/key paths are entered.
+
+```bash
+docker compose -f docker-compose.init.yml up wg-rusteze-init
+tree .wg-rusteze-docker
+# .wg-rusteze-docker
+# └── certs
+#     ├── root
+#     │   ├── rootCA.crt
+#     │   └── rootCA.key
+#     └── servers
+#         ├── 127.0.0.1
+#         │   ├── cert.pem
+#         │   └── key.pem
+#         └── localhost
+#             ├── cert.pem
+#             └── key.pem
+```
+
+After initialization, you can run the `wg-rusteze-agent-run` service in `docker-compose.agent.yml`.
+
+```bash
+docker compose -f docker-compose.agent.yml up wg-rusteze-agent-run
+```
+
