@@ -10,15 +10,9 @@ use wasm_bindgen::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
-pub fn get_peer_wg_config_frontend(
-    agent_js: JsValue,
-    network_js: JsValue,
-    peer_id: String,
-    version: &str,
-) -> String {
+pub fn get_peer_wg_config_frontend(network_js: JsValue, peer_id: String, version: &str) -> String {
     let network: types::Network = serde_wasm_bindgen::from_value(network_js).unwrap();
-    let agent: types::Agent = serde_wasm_bindgen::from_value(agent_js).unwrap();
-    helpers::get_peer_wg_config(&agent, &network, peer_id, version).unwrap()
+    helpers::get_peer_wg_config(&network, peer_id, version, None).unwrap()
 }
 
 #[cfg(target_arch = "wasm32")]

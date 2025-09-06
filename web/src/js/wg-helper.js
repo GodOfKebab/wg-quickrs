@@ -4,12 +4,12 @@ import {check_field_frontend, get_connection_id_frontend, get_peer_wg_config_fro
 
 export default class WireGuardHelper {
 
-    static getPeerConfig(agent, network, peerId, version) {
-        return get_peer_wg_config_frontend(agent, network, peerId, version);
+    static getPeerConfig(network, peerId, version) {
+        return get_peer_wg_config_frontend(network, peerId, version);
     }
 
-    static downloadPeerConfig(agent, network, peerId, version) {
-        const peerConfigFileContents = WireGuardHelper.getPeerConfig(agent, network, peerId, version);
+    static downloadPeerConfig(network, peerId, version) {
+        const peerConfigFileContents = WireGuardHelper.getPeerConfig(network, peerId, version);
         const peerConfigFileName = network.peers[peerId].name.replace(/[^a-zA-Z0-9_=+.-]/g, '-').replace(/(-{2,}|-$)/g, '-').replace(/-$/, '').substring(0, 32);
 
         const element = document.createElement('a');

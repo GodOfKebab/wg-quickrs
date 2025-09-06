@@ -148,7 +148,6 @@
   <!-- Dialog: Peer View/Edit -->
   <peer-config-window v-if="dialogId.startsWith('selected-peer-id=')"
                       v-model:dialog-id="dialogId"
-                      :agent="agent"
                       :network="network"
                       :version="version"
                       :api="api"
@@ -157,7 +156,6 @@
   <!-- Dialog: Peer Create -->
   <peer-create-window v-if="dialogId === 'create-peer'"
                       v-model:dialog-id="dialogId"
-                      :agent="agent"
                       :network="network"
                       :api="api"
                       :version="version"></peer-create-window>
@@ -195,7 +193,6 @@ export default {
       },
       requiresPassword: false,
       dialogId: '',
-      agent: {},
       network: {},
       telemetry: {},
       digest: '',
@@ -266,7 +263,6 @@ export default {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.digest = summary.digest;
           this.telemetry = {data: summary.telemetry, timestamp: summary.timestamp};
-          this.agent = summary.agent;
           this.network = summary.network;
           this.network.static_peer_ids = [];
           this.network.roaming_peer_ids = [];

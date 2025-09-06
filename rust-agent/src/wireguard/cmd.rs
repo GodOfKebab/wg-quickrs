@@ -307,12 +307,31 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
 }
 
 pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandError> {
-    // generate .conf content
+    // generate .conf content with hidden scripts
+    let mut hidden_scripts = None;
+    if config.agent.firewall.enabled && config.agent.firewall.utility == "iptables" {
+        hidden_scripts = Some(format!(
+            "### START OF HIDDEN SCRIPTS ###
+PostUp = iptables -t nat -A POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
+PostDown = iptables -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
+PostUp = iptables -A INPUT -p udp -m udp --dport {port} -j ACCEPT;
+PostDown = iptables -D INPUT -p udp -m udp --dport {port} -j ACCEPT;
+PostUp = iptables -A FORWARD -i {interface} -j ACCEPT;
+PostDown = iptables -D FORWARD -i {interface} -j ACCEPT;
+PostUp = iptables -A FORWARD -o {interface} -j ACCEPT;
+PostDown = iptables -D FORWARD -o {interface} -j ACCEPT;
+### END OF HIDDEN SCRIPTS ###",
+            subnet = config.network.subnet,
+            gateway = config.agent.vpn.gateway,
+            port = config.agent.vpn.port,
+            interface = config.network.identifier,
+        ));
+    }
     let wg_conf = match get_peer_wg_config(
-        &config.agent,
         &config.network,
         config.network.this_peer.clone(),
         full_version!(),
+        hidden_scripts,
     ) {
         Ok(n) => n,
         Err(e) => {

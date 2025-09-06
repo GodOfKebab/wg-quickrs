@@ -2,10 +2,10 @@ use crate::types;
 use crate::types::WireGuardLibError;
 
 pub fn get_peer_wg_config(
-    agent: &types::Agent,
     network: &types::Network,
     peer_id: String,
     version: &str,
+    peer_hidden_scripts: Option<String>,
 ) -> Result<String, WireGuardLibError> {
     let this_peer = match network.peers.get(&peer_id) {
         Some(n) => n,
@@ -45,68 +45,17 @@ pub fn get_peer_wg_config(
         writeln!(wg_conf, "MTU = {}", this_peer.mtu.value).unwrap();
     }
     let script_fields = &this_peer.scripts;
+    if let Some(hidden_scripts) = peer_hidden_scripts {
+        writeln!(wg_conf, "{}", hidden_scripts).unwrap();
+    }
     if script_fields.pre_up.enabled {
         writeln!(wg_conf, "PreUp = {}", script_fields.pre_up.value).unwrap();
-    }
-    #[cfg(target_os = "linux")]
-    if peer_id == network.this_peer {
-        writeln!(
-            wg_conf,
-            "PostUp = iptables -t nat -A POSTROUTING -s {} -o {} -j MASQUERADE;",
-            network.subnet, agent.vpn.outbound_interface
-        )
-        .unwrap();
-        writeln!(
-            wg_conf,
-            "PostUp = iptables -A INPUT -p udp -m udp --dport {} -j ACCEPT;",
-            agent.vpn.port
-        )
-        .unwrap();
-        writeln!(
-            wg_conf,
-            "PostUp = iptables -A FORWARD -i {} -j ACCEPT;",
-            network.identifier
-        )
-        .unwrap();
-        writeln!(
-            wg_conf,
-            "PostUp = iptables -A FORWARD -o {} -j ACCEPT;",
-            network.identifier
-        )
-        .unwrap();
     }
     if script_fields.post_up.enabled {
         writeln!(wg_conf, "PostUp = {}", script_fields.post_up.value).unwrap();
     }
     if script_fields.pre_down.enabled {
         writeln!(wg_conf, "PreDown = {}", script_fields.pre_down.value).unwrap();
-    }
-    #[cfg(target_os = "linux")]
-    if peer_id == network.this_peer {
-        writeln!(
-            wg_conf,
-            "PostDown = iptables -t nat -D POSTROUTING -s {} -o {} -j MASQUERADE;",
-            network.subnet, agent.vpn.outbound_interface
-        )
-        .unwrap();
-        writeln!(
-            wg_conf,
-            "PostDown = iptables -D INPUT -p udp -m udp --dport {} -j ACCEPT;",
-            agent.vpn.port
-        )
-        .unwrap();
-        writeln!(
-            wg_conf,
-            "PostDown = iptables -D FORWARD -i {} -j ACCEPT;",
-            network.identifier
-        )
-        .unwrap();
-        writeln!(
-            wg_conf,
-            "PostDown = iptables -D FORWARD -o {} -j ACCEPT;",
-            network.identifier
-        )
-        .unwrap();
     }
     if script_fields.post_down.enabled {
         writeln!(wg_conf, "PostDown = {}", script_fields.post_down.value).unwrap();
