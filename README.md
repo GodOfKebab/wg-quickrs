@@ -174,7 +174,7 @@ wg-rusteze init
 # 	[ 6/25] 	Enter TLS signing key file path for HTTPS (CLI option '--agent-local-web-https-tls-key') (e.g. key.pem): key.pem
 # 	[ 7/25] Enable Enable/Disable VPN server (CLI option '--agent-local-enable-vpn')? yes
 # 	[ 7/25] 	Enter agent's local VPN port for the vpn server to bind (CLI option '--agent-local-vpn-port') (e.g. 51820): 51820
-# 	[ 7/25] 	Enter interface for the VPN server's packet forwarding setup (CLI option '--agent-local-vpn-interface') (e.g. enp1s0): enp1s0
+# 	[ 7/25] 	Enter outbound interface for the VPN server's packet forwarding setup (CLI option '--agent-local-vpn-outbound-interface') (e.g. enp1s0): enp1s0
 # 	[ 8/25] Enter agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement (CLI option '--agent-public-address') (e.g. XXX.XXX.XXX.XXX): XXX.XXX.XXX.XXX
 # 	[ 9/25] Enter agent's publicly accessible port to be used in the VPN endpoint advertisement (CLI option '--agent-public-vpn-port') (e.g. 51820): 51820
 # 	[10/25] Enter agent's internal IPv4 address for VPN network (CLI option '--agent-internal-vpn-address') (e.g. 10.0.34.1): 10.0.34.1

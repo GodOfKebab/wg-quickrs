@@ -83,9 +83,9 @@ pub struct InitOptions {
     )]
     pub agent_local_vpn_port: Option<u16>,
 
-    #[arg(long, default_value = None, help = "Agent's local interface for the VPN server's packet forwarding setup (e.g. eth0)"
+    #[arg(long, default_value = None, help = "Agent's outbound interface for the VPN server's packet forwarding setup (e.g. eth0)"
     )]
-    pub agent_local_vpn_interface: Option<String>,
+    pub agent_local_vpn_outbound_interface: Option<String>,
 
     #[arg(long, default_value = None, help = "Agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement"
     )]

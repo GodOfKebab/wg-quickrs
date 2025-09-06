@@ -111,7 +111,7 @@ pub struct Password {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentVpn {
     pub enabled: bool,
-    pub interface: String,
+    pub outbound_interface: String,
     pub port: u16,
 }
 

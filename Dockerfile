@@ -70,7 +70,7 @@ CMD /app/wg-rusteze --wg-rusteze-config-folder .wg-rusteze init --no-prompt true
   --agent-public-address "$AGENT_PUBLIC_ADDRESS" \
   --agent-public-vpn-port "$AGENT_PUBLIC_VPN_PORT" \
   --agent-internal-vpn-address "$AGENT_INTERNAL_VPN_ADDRESS" \
-  --agent-local-vpn-interface "$AGENT_LOCAL_VPN_INTERFACE" \
+  --agent-local-vpn-outbound-interface "$AGENT_LOCAL_VPN_OUTBOUND_INTERFACE" \
   --agent-enable-web-password "$AGENT_ENABLE_WEB_PASSWORD" \
   --agent-web-password "$AGENT_WEB_PASSWORD" \
   --agent-enable-dns "$AGENT_ENABLE_DNS" \

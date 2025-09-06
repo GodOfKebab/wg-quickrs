@@ -53,7 +53,7 @@ pub fn get_peer_wg_config(
         writeln!(
             wg_conf,
             "PostUp = iptables -t nat -A POSTROUTING -s {} -o {} -j MASQUERADE;",
-            network.subnet, agent.vpn.interface
+            network.subnet, agent.vpn.outbound_interface
         )
         .unwrap();
         writeln!(
@@ -86,7 +86,7 @@ pub fn get_peer_wg_config(
         writeln!(
             wg_conf,
             "PostDown = iptables -t nat -D POSTROUTING -s {} -o {} -j MASQUERADE;",
-            network.subnet, agent.vpn.interface
+            network.subnet, agent.vpn.outbound_interface
         )
         .unwrap();
         writeln!(
