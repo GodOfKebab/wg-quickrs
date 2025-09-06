@@ -69,8 +69,8 @@ async fn main() -> ExitCode {
         } => match commands {
             // wg-rusteze agent run
             AgentCommands::Run => commands::agent::run_agent(wireguard_config_folder).await,
-            // wg-rusteze agent set-address
-            AgentCommands::SetAddress(v) => commands::config::set_agent_fields(
+            // wg-rusteze agent set-web-address
+            AgentCommands::SetWebAddress(v) => commands::config::set_agent_fields(
                 "address",
                 AgentFieldValue::Text(v.address.clone()),
             ),
@@ -100,14 +100,6 @@ async fn main() -> ExitCode {
                 "https-tls-key",
                 AgentFieldValue::Path(v.path.clone()),
             ),
-            // wg-rusteze agent enable-vpn
-            AgentCommands::EnableVpn => commands::config::toggle_agent_fields("vpn", true),
-            // wg-rusteze agent disable-vpn
-            AgentCommands::DisableVpn => commands::config::toggle_agent_fields("vpn", false),
-            // wg-rusteze agent set-vpn-port
-            AgentCommands::SetVpnPort(v) => {
-                commands::config::set_agent_fields("vpn-port", AgentFieldValue::Port(v.port))
-            }
             // wg-rusteze agent enable-web-password
             AgentCommands::EnableWebPassword => {
                 commands::config::toggle_agent_fields("password", true)
@@ -119,6 +111,30 @@ async fn main() -> ExitCode {
             // wg-rusteze agent reset-web-password
             AgentCommands::ResetWebPassword(reset_web_password_opts) => {
                 commands::config::reset_web_password(reset_web_password_opts)
+            }
+            // wg-rusteze agent enable-vpn
+            AgentCommands::EnableVpn => commands::config::toggle_agent_fields("vpn", true),
+            // wg-rusteze agent disable-vpn
+            AgentCommands::DisableVpn => commands::config::toggle_agent_fields("vpn", false),
+            // wg-rusteze agent set-vpn-port
+            AgentCommands::SetVpnPort(v) => {
+                commands::config::set_agent_fields("vpn-port", AgentFieldValue::Port(v.port))
+            }
+            // wg-rusteze agent enable-firewall
+            AgentCommands::EnableFirewall => {
+                commands::config::toggle_agent_fields("firewall", true)
+            }
+            // wg-rusteze agent disable-firewall
+            AgentCommands::DisableFirewall => {
+                commands::config::toggle_agent_fields("firewall", false)
+            }
+            // wg-rusteze agent set-firewall-utility
+            AgentCommands::SetFirewallUtility(v) => {
+                // commands::config::reset_web_password(v)
+                commands::config::set_agent_fields(
+                    "firewall-utility",
+                    AgentFieldValue::Text(v.utility.clone()),
+                )
             }
         },
     }

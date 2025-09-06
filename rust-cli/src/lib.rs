@@ -225,46 +225,53 @@ pub enum AgentCommands {
     #[command(about = "Runs the rust-agent")]
     Run,
     // setting: address
-    #[command(
-        about = "Set the local IPv4 address for the web server to bind and vpn server to listen"
-    )]
-    SetAddress(AddressArg),
+    #[command(about = "Set agent web server bind IPv4 address")]
+    SetWebAddress(AddressArg),
     // settings: http
-    #[command(about = "Enable the HTTP web server")]
+    #[command(about = "Enable HTTP on web server")]
     EnableWebHttp,
-    #[command(about = "Disable the HTTP web server")]
+    #[command(about = "Disable HTTP on web server")]
     DisableWebHttp,
-    #[command(about = "Set port for the HTTP web server")]
+    #[command(about = "Set web server HTTP port")]
     SetHttpWebPort(PortArg),
     // settings: https
-    #[command(about = "Enable the HTTPS web server")]
+    #[command(about = "Enable HTTPS on web server")]
     EnableWebHttps,
-    #[command(about = "Disable the HTTPS web server")]
+    #[command(about = "Disable HTTPS on web server")]
     DisableWebHttps,
     #[command(about = "Set port for the HTTPS web server")]
     SetWebHttpsPort(PortArg),
     #[command(
-        about = "Set TLS certificate file path (relative to the wg-rusteze home directory) for HTTPS web server"
+        about = "Set path (relative to the wg-rusteze home directory) to TLS certificate file for HTTPS"
     )]
     SetWebHttpsTlsCert(PathArg),
     #[command(
-        about = "Set TLS signing key file path (relative to the wg-rusteze home directory) for HTTPS web server"
+        about = "Set path (relative to the wg-rusteze home directory) to TLS private key file for HTTPS"
     )]
     SetWebHttpsTlsKey(PathArg),
-    // setting: VPN
-    #[command(about = "Enable the VPN server")]
-    EnableVpn,
-    #[command(about = "Disable the VPN server")]
-    DisableVpn,
-    #[command(about = "Set port for the VPN server")]
-    SetVpnPort(PortArg),
     // settings: password
-    #[command(about = "Enable the web password")]
+    #[command(about = "Enable password authentication for web server")]
     EnableWebPassword,
-    #[command(about = "Disable the web password")]
+    #[command(about = "Disable password authentication for web server")]
     DisableWebPassword,
-    #[command(about = "Reset the web password")]
+    #[command(about = "Set password for web server access")]
     ResetWebPassword(ResetWebPasswordOptions),
+    // setting: VPN
+    #[command(about = "Enable VPN server")]
+    EnableVpn,
+    #[command(about = "Disable VPN server")]
+    DisableVpn,
+    #[command(about = "Set VPN server listening port")]
+    SetVpnPort(PortArg),
+    // setting: Firewall
+    #[command(about = "Enable running firewall commands for setting up NAT and input rules")]
+    EnableFirewall,
+    #[command(about = "Disable running firewall commands for setting up NAT and input rules")]
+    DisableFirewall,
+    #[command(
+        about = "Set the utility used to configure firewall NAT and input rules (e.g. iptables, ufw, etc.)"
+    )]
+    SetFirewallUtility(UtilityArg),
 }
 
 #[derive(Debug, Args)]
@@ -283,6 +290,12 @@ pub struct PortArg {
 pub struct PathArg {
     #[arg(help = "File path")]
     pub path: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct UtilityArg {
+    #[arg(help = "Utility binary path or name")]
+    pub utility: String,
 }
 
 #[derive(Args, Debug)]

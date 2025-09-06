@@ -82,14 +82,6 @@ pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
                 config.agent.web.https.tls_key.display()
             );
         }
-        "vpn" => {
-            config.agent.vpn.enabled = status;
-            log::info!(
-                "{} VPN server (port={})...",
-                if status { "Enabling" } else { "Disabling" },
-                config.agent.vpn.port
-            );
-        }
         "password" => {
             log::info!(
                 "{} password for the web server...",
@@ -105,6 +97,22 @@ pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
                 }
             }
             config.agent.web.password.enabled = status;
+        }
+        "vpn" => {
+            config.agent.vpn.enabled = status;
+            log::info!(
+                "{} VPN server (port={})...",
+                if status { "Enabling" } else { "Disabling" },
+                config.agent.vpn.port
+            );
+        }
+        "firewall" => {
+            config.agent.firewall.enabled = status;
+            log::info!(
+                "{} firewall setting up NAT and input rules (utility={})...",
+                if status { "Enabling" } else { "Disabling" },
+                config.agent.firewall.utility
+            );
         }
         _ => {
             return ExitCode::FAILURE;
@@ -161,6 +169,13 @@ pub(crate) fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode 
         ("vpn-port", AgentFieldValue::Port(port)) => {
             config.agent.vpn.port = port;
             log::info!("Setting VPN port to {}", config.agent.vpn.port);
+        }
+        ("firewall-utility", AgentFieldValue::Text(value)) => {
+            config.agent.firewall.utility = value;
+            log::info!(
+                "Setting firewall utility to {}",
+                config.agent.firewall.utility
+            );
         }
         _ => {
             return ExitCode::FAILURE;
