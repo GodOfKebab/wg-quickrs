@@ -1,7 +1,7 @@
 use crate::commands::helpers;
-use crate::conf;
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
+use crate::{WG_RUSTEZE_CONFIG_FOLDER, conf};
 use dialoguer::{Confirm, Input};
 use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
@@ -12,12 +12,15 @@ use rust_wasm::types::{
 };
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
+use std::path::PathBuf;
 use std::process::ExitCode;
+use std::{env, fs};
 use uuid::Uuid;
+
 include!(concat!(env!("OUT_DIR"), "/init_options_generated.rs"));
 
 // Helper to prompt a value with optional default
-fn prompt<T: std::str::FromStr>(msg: &str, default: Option<&str>) -> T {
+fn prompt<T: std::str::FromStr + ToString>(msg: &str, default: Option<T>) -> T {
     let input = if let Some(d) = default {
         Input::new()
             .with_prompt(msg.to_string())
@@ -55,6 +58,73 @@ fn primary_ip_interface() -> Option<Interface> {
             log::error!("No valid network interface found");
             None
         }
+    }
+}
+
+fn find_in_path(cmd: &str) -> Option<PathBuf> {
+    if let Ok(paths) = env::var("PATH") {
+        for dir in env::split_paths(&paths) {
+            let full_path = dir.join(cmd);
+            if full_path.is_file() {
+                return Some(full_path);
+            }
+        }
+    }
+    None
+}
+
+fn find_firewall_utility() -> Option<String> {
+    let candidates = ["iptables", "pfctl", "nft"];
+
+    for prog in candidates {
+        if let Some(path) = find_in_path(prog) {
+            return path.to_str().map(|s| s.to_string());
+        }
+    }
+
+    None
+}
+
+fn find_first_cert_server() -> (Option<String>, Option<String>) {
+    let config_folder = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap();
+    let servers_folder = config_folder.join("certs/servers");
+
+    let mut candidates: Vec<(PathBuf, PathBuf)> = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(&servers_folder) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let cert = path.join("cert.pem");
+                let key = path.join("key.pem");
+
+                if cert.exists()
+                    && key.exists()
+                    && let (Ok(rel_cert), Ok(rel_key)) = (
+                        cert.strip_prefix(config_folder),
+                        key.strip_prefix(config_folder),
+                    )
+                {
+                    candidates.push((rel_cert.to_path_buf(), rel_key.to_path_buf()));
+                }
+            }
+        }
+    }
+
+    // Sort alphabetically by directory name
+    candidates.sort_by(|a, b| {
+        a.0.parent()
+            .and_then(|p| p.file_name())
+            .cmp(&b.0.parent().and_then(|p| p.file_name()))
+    });
+
+    if let Some((cert, key)) = candidates.into_iter().next() {
+        (
+            Some(cert.to_string_lossy().into()),
+            Some(key.to_string_lossy().into()),
+        )
+    } else {
+        (None, None)
     }
 }
 
@@ -110,7 +180,7 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
     cli_option: &str,
     description: &str,
     condition: bool,
-    default_value: Option<&str>,
+    default_value: Option<T>,
 ) -> T {
     let step_str = step_str(step);
     match cli_value {
@@ -198,7 +268,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[0],
         INIT_HELPS[0],
         true,
-        Some("wg-rusteze"),
+        Some("wg-rusteze".into()),
     );
 
     // [2/25] --network-subnet
@@ -209,7 +279,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[1],
         INIT_HELPS[1],
         true,
-        Some("10.0.34.0/24"),
+        Some("10.0.34.0/24".into()),
     );
 
     println!("[general network settings complete]");
@@ -227,7 +297,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[2],
         INIT_HELPS[2],
         true,
-        iface_ip.as_deref(),
+        iface_ip.clone(),
     );
 
     // [4/25] --agent_web_http_enabled & --agent_web_http_port
@@ -241,7 +311,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[3],
         format!("\t{}", INIT_HELPS[4]).as_str(),
         true,
-        Some("80")
+        Some(80)
     );
 
     // [5/25] --agent_web_https_enabled & --agent_web_https_port
@@ -255,8 +325,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[5],
         format!("\t{}", INIT_HELPS[6]).as_str(),
         true,
-        Some("443")
+        Some(443)
     );
+
+    let (option_cert, option_key) = find_first_cert_server();
 
     // [5/25] --agent_web_https_tls_cert
     let agent_web_https_tls_cert = get_init_enabled_value_option(
@@ -269,8 +341,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[7],
         format!("\t{}", INIT_HELPS[7]).as_str(),
         agent_web_https_enabled,
-        Some("cert.pem"),
-    ); // TODO: auto find cert.pem
+        option_cert,
+    );
 
     // [5/25] --agent_web_https_tls_key
     let agent_web_https_tls_key = get_init_enabled_value_option(
@@ -283,8 +355,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[8],
         format!("\t{}", INIT_HELPS[8]).as_str(),
         agent_web_https_enabled,
-        Some("key.pem"),
-    ); // TODO: auto find key.pem
+        option_key,
+    );
 
     // [6/25] --agent-enable-web-password
     let agent_web_password_enabled = get_init_bool_option(
@@ -349,7 +421,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[11],
         format!("\t{}", INIT_HELPS[12]).as_str(),
         true,
-        Some("51820")
+        Some(51820)
     );
 
     // [7/25] --agent_vpn_gateway
@@ -360,7 +432,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[13],
         format!("\t{}", INIT_HELPS[13]).as_str(),
         agent_vpn_enabled,
-        iface_name.as_deref(),
+        iface_name,
     );
 
     // [8/25] --agent_firewall_enabled & --agent_firewall_utility
@@ -368,13 +440,16 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         init_opts.no_prompt,
         8,
         init_opts.agent_firewall_enabled,
-        init_opts.agent_firewall_utility.clone(),
+        init_opts
+            .agent_firewall_utility
+            .as_ref()
+            .and_then(|p| p.to_str().map(|s| s.to_string())),
         INIT_FLAGS[14],
         INIT_FLAGS[15],
         INIT_HELPS[14],
         format!("\t{}", INIT_HELPS[15]).as_str(),
         true,
-        Some("iptables")
+        find_firewall_utility()
     ); // TODO: auto-detect
 
     // [9/25] --agent-peer-name
@@ -385,7 +460,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[16],
         INIT_HELPS[16],
         true,
-        Some("wg-rusteze-host"),
+        Some("wg-rusteze-host".into()),
     );
 
     // [10/25] --agent_peer_vpn_public_address
@@ -396,7 +471,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[17],
         INIT_HELPS[17],
         true,
-        iface_ip.as_deref(),
+        iface_ip,
     );
 
     // [11/25] --agent-public-vpn-port
@@ -407,7 +482,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[18],
         INIT_HELPS[18],
         true,
-        Some("51820"),
+        Some(51820),
     );
 
     // [12/25] --agent_peer_vpn_internal_address
@@ -418,7 +493,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[19],
         INIT_HELPS[19],
         true,
-        Some(&*first_ip(&network_subnet)),
+        Some(first_ip(&network_subnet)),
     );
 
     // [13/25] --agent_peer_dns_enabled & --agent_peer_dns_server
@@ -432,7 +507,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[20],
         format!("\t{}", INIT_HELPS[21]).as_str(),
         true,
-        Some("1.1.1.1")
+        Some("1.1.1.1".into())
     );
 
     // [14/25] --agent_peer_mtu_enabled & --agent_peer_mtu_value
@@ -446,7 +521,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[22],
         format!("\t{}", INIT_HELPS[23]).as_str(),
         false,
-        Some("1420")
+        Some("1420".into())
     );
 
     // [15/25] --agent_peer_script_pre_up_enabled & --agent_peer_script_pre_up_line
@@ -460,7 +535,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[24],
         format!("\t{}", INIT_HELPS[25]).as_str(),
         false,
-        Some("")
+        Some("".into())
     );
 
     // [16/25] --agent_peer_script_post_up_enabled & --agent_peer_script_post_up_line
@@ -474,7 +549,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[26],
         format!("\t{}", INIT_HELPS[27]).as_str(),
         false,
-        Some("")
+        Some("".into())
     );
 
     // [17/25] --agent_peer_script_pre_down_enabled & --agent_peer_script_pre_down_line
@@ -488,7 +563,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[28],
         format!("\t{}", INIT_HELPS[29]).as_str(),
         false,
-        Some("")
+        Some("".into())
     );
 
     // [18/25] --agent_peer_script_post_down_enabled & --agent_peer_script_post_down_line
@@ -502,7 +577,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[30],
         format!("\t{}", INIT_HELPS[31]).as_str(),
         false,
-        Some("")
+        Some("".into())
     );
 
     println!("[agent settings complete]");
@@ -519,7 +594,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[32],
         format!("\t{}", INIT_HELPS[33]).as_str(),
         true,
-        Some("1.1.1.1")
+        Some("1.1.1.1".into())
     );
 
     // [20/25] --default_peer_mtu_enabled & --default_peer_mtu_value
@@ -533,7 +608,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[34],
         format!("\t{}", INIT_HELPS[35]).as_str(),
         false,
-        Some("1420")
+        Some("1420".into())
     );
 
     // [21/25] --default_peer_script_pre_up_enabled & --default_peer_script_pre_up_line
@@ -547,7 +622,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[36],
         format!("\t{}", INIT_HELPS[37]).as_str(),
         false,
-        Some("")
+        Some("".into())
     );
 
     // [22/25] --default_peer_script_post_up_enabled & --default_peer_script_post_up_line
@@ -561,7 +636,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[38],
         format!("\t{}", INIT_HELPS[39]).as_str(),
         false,
-        Some("")
+        Some("".into())
     );
 
     // [23/25] --default_peer_script_pre_down_enabled & --default_peer_script_pre_down_line
@@ -575,7 +650,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[40],
         format!("\t{}", INIT_HELPS[41]).as_str(),
         false,
-        Some("")
+        Some("".into())
     );
 
     // [24/25] --default_peer_script_post_down_enabled & --default_peer_script_post_down_line
@@ -589,7 +664,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[42],
         format!("\t{}", INIT_HELPS[43]).as_str(),
         false,
-        Some("")
+        Some("".into())
     );
 
     // [25/25] --default_connection_persistent_keepalive_enabled & --default_connection_persistent_keepalive_period
@@ -608,7 +683,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[44],
         format!("\t{}", INIT_HELPS[45]).as_str(),
         true,
-        Some("25")
+        Some("25".into())
     );
 
     println!("[new peer/connection default settings complete]");
@@ -698,7 +773,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
             },
             firewall: AgentFirewall {
                 enabled: agent_firewall_enabled,
-                utility: agent_firewall_utility,
+                utility: agent_firewall_utility.into(),
             },
         },
         network: Network {

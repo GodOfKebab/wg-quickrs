@@ -133,7 +133,7 @@ async fn main() -> ExitCode {
                 // commands::config::reset_web_password(v)
                 commands::config::set_agent_fields(
                     "firewall-utility",
-                    AgentFieldValue::Text(v.utility.clone()),
+                    AgentFieldValue::Path(v.utility.clone()),
                 )
             }
         },

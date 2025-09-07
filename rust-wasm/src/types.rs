@@ -119,7 +119,7 @@ pub struct AgentVpn {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentFirewall {
     pub enabled: bool,
-    pub utility: String,
+    pub utility: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

@@ -100,7 +100,7 @@ pub struct InitOptions {
 
     #[arg(long, default_value = None, long_help = "Set the utility used to configure firewall NAT and input rules", value_name = "iptables"
     )]
-    pub agent_firewall_utility: Option<String>,
+    pub agent_firewall_utility: Option<PathBuf>,
 
     #[arg(long, default_value = None, long_help = "Set agent peer name", value_name = "wg-rusteze-host"
     )]
@@ -295,7 +295,7 @@ pub struct PathArg {
 #[derive(Debug, Args)]
 pub struct UtilityArg {
     #[arg(help = "Utility binary path or name")]
-    pub utility: String,
+    pub utility: PathBuf,
 }
 
 #[derive(Args, Debug)]

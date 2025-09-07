@@ -309,7 +309,10 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
 pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandError> {
     // generate .conf content with hidden scripts
     let mut hidden_scripts = None;
-    if config.agent.firewall.enabled && config.agent.firewall.utility == "iptables" {
+    if config.agent.firewall.enabled
+        && let Some(utility) = config.agent.firewall.utility.file_name()
+        && utility.to_string_lossy() == "iptables"
+    {
         hidden_scripts = Some(format!(
             "### START OF HIDDEN SCRIPTS ###
 PostUp = iptables -t nat -A POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;

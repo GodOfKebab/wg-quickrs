@@ -111,7 +111,7 @@ pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
             log::info!(
                 "{} firewall setting up NAT and input rules (utility={})...",
                 if status { "Enabling" } else { "Disabling" },
-                config.agent.firewall.utility
+                config.agent.firewall.utility.display()
             );
         }
         _ => {
@@ -170,11 +170,11 @@ pub(crate) fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode 
             config.agent.vpn.port = port;
             log::info!("Setting VPN port to {}", config.agent.vpn.port);
         }
-        ("firewall-utility", AgentFieldValue::Text(value)) => {
+        ("firewall-utility", AgentFieldValue::Path(value)) => {
             config.agent.firewall.utility = value;
             log::info!(
                 "Setting firewall utility to {}",
-                config.agent.firewall.utility
+                config.agent.firewall.utility.display()
             );
         }
         _ => {
