@@ -2,7 +2,7 @@ use crate::commands::helpers;
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
 use crate::{WG_RUSTEZE_CONFIG_FOLDER, conf};
-use dialoguer::{Confirm, Input};
+use dialoguer;
 use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
 use rust_cli::InitOptions;
@@ -10,6 +10,7 @@ use rust_wasm::types::{
     Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
     DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
+use rust_wasm::validation::{CheckResult, FieldValue, check_field};
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -18,20 +19,6 @@ use std::{env, fs};
 use uuid::Uuid;
 
 include!(concat!(env!("OUT_DIR"), "/init_options_generated.rs"));
-
-// Helper to prompt a value with optional default
-fn prompt<T: std::str::FromStr + ToString>(msg: &str, default: Option<T>) -> T {
-    let input = if let Some(d) = default {
-        Input::new()
-            .with_prompt(msg.to_string())
-            .default(d.to_string())
-            .interact_text()
-    } else {
-        Input::new().with_prompt(msg).interact_text()
-    };
-
-    input.unwrap().parse().ok().unwrap()
-}
 
 // Get first usable IP from subnet
 fn first_ip(subnet: &str) -> String {
@@ -160,7 +147,7 @@ fn get_init_bool_option(
         }
         None => match cli_no_prompt {
             Some(true) => panic!("Error: CLI option '{}' is not set", cli_option),
-            _ => Confirm::new()
+            _ => dialoguer::Confirm::new()
                 .with_prompt(format!(
                     "{} {} (CLI option '{}')?",
                     step_str, description, cli_option
@@ -172,10 +159,96 @@ fn get_init_bool_option(
     }
 }
 
+/// Helper to prompt a value with optional default
+// fn prompt<T: std::str::FromStr + ToString>(msg: &str, default: Option<T>) -> T {
+//     let input = if let Some(d) = default {
+//         dialoguer::Input::new()
+//             .with_prompt(msg.to_string())
+//             .default(d.to_string())
+//             .interact_text()
+//     } else {
+//         dialoguer::Input::new().with_prompt(msg).interact_text()
+//     };
+//
+//     input.unwrap().parse().ok().unwrap()
+// }
+enum FieldType {
+    String,
+    EnabledValue,
+    Pass,
+}
+fn prompt<T: std::str::FromStr + ToString>(
+    field_name: &str,
+    field_type: FieldType,
+    msg: &str,
+    default: Option<T>,
+) -> T {
+    loop {
+        let input = if let Some(d) = &default {
+            dialoguer::Input::new()
+                .with_prompt(msg.to_string())
+                .default(d.to_string())
+                .interact_text()
+        } else {
+            dialoguer::Input::new()
+                .with_prompt(msg.to_string())
+                .interact_text()
+        };
+
+        match input {
+            Ok(value) => {
+                let result = match field_type {
+                    FieldType::String => check_field(
+                        field_name,
+                        &FieldValue {
+                            str: value.clone(),
+                            enabled_value: EnabledValue {
+                                enabled: false,
+                                value: String::new(),
+                            },
+                        },
+                    ),
+                    FieldType::EnabledValue => check_field(
+                        field_name,
+                        &FieldValue {
+                            str: String::new(),
+                            enabled_value: EnabledValue {
+                                enabled: true,
+                                value: value.clone(),
+                            },
+                        },
+                    ),
+                    FieldType::Pass => CheckResult {
+                        status: true,
+                        msg: "".to_string(),
+                    },
+                };
+
+                if result.status {
+                    if let Ok(parsed) = value.parse::<T>() {
+                        return parsed;
+                    } else {
+                        eprintln!("Parsing failed. Try again.");
+                    }
+                } else {
+                    eprintln!("ERROR: {}", result.msg);
+                }
+            }
+            Err(_) => {
+                eprintln!("Error reading input, please try again.");
+                continue;
+            }
+        }
+    }
+}
+
 /// Handle enabled value options
+#[allow(clippy::too_many_arguments)]
 fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clone + Default>(
     cli_no_prompt: Option<bool>,
     step: usize,
+    field_name: &str,
+    field_type: FieldType,
     cli_value: Option<T>,
     cli_option: &str,
     description: &str,
@@ -202,6 +275,8 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
             _ => {
                 if condition {
                     prompt(
+                        field_name,
+                        field_type,
                         &format!("{} {} (CLI option '{}')", step_str, description, cli_option),
                         default_value,
                     )
@@ -219,6 +294,8 @@ macro_rules! get_init_pair_option {
     (
         $cli_no_prompt:expr,
         $step:expr,
+        $field_name:expr,
+        $field_type:expr,
         $cli_enable:expr,
         $cli_value:expr,
         $cli_enable_option:expr,
@@ -240,6 +317,8 @@ macro_rules! get_init_pair_option {
         let value = get_init_enabled_value_option(
             $cli_no_prompt,
             $step,
+            $field_name,
+            $field_type,
             $cli_value,
             $cli_value_option,
             $description_value,
@@ -264,6 +343,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let network_identifier = get_init_enabled_value_option(
         init_opts.no_prompt,
         1,
+        "",
+        FieldType::Pass,
         init_opts.network_identifier.clone(),
         INIT_FLAGS[0],
         INIT_HELPS[0],
@@ -275,6 +356,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let network_subnet = get_init_enabled_value_option(
         init_opts.no_prompt,
         2,
+        "",
+        FieldType::Pass,
         init_opts.network_subnet.clone(),
         INIT_FLAGS[1],
         INIT_HELPS[1],
@@ -293,6 +376,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_web_address = get_init_enabled_value_option(
         init_opts.no_prompt,
         3,
+        "address",
+        FieldType::String,
         init_opts.agent_web_address.clone(),
         INIT_FLAGS[2],
         INIT_HELPS[2],
@@ -304,6 +389,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_web_http_enabled, agent_web_http_port) = get_init_pair_option!(
         init_opts.no_prompt,
         4,
+        "",
+        FieldType::Pass,
         init_opts.agent_web_http_enabled,
         init_opts.agent_web_http_port,
         INIT_FLAGS[3],
@@ -318,6 +405,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_web_https_enabled, agent_web_https_port) = get_init_pair_option!(
         init_opts.no_prompt,
         5,
+        "",
+        FieldType::Pass,
         init_opts.agent_web_https_enabled,
         init_opts.agent_web_https_port,
         INIT_FLAGS[5],
@@ -334,6 +423,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_web_https_tls_cert = get_init_enabled_value_option(
         init_opts.no_prompt,
         5,
+        "",
+        FieldType::Pass,
         init_opts
             .agent_web_https_tls_cert
             .as_ref()
@@ -348,6 +439,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_web_https_tls_key = get_init_enabled_value_option(
         init_opts.no_prompt,
         5,
+        "",
+        FieldType::Pass,
         init_opts
             .agent_web_https_tls_key
             .as_ref()
@@ -414,6 +507,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_vpn_enabled, agent_vpn_port) = get_init_pair_option!(
         init_opts.no_prompt,
         7,
+        "",
+        FieldType::Pass,
         init_opts.agent_vpn_enabled,
         init_opts.agent_vpn_port,
         INIT_FLAGS[11],
@@ -428,6 +523,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_vpn_gateway = get_init_enabled_value_option(
         init_opts.no_prompt,
         7,
+        "",
+        FieldType::Pass,
         init_opts.agent_vpn_gateway.clone(),
         INIT_FLAGS[13],
         format!("\t{}", INIT_HELPS[13]).as_str(),
@@ -439,6 +536,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_firewall_enabled, agent_firewall_utility) = get_init_pair_option!(
         init_opts.no_prompt,
         8,
+        "",
+        FieldType::Pass,
         init_opts.agent_firewall_enabled,
         init_opts
             .agent_firewall_utility
@@ -456,6 +555,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_peer_name = get_init_enabled_value_option(
         init_opts.no_prompt,
         9,
+        "name",
+        FieldType::String,
         init_opts.agent_peer_name.clone(),
         INIT_FLAGS[16],
         INIT_HELPS[16],
@@ -467,6 +568,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_peer_vpn_public_address = get_init_enabled_value_option(
         init_opts.no_prompt,
         10,
+        "",
+        FieldType::Pass,
         init_opts.agent_peer_vpn_public_address.clone(),
         INIT_FLAGS[17],
         INIT_HELPS[17],
@@ -478,17 +581,21 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_peer_vpn_public_port = get_init_enabled_value_option(
         init_opts.no_prompt,
         11,
+        "",
+        FieldType::Pass,
         init_opts.agent_peer_vpn_public_port,
         INIT_FLAGS[18],
         INIT_HELPS[18],
         true,
         Some(51820),
-    );
+    ); // TODO: change to endpoint
 
     // [12/25] --agent_peer_vpn_internal_address
     let agent_peer_vpn_internal_address = get_init_enabled_value_option(
         init_opts.no_prompt,
         12,
+        "address",
+        FieldType::String,
         init_opts.agent_peer_vpn_internal_address.clone(),
         INIT_FLAGS[19],
         INIT_HELPS[19],
@@ -500,6 +607,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_peer_dns_enabled, agent_peer_dns_server) = get_init_pair_option!(
         init_opts.no_prompt,
         13,
+        "dns",
+        FieldType::EnabledValue,
         init_opts.agent_peer_dns_enabled,
         init_opts.agent_peer_dns_server.clone(),
         INIT_FLAGS[20],
@@ -514,6 +623,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_peer_mtu_enabled, agent_peer_mtu_value) = get_init_pair_option!(
         init_opts.no_prompt,
         14,
+        "mtu",
+        FieldType::EnabledValue,
         init_opts.agent_peer_mtu_enabled,
         init_opts.agent_peer_mtu_value.clone(),
         INIT_FLAGS[22],
@@ -528,6 +639,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_peer_script_pre_up_enabled, agent_peer_script_pre_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         15,
+        "script",
+        FieldType::EnabledValue,
         init_opts.agent_peer_script_pre_up_enabled,
         init_opts.agent_peer_script_pre_up_line.clone(),
         INIT_FLAGS[24],
@@ -542,6 +655,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_peer_script_post_up_enabled, agent_peer_script_post_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         16,
+        "script",
+        FieldType::EnabledValue,
         init_opts.agent_peer_script_post_up_enabled,
         init_opts.agent_peer_script_post_up_line.clone(),
         INIT_FLAGS[26],
@@ -556,6 +671,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_peer_script_pre_down_enabled, agent_peer_script_pre_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         17,
+        "script",
+        FieldType::EnabledValue,
         init_opts.agent_peer_script_pre_down_enabled,
         init_opts.agent_peer_script_pre_down_line.clone(),
         INIT_FLAGS[28],
@@ -570,6 +687,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_peer_script_post_down_enabled, agent_peer_script_post_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         18,
+        "script",
+        FieldType::EnabledValue,
         init_opts.agent_peer_script_post_down_enabled,
         init_opts.agent_peer_script_post_down_line.clone(),
         INIT_FLAGS[30],
@@ -587,6 +706,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (default_peer_dns_enabled, default_peer_dns_server) = get_init_pair_option!(
         init_opts.no_prompt,
         19,
+        "dns",
+        FieldType::EnabledValue,
         init_opts.default_peer_dns_enabled,
         init_opts.default_peer_dns_server.clone(),
         INIT_FLAGS[32],
@@ -601,6 +722,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (default_peer_mtu_enabled, default_peer_mtu_value) = get_init_pair_option!(
         init_opts.no_prompt,
         20,
+        "mtu",
+        FieldType::EnabledValue,
         init_opts.default_peer_mtu_enabled,
         init_opts.default_peer_mtu_value.clone(),
         INIT_FLAGS[34],
@@ -615,6 +738,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (default_peer_script_pre_up_enabled, default_peer_script_pre_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         21,
+        "script",
+        FieldType::EnabledValue,
         init_opts.default_peer_script_pre_up_enabled,
         init_opts.default_peer_script_pre_up_line.clone(),
         INIT_FLAGS[36],
@@ -629,6 +754,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (default_peer_script_post_up_enabled, default_peer_script_post_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         22,
+        "script",
+        FieldType::EnabledValue,
         init_opts.default_peer_script_post_up_enabled,
         init_opts.default_peer_script_post_up_line.clone(),
         INIT_FLAGS[38],
@@ -643,6 +770,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (default_peer_script_pre_down_enabled, default_peer_script_pre_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         23,
+        "script",
+        FieldType::EnabledValue,
         init_opts.default_peer_script_pre_down_enabled,
         init_opts.default_peer_script_pre_down_line.clone(),
         INIT_FLAGS[40],
@@ -657,6 +786,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (default_peer_script_post_down_enabled, default_peer_script_post_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         24,
+        "script",
+        FieldType::EnabledValue,
         init_opts.default_peer_script_post_down_enabled,
         init_opts.default_peer_script_post_down_line.clone(),
         INIT_FLAGS[42],
@@ -674,6 +805,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     ) = get_init_pair_option!(
         init_opts.no_prompt,
         25,
+        "persistent_keepalive",
+        FieldType::EnabledValue,
         init_opts.default_connection_persistent_keepalive_enabled,
         init_opts
             .default_connection_persistent_keepalive_period
