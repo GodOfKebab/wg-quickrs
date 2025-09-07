@@ -10,7 +10,7 @@ use rust_wasm::types::{
     Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
     DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
-use rust_wasm::validation::{CheckResult, FieldValue, check_field};
+use rust_wasm::validation::{CheckResult, FieldValue, check_field, is_cidr};
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -34,18 +34,21 @@ fn first_ip(subnet: &str) -> String {
 }
 
 // Get primary IP of the current machine
-fn primary_ip_interface() -> Option<Interface> {
-    match get_if_addrs()
+fn get_interfaces() -> Vec<Interface> {
+    let mut interfaces: Vec<Interface> = Vec::new();
+    for iface in get_if_addrs()
         .unwrap()
-        .into_iter()
-        .find(|a| !a.is_loopback() && a.ip().is_ipv4())
+        .iter()
+        .filter(|a| !a.is_loopback() && a.ip().is_ipv4())
     {
-        Some(addr) => Some(addr),
-        None => {
-            log::error!("No valid network interface found");
-            None
-        }
+        interfaces.push(iface.clone());
     }
+    interfaces
+}
+
+// Get primary IP of the current machine
+fn primary_ip_interface() -> Option<Interface> {
+    get_interfaces().into_iter().next()
 }
 
 fn find_in_path(cmd: &str) -> Option<PathBuf> {
@@ -60,15 +63,21 @@ fn find_in_path(cmd: &str) -> Option<PathBuf> {
     None
 }
 
-fn find_firewall_utility() -> Option<String> {
+fn firewall_utility_options() -> Vec<String> {
     let candidates = ["iptables", "pfctl", "nft"];
-
+    let mut ret: Vec<String> = Vec::new();
     for prog in candidates {
         if let Some(path) = find_in_path(prog) {
-            return path.to_str().map(|s| s.to_string());
+            ret.push(path.to_str().unwrap().to_string());
         }
     }
+    ret
+}
 
+fn find_firewall_utility() -> Option<String> {
+    if let Some(prog) = firewall_utility_options().into_iter().next() {
+        return Some(prog);
+    }
     None
 }
 
@@ -118,9 +127,9 @@ fn find_first_cert_server() -> (Option<String>, Option<String>) {
 /// Format step string with padding if single-digit
 fn step_str(step: usize) -> String {
     if step < 10 {
-        format!("\t[ {}/25]", step)
+        format!("\t[ {}/24]", step)
     } else {
-        format!("\t[{}/25]", step)
+        format!("\t[{}/24]", step)
     }
 }
 
@@ -159,30 +168,8 @@ fn get_init_bool_option(
     }
 }
 
-/// Helper to prompt a value with optional default
-// fn prompt<T: std::str::FromStr + ToString>(msg: &str, default: Option<T>) -> T {
-//     let input = if let Some(d) = default {
-//         dialoguer::Input::new()
-//             .with_prompt(msg.to_string())
-//             .default(d.to_string())
-//             .interact_text()
-//     } else {
-//         dialoguer::Input::new().with_prompt(msg).interact_text()
-//     };
-//
-//     input.unwrap().parse().ok().unwrap()
-// }
-enum FieldType {
-    String,
-    EnabledValue,
-    Pass,
-}
-fn prompt<T: std::str::FromStr + ToString>(
-    field_name: &str,
-    field_type: FieldType,
-    msg: &str,
-    default: Option<T>,
-) -> T {
+/// Helper to prompt a value with optional default and checks
+fn prompt<T: std::str::FromStr + ToString>(field_name: &str, msg: &str, default: Option<T>) -> T {
     loop {
         let input = if let Some(d) = &default {
             dialoguer::Input::new()
@@ -197,45 +184,99 @@ fn prompt<T: std::str::FromStr + ToString>(
 
         match input {
             Ok(value) => {
-                let result = match field_type {
-                    FieldType::String => check_field(
+                let mut ret = CheckResult {
+                    status: false,
+                    msg: String::new(),
+                };
+                let result = match field_name {
+                    "identifier" => {
+                        ret.status = !value.is_empty();
+                        if !ret.status {
+                            ret.msg = "identifier cannot be empty".into();
+                        }
+                        ret
+                    }
+                    "subnet" => {
+                        ret.status = is_cidr(&value);
+                        if !ret.status {
+                            ret.msg = "subnet is not in CIDR format".into();
+                        }
+                        ret
+                    }
+                    "port" => {
+                        ret.status = true;
+                        if let Ok(v) = value.parse::<i32>() {
+                            ret.status = v > 0 && v < 65536;
+                        } else {
+                            ret.status = false; // not a number
+                        }
+                        if !ret.status {
+                            ret.msg = "Port is invalid".into();
+                        }
+                        ret
+                    }
+                    "path" => {
+                        let config_folder = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap();
+                        let tls_file_path = config_folder.join(value.clone());
+                        ret.status = tls_file_path.exists() && tls_file_path.is_file();
+                        if !ret.status {
+                            ret.msg = format!("File not found: {}", tls_file_path.display());
+                        }
+                        ret
+                    }
+                    "gateway" => {
+                        let mut gateways: Vec<String> = Vec::new();
+                        for iface in get_interfaces() {
+                            if iface.name == value {
+                                ret.status = true;
+                            }
+                            gateways.push(format!("{} ({})", iface.name, iface.ip()));
+                        }
+                        if !ret.status {
+                            ret.msg = format!(
+                                "Gateway not found: {} (possible options: {})",
+                                value.clone(),
+                                gateways.join(", ")
+                            );
+                        }
+                        ret
+                    }
+                    "firewall" => {
+                        let bin_path = PathBuf::from(value.clone());
+                        ret.status = bin_path.exists() && bin_path.is_file();
+                        if !ret.status {
+                            ret.msg = format!(
+                                "Binary not found at path: {} (possible options: {})",
+                                bin_path.display(),
+                                firewall_utility_options().join(", ")
+                            );
+                        }
+                        ret
+                    }
+                    _ => check_field(
                         field_name,
                         &FieldValue {
                             str: value.clone(),
-                            enabled_value: EnabledValue {
-                                enabled: false,
-                                value: String::new(),
-                            },
-                        },
-                    ),
-                    FieldType::EnabledValue => check_field(
-                        field_name,
-                        &FieldValue {
-                            str: String::new(),
                             enabled_value: EnabledValue {
                                 enabled: true,
                                 value: value.clone(),
                             },
                         },
                     ),
-                    FieldType::Pass => CheckResult {
-                        status: true,
-                        msg: "".to_string(),
-                    },
                 };
 
                 if result.status {
                     if let Ok(parsed) = value.parse::<T>() {
                         return parsed;
                     } else {
-                        eprintln!("Parsing failed. Try again.");
+                        println!("ERROR: Parsing failed. Try again.");
                     }
                 } else {
-                    eprintln!("ERROR: {}", result.msg);
+                    println!("ERROR: {}", result.msg);
                 }
             }
             Err(_) => {
-                eprintln!("Error reading input, please try again.");
+                println!("ERROR: Error reading input, please try again.");
                 continue;
             }
         }
@@ -248,7 +289,6 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
     cli_no_prompt: Option<bool>,
     step: usize,
     field_name: &str,
-    field_type: FieldType,
     cli_value: Option<T>,
     cli_option: &str,
     description: &str,
@@ -276,7 +316,6 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
                 if condition {
                     prompt(
                         field_name,
-                        field_type,
                         &format!("{} {} (CLI option '{}')", step_str, description, cli_option),
                         default_value,
                     )
@@ -295,7 +334,6 @@ macro_rules! get_init_pair_option {
         $cli_no_prompt:expr,
         $step:expr,
         $field_name:expr,
-        $field_type:expr,
         $cli_enable:expr,
         $cli_value:expr,
         $cli_enable_option:expr,
@@ -318,7 +356,6 @@ macro_rules! get_init_pair_option {
             $cli_no_prompt,
             $step,
             $field_name,
-            $field_type,
             $cli_value,
             $cli_value_option,
             $description_value,
@@ -338,13 +375,12 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     }
     log::info!("Initializing wg-rusteze rust-agent...");
 
-    println!("[general network settings 1-2/25]");
-    // [1/25] --network-identifier
+    println!("[general network settings 1-2/24]");
+    // [1/24] --network-identifier
     let network_identifier = get_init_enabled_value_option(
         init_opts.no_prompt,
         1,
-        "",
-        FieldType::Pass,
+        "identifier",
         init_opts.network_identifier.clone(),
         INIT_FLAGS[0],
         INIT_HELPS[0],
@@ -352,12 +388,11 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("wg-rusteze".into()),
     );
 
-    // [2/25] --network-subnet
+    // [2/24] --network-subnet
     let network_subnet = get_init_enabled_value_option(
         init_opts.no_prompt,
         2,
-        "",
-        FieldType::Pass,
+        "subnet",
         init_opts.network_subnet.clone(),
         INIT_FLAGS[1],
         INIT_HELPS[1],
@@ -366,18 +401,17 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
 
     println!("[general network settings complete]");
-    println!("[agent settings 3-18/25]");
+    println!("[agent settings 3-17/24]");
 
     let iface_opt = primary_ip_interface();
     let iface_name = iface_opt.as_ref().map(|iface| iface.name.clone());
-    let iface_ip = iface_opt.map(|iface| iface.ip().to_string());
+    let mut iface_ip = iface_opt.map(|iface| iface.ip().to_string());
 
-    // [3/25] --agent-web-address
+    // [3/24] --agent-web-address
     let agent_web_address = get_init_enabled_value_option(
         init_opts.no_prompt,
         3,
         "address",
-        FieldType::String,
         init_opts.agent_web_address.clone(),
         INIT_FLAGS[2],
         INIT_HELPS[2],
@@ -385,12 +419,11 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         iface_ip.clone(),
     );
 
-    // [4/25] --agent_web_http_enabled & --agent_web_http_port
+    // [4/24] --agent_web_http_enabled & --agent_web_http_port
     let (agent_web_http_enabled, agent_web_http_port) = get_init_pair_option!(
         init_opts.no_prompt,
         4,
-        "",
-        FieldType::Pass,
+        "port",
         init_opts.agent_web_http_enabled,
         init_opts.agent_web_http_port,
         INIT_FLAGS[3],
@@ -401,12 +434,11 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some(80)
     );
 
-    // [5/25] --agent_web_https_enabled & --agent_web_https_port
+    // [5/24] --agent_web_https_enabled & --agent_web_https_port
     let (agent_web_https_enabled, agent_web_https_port) = get_init_pair_option!(
         init_opts.no_prompt,
         5,
-        "",
-        FieldType::Pass,
+        "port",
         init_opts.agent_web_https_enabled,
         init_opts.agent_web_https_port,
         INIT_FLAGS[5],
@@ -419,12 +451,11 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
 
     let (option_cert, option_key) = find_first_cert_server();
 
-    // [5/25] --agent_web_https_tls_cert
+    // [5/24] --agent_web_https_tls_cert
     let agent_web_https_tls_cert = get_init_enabled_value_option(
         init_opts.no_prompt,
         5,
-        "",
-        FieldType::Pass,
+        "path",
         init_opts
             .agent_web_https_tls_cert
             .as_ref()
@@ -435,12 +466,11 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         option_cert,
     );
 
-    // [5/25] --agent_web_https_tls_key
+    // [5/24] --agent_web_https_tls_key
     let agent_web_https_tls_key = get_init_enabled_value_option(
         init_opts.no_prompt,
         5,
-        "",
-        FieldType::Pass,
+        "path",
         init_opts
             .agent_web_https_tls_key
             .as_ref()
@@ -451,7 +481,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         option_key,
     );
 
-    // [6/25] --agent-enable-web-password
+    // [6/24] --agent-enable-web-password
     let agent_web_password_enabled = get_init_bool_option(
         init_opts.no_prompt,
         6,
@@ -460,7 +490,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[9],
         true,
     );
-    // [6/25] --agent-web-password
+    // [6/24] --agent-web-password
     let agent_web_password = match init_opts.agent_web_password.clone() {
         Some(v) => {
             println!(
@@ -503,12 +533,11 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         }
     };
 
-    // [7/25] --agent_vpn_enabled & --agent_vpn_port
+    // [7/24] --agent_vpn_enabled & --agent_vpn_port
     let (agent_vpn_enabled, agent_vpn_port) = get_init_pair_option!(
         init_opts.no_prompt,
         7,
-        "",
-        FieldType::Pass,
+        "port",
         init_opts.agent_vpn_enabled,
         init_opts.agent_vpn_port,
         INIT_FLAGS[11],
@@ -519,12 +548,11 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some(51820)
     );
 
-    // [7/25] --agent_vpn_gateway
+    // [7/24] --agent_vpn_gateway
     let agent_vpn_gateway = get_init_enabled_value_option(
         init_opts.no_prompt,
         7,
-        "",
-        FieldType::Pass,
+        "gateway",
         init_opts.agent_vpn_gateway.clone(),
         INIT_FLAGS[13],
         format!("\t{}", INIT_HELPS[13]).as_str(),
@@ -532,12 +560,11 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         iface_name,
     );
 
-    // [8/25] --agent_firewall_enabled & --agent_firewall_utility
+    // [8/24] --agent_firewall_enabled & --agent_firewall_utility
     let (agent_firewall_enabled, agent_firewall_utility) = get_init_pair_option!(
         init_opts.no_prompt,
         8,
-        "",
-        FieldType::Pass,
+        "firewall",
         init_opts.agent_firewall_enabled,
         init_opts
             .agent_firewall_utility
@@ -549,14 +576,13 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         format!("\t{}", INIT_HELPS[15]).as_str(),
         true,
         find_firewall_utility()
-    ); // TODO: auto-detect
+    );
 
-    // [9/25] --agent-peer-name
+    // [9/24] --agent-peer-name
     let agent_peer_name = get_init_enabled_value_option(
         init_opts.no_prompt,
         9,
         "name",
-        FieldType::String,
         init_opts.agent_peer_name.clone(),
         INIT_FLAGS[16],
         INIT_HELPS[16],
@@ -564,257 +590,236 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some("wg-rusteze-host".into()),
     );
 
-    // [10/25] --agent_peer_vpn_public_address
-    let agent_peer_vpn_public_address = get_init_enabled_value_option(
+    // update the address in the recommended endpoint
+    for interface in get_interfaces() {
+        if agent_vpn_gateway.clone() == interface.name.clone() {
+            iface_ip = Some(interface.ip().to_string());
+        }
+    }
+
+    // [10/24] --agent_peer_vpn_endpoint
+    let agent_peer_vpn_endpoint = get_init_enabled_value_option(
         init_opts.no_prompt,
         10,
-        "",
-        FieldType::Pass,
-        init_opts.agent_peer_vpn_public_address.clone(),
+        "endpoint",
+        init_opts.agent_peer_vpn_endpoint.clone(),
         INIT_FLAGS[17],
         INIT_HELPS[17],
         true,
-        iface_ip,
+        format!("{}:51820", iface_ip.unwrap()).into(),
     );
 
-    // [11/25] --agent-public-vpn-port
-    let agent_peer_vpn_public_port = get_init_enabled_value_option(
-        init_opts.no_prompt,
-        11,
-        "",
-        FieldType::Pass,
-        init_opts.agent_peer_vpn_public_port,
-        INIT_FLAGS[18],
-        INIT_HELPS[18],
-        true,
-        Some(51820),
-    ); // TODO: change to endpoint
-
-    // [12/25] --agent_peer_vpn_internal_address
+    // [11/24] --agent_peer_vpn_internal_address
     let agent_peer_vpn_internal_address = get_init_enabled_value_option(
         init_opts.no_prompt,
-        12,
+        11,
         "address",
-        FieldType::String,
         init_opts.agent_peer_vpn_internal_address.clone(),
-        INIT_FLAGS[19],
-        INIT_HELPS[19],
+        INIT_FLAGS[18],
+        INIT_HELPS[18],
         true,
         Some(first_ip(&network_subnet)),
     );
 
-    // [13/25] --agent_peer_dns_enabled & --agent_peer_dns_server
+    // [12/24] --agent_peer_dns_enabled & --agent_peer_dns_server
     let (agent_peer_dns_enabled, agent_peer_dns_server) = get_init_pair_option!(
         init_opts.no_prompt,
-        13,
+        12,
         "dns",
-        FieldType::EnabledValue,
         init_opts.agent_peer_dns_enabled,
         init_opts.agent_peer_dns_server.clone(),
+        INIT_FLAGS[19],
         INIT_FLAGS[20],
-        INIT_FLAGS[21],
-        INIT_HELPS[20],
-        format!("\t{}", INIT_HELPS[21]).as_str(),
+        INIT_HELPS[19],
+        format!("\t{}", INIT_HELPS[20]).as_str(),
         true,
         Some("1.1.1.1".into())
     );
 
-    // [14/25] --agent_peer_mtu_enabled & --agent_peer_mtu_value
+    // [13/24] --agent_peer_mtu_enabled & --agent_peer_mtu_value
     let (agent_peer_mtu_enabled, agent_peer_mtu_value) = get_init_pair_option!(
         init_opts.no_prompt,
-        14,
+        13,
         "mtu",
-        FieldType::EnabledValue,
         init_opts.agent_peer_mtu_enabled,
         init_opts.agent_peer_mtu_value.clone(),
+        INIT_FLAGS[21],
         INIT_FLAGS[22],
-        INIT_FLAGS[23],
-        INIT_HELPS[22],
-        format!("\t{}", INIT_HELPS[23]).as_str(),
+        INIT_HELPS[21],
+        format!("\t{}", INIT_HELPS[22]).as_str(),
         false,
         Some("1420".into())
     );
 
-    // [15/25] --agent_peer_script_pre_up_enabled & --agent_peer_script_pre_up_line
+    // [14/24] --agent_peer_script_pre_up_enabled & --agent_peer_script_pre_up_line
     let (agent_peer_script_pre_up_enabled, agent_peer_script_pre_up_line) = get_init_pair_option!(
+        init_opts.no_prompt,
+        14,
+        "script",
+        init_opts.agent_peer_script_pre_up_enabled,
+        init_opts.agent_peer_script_pre_up_line.clone(),
+        INIT_FLAGS[23],
+        INIT_FLAGS[24],
+        INIT_HELPS[23],
+        format!("\t{}", INIT_HELPS[24]).as_str(),
+        false,
+        Some("".into())
+    );
+
+    // [15/24] --agent_peer_script_post_up_enabled & --agent_peer_script_post_up_line
+    let (agent_peer_script_post_up_enabled, agent_peer_script_post_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         15,
         "script",
-        FieldType::EnabledValue,
-        init_opts.agent_peer_script_pre_up_enabled,
-        init_opts.agent_peer_script_pre_up_line.clone(),
-        INIT_FLAGS[24],
+        init_opts.agent_peer_script_post_up_enabled,
+        init_opts.agent_peer_script_post_up_line.clone(),
         INIT_FLAGS[25],
-        INIT_HELPS[24],
-        format!("\t{}", INIT_HELPS[25]).as_str(),
+        INIT_FLAGS[26],
+        INIT_HELPS[25],
+        format!("\t{}", INIT_HELPS[26]).as_str(),
         false,
         Some("".into())
     );
 
-    // [16/25] --agent_peer_script_post_up_enabled & --agent_peer_script_post_up_line
-    let (agent_peer_script_post_up_enabled, agent_peer_script_post_up_line) = get_init_pair_option!(
+    // [16/24] --agent_peer_script_pre_down_enabled & --agent_peer_script_pre_down_line
+    let (agent_peer_script_pre_down_enabled, agent_peer_script_pre_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         16,
         "script",
-        FieldType::EnabledValue,
-        init_opts.agent_peer_script_post_up_enabled,
-        init_opts.agent_peer_script_post_up_line.clone(),
-        INIT_FLAGS[26],
+        init_opts.agent_peer_script_pre_down_enabled,
+        init_opts.agent_peer_script_pre_down_line.clone(),
         INIT_FLAGS[27],
-        INIT_HELPS[26],
-        format!("\t{}", INIT_HELPS[27]).as_str(),
+        INIT_FLAGS[28],
+        INIT_HELPS[27],
+        format!("\t{}", INIT_HELPS[28]).as_str(),
         false,
         Some("".into())
     );
 
-    // [17/25] --agent_peer_script_pre_down_enabled & --agent_peer_script_pre_down_line
-    let (agent_peer_script_pre_down_enabled, agent_peer_script_pre_down_line) = get_init_pair_option!(
+    // [17/24] --agent_peer_script_post_down_enabled & --agent_peer_script_post_down_line
+    let (agent_peer_script_post_down_enabled, agent_peer_script_post_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         17,
         "script",
-        FieldType::EnabledValue,
-        init_opts.agent_peer_script_pre_down_enabled,
-        init_opts.agent_peer_script_pre_down_line.clone(),
-        INIT_FLAGS[28],
-        INIT_FLAGS[29],
-        INIT_HELPS[28],
-        format!("\t{}", INIT_HELPS[29]).as_str(),
-        false,
-        Some("".into())
-    );
-
-    // [18/25] --agent_peer_script_post_down_enabled & --agent_peer_script_post_down_line
-    let (agent_peer_script_post_down_enabled, agent_peer_script_post_down_line) = get_init_pair_option!(
-        init_opts.no_prompt,
-        18,
-        "script",
-        FieldType::EnabledValue,
         init_opts.agent_peer_script_post_down_enabled,
         init_opts.agent_peer_script_post_down_line.clone(),
+        INIT_FLAGS[29],
         INIT_FLAGS[30],
-        INIT_FLAGS[31],
-        INIT_HELPS[30],
-        format!("\t{}", INIT_HELPS[31]).as_str(),
+        INIT_HELPS[29],
+        format!("\t{}", INIT_HELPS[30]).as_str(),
         false,
         Some("".into())
     );
 
     println!("[agent settings complete]");
-    println!("[new peer/connection default settings 19-25/25]");
+    println!("[new peer/connection default settings 18-24/24]");
 
-    // [19/25] --default_peer_dns_enabled & --default_peer_dns_server
+    // [18/24] --default_peer_dns_enabled & --default_peer_dns_server
     let (default_peer_dns_enabled, default_peer_dns_server) = get_init_pair_option!(
         init_opts.no_prompt,
-        19,
+        18,
         "dns",
-        FieldType::EnabledValue,
         init_opts.default_peer_dns_enabled,
         init_opts.default_peer_dns_server.clone(),
+        INIT_FLAGS[31],
         INIT_FLAGS[32],
-        INIT_FLAGS[33],
-        INIT_HELPS[32],
-        format!("\t{}", INIT_HELPS[33]).as_str(),
+        INIT_HELPS[31],
+        format!("\t{}", INIT_HELPS[32]).as_str(),
         true,
         Some("1.1.1.1".into())
     );
 
-    // [20/25] --default_peer_mtu_enabled & --default_peer_mtu_value
+    // [19/24] --default_peer_mtu_enabled & --default_peer_mtu_value
     let (default_peer_mtu_enabled, default_peer_mtu_value) = get_init_pair_option!(
         init_opts.no_prompt,
-        20,
+        19,
         "mtu",
-        FieldType::EnabledValue,
         init_opts.default_peer_mtu_enabled,
         init_opts.default_peer_mtu_value.clone(),
+        INIT_FLAGS[33],
         INIT_FLAGS[34],
-        INIT_FLAGS[35],
-        INIT_HELPS[34],
-        format!("\t{}", INIT_HELPS[35]).as_str(),
+        INIT_HELPS[33],
+        format!("\t{}", INIT_HELPS[34]).as_str(),
         false,
         Some("1420".into())
     );
 
-    // [21/25] --default_peer_script_pre_up_enabled & --default_peer_script_pre_up_line
+    // [20/24] --default_peer_script_pre_up_enabled & --default_peer_script_pre_up_line
     let (default_peer_script_pre_up_enabled, default_peer_script_pre_up_line) = get_init_pair_option!(
+        init_opts.no_prompt,
+        20,
+        "script",
+        init_opts.default_peer_script_pre_up_enabled,
+        init_opts.default_peer_script_pre_up_line.clone(),
+        INIT_FLAGS[35],
+        INIT_FLAGS[36],
+        INIT_HELPS[35],
+        format!("\t{}", INIT_HELPS[36]).as_str(),
+        false,
+        Some("".into())
+    );
+
+    // [21/24] --default_peer_script_post_up_enabled & --default_peer_script_post_up_line
+    let (default_peer_script_post_up_enabled, default_peer_script_post_up_line) = get_init_pair_option!(
         init_opts.no_prompt,
         21,
         "script",
-        FieldType::EnabledValue,
-        init_opts.default_peer_script_pre_up_enabled,
-        init_opts.default_peer_script_pre_up_line.clone(),
-        INIT_FLAGS[36],
+        init_opts.default_peer_script_post_up_enabled,
+        init_opts.default_peer_script_post_up_line.clone(),
         INIT_FLAGS[37],
-        INIT_HELPS[36],
-        format!("\t{}", INIT_HELPS[37]).as_str(),
+        INIT_FLAGS[38],
+        INIT_HELPS[37],
+        format!("\t{}", INIT_HELPS[38]).as_str(),
         false,
         Some("".into())
     );
 
-    // [22/25] --default_peer_script_post_up_enabled & --default_peer_script_post_up_line
-    let (default_peer_script_post_up_enabled, default_peer_script_post_up_line) = get_init_pair_option!(
+    // [22/24] --default_peer_script_pre_down_enabled & --default_peer_script_pre_down_line
+    let (default_peer_script_pre_down_enabled, default_peer_script_pre_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         22,
         "script",
-        FieldType::EnabledValue,
-        init_opts.default_peer_script_post_up_enabled,
-        init_opts.default_peer_script_post_up_line.clone(),
-        INIT_FLAGS[38],
+        init_opts.default_peer_script_pre_down_enabled,
+        init_opts.default_peer_script_pre_down_line.clone(),
         INIT_FLAGS[39],
-        INIT_HELPS[38],
-        format!("\t{}", INIT_HELPS[39]).as_str(),
+        INIT_FLAGS[40],
+        INIT_HELPS[39],
+        format!("\t{}", INIT_HELPS[40]).as_str(),
         false,
         Some("".into())
     );
 
-    // [23/25] --default_peer_script_pre_down_enabled & --default_peer_script_pre_down_line
-    let (default_peer_script_pre_down_enabled, default_peer_script_pre_down_line) = get_init_pair_option!(
+    // [23/24] --default_peer_script_post_down_enabled & --default_peer_script_post_down_line
+    let (default_peer_script_post_down_enabled, default_peer_script_post_down_line) = get_init_pair_option!(
         init_opts.no_prompt,
         23,
         "script",
-        FieldType::EnabledValue,
-        init_opts.default_peer_script_pre_down_enabled,
-        init_opts.default_peer_script_pre_down_line.clone(),
-        INIT_FLAGS[40],
-        INIT_FLAGS[41],
-        INIT_HELPS[40],
-        format!("\t{}", INIT_HELPS[41]).as_str(),
-        false,
-        Some("".into())
-    );
-
-    // [24/25] --default_peer_script_post_down_enabled & --default_peer_script_post_down_line
-    let (default_peer_script_post_down_enabled, default_peer_script_post_down_line) = get_init_pair_option!(
-        init_opts.no_prompt,
-        24,
-        "script",
-        FieldType::EnabledValue,
         init_opts.default_peer_script_post_down_enabled,
         init_opts.default_peer_script_post_down_line.clone(),
+        INIT_FLAGS[41],
         INIT_FLAGS[42],
-        INIT_FLAGS[43],
-        INIT_HELPS[42],
-        format!("\t{}", INIT_HELPS[43]).as_str(),
+        INIT_HELPS[41],
+        format!("\t{}", INIT_HELPS[42]).as_str(),
         false,
         Some("".into())
     );
 
-    // [25/25] --default_connection_persistent_keepalive_enabled & --default_connection_persistent_keepalive_period
+    // [24/24] --default_connection_persistent_keepalive_enabled & --default_connection_persistent_keepalive_period
     let (
         default_connection_persistent_keepalive_enabled,
         default_connection_persistent_keepalive_period,
     ) = get_init_pair_option!(
         init_opts.no_prompt,
-        25,
+        24,
         "persistent_keepalive",
-        FieldType::EnabledValue,
         init_opts.default_connection_persistent_keepalive_enabled,
         init_opts
             .default_connection_persistent_keepalive_period
             .clone(),
+        INIT_FLAGS[43],
         INIT_FLAGS[44],
-        INIT_FLAGS[45],
-        INIT_HELPS[44],
-        format!("\t{}", INIT_HELPS[45]).as_str(),
+        INIT_HELPS[43],
+        format!("\t{}", INIT_HELPS[44]).as_str(),
         true,
         Some("25".into())
     );
@@ -850,7 +855,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         updated_at: now.clone(),
         endpoint: EnabledValue {
             enabled: true,
-            value: format!("{agent_peer_vpn_public_address}:{agent_peer_vpn_public_port}"),
+            value: agent_peer_vpn_endpoint,
         },
         dns: EnabledValue {
             enabled: agent_peer_dns_enabled,

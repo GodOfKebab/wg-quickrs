@@ -106,13 +106,9 @@ pub struct InitOptions {
     )]
     pub agent_peer_name: Option<String>,
 
-    #[arg(long, default_value = None, long_help = "Set publicly accessible IPv4 address for VPN endpoint"
+    #[arg(long, default_value = None, long_help = "Set publicly accessible endpoint(IP/FQDN:PORT) for VPN endpoint"
     )]
-    pub agent_peer_vpn_public_address: Option<String>,
-
-    #[arg(long, default_value = None, long_help = "Set publicly accessible VPN port", value_name = "51820"
-    )]
-    pub agent_peer_vpn_public_port: Option<u16>,
+    pub agent_peer_vpn_endpoint: Option<String>,
 
     #[arg(long, default_value = None, long_help = "Set internal IPv4 address for agent in VPN network", value_name = "10.0.34.1"
     )]

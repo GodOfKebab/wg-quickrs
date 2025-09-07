@@ -27,7 +27,7 @@ fn is_ipv4_with_port(s: &str) -> bool {
 }
 
 // Helper: CIDR IPv4 network
-fn is_cidr(s: &str) -> bool {
+pub fn is_cidr(s: &str) -> bool {
     s.parse::<Ipv4Net>().is_ok()
 }
 
