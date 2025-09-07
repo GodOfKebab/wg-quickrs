@@ -1,4 +1,5 @@
 use crate::commands::helpers;
+use crate::commands::validation::check_field_agent;
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
 use crate::{WG_RUSTEZE_CONFIG_FOLDER, conf};
@@ -10,7 +11,7 @@ use rust_wasm::types::{
     Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
     DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
-use rust_wasm::validation::{CheckResult, FieldValue, check_field, is_cidr};
+use rust_wasm::validation::FieldValue;
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -34,7 +35,7 @@ fn first_ip(subnet: &str) -> String {
 }
 
 // Get primary IP of the current machine
-fn get_interfaces() -> Vec<Interface> {
+pub fn get_interfaces() -> Vec<Interface> {
     let mut interfaces: Vec<Interface> = Vec::new();
     for iface in get_if_addrs()
         .unwrap()
@@ -63,7 +64,7 @@ fn find_in_path(cmd: &str) -> Option<PathBuf> {
     None
 }
 
-fn firewall_utility_options() -> Vec<String> {
+pub fn firewall_utility_options() -> Vec<String> {
     let candidates = ["iptables", "pfctl", "nft"];
     let mut ret: Vec<String> = Vec::new();
     for prog in candidates {
@@ -184,86 +185,16 @@ fn prompt<T: std::str::FromStr + ToString>(field_name: &str, msg: &str, default:
 
         match input {
             Ok(value) => {
-                let mut ret = CheckResult {
-                    status: false,
-                    msg: String::new(),
-                };
-                let result = match field_name {
-                    "identifier" => {
-                        ret.status = !value.is_empty();
-                        if !ret.status {
-                            ret.msg = "identifier cannot be empty".into();
-                        }
-                        ret
-                    }
-                    "subnet" => {
-                        ret.status = is_cidr(&value);
-                        if !ret.status {
-                            ret.msg = "subnet is not in CIDR format".into();
-                        }
-                        ret
-                    }
-                    "port" => {
-                        ret.status = true;
-                        if let Ok(v) = value.parse::<i32>() {
-                            ret.status = v > 0 && v < 65536;
-                        } else {
-                            ret.status = false; // not a number
-                        }
-                        if !ret.status {
-                            ret.msg = "Port is invalid".into();
-                        }
-                        ret
-                    }
-                    "path" => {
-                        let config_folder = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap();
-                        let tls_file_path = config_folder.join(value.clone());
-                        ret.status = tls_file_path.exists() && tls_file_path.is_file();
-                        if !ret.status {
-                            ret.msg = format!("File not found: {}", tls_file_path.display());
-                        }
-                        ret
-                    }
-                    "gateway" => {
-                        let mut gateways: Vec<String> = Vec::new();
-                        for iface in get_interfaces() {
-                            if iface.name == value {
-                                ret.status = true;
-                            }
-                            gateways.push(format!("{} ({})", iface.name, iface.ip()));
-                        }
-                        if !ret.status {
-                            ret.msg = format!(
-                                "Gateway not found: {} (possible options: {})",
-                                value.clone(),
-                                gateways.join(", ")
-                            );
-                        }
-                        ret
-                    }
-                    "firewall" => {
-                        let bin_path = PathBuf::from(value.clone());
-                        ret.status = bin_path.exists() && bin_path.is_file();
-                        if !ret.status {
-                            ret.msg = format!(
-                                "Binary not found at path: {} (possible options: {})",
-                                bin_path.display(),
-                                firewall_utility_options().join(", ")
-                            );
-                        }
-                        ret
-                    }
-                    _ => check_field(
-                        field_name,
-                        &FieldValue {
-                            str: value.clone(),
-                            enabled_value: EnabledValue {
-                                enabled: true,
-                                value: value.clone(),
-                            },
+                let result = check_field_agent(
+                    field_name,
+                    &FieldValue {
+                        str: value.clone(),
+                        enabled_value: EnabledValue {
+                            enabled: true,
+                            value: value.clone(),
                         },
-                    ),
-                };
+                    },
+                );
 
                 if result.status {
                     if let Ok(parsed) = value.parse::<T>() {
