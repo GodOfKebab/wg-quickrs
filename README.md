@@ -121,24 +121,19 @@ wg-rusteze init --<TAB>    # Shows available options for the init command
 #### 1.1.5 Configure TLS/HTTPS Certificates
 
 ```bash
-chmod +x cert/make-tls-certs.sh
-
 COUNTRY="XX" \
 STATE="XXX" \
 LOCALITY="XXX" \
 ORGANIZATION="XXX" \
 ORGANIZATIONAL_UNIT="XXX" \
 ROOT_CN="certificate-manager@XXX" \
-./cert/make-tls-certs.sh $(hostname -I | awk '{print $1}')
+sh certificate-manager/make-tls-certs.sh all
 
-# If successful, you should see the certificates at
-ls -1d certs/servers/$(hostname -I | awk '{print $1}')/*
-```
+# If successful, you should see the certificates under
+ls -1 certs/servers/
 
-Move the certificates to `~/.wg-rusteze`:
-
-```bash
-cp certs/servers/$(hostname -I | awk '{print $1}')/* ~/.wg-rusteze/
+# Move the certs directory to `~/.wg-rusteze`
+mkdir -p ~/.wg-rusteze && cp -r certs ~/.wg-rusteze/certs
 ```
 
 ---

@@ -1,20 +1,19 @@
 services:
 
   certificate-manager:
-    container_name: certificate-manager-cnt
-    build:
-      context: ./cert
+    extends:
+      file: certificate-manager/docker-compose.yml
+      service: certificate-manager
     volumes:
       - .wg-rusteze-docker/certs:/app/certs
     environment:
-      # TLS Certificate settings...
       COUNTRY: "XX"
       STATE: "XXX"
       LOCALITY: "XXX"
       ORGANIZATION: "XXX"
       ORGANIZATIONAL_UNIT: "XXX"
       ROOT_CN: "certificate-manager@XXX"
-    command: [ "127.0.0.1", "localhost" ]  # use comma-seperated FQDNs to create TLS certificates
+    command: [ "127.0.0.1", "localhost" ]
 
   wg-rusteze-init:
     container_name: wg-rusteze-init-cnt
