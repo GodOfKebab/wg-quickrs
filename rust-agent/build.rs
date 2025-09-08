@@ -36,13 +36,34 @@ fn main() {
     let timestamp = chrono::Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
     // Get current git branch
-    let git_branch = Command::new("git")
-        .args(["rev-parse", "--abbrev-ref", "HEAD"])
-        .output()
-        .ok()
-        .and_then(|o| String::from_utf8(o.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+    fn git_ref_fn() -> String {
+        // Try tag first
+        if let Some(tag) = Command::new("git")
+            .args(["describe", "--tags", "--exact-match"])
+            .output()
+            .ok()
+            .and_then(|o| {
+                if o.status.success() {
+                    String::from_utf8(o.stdout).ok()
+                } else {
+                    None
+                }
+            })
+            .map(|s| s.trim().to_string())
+        {
+            return tag;
+        }
+
+        // Fallback: branch name
+        Command::new("git")
+            .args(["rev-parse", "--abbrev-ref", "HEAD"])
+            .output()
+            .ok()
+            .and_then(|o| String::from_utf8(o.stdout).ok())
+            .map(|s| s.trim().to_string())
+            .unwrap_or_else(|| "unknown".to_string())
+    }
+    let git_ref = git_ref_fn();
 
     // Get short commit SHA (like GitHub)
     let git_commit = Command::new("git")
@@ -72,7 +93,7 @@ macro_rules! frontend_version {{
 #[macro_export]
 macro_rules! build_info {{
     () => {{
-        "{git_branch}-{git_commit}@{timestamp}"
+        "{git_ref}-{git_commit}@{timestamp}"
     }};
 }}
 
