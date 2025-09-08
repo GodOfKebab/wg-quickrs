@@ -13,8 +13,8 @@ You can either build from scratch or use Docker.
 Clone the repository:
 
 ```bash
-sudo apt install git
-git clone https://github.com/GodOfKebab/wg-rusteze.git
+sudo apt install -y git
+git clone --recursive https://github.com/GodOfKebab/wg-rusteze.git
 cd wg-rusteze
 ```
 
@@ -73,7 +73,7 @@ cd ..
 This might take some time on slower machines.
 
 ```bash
-cargo build --profile release --package wg-rusteze --bin wg-rusteze
+cargo build --release --package wg-rusteze --bin wg-rusteze
 
 mkdir -p ~/.wg-rusteze/bin
 cp target/release/wg-rusteze ~/.wg-rusteze/bin/wg-rusteze
@@ -121,12 +121,12 @@ wg-rusteze init --<TAB>    # Shows available options for the init command
 #### 1.1.5 Configure TLS/HTTPS Certificates
 
 ```bash
-COUNTRY="XX" \
-STATE="XXX" \
-LOCALITY="XXX" \
-ORGANIZATION="XXX" \
-ORGANIZATIONAL_UNIT="XXX" \
-ROOT_CN="certificate-manager@XXX" \
+export COUNTRY="TR"
+export STATE="Istanbul"
+export LOCALITY="Fatih"
+export ORGANIZATION="God Of Kebab Labs"
+export ORGANIZATIONAL_UNIT="God Of Kebab's Guide to the WWW"
+export ROOT_CN="certificate-manager@kebabnet"
 sh certificate-manager/make-tls-certs.sh all
 
 # If successful, you should see the certificates under
@@ -150,54 +150,54 @@ sudo apt install -y wireguard wireguard-tools
 
 ```bash
 wg-rusteze init
-# $ wg-rusteze init
-# backend: v0.1.0, frontend: v0.0.0, built: 2025-09-04T02:19:14Z
-# 2025-09-04T02:25:13.293Z INFO  [wg_rusteze] using the wg-rusteze config file at "/root/.wg-rusteze/conf.yml"
-# 2025-09-04T02:25:13.293Z INFO  [wg_rusteze::commands::init] Initializing wg-rusteze rust-agent...
-# [general network settings 1-2/25]
-# 	[ 1/25] Enter VPN network's identifier (CLI option '--network-identifier') (e.g. wg-rusteze): wg-rusteze
-# 	[ 2/25] Enter VPN network's CIDR subnet mask (CLI option '--network-subnet') (e.g. 10.0.34.0/24): 10.0.34.0/24
+# backend: v0.1.0, frontend: v0.0.0, built: 2025-09-08T00:33:15Z
+# 2025-09-08T00:52:14.344Z INFO  [wg_rusteze] using the wg-rusteze config file at "/root/.wg-rusteze/conf.yml"
+# 2025-09-08T00:52:14.345Z INFO  [wg_rusteze::commands::init] Initializing wg-rusteze rust-agent...
+# [general network settings 1-2/24]
+# 	[ 1/24] Set VPN network identifier (CLI option '--network-identifier'): wg-rusteze
+# 	[ 2/24] Set VPN network CIDR subnet (CLI option '--network-subnet'): 10.0.34.0/24
 # [general network settings complete]
-# [agent settings 3-18/25]
-# 	[ 3/25] Enter agent's peer name (CLI option '--agent-peer-name') (e.g. wg-rusteze-host): wg-rusteze-host
-# 	[ 4/25] Enter agent's local IPv4 address for the web server to bind and vpn server to listen (CLI option '--agent-local-address') (e.g. XXX.XXX.XXX.XXX): XXX.XXX.XXX.XXX
-# 	[ 5/25] Enable Enable/Disable HTTP for the web server (CLI option '--agent-local-enable-web-http')? yes
-# 	[ 5/25] 	Enter agent's local HTTP port for the web server to bind (CLI option '--agent-local-web-http-port') (e.g. 80): 80
-# 	[ 6/25] Enable Enable/Disable HTTPS for the web server (CLI option '--agent-local-enable-web-https')? yes
-# 	[ 6/25] 	Enter agent's local HTTPS port for the web server to bind (CLI option '--agent-local-web-https-port') (e.g. 443): 443
-# 	[ 6/25] 	Enter TLS certificate file path for HTTPS (CLI option '--agent-local-web-https-tls-cert') (e.g. cert.pem): cert.pem
-# 	[ 6/25] 	Enter TLS signing key file path for HTTPS (CLI option '--agent-local-web-https-tls-key') (e.g. key.pem): key.pem
-# 	[ 7/25] Enable Enable/Disable VPN server (CLI option '--agent-local-enable-vpn')? yes
-# 	[ 7/25] 	Enter agent's local VPN port for the vpn server to bind (CLI option '--agent-local-vpn-port') (e.g. 51820): 51820
-# 	[ 7/25] 	Enter outbound interface for the VPN server's packet forwarding setup (CLI option '--agent-local-vpn-outbound-interface') (e.g. enp1s0): enp1s0
-# 	[ 8/25] Enter agent's publicly accessible IPv4 address to be used in the VPN endpoint advertisement (CLI option '--agent-public-address') (e.g. XXX.XXX.XXX.XXX): XXX.XXX.XXX.XXX
-# 	[ 9/25] Enter agent's publicly accessible port to be used in the VPN endpoint advertisement (CLI option '--agent-public-vpn-port') (e.g. 51820): 51820
-# 	[10/25] Enter agent's internal IPv4 address for VPN network (CLI option '--agent-internal-vpn-address') (e.g. 10.0.34.1): 10.0.34.1
-# 	[11/25] Enable password for this agent's web server (CLI option '--agent-enable-web-password')? yes
-# 	[12/25] 	Enter password for this agent's web server: [hidden]
-# 	[13/25] Enable DNS server field for this agent (CLI option '--agent-enable-dns')? yes
-# 	[13/25] 	Enter DNS server for this agent (CLI option '--agent-dns-server') (e.g. 1.1.1.1): 1.1.1.1
-# 	[14/25] Enable MTU value field for this agent (CLI option '--agent-enable-mtu')? no
-# 	[15/25] Enable PreUp scripting field for this agent (CLI option '--agent-enable-script-pre-up')? no
-# 	[16/25] Enable PostUp scripting field for this agent (CLI option '--agent-enable-script-post-up')? no
-# 	[17/25] Enable PreDown scripting field for this agent (CLI option '--agent-enable-script-pre-down')? no
-# 	[18/25] Enable PostDown scripting field for this agent (CLI option '--agent-enable-script-post-down')? no
+# [agent settings 3-17/24]
+# 	[ 3/24] Set agent web server bind IPv4 address (CLI option '--agent-web-address'): XX.XX.XX.XX
+# 	[ 4/24] Enable HTTP on web server (CLI option '--agent-web-http-enabled')? yes
+# 	[ 4/24] 	Set web server HTTP port (CLI option '--agent-web-http-port'): 80
+# 	[ 5/24] Enable HTTPS on web server (CLI option '--agent-web-https-enabled')? yes
+# 	[ 5/24] 	Set web server HTTPS port (CLI option '--agent-web-https-port'): 443
+# 	[ 5/24] 	Set path (relative to the wg-rusteze home directory) to TLS certificate file for HTTPS (CLI option '--agent-web-https-tls-cert'): certs/servers/XX.XX.XX.XX/cert.pem
+# 	[ 5/24] 	Set path (relative to the wg-rusteze home directory) to TLS private key file for HTTPS (CLI option '--agent-web-https-tls-key'): certs/servers/XX.XX.XX.XX/key.pem
+# 	[ 6/24] Enable password authentication for web server (CLI option '--agent-web-password-enabled')? yes
+# 	[ 6/24] 	Set password for web server access: [hidden]
+# 	[ 7/24] Enable VPN server (CLI option '--agent-vpn-enabled')? yes
+# 	[ 7/24] 	Set VPN server listening port (CLI option '--agent-vpn-port'): 51820
+# 	[ 7/24] 	Set gateway (outbound interface) for VPN packet forwarding (CLI option '--agent-vpn-gateway'): enp1s0
+# 	[ 8/24] Enable running firewall commands for setting up NAT and input rules (CLI option '--agent-firewall-enabled')? yes
+# 	[ 8/24] 	Set the utility used to configure firewall NAT and input rules (CLI option '--agent-firewall-utility'): /usr/sbin/iptables
+# 	[ 9/24] Set agent peer name (CLI option '--agent-peer-name'): wg-rusteze-host
+# 	[10/24] Set publicly accessible endpoint(IP/FQDN:PORT) for VPN endpoint (CLI option '--agent-peer-vpn-endpoint'): XX.XX.XX.XX:51820
+# 	[11/24] Set internal IPv4 address for agent in VPN network (CLI option '--agent-peer-vpn-internal-address'): 10.0.34.1
+# 	[12/24] Enable DNS configuration for agent (CLI option '--agent-peer-dns-enabled')? yes
+# 	[12/24] 	Set DNS server for agent (CLI option '--agent-peer-dns-server'): 1.1.1.1
+# 	[13/24] Enable MTU configuration for agent (CLI option '--agent-peer-mtu-enabled')? no
+# 	[14/24] Enable PreUp script for agent (CLI option '--agent-peer-script-pre-up-enabled')? no
+# 	[15/24] Enable PostUp script for agent (CLI option '--agent-peer-script-post-up-enabled')? no
+# 	[16/24] Enable PreDown script for agent (CLI option '--agent-peer-script-pre-down-enabled')? no
+# 	[17/24] Enable PostDown script for agent (CLI option '--agent-peer-script-post-down-enabled')? no
 # [agent settings complete]
-# [new peer/connection default settings 19-25/25]
-# 	[19/25] Enable DNS field for new peers by default (CLI option '--default-enable-dns')? yes
-# 	[19/25] 	Enter DNS server for new peers by default (CLI option '--default-dns-server') (e.g. 1.1.1.1): 1.1.1.1
-# 	[20/25] Enable MTU field for new peers by default (CLI option '--default-enable-mtu')? no
-# 	[21/25] Enable PreUp scripting field for new peers by default (CLI option '--default-enable-script-pre-up')? no
-# 	[22/25] Enable PostUp scripting field for this default (CLI option '--default-enable-script-post-up')? no
-# 	[23/25] Enable PreDown scripting field for this default (CLI option '--default-enable-script-pre-down')? no
-# 	[24/25] Enable PostDown scripting field for this default (CLI option '--default-enable-script-post-down')? no
-# 	[25/25] Enable PersistentKeepalive field for new connections by default (CLI option '--default-enable-persistent-keepalive')? yes
-# 	[25/25] 	Enter PersistentKeepalive period (seconds) for new connections by default (CLI option '--default-persistent-keepalive-period') (e.g. 25): 25
+# [new peer/connection default settings 18-24/24]
+# 	[18/24] Enable DNS for new peers by default (CLI option '--default-peer-dns-enabled')? yes
+# 	[18/24] 	Set default DNS server for new peers (CLI option '--default-peer-dns-server'): 1.1.1.1
+# 	[19/24] Enable MTU for new peers by default (CLI option '--default-peer-mtu-enabled')? no
+# 	[20/24] Enable PreUp script for new peers by default (CLI option '--default-peer-script-pre-up-enabled')? no
+# 	[21/24] Enable PostUp script for new peers by default (CLI option '--default-peer-script-post-up-enabled')? no
+# 	[22/24] Enable PreDown script for new peers by default (CLI option '--default-peer-script-pre-down-enabled')? no
+# 	[23/24] Enable PostDown script for new peers by default (CLI option '--default-peer-script-post-down-enabled')? no
+# 	[24/24] Enable PersistentKeepalive for new connections by default (CLI option '--default-connection-persistent-keepalive-enabled')? yes
+# 	[24/24] 	Set default PersistentKeepalive period in seconds (CLI option '--default-connection-persistent-keepalive-period'): 25
 # [new peer/connection default settings complete]
 # ✅ This was all the information required to initialize the rust-agent. Finalizing the configuration...
-# 2025-09-04T02:25:20.211Z INFO  [wg_rusteze::wireguard::cmd] $ wg genkey
-# 2025-09-04T02:25:20.212Z INFO  [wg_rusteze::wireguard::cmd] $ wg genkey | wg pubkey
-# 2025-09-04T02:25:20.212Z INFO  [wg_rusteze::conf::util] updated config file
+# 2025-09-08T00:53:26.909Z INFO  [wg_rusteze::wireguard::cmd] $ wg genkey
+# 2025-09-08T00:53:26.911Z INFO  [wg_rusteze::wireguard::cmd] $ wg genkey | wg pubkey
+# 2025-09-08T00:53:26.912Z INFO  [wg_rusteze::conf::util] updated config file
 # ✅ Configuration saved to `config.yml`.
 ```
 
@@ -207,17 +207,26 @@ Folder structure after initialization:
 
 ```bash
 tree ~/.wg-rusteze
-# ~/.wg-rusteze
 # ├── bin
 # │   └── wg-rusteze
-# ├── cert.pem
+# ├── certs
+# │   ├── root
+# │   │   ├── rootCA.crt
+# │   │   └── rootCA.key
+# │   └── servers
+# │       ├── ...
+# │       │   ├── cert.pem
+# │       │   └── key.pem
+# │       ├── XX.XX.XX.XX
+# │       │   ├── cert.pem
+# │       │   └── key.pem
+# │       ├── ...
+# │       │   ├── cert.pem
+# │       │   └── key.pem
 # ├── completions
 # │   ├── _wg-rusteze
 # │   └── wg-rusteze.bash
-# ├── conf.yml
-# └── key.pem
-# 
-# 3 directories, 6 files
+# └── conf.yml
 ```
 
 ---
@@ -235,20 +244,14 @@ sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
 
 ```bash
 wg-rusteze agent run
-# $ wg-rusteze agent run
-# backend: v0.1.0, frontend: v0.0.0, built: 2025-09-04T03:23:38Z
-# 2025-09-04T03:27:33.100Z INFO  [wg_rusteze] using the wg-rusteze config file at "/root/.wg-rusteze/conf.yml"
-# 2025-09-04T03:27:33.100Z INFO  [wg_rusteze::commands::agent] using the wireguard config file at "/etc/wireguard/wg-rusteze.conf"
-# 2025-09-04T03:27:33.364Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg-quick down wg-rusteze
-# 2025-09-04T03:27:33.364Z WARN  [wg_rusteze::wireguard::cmd] [#] ip link delete dev wg-rusteze
-# [#] resolvconf -d tun.wg-rusteze -f
-# [#] iptables -t nat -D POSTROUTING -s 10.0.34.0/24 -o enp1s0 -j MASQUERADE;
-# [#] iptables -D INPUT -p udp -m udp --dport 51820 -j ACCEPT;
-# [#] iptables -D FORWARD -i wg-rusteze -j ACCEPT;
-# [#] iptables -D FORWARD -o wg-rusteze -j ACCEPT;
+# backend: v0.1.0, frontend: v0.0.0, built: 2025-09-08T00:33:15Z
+# 2025-09-08T00:57:32.398Z INFO  [wg_rusteze] using the wg-rusteze config file at "/root/.wg-rusteze/conf.yml"
+# 2025-09-08T00:57:32.399Z INFO  [wg_rusteze::commands::agent] using the wireguard config file at "/etc/wireguard/wg-rusteze.conf"
+# 2025-09-08T00:57:32.449Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg-quick down wg-rusteze
+# 2025-09-08T00:57:32.449Z WARN  [wg_rusteze::wireguard::cmd] wg-quick: `wg-rusteze' is not a WireGuard interface
 # 
-# 2025-09-04T03:27:33.512Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg-quick up wg-rusteze
-# 2025-09-04T03:27:33.512Z WARN  [wg_rusteze::wireguard::cmd] [#] ip link add wg-rusteze type wireguard
+# 2025-09-08T00:57:32.744Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg-quick up wg-rusteze
+# 2025-09-08T00:57:32.745Z WARN  [wg_rusteze::wireguard::cmd] [#] ip link add wg-rusteze type wireguard
 # [#] wg setconf wg-rusteze /dev/fd/63
 # [#] ip -4 address add 10.0.34.1/24 dev wg-rusteze
 # [#] ip link set mtu 1420 up dev wg-rusteze
@@ -258,17 +261,15 @@ wg-rusteze agent run
 # [#] iptables -A FORWARD -i wg-rusteze -j ACCEPT;
 # [#] iptables -A FORWARD -o wg-rusteze -j ACCEPT;
 # 
-# 2025-09-04T03:27:33.512Z INFO  [wg_rusteze::wireguard::cmd] wireguard tunnel accessible at XXX.XXX.XXX.XXX:51820
-# 2025-09-04T03:27:33.513Z INFO  [wg_rusteze::web::server] Started HTTP frontend/API at http://XXX.XXX.XXX.XXX:80/
-# 2025-09-04T03:27:33.513Z INFO  [actix_server::builder] starting 1 workers
-# 2025-09-04T03:27:33.514Z INFO  [wg_rusteze::web::server] Started HTTPS frontend/API at https://XXX.XXX.XXX.XXX:443/
-# 2025-09-04T03:27:33.515Z INFO  [actix_server::builder] starting 1 workers
-# 2025-09-04T03:27:33.515Z INFO  [actix_server::server] Actix runtime found; starting in Actix runtime
-# 2025-09-04T03:27:33.515Z INFO  [actix_server::server] starting service: "actix-web-service-XXX.XXX.XXX.XXX:80", workers: 1, listening on: XXX.XXX.XXX.XXX:80
-# 2025-09-04T03:27:33.517Z INFO  [actix_server::server] Actix runtime found; starting in Actix runtime
-# 2025-09-04T03:27:33.517Z INFO  [actix_server::server] starting service: "actix-web-service-XXX.XXX.XXX.XXX:443", workers: 1, listening on: XXX.XXX.XXX.XXX:443
-# 2025-09-04T03:27:39.892Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg show wg-rusteze dump
-# 2025-09-04T03:27:40.900Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg show wg-rusteze dump
+# 2025-09-08T00:57:32.745Z INFO  [wg_rusteze::wireguard::cmd] wireguard tunnel accessible at XX.XX.XX.XX:51820
+# 2025-09-08T00:57:32.745Z INFO  [wg_rusteze::web::server] Started HTTP frontend/API at http://XX.XX.XX.XX:80/
+# 2025-09-08T00:57:32.745Z INFO  [actix_server::builder] starting 2 workers
+# 2025-09-08T00:57:32.746Z INFO  [wg_rusteze::web::server] Started HTTPS frontend/API at https://XX.XX.XX.XX:443/
+# 2025-09-08T00:57:32.746Z INFO  [actix_server::builder] starting 2 workers
+# 2025-09-08T00:57:32.746Z INFO  [actix_server::server] Actix runtime found; starting in Actix runtime
+# 2025-09-08T00:57:32.746Z INFO  [actix_server::server] starting service: "actix-web-service-XX.XX.XX.XX:80", workers: 2, listening on: XX.XX.XX.XX:80
+# 2025-09-08T00:57:32.748Z INFO  [actix_server::server] Actix runtime found; starting in Actix runtime
+# 2025-09-08T00:57:32.748Z INFO  [actix_server::server] starting service: "actix-web-service-XX.XX.XX.XX:443", workers: 2, listening on: XX.XX.XX.XX:443
 ```
 
 * HTTP frontend/API: `http://<your-ip>:80/`
