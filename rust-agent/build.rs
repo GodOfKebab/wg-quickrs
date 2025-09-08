@@ -7,6 +7,7 @@ use rust_cli::{Cli, InitOptions};
 use serde_json::Value as JsonValue;
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 use toml::Value as TomlValue;
 
 fn main() {
@@ -34,6 +35,24 @@ fn main() {
 
     let timestamp = chrono::Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
+    // Get current git branch
+    let git_branch = Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    // Get short commit SHA (like GitHub)
+    let git_commit = Command::new("git")
+        .args(["rev-parse", "--short", "HEAD"])
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
     let content = format!(
         r#"
 #[macro_export]
@@ -51,9 +70,9 @@ macro_rules! frontend_version {{
 }}
 
 #[macro_export]
-macro_rules! build_timestamp {{
+macro_rules! build_info {{
     () => {{
-        "{timestamp}"
+        "{git_branch}-{git_commit}@{timestamp}"
     }};
 }}
 
@@ -63,7 +82,7 @@ macro_rules! full_version {{
         concat!(
             "backend: ", backend_version!(), ", ",
             "frontend: ", frontend_version!(), ", ",
-            "built: ", build_timestamp!()
+            "build: ", build_info!()
         )
     }};
 }}

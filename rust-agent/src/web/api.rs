@@ -31,7 +31,7 @@ async fn get_version() -> impl Responder {
     HttpResponse::Ok().json(json!({
         "backend": backend_version!(),
         "frontend": frontend_version!(),
-        "built": build_timestamp!(),
+        "build": build_info!(),
     }))
 }
 

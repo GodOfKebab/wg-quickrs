@@ -110,7 +110,7 @@
       frontend: <strong>{{ version.frontend }}</strong>
     </small>
     <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
-      built: <strong>{{ version.built }}</strong>
+      build: <strong>{{ version.build }}</strong>
     </small>
     <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
       last fetched:
@@ -294,13 +294,13 @@ export default {
 
       if (this.version === null) {
         this.api.get_version().then(response => {
-          const last_built_date = (new Date(Date.parse(response.built)))
+          const last_build_date = (new Date(Date.parse(response.build.split("@").pop())))
           this.version = {
             backend: response.backend,
             frontend: response.frontend,
-            built: response.built,
-            full_version: `backend: ${response.backend}, frontend: ${response.frontend}, built: ${response.built}`,
-            readable_datetime: `${last_built_date} [${dayjs(last_built_date).fromNow()}]`
+            build: response.build,
+            full_version: `backend: ${response.backend}, frontend: ${response.frontend}, build: ${response.build}`,
+            readable_datetime: `${last_build_date} [${dayjs(last_build_date).fromNow()}]`
           }
         });
       }
