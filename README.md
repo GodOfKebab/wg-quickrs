@@ -59,7 +59,7 @@ cd ..
 #### 1.1.3 Build the web frontend
 
 ```bash
-sudo apt install npm
+sudo apt install -y npm
 cd web
 npm install
 npm run build
@@ -206,6 +206,7 @@ Follow the prompts to configure network, agent, and default peer settings. This 
 Folder structure after initialization:
 
 ```bash
+# sudo apt install -y tree
 tree ~/.wg-rusteze
 # ├── bin
 # │   └── wg-rusteze
