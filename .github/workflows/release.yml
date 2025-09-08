@@ -92,6 +92,7 @@ jobs:
 
       - name: Build binary
         run: |
+          cargo install cargo-zigbuild
           rustup target add ${{ matrix.target }}
           cargo clean
           AWS_LC_SYS_PREGENERATED_BINDINGS=1 cargo zigbuild --release --package wg-rusteze --bin wg-rusteze --target=${{ matrix.target }}
