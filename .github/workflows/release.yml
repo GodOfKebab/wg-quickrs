@@ -59,15 +59,20 @@ jobs:
           # Linux
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            use_zig: true
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
+            use_zig: true
           - os: ubuntu-latest
             target: armv7-unknown-linux-musleabihf
+            use_zig: true
           # macOS
           - os: macos-latest
             target: x86_64-apple-darwin
+            use_zig: false
           - os: macos-latest
             target: aarch64-apple-darwin
+            use_zig: false
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -80,6 +85,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Setup Zig
+        if: matrix.use_zig == true
         uses: mlugg/setup-zig@v2
         with:
           version: 0.13.0
@@ -92,11 +98,15 @@ jobs:
 
       - name: Build binary
         run: |
-          cargo install cargo-zigbuild
-          cargo install --force --locked bindgen-cli
-          rustup target add ${{ matrix.target }}
-          cargo clean
-          AWS_LC_SYS_PREGENERATED_BINDINGS=1 cargo zigbuild --release --package wg-rusteze --bin wg-rusteze --target=${{ matrix.target }}
+          if [ "${{ matrix.use_zig }}" = "true" ]; then
+            cargo install cargo-zigbuild
+            cargo install --force --locked bindgen-cli
+            rustup target add ${{ matrix.target }}
+            cargo clean
+            AWS_LC_SYS_PREGENERATED_BINDINGS=1 cargo zigbuild --release --package wg-rusteze --bin wg-rusteze --target=${{ matrix.target }}
+          else
+            cargo build --release --package wg-rusteze --bin wg-rusteze --target ${{ matrix.target }}
+          fi
 
       - name: Package binary + completions
         run: |
