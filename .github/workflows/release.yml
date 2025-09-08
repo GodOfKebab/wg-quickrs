@@ -11,8 +11,6 @@ jobs:
   # --------------------------
   build-frontend:
     runs-on: ubuntu-latest
-    outputs:
-      web-dist-dir: ${{ steps.web-dist.outputs.web-dist-dir }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -37,13 +35,17 @@ jobs:
           cd ..
 
       - name: Build web frontend
-        id: web-dist
         run: |
           cd web
           npm install
           npm run build
           cd ..
-          echo "web-dist-dir=web/dist" >> $GITHUB_OUTPUT
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-frontend
+          path: web/dist
 
   # --------------------------
   # Step 2: Build Binaries
@@ -78,10 +80,11 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
-      - name: Copy pre-built frontend
-        run: |
-          mkdir -p web/dist
-          cp -r ${{ needs.build-frontend.outputs.web-dist-dir }}/* web/dist/
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-frontend
+          path: web/dist
 
       - name: Build wg-rusteze binary
         run: |
