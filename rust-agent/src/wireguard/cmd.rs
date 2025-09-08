@@ -326,7 +326,7 @@ PostDown = {fw_utility} -D FORWARD -i {interface} -j ACCEPT;
 PostUp = {fw_utility} -A FORWARD -o {interface} -j ACCEPT;
 PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;
 ### END OF HIDDEN SCRIPTS ###",
-            fw_utility = config.agent.firewall.utility.to_string(),
+            fw_utility = config.agent.firewall.utility.to_string_lossy(),
             subnet = config.network.subnet,
             gateway = config.agent.vpn.gateway,
             port = config.agent.vpn.port,
