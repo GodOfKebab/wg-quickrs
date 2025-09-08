@@ -6,13 +6,16 @@ on:
     types: [ created ]
 
 jobs:
+  # --------------------------
+  # Step 1: Build frontend
+  # --------------------------
   build-frontend:
     runs-on: ubuntu-latest
     outputs:
       web-dist-dir: ${{ steps.web-dist.outputs.web-dist-dir }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -28,7 +31,6 @@ jobs:
           node-version: 20
 
       - name: Build rust-wasm
-        id: wasm-pkg
         run: |
           cd rust-wasm
           wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
@@ -43,6 +45,9 @@ jobs:
           cd ..
           echo "web-dist-dir=web/dist" >> $GITHUB_OUTPUT
 
+  # --------------------------
+  # Step 2: Build Binaries
+  # --------------------------
   build-binaries:
     needs: build-frontend
     name: Build ${{ matrix.target }} on ${{ matrix.os }}
@@ -75,42 +80,47 @@ jobs:
 
       - name: Copy pre-built frontend
         run: |
-          cp -r ${{ needs.build-frontend.outputs.web-dist-dir }} web/dist
+          mkdir -p web/dist
+          cp -r ${{ needs.build-frontend.outputs.web-dist-dir }}/* web/dist/
 
-      - name: Build
+      - name: Build wg-rusteze binary
         run: |
           cargo build --release --package wg-rusteze --bin wg-rusteze --target ${{ matrix.target }}
 
-      - name: Prepare artifact
+      - name: Package binary + completions
         run: |
-          mkdir -p dist
-          cp target/${{ matrix.target }}/release/wg-rusteze dist/wg-rusteze-${{ matrix.target }}
-          cp -r target/${{ matrix.target }}/release/completions release/${{ matrix.target }}/
-          tar -czf wg-rusteze-${{ matrix.target }}.tar.gz -C dist wg-rusteze-${{ matrix.target }}
+          mkdir -p dist/${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/wg-rusteze dist/${{ matrix.target }}/
+          cp -r target/${{ matrix.target }}/release/completions dist/${{ matrix.target }}/
+          tar -czf dist/wg-rusteze-${{ matrix.target }}.tar.gz -C dist/${{ matrix.target }} .
 
-      - name: Upload release artifacts
-        uses: softprops/action-gh-release@v2
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: wg-rusteze-${{ matrix.target }}.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: wg-rusteze-${{ matrix.target }}
+          path: dist/wg-rusteze-${{ matrix.target }}.tar.gz
 
+  # --------------------------
+  # Step 3: Publish to GitHub Release
+  # --------------------------
   release:
-    name: Attach Binaries to Release
     needs: build-binaries
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./artifacts
+          path: artifacts
 
-      - name: List artifacts
+      - name: List downloaded artifacts
         run: ls -R ./artifacts
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ./artifacts/**/*.tar.gz
+          files: artifacts/**/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
