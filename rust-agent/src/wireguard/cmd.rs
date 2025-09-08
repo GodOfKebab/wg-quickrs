@@ -315,15 +315,18 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
     {
         hidden_scripts = Some(format!(
             "### START OF HIDDEN SCRIPTS ###
-PostUp = iptables -t nat -A POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
-PostDown = iptables -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
-PostUp = iptables -A INPUT -p udp -m udp --dport {port} -j ACCEPT;
-PostDown = iptables -D INPUT -p udp -m udp --dport {port} -j ACCEPT;
-PostUp = iptables -A FORWARD -i {interface} -j ACCEPT;
-PostDown = iptables -D FORWARD -i {interface} -j ACCEPT;
-PostUp = iptables -A FORWARD -o {interface} -j ACCEPT;
-PostDown = iptables -D FORWARD -o {interface} -j ACCEPT;
+PostUp = sudo sysctl -w net.ipv4.ip_forward=1
+PostDown = sudo sysctl -w net.ipv4.ip_forward=0
+PostUp = {fw_utility} -t nat -A POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
+PostDown = {fw_utility} -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
+PostUp = {fw_utility} -A INPUT -p udp -m udp --dport {port} -j ACCEPT;
+PostDown = {fw_utility} -D INPUT -p udp -m udp --dport {port} -j ACCEPT;
+PostUp = {fw_utility} -A FORWARD -i {interface} -j ACCEPT;
+PostDown = {fw_utility} -D FORWARD -i {interface} -j ACCEPT;
+PostUp = {fw_utility} -A FORWARD -o {interface} -j ACCEPT;
+PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;
 ### END OF HIDDEN SCRIPTS ###",
+            fw_utility = config.agent.firewall.utility.to_string(),
             subnet = config.network.subnet,
             gateway = config.agent.vpn.gateway,
             port = config.agent.vpn.port,
