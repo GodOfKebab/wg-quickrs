@@ -82,9 +82,30 @@ fn find_firewall_utility() -> Option<String> {
     None
 }
 
-fn find_first_cert_server() -> (Option<String>, Option<String>) {
+fn find_cert_server(web_address: String) -> (Option<String>, Option<String>) {
     let config_folder = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap();
     let servers_folder = config_folder.join("certs/servers");
+
+    if servers_folder.join(&web_address).join("cert.pem").exists()
+        && servers_folder.join(&web_address).join("key.pem").exists()
+    {
+        return (
+            Some(
+                servers_folder
+                    .join(&web_address)
+                    .join("cert.pem")
+                    .to_string_lossy()
+                    .into(),
+            ),
+            Some(
+                servers_folder
+                    .join(&web_address)
+                    .join("key.pem")
+                    .to_string_lossy()
+                    .into(),
+            ),
+        );
+    }
 
     let mut candidates: Vec<(PathBuf, PathBuf)> = Vec::new();
 
@@ -380,7 +401,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         Some(443)
     );
 
-    let (option_cert, option_key) = find_first_cert_server();
+    let (option_cert, option_key) = find_cert_server(agent_web_address.clone());
 
     // [5/24] --agent_web_https_tls_cert
     let agent_web_https_tls_cert = get_init_enabled_value_option(
