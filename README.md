@@ -89,6 +89,22 @@ echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.zshrc
 echo 'source $HOME/.wg-rusteze/completions/_wg-rusteze' >> ~/.zshrc
 source ~/.zshrc
 
+# Fish
+echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.config/fish/config.fish
+echo 'source $HOME/.wg-rusteze/completions/wg-rusteze.fish' >> ~/.config/fish/config.fish
+source ~/.config/fish/config.fish
+
+# Elvish
+echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.elvish/rc.elv
+echo 'source $HOME/.wg-rusteze/completions/wg-rusteze.elv' >> ~/.elvish/rc.elv
+source ~/.elvish/rc.elv
+
+# PowerShell Core / Windows PowerShell
+profile_path=$(pwsh -NoProfile -Command '$PROFILE')
+echo '$env:PATH = "$HOME/.wg-rusteze/bin;" + $env:PATH' >> "$profile_path"
+echo '. $HOME/.wg-rusteze/completions/_wg-rusteze.ps1' >> "$profile_path"
+pwsh -NoProfile -Command ". \$PROFILE"
+
 wg-rusteze --help
 # $ wg-rusteze
 # A tool to manage the peer and network configuration of the WireGuard-based overlay network over the web console

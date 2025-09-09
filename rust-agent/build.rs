@@ -162,7 +162,13 @@ pub const INIT_HELPS: &[&str] = &{helps:?};
     fs::create_dir_all(&completions_dir).expect("Could not create completions directory");
 
     // Generate bash completion script
-    let shells: &[clap_complete::Shell] = &[clap_complete::Shell::Bash, clap_complete::Shell::Zsh];
+    let shells: &[clap_complete::Shell] = &[
+        clap_complete::Shell::Bash,
+        clap_complete::Shell::Zsh,
+        clap_complete::Shell::Fish,
+        clap_complete::Shell::PowerShell,
+        clap_complete::Shell::Elvish,
+    ];
     for &shell in shells {
         let _completion_file_path = generate_to(shell, &mut cmd, "wg-rusteze", &completions_dir)
             .expect("Failed to generate bash completion script");
