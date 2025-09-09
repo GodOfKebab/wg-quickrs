@@ -11,7 +11,7 @@ COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
 COPY web/ .
 RUN npm ci --production
 
-FROM rust:1.89-alpine3.22 AS rust-agent-builder
+FROM rust:1.89-slim AS rust-agent-builder
 WORKDIR /app
 
 # Install musl cross-compile dependencies
