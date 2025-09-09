@@ -13,8 +13,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-        with:
-          submodules: false  # needed for docker build
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -33,7 +31,7 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/certificate-manager:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/certificate-manager:${{ github.ref_name }}
