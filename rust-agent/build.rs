@@ -36,7 +36,7 @@ fn main() {
     let timestamp = chrono::Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
     // Get current git branch
-    fn git_ref_fn() -> String {
+    fn git_info_fn() -> String {
         // Try tag first
         if let Some(tag) = Command::new("git")
             .args(["describe", "--tags", "--exact-match"])
@@ -54,25 +54,27 @@ fn main() {
             return tag;
         }
 
-        // Fallback: branch name
-        Command::new("git")
+        // Fallback: branch name and commit
+        let git_branch = Command::new("git")
             .args(["rev-parse", "--abbrev-ref", "HEAD"])
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
             .map(|s| s.trim().to_string())
-            .unwrap_or_else(|| "unknown".to_string())
-    }
-    let git_ref = git_ref_fn();
+            .unwrap_or_else(|| "unknown".to_string());
 
-    // Get short commit SHA (like GitHub)
-    let git_commit = Command::new("git")
-        .args(["rev-parse", "--short", "HEAD"])
-        .output()
-        .ok()
-        .and_then(|o| String::from_utf8(o.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+        // Get short commit SHA (like GitHub)
+        let git_commit = Command::new("git")
+            .args(["rev-parse", "--short", "HEAD"])
+            .output()
+            .ok()
+            .and_then(|o| String::from_utf8(o.stdout).ok())
+            .map(|s| s.trim().to_string())
+            .unwrap_or_else(|| "unknown".to_string());
+
+        format!("{}#{}", git_branch, git_commit)
+    }
+    let git_info = git_info_fn();
 
     let content = format!(
         r#"
@@ -93,7 +95,7 @@ macro_rules! frontend_version {{
 #[macro_export]
 macro_rules! build_info {{
     () => {{
-        "{git_ref}-{git_commit}@{timestamp}"
+        "{git_info}@{timestamp}"
     }};
 }}
 
