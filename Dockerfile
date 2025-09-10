@@ -8,7 +8,8 @@ FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
 COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
 WORKDIR /app/web
 COPY web/ .
-RUN npm ci --production
+RUN npm ci --omit=dev
+RUN npm run build
 
 FROM --platform=linux/$BUILDARCH rust:1.89-slim AS rust-agent-builder
 COPY --from=node-builder /app/web/dist /app/web/dist
