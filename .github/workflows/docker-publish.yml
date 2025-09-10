@@ -33,14 +33,14 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/certificate-manager:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/certificate-manager:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}:${{ github.ref_name }}
 
       - name: Update Docker Hub description
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/certificate-manager
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}
           short-description: ${{ github.event.repository.description }}
           readme-filepath: ./README.md
