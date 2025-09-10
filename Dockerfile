@@ -37,16 +37,19 @@ COPY rust-cli/ /app/rust-cli
 COPY web/package.json /app/web/package.json
 COPY .git /app/.git
 
+# Setup target arch
 ARG TARGETARCH
-COPY --from=node-builder /app/web/dist /app/web/dist
 RUN case "$TARGETARCH" in \
-                amd64) echo 'x86_64-unknown-linux-musl' > RUST_TARGET ;; \
-                arm64) echo 'aarch64-unknown-linux-musl' > RUST_TARGET ;; \
-                arm) echo 'armv7-unknown-linux-musleabihf' > RUST_TARGET ;; \
-                *) echo "Unsupported architecture $TARGETARCH" >&2; exit 1 ;; \
-                esac && \
-    rustup target add $(cat RUST_TARGET) && \
-    cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) && \
+        amd64) echo 'x86_64-unknown-linux-musl' > RUST_TARGET ;; \
+        arm64) echo 'aarch64-unknown-linux-musl' > RUST_TARGET ;; \
+        arm) echo 'armv7-unknown-linux-musleabihf' > RUST_TARGET ;; \
+        *) echo "Unsupported architecture $TARGETARCH" >&2; exit 1 ;; \
+    esac && \
+    rustup target add $(cat RUST_TARGET)
+
+# Copy web folder right before build for build optimization
+COPY --from=node-builder /app/web/dist /app/web/dist
+RUN cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) && \
     cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/wg-quickrs
 
 FROM alpine:3.22 AS runner
