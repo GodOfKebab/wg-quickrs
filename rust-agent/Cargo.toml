@@ -47,4 +47,4 @@ ipnetwork = "0.21.1"
 get_if_addrs = "0.5.3"
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
 dirs = "6.0.0"
-
+aws-lc-rs = { version = "1.14.0", features = ["bindgen"] }
