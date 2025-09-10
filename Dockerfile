@@ -5,14 +5,13 @@ RUN cargo install wasm-pack
 RUN wasm-pack build --target web --out-dir /app/web/pkg -- --features wasm
 
 FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
-COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
 WORKDIR /app/web
 COPY web/ .
 RUN npm ci --omit=dev
+COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
 RUN npm run build
 
 FROM --platform=linux/$BUILDARCH rust:1.89-slim AS rust-agent-builder
-COPY --from=node-builder /app/web/dist /app/web/dist
 WORKDIR /app
 
 # Install Zig
@@ -23,7 +22,7 @@ RUN case "$BUILDARCH" in \
             arm) echo 'arm' > ZIG_TARGET ;; \
             *) echo "Unsupported architecture $BUILDARCH" >&2; exit 1 ;; \
             esac && \
-    apt-get update && apt-get install -y curl xz-utils musl-dev cmake clang llvm-dev libclang-dev pkg-config  && \
+    apt-get update && apt-get install -y curl xz-utils git musl-dev cmake clang llvm-dev libclang-dev pkg-config && \
     rm -rf /var/lib/apt/lists/* && \
     curl -L https://ziglang.org/download/0.15.1/zig-$(cat ZIG_TARGET)-linux-0.15.1.tar.xz | tar -xJ && \
     mv zig-* /usr/local/zig && \
@@ -36,8 +35,10 @@ COPY rust-wasm/ /app/rust-wasm
 COPY rust-agent/ /app/rust-agent
 COPY rust-cli/ /app/rust-cli
 COPY web/package.json /app/web/package.json
+COPY .git /app/.git
 
 ARG TARGETARCH
+COPY --from=node-builder /app/web/dist /app/web/dist
 RUN case "$TARGETARCH" in \
                 amd64) echo 'x86_64-unknown-linux-musl' > RUST_TARGET ;; \
                 arm64) echo 'aarch64-unknown-linux-musl' > RUST_TARGET ;; \
@@ -49,7 +50,6 @@ RUN case "$TARGETARCH" in \
     cp /app/target/$(cat RUST_TARGET)/release/wg-rusteze /app/wg-rusteze
 
 FROM alpine:3.22 AS runner
-COPY --from=rust-agent-builder /app/wg-rusteze /app/wg-rusteze
 WORKDIR /app
 RUN apk add -U --no-cache wireguard-tools iptables
 RUN cat > /app/entrypoint.sh <<'EOF'
@@ -67,5 +67,6 @@ fi
 # run the actual app
 exec /app/wg-rusteze --wg-rusteze-config-folder .wg-rusteze "$@"
 EOF
+COPY --from=rust-agent-builder /app/wg-rusteze /app/wg-rusteze
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
 #CMD ["tail", "-f", "/dev/null"]
