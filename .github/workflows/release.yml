@@ -107,9 +107,7 @@ jobs:
             sudo apt-get update && sudo apt-get install -y musl musl-dev musl-tools cmake clang llvm-dev libclang-dev pkg-config
             cargo install cargo-zigbuild
             rustup target add ${{ matrix.target }}
-            export CC=zig cc
-            export CXX=zig c++    
-            cargo zigbuild --release --package wg-rusteze --bin wg-rusteze --target=${{ matrix.target }}
+            CC="zig cc" CXX="zig c++" cargo zigbuild --release --package wg-rusteze --bin wg-rusteze --target=${{ matrix.target }}
           else
             cargo build --release --package wg-rusteze --bin wg-rusteze --target ${{ matrix.target }}
           fi
