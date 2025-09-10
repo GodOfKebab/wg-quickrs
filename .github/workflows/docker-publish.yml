@@ -33,8 +33,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
 
       - name: Update Docker Hub description
         uses: peter-evans/dockerhub-description@v4
