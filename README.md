@@ -1,4 +1,4 @@
-# wg-rusteze
+# wg-quickrs
 
 ⚠️ This repo is a **work in progress**!
 
@@ -14,8 +14,8 @@ Clone the repository:
 
 ```bash
 sudo apt install -y git
-git clone --recursive https://github.com/GodOfKebab/wg-rusteze.git
-cd wg-rusteze
+git clone --recursive https://github.com/GodOfKebab/wg-quickrs.git
+cd wg-quickrs
 ```
 
 ---
@@ -32,7 +32,7 @@ The project is split into:
 
 * **`rust-wasm`** – Rust code for the web frontend
 * **`web`** – frontend assets
-* **`rust-agent`** – backend, frontend server, and scripting tools bundled in `wg-rusteze` binary
+* **`rust-agent`** – backend, frontend server, and scripting tools bundled in `wg-quickrs` binary
 
 ---
 
@@ -68,68 +68,68 @@ cd ..
 
 ---
 
-#### 1.1.4 Build and Install `wg-rusteze`
+#### 1.1.4 Build and Install `wg-quickrs`
 
 This might take some time on slower machines.
 
 ```bash
-cargo build --release --package wg-rusteze --bin wg-rusteze
+cargo build --release --package wg-quickrs --bin wg-quickrs
 
-mkdir -p ~/.wg-rusteze/bin
-cp target/release/wg-rusteze ~/.wg-rusteze/bin/wg-rusteze
-cp -r target/release/completions ~/.wg-rusteze/completions
+mkdir -p ~/.wg-quickrs/bin
+cp target/release/wg-quickrs ~/.wg-quickrs/bin/wg-quickrs
+cp -r target/release/completions ~/.wg-quickrs/completions
 
 # Bash
-echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.bashrc
-echo 'source $HOME/.wg-rusteze/completions/wg-rusteze.bash' >> ~/.bashrc
+echo 'export PATH="$HOME/.wg-quickrs/bin:$PATH"' >> ~/.bashrc
+echo 'source $HOME/.wg-quickrs/completions/wg-quickrs.bash' >> ~/.bashrc
 source ~/.bashrc
 
 # ZSH
-echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.zshrc
-echo 'source $HOME/.wg-rusteze/completions/_wg-rusteze' >> ~/.zshrc
+echo 'export PATH="$HOME/.wg-quickrs/bin:$PATH"' >> ~/.zshrc
+echo 'source $HOME/.wg-quickrs/completions/_wg-quickrs' >> ~/.zshrc
 source ~/.zshrc
 
 # Fish
-echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.config/fish/config.fish
-echo 'source $HOME/.wg-rusteze/completions/wg-rusteze.fish' >> ~/.config/fish/config.fish
+echo 'export PATH="$HOME/.wg-quickrs/bin:$PATH"' >> ~/.config/fish/config.fish
+echo 'source $HOME/.wg-quickrs/completions/wg-quickrs.fish' >> ~/.config/fish/config.fish
 source ~/.config/fish/config.fish
 
 # Elvish
-echo 'export PATH="$HOME/.wg-rusteze/bin:$PATH"' >> ~/.elvish/rc.elv
-echo 'source $HOME/.wg-rusteze/completions/wg-rusteze.elv' >> ~/.elvish/rc.elv
+echo 'export PATH="$HOME/.wg-quickrs/bin:$PATH"' >> ~/.elvish/rc.elv
+echo 'source $HOME/.wg-quickrs/completions/wg-quickrs.elv' >> ~/.elvish/rc.elv
 source ~/.elvish/rc.elv
 
 # PowerShell Core / Windows PowerShell
 profile_path=$(pwsh -NoProfile -Command '$PROFILE')
-echo '$env:PATH = "$HOME/.wg-rusteze/bin;" + $env:PATH' >> "$profile_path"
-echo '. $HOME/.wg-rusteze/completions/_wg-rusteze.ps1' >> "$profile_path"
+echo '$env:PATH = "$HOME/.wg-quickrs/bin;" + $env:PATH' >> "$profile_path"
+echo '. $HOME/.wg-quickrs/completions/_wg-quickrs.ps1' >> "$profile_path"
 pwsh -NoProfile -Command ". \$PROFILE"
 
-wg-rusteze --help
-# $ wg-rusteze
+wg-quickrs --help
+# $ wg-quickrs
 # A tool to manage the peer and network configuration of the WireGuard-based overlay network over the web console
 # 
-# Usage: wg-rusteze [OPTIONS] <COMMAND>
+# Usage: wg-quickrs [OPTIONS] <COMMAND>
 # 
 # Commands:
-#   init   Initialize the wg-rusteze rust-agent.
+#   init   Initialize the wg-quickrs rust-agent.
 #          Configuration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command
-#   agent  Configure and run the wg-rusteze rust-agent
+#   agent  Configure and run the wg-quickrs rust-agent
 #   help   Print this message or the help of the given subcommand(s)
 # 
 # Options:
 #   -v, --verbose
 #           Increase verbosity level from Info to Debug
-#       --wg-rusteze-config-folder <WG_RUSTEZE_CONFIG_FOLDER>
-#           [default: .wg-rusteze]
+#       --wg-quickrs-config-folder <WG_QUICKRS_CONFIG_FOLDER>
+#           [default: .wg-quickrs]
 #   -h, --help
 #           Print help
 #   -V, --version
 #           Print version
 
-wg-rusteze <TAB>           # Shows available commands (init, agent)
-wg-rusteze agent <TAB>     # Shows available agent subcommands
-wg-rusteze init --<TAB>    # Shows available options for the init command
+wg-quickrs <TAB>           # Shows available commands (init, agent)
+wg-quickrs agent <TAB>     # Shows available agent subcommands
+wg-quickrs init --<TAB>    # Shows available options for the init command
 ```
 
 ---
@@ -148,8 +148,8 @@ sh certificate-manager/make-tls-certs.sh all
 # If successful, you should see the certificates under
 ls -1 certs/servers/
 
-# Move the certs directory to `~/.wg-rusteze`
-mkdir -p ~/.wg-rusteze && cp -r certs ~/.wg-rusteze/certs
+# Move the certs directory to `~/.wg-quickrs`
+mkdir -p ~/.wg-quickrs && cp -r certs ~/.wg-quickrs/certs
 ```
 
 ---
@@ -165,12 +165,12 @@ sudo apt install -y wireguard wireguard-tools
 #### 1.1.7 Initialize and Configure the Agent
 
 ```bash
-wg-rusteze init
+wg-quickrs init
 # backend: v0.1.0, frontend: v0.0.0, built: 2025-09-08T00:33:15Z
-# 2025-09-08T00:52:14.344Z INFO  [wg_rusteze] using the wg-rusteze config file at "/root/.wg-rusteze/conf.yml"
-# 2025-09-08T00:52:14.345Z INFO  [wg_rusteze::commands::init] Initializing wg-rusteze rust-agent...
+# 2025-09-08T00:52:14.344Z INFO  [wg_quickrs] using the wg-quickrs config file at "/root/.wg-quickrs/conf.yml"
+# 2025-09-08T00:52:14.345Z INFO  [wg_quickrs::commands::init] Initializing wg-quickrs rust-agent...
 # [general network settings 1-2/24]
-# 	[ 1/24] Set VPN network identifier (CLI option '--network-identifier'): wg-rusteze
+# 	[ 1/24] Set VPN network identifier (CLI option '--network-identifier'): wg-quickrs
 # 	[ 2/24] Set VPN network CIDR subnet (CLI option '--network-subnet'): 10.0.34.0/24
 # [general network settings complete]
 # [agent settings 3-17/24]
@@ -179,8 +179,8 @@ wg-rusteze init
 # 	[ 4/24] 	Set web server HTTP port (CLI option '--agent-web-http-port'): 80
 # 	[ 5/24] Enable HTTPS on web server (CLI option '--agent-web-https-enabled')? yes
 # 	[ 5/24] 	Set web server HTTPS port (CLI option '--agent-web-https-port'): 443
-# 	[ 5/24] 	Set path (relative to the wg-rusteze home directory) to TLS certificate file for HTTPS (CLI option '--agent-web-https-tls-cert'): certs/servers/XX.XX.XX.XX/cert.pem
-# 	[ 5/24] 	Set path (relative to the wg-rusteze home directory) to TLS private key file for HTTPS (CLI option '--agent-web-https-tls-key'): certs/servers/XX.XX.XX.XX/key.pem
+# 	[ 5/24] 	Set path (relative to the wg-quickrs home directory) to TLS certificate file for HTTPS (CLI option '--agent-web-https-tls-cert'): certs/servers/XX.XX.XX.XX/cert.pem
+# 	[ 5/24] 	Set path (relative to the wg-quickrs home directory) to TLS private key file for HTTPS (CLI option '--agent-web-https-tls-key'): certs/servers/XX.XX.XX.XX/key.pem
 # 	[ 6/24] Enable password authentication for web server (CLI option '--agent-web-password-enabled')? yes
 # 	[ 6/24] 	Set password for web server access: [hidden]
 # 	[ 7/24] Enable VPN server (CLI option '--agent-vpn-enabled')? yes
@@ -188,7 +188,7 @@ wg-rusteze init
 # 	[ 7/24] 	Set gateway (outbound interface) for VPN packet forwarding (CLI option '--agent-vpn-gateway'): enp1s0
 # 	[ 8/24] Enable running firewall commands for setting up NAT and input rules (CLI option '--agent-firewall-enabled')? yes
 # 	[ 8/24] 	Set the utility used to configure firewall NAT and input rules (CLI option '--agent-firewall-utility'): /usr/sbin/iptables
-# 	[ 9/24] Set agent peer name (CLI option '--agent-peer-name'): wg-rusteze-host
+# 	[ 9/24] Set agent peer name (CLI option '--agent-peer-name'): wg-quickrs-host
 # 	[10/24] Set publicly accessible endpoint(IP/FQDN:PORT) for VPN endpoint (CLI option '--agent-peer-vpn-endpoint'): XX.XX.XX.XX:51820
 # 	[11/24] Set internal IPv4 address for agent in VPN network (CLI option '--agent-peer-vpn-internal-address'): 10.0.34.1
 # 	[12/24] Enable DNS configuration for agent (CLI option '--agent-peer-dns-enabled')? yes
@@ -211,21 +211,21 @@ wg-rusteze init
 # 	[24/24] 	Set default PersistentKeepalive period in seconds (CLI option '--default-connection-persistent-keepalive-period'): 25
 # [new peer/connection default settings complete]
 # ✅ This was all the information required to initialize the rust-agent. Finalizing the configuration...
-# 2025-09-08T00:53:26.909Z INFO  [wg_rusteze::wireguard::cmd] $ wg genkey
-# 2025-09-08T00:53:26.911Z INFO  [wg_rusteze::wireguard::cmd] $ wg genkey | wg pubkey
-# 2025-09-08T00:53:26.912Z INFO  [wg_rusteze::conf::util] updated config file
+# 2025-09-08T00:53:26.909Z INFO  [wg_quickrs::wireguard::cmd] $ wg genkey
+# 2025-09-08T00:53:26.911Z INFO  [wg_quickrs::wireguard::cmd] $ wg genkey | wg pubkey
+# 2025-09-08T00:53:26.912Z INFO  [wg_quickrs::conf::util] updated config file
 # ✅ Configuration saved to `config.yml`.
 ```
 
-Follow the prompts to configure network, agent, and default peer settings. This generates `~/.wg-rusteze/conf.yml`.
+Follow the prompts to configure network, agent, and default peer settings. This generates `~/.wg-quickrs/conf.yml`.
 
 Folder structure after initialization:
 
 ```bash
 # sudo apt install -y tree
-tree ~/.wg-rusteze
+tree ~/.wg-quickrs
 # ├── bin
-# │   └── wg-rusteze
+# │   └── wg-quickrs
 # ├── certs
 # │   ├── root
 # │   │   ├── rootCA.crt
@@ -241,8 +241,8 @@ tree ~/.wg-rusteze
 # │       │   ├── cert.pem
 # │       │   └── key.pem
 # ├── completions
-# │   ├── _wg-rusteze
-# │   └── wg-rusteze.bash
+# │   ├── _wg-quickrs
+# │   └── wg-quickrs.bash
 # └── conf.yml
 ```
 
@@ -260,28 +260,28 @@ sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
 #### 1.1.9 Run the Agent
 
 ```bash
-wg-rusteze agent run
+wg-quickrs agent run
 # backend: v0.1.0, frontend: v0.0.0, built: 2025-09-08T00:33:15Z
-# 2025-09-08T00:57:32.398Z INFO  [wg_rusteze] using the wg-rusteze config file at "/root/.wg-rusteze/conf.yml"
-# 2025-09-08T00:57:32.399Z INFO  [wg_rusteze::commands::agent] using the wireguard config file at "/etc/wireguard/wg-rusteze.conf"
-# 2025-09-08T00:57:32.449Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg-quick down wg-rusteze
-# 2025-09-08T00:57:32.449Z WARN  [wg_rusteze::wireguard::cmd] wg-quick: `wg-rusteze' is not a WireGuard interface
+# 2025-09-08T00:57:32.398Z INFO  [wg_quickrs] using the wg-quickrs config file at "/root/.wg-quickrs/conf.yml"
+# 2025-09-08T00:57:32.399Z INFO  [wg_quickrs::commands::agent] using the wireguard config file at "/etc/wireguard/wg-quickrs.conf"
+# 2025-09-08T00:57:32.449Z INFO  [wg_quickrs::wireguard::cmd] $ sudo wg-quick down wg-quickrs
+# 2025-09-08T00:57:32.449Z WARN  [wg_quickrs::wireguard::cmd] wg-quick: `wg-quickrs' is not a WireGuard interface
 # 
-# 2025-09-08T00:57:32.744Z INFO  [wg_rusteze::wireguard::cmd] $ sudo wg-quick up wg-rusteze
-# 2025-09-08T00:57:32.745Z WARN  [wg_rusteze::wireguard::cmd] [#] ip link add wg-rusteze type wireguard
-# [#] wg setconf wg-rusteze /dev/fd/63
-# [#] ip -4 address add 10.0.34.1/24 dev wg-rusteze
-# [#] ip link set mtu 1420 up dev wg-rusteze
-# [#] resolvconf -a tun.wg-rusteze -m 0 -x
+# 2025-09-08T00:57:32.744Z INFO  [wg_quickrs::wireguard::cmd] $ sudo wg-quick up wg-quickrs
+# 2025-09-08T00:57:32.745Z WARN  [wg_quickrs::wireguard::cmd] [#] ip link add wg-quickrs type wireguard
+# [#] wg setconf wg-quickrs /dev/fd/63
+# [#] ip -4 address add 10.0.34.1/24 dev wg-quickrs
+# [#] ip link set mtu 1420 up dev wg-quickrs
+# [#] resolvconf -a tun.wg-quickrs -m 0 -x
 # [#] iptables -t nat -A POSTROUTING -s 10.0.34.0/24 -o enp1s0 -j MASQUERADE;
 # [#] iptables -A INPUT -p udp -m udp --dport 51820 -j ACCEPT;
-# [#] iptables -A FORWARD -i wg-rusteze -j ACCEPT;
-# [#] iptables -A FORWARD -o wg-rusteze -j ACCEPT;
+# [#] iptables -A FORWARD -i wg-quickrs -j ACCEPT;
+# [#] iptables -A FORWARD -o wg-quickrs -j ACCEPT;
 # 
-# 2025-09-08T00:57:32.745Z INFO  [wg_rusteze::wireguard::cmd] wireguard tunnel accessible at XX.XX.XX.XX:51820
-# 2025-09-08T00:57:32.745Z INFO  [wg_rusteze::web::server] Started HTTP frontend/API at http://XX.XX.XX.XX:80/
+# 2025-09-08T00:57:32.745Z INFO  [wg_quickrs::wireguard::cmd] wireguard tunnel accessible at XX.XX.XX.XX:51820
+# 2025-09-08T00:57:32.745Z INFO  [wg_quickrs::web::server] Started HTTP frontend/API at http://XX.XX.XX.XX:80/
 # 2025-09-08T00:57:32.745Z INFO  [actix_server::builder] starting 2 workers
-# 2025-09-08T00:57:32.746Z INFO  [wg_rusteze::web::server] Started HTTPS frontend/API at https://XX.XX.XX.XX:443/
+# 2025-09-08T00:57:32.746Z INFO  [wg_quickrs::web::server] Started HTTPS frontend/API at https://XX.XX.XX.XX:443/
 # 2025-09-08T00:57:32.746Z INFO  [actix_server::builder] starting 2 workers
 # 2025-09-08T00:57:32.746Z INFO  [actix_server::server] Actix runtime found; starting in Actix runtime
 # 2025-09-08T00:57:32.746Z INFO  [actix_server::server] starting service: "actix-web-service-XX.XX.XX.XX:80", workers: 2, listening on: XX.XX.XX.XX:80
@@ -317,8 +317,8 @@ service in `docker-compose.init.yml`.
 
 ```bash
 docker compose -f docker-compose.init.yml up certificate-manager
-tree .wg-rusteze-docker
-# .wg-rusteze-docker
+tree .wg-quickrs-docker
+# .wg-quickrs-docker
 # └── certs
 #     ├── root
 #     │   ├── rootCA.crt
@@ -332,13 +332,13 @@ tree .wg-rusteze-docker
 #             └── key.pem
 ```
 
-Edit the wg-rusteze settings from `wg-rusteze-init` service in `docker-compose.init.yml`.
+Edit the wg-quickrs settings from `wg-quickrs-init` service in `docker-compose.init.yml`.
 Especially make sure that the IP addresses are updated and correct TLS cert/key paths are entered.
 
 ```bash
-docker compose -f docker-compose.init.yml up wg-rusteze-init
-tree .wg-rusteze-docker
-# .wg-rusteze-docker
+docker compose -f docker-compose.init.yml up wg-quickrs-init
+tree .wg-quickrs-docker
+# .wg-quickrs-docker
 # └── certs
 #     ├── root
 #     │   ├── rootCA.crt
@@ -352,9 +352,9 @@ tree .wg-rusteze-docker
 #             └── key.pem
 ```
 
-After initialization, you can run the `wg-rusteze-agent-run` service in `docker-compose.agent.yml`.
+After initialization, you can run the `wg-quickrs-agent-run` service in `docker-compose.agent.yml`.
 
 ```bash
-docker compose -f docker-compose.agent.yml up wg-rusteze-agent-run
+docker compose -f docker-compose.agent.yml up wg-quickrs-agent-run
 ```
 

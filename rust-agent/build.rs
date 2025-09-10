@@ -172,7 +172,7 @@ pub const INIT_HELPS: &[&str] = &{helps:?};
         clap_complete::Shell::Elvish,
     ];
     for &shell in shells {
-        let _completion_file_path = generate_to(shell, &mut cmd, "wg-rusteze", &completions_dir)
+        let _completion_file_path = generate_to(shell, &mut cmd, "wg-quickrs", &completions_dir)
             .expect("Failed to generate bash completion script");
         // .../target/release/completions/...
         // println!("cargo:warning=Generated {} completion script at: {:?}", shell, _completion_file_path);

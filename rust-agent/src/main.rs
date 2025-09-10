@@ -13,8 +13,8 @@ mod macros;
 mod web;
 mod wireguard;
 
-pub static WG_RUSTEZE_CONFIG_FOLDER: OnceCell<PathBuf> = OnceCell::new();
-pub static WG_RUSTEZE_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
+pub static WG_QUICKRS_CONFIG_FOLDER: OnceCell<PathBuf> = OnceCell::new();
+pub static WG_QUICKRS_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 pub static WIREGUARD_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
 fn expand_tilde(path: PathBuf) -> PathBuf {
@@ -46,19 +46,19 @@ async fn main() -> ExitCode {
             eprintln!("Logger init failed: {e}");
         });
 
-    // get the wg_rusteze config file path
-    let config_folder = expand_tilde(args.wg_rusteze_config_folder.clone());
-    WG_RUSTEZE_CONFIG_FOLDER
+    // get the wg_quickrs config file path
+    let config_folder = expand_tilde(args.wg_quickrs_config_folder.clone());
+    WG_QUICKRS_CONFIG_FOLDER
         .set(config_folder.clone())
-        .expect("Failed to set WG_RUSTEZE_CONFIG_FOLDER");
-    let mut wg_rusteze_config_file = config_folder;
-    wg_rusteze_config_file.push("conf.yml");
-    WG_RUSTEZE_CONFIG_FILE
-        .set(wg_rusteze_config_file)
-        .expect("Failed to set WG_RUSTEZE_CONFIG_FILE");
+        .expect("Failed to set WG_QUICKRS_CONFIG_FOLDER");
+    let mut wg_quickrs_config_file = config_folder;
+    wg_quickrs_config_file.push("conf.yml");
+    WG_QUICKRS_CONFIG_FILE
+        .set(wg_quickrs_config_file)
+        .expect("Failed to set WG_QUICKRS_CONFIG_FILE");
     log::info!(
-        "using the wg-rusteze config file at \"{}\"",
-        WG_RUSTEZE_CONFIG_FILE.get().unwrap().display()
+        "using the wg-quickrs config file at \"{}\"",
+        WG_QUICKRS_CONFIG_FILE.get().unwrap().display()
     );
 
     match &args.command {
@@ -67,68 +67,68 @@ async fn main() -> ExitCode {
             wireguard_config_folder,
             commands,
         } => match commands {
-            // wg-rusteze agent run
+            // wg-quickrs agent run
             AgentCommands::Run => commands::agent::run_agent(wireguard_config_folder).await,
-            // wg-rusteze agent set-web-address
+            // wg-quickrs agent set-web-address
             AgentCommands::SetWebAddress(v) => commands::config::set_agent_fields(
                 "address",
                 AgentFieldValue::Text(v.address.clone()),
             ),
-            // wg-rusteze agent enable-web-http
+            // wg-quickrs agent enable-web-http
             AgentCommands::EnableWebHttp => commands::config::toggle_agent_fields("http", true),
-            // wg-rusteze agent disable-web-http
+            // wg-quickrs agent disable-web-http
             AgentCommands::DisableWebHttp => commands::config::toggle_agent_fields("http", false),
-            // wg-rusteze agent set-http-web-port
+            // wg-quickrs agent set-http-web-port
             AgentCommands::SetHttpWebPort(v) => {
                 commands::config::set_agent_fields("http-port", AgentFieldValue::Port(v.port))
             }
-            // wg-rusteze agent enable-web-https
+            // wg-quickrs agent enable-web-https
             AgentCommands::EnableWebHttps => commands::config::toggle_agent_fields("https", true),
-            // wg-rusteze agent disable-web-https
+            // wg-quickrs agent disable-web-https
             AgentCommands::DisableWebHttps => commands::config::toggle_agent_fields("https", false),
-            // wg-rusteze agent set-web-https-port
+            // wg-quickrs agent set-web-https-port
             AgentCommands::SetWebHttpsPort(v) => {
                 commands::config::set_agent_fields("https-port", AgentFieldValue::Port(v.port))
             }
-            // wg-rusteze agent set-web-https-tls-cert
+            // wg-quickrs agent set-web-https-tls-cert
             AgentCommands::SetWebHttpsTlsCert(v) => commands::config::set_agent_fields(
                 "https-tls-cert",
                 AgentFieldValue::Path(v.path.clone()),
             ),
-            // wg-rusteze agent set-web-https-tls-key
+            // wg-quickrs agent set-web-https-tls-key
             AgentCommands::SetWebHttpsTlsKey(v) => commands::config::set_agent_fields(
                 "https-tls-key",
                 AgentFieldValue::Path(v.path.clone()),
             ),
-            // wg-rusteze agent enable-web-password
+            // wg-quickrs agent enable-web-password
             AgentCommands::EnableWebPassword => {
                 commands::config::toggle_agent_fields("password", true)
             }
-            // wg-rusteze agent disable-web-password
+            // wg-quickrs agent disable-web-password
             AgentCommands::DisableWebPassword => {
                 commands::config::toggle_agent_fields("password", false)
             }
-            // wg-rusteze agent reset-web-password
+            // wg-quickrs agent reset-web-password
             AgentCommands::ResetWebPassword(reset_web_password_opts) => {
                 commands::config::reset_web_password(reset_web_password_opts)
             }
-            // wg-rusteze agent enable-vpn
+            // wg-quickrs agent enable-vpn
             AgentCommands::EnableVpn => commands::config::toggle_agent_fields("vpn", true),
-            // wg-rusteze agent disable-vpn
+            // wg-quickrs agent disable-vpn
             AgentCommands::DisableVpn => commands::config::toggle_agent_fields("vpn", false),
-            // wg-rusteze agent set-vpn-port
+            // wg-quickrs agent set-vpn-port
             AgentCommands::SetVpnPort(v) => {
                 commands::config::set_agent_fields("vpn-port", AgentFieldValue::Port(v.port))
             }
-            // wg-rusteze agent enable-firewall
+            // wg-quickrs agent enable-firewall
             AgentCommands::EnableFirewall => {
                 commands::config::toggle_agent_fields("firewall", true)
             }
-            // wg-rusteze agent disable-firewall
+            // wg-quickrs agent disable-firewall
             AgentCommands::DisableFirewall => {
                 commands::config::toggle_agent_fields("firewall", false)
             }
-            // wg-rusteze agent set-firewall-utility
+            // wg-quickrs agent set-firewall-utility
             AgentCommands::SetFirewallUtility(v) => {
                 // commands::config::reset_web_password(v)
                 commands::config::set_agent_fields(

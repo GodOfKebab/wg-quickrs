@@ -1,4 +1,4 @@
-use crate::WG_RUSTEZE_CONFIG_FOLDER;
+use crate::WG_QUICKRS_CONFIG_FOLDER;
 use crate::web::api;
 use crate::web::app;
 #[cfg(debug_assertions)]
@@ -77,9 +77,9 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             config.agent.web.address.clone(),
             config.agent.web.https.port,
         );
-        let mut tls_cert = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap().clone();
+        let mut tls_cert = WG_QUICKRS_CONFIG_FOLDER.get().unwrap().clone();
         tls_cert.push(config.agent.web.https.tls_cert.clone());
-        let mut tls_key = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap().clone();
+        let mut tls_key = WG_QUICKRS_CONFIG_FOLDER.get().unwrap().clone();
         tls_key.push(config.agent.web.https.tls_key.clone());
         match load_tls_config(&tls_cert, &tls_key) {
             Ok(tls_config) => {

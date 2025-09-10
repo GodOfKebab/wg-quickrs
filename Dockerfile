@@ -46,8 +46,8 @@ RUN case "$TARGETARCH" in \
                 *) echo "Unsupported architecture $TARGETARCH" >&2; exit 1 ;; \
                 esac && \
     rustup target add $(cat RUST_TARGET) && \
-    cargo zigbuild --release --package wg-rusteze --bin wg-rusteze --target=$(cat RUST_TARGET) && \
-    cp /app/target/$(cat RUST_TARGET)/release/wg-rusteze /app/wg-rusteze
+    cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) && \
+    cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/wg-quickrs
 
 FROM alpine:3.22 AS runner
 WORKDIR /app
@@ -65,8 +65,8 @@ if [ ! -x /usr/bin/sudo ]; then
 fi
 
 # run the actual app
-exec /app/wg-rusteze --wg-rusteze-config-folder .wg-rusteze "$@"
+exec /app/wg-quickrs --wg-quickrs-config-folder .wg-quickrs "$@"
 EOF
-COPY --from=rust-agent-builder /app/wg-rusteze /app/wg-rusteze
+COPY --from=rust-agent-builder /app/wg-quickrs /app/wg-quickrs
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
 #CMD ["tail", "-f", "/dev/null"]

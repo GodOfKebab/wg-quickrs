@@ -1,6 +1,6 @@
 services:
 
-  wg-rusteze-runner:
+  wg-quickrs-runner:
     build:
       target: runner
     cap_add:
@@ -10,106 +10,106 @@ services:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
     volumes:
-      - .wg-rusteze-docker:/app/.wg-rusteze
+      - .wg-quickrs-docker:/app/.wg-quickrs
 
-  wg-rusteze-agent-run:
-    container_name: wg-rusteze-agent-run-cnt
+  wg-quickrs-agent-run:
+    container_name: wg-quickrs-agent-run-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     ports:
       - "80:80/tcp"
       - "443:443/tcp"
       - "51820:51820/udp"
     command: [ "agent", "run" ]
 
-  wg-rusteze-agent-set-address:
-    container_name: wg-rusteze-agent-enable-set-address-cnt
+  wg-quickrs-agent-set-address:
+    container_name: wg-quickrs-agent-enable-set-address-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "set-address", "0.0.0.0" ]
 
-  wg-rusteze-agent-enable-web-http:
-    container_name: wg-rusteze-agent-enable-web-http-cnt
+  wg-quickrs-agent-enable-web-http:
+    container_name: wg-quickrs-agent-enable-web-http-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "enable-web-http" ]
 
-  wg-rusteze-agent-disable-web-http:
-    container_name: wg-rusteze-agent-disable-web-http-cnt
+  wg-quickrs-agent-disable-web-http:
+    container_name: wg-quickrs-agent-disable-web-http-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "disable-web-http" ]
 
-  wg-rusteze-agent-set-http-web-port:
-    container_name: wg-rusteze-agent-set-http-web-port-cnt
+  wg-quickrs-agent-set-http-web-port:
+    container_name: wg-quickrs-agent-set-http-web-port-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "set-http-web-port", "80" ]
 
-  wg-rusteze-agent-enable-web-https:
-    container_name: wg-rusteze-agent-enable-web-https-cnt
+  wg-quickrs-agent-enable-web-https:
+    container_name: wg-quickrs-agent-enable-web-https-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "enable-web-https" ]
 
-  wg-rusteze-agent-disable-web-https:
-    container_name: wg-rusteze-agent-disable-web-https-cnt
+  wg-quickrs-agent-disable-web-https:
+    container_name: wg-quickrs-agent-disable-web-https-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "disable-web-https" ]
 
-  wg-rusteze-agent-set-https-web-port:
-    container_name: wg-rusteze-agent-set-https-web-port-cnt
+  wg-quickrs-agent-set-https-web-port:
+    container_name: wg-quickrs-agent-set-https-web-port-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "set-https-web-port", "443" ]
 
-  wg-rusteze-agent-set-web-https-tls-cert:
-    container_name: wg-rusteze-agent-set-web-https-tls-cert-cnt
+  wg-quickrs-agent-set-web-https-tls-cert:
+    container_name: wg-quickrs-agent-set-web-https-tls-cert-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "set-web-https-tls-cert", "certs/servers/localhost/cert.pem" ]
 
-  wg-rusteze-agent-set-web-https-tls-key:
-    container_name: wg-rusteze-agent-set-web-https-tls-key-cnt
+  wg-quickrs-agent-set-web-https-tls-key:
+    container_name: wg-quickrs-agent-set-web-https-tls-key-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "set-web-https-tls-key", "certs/servers/localhost/key.pem" ]
 
-  wg-rusteze-agent-enable-vpn:
-    container_name: wg-rusteze-agent-enable-vpn-cnt
+  wg-quickrs-agent-enable-vpn:
+    container_name: wg-quickrs-agent-enable-vpn-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "enable-vpn" ]
 
-  wg-rusteze-agent-disable-vpn:
-    container_name: wg-rusteze-agent-disable-vpn-cnt
+  wg-quickrs-agent-disable-vpn:
+    container_name: wg-quickrs-agent-disable-vpn-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "disable-vpn" ]
 
-  wg-rusteze-agent-set-vpn-port:
-    container_name: wg-rusteze-agent-set-vpn-port-cnt
+  wg-quickrs-agent-set-vpn-port:
+    container_name: wg-quickrs-agent-set-vpn-port-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "set-vpn-port", "51820" ]
 
-  wg-rusteze-agent-enable-web-password:
-    container_name: wg-rusteze-agent-enable-web-password-cnt
+  wg-quickrs-agent-enable-web-password:
+    container_name: wg-quickrs-agent-enable-web-password-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "enable-web-password" ]
 
-  wg-rusteze-agent-disable-web-password:
-    container_name: wg-rusteze-agent-disable-web-password-cnt
+  wg-quickrs-agent-disable-web-password:
+    container_name: wg-quickrs-agent-disable-web-password-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "disable-web-password" ]
 
-  wg-rusteze-agent-reset-web-password:
-    container_name: wg-rusteze-agent-reset-web-password-cnt
+  wg-quickrs-agent-reset-web-password:
+    container_name: wg-quickrs-agent-reset-web-password-cnt
     extends:
-      service: wg-rusteze-runner
+      service: wg-quickrs-runner
     command: [ "agent", "reset-web-password", "--password", "test" ]
 
 

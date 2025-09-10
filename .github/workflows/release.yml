@@ -108,23 +108,23 @@ jobs:
             cargo install cargo-zigbuild
             rustup target add ${{ matrix.target }}
             cargo clean
-            cargo zigbuild --release --package wg-rusteze --bin wg-rusteze --target=${{ matrix.target }}
+            cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target=${{ matrix.target }}
           else
-            cargo build --release --package wg-rusteze --bin wg-rusteze --target ${{ matrix.target }}
+            cargo build --release --package wg-quickrs --bin wg-quickrs --target ${{ matrix.target }}
           fi
 
       - name: Package binary + completions
         run: |
           mkdir -p dist/${{ matrix.target }}/bin
-          cp target/${{ matrix.target }}/release/wg-rusteze dist/${{ matrix.target }}/bin/
+          cp target/${{ matrix.target }}/release/wg-quickrs dist/${{ matrix.target }}/bin/
           cp -r target/${{ matrix.target }}/release/completions dist/${{ matrix.target }}/
-          tar -czf dist/wg-rusteze-${{ matrix.target }}.tar.gz -C dist/${{ matrix.target }} .
+          tar -czf dist/wg-quickrs-${{ matrix.target }}.tar.gz -C dist/${{ matrix.target }} .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wg-rusteze-${{ matrix.target }}
-          path: dist/wg-rusteze-${{ matrix.target }}.tar.gz
+          name: wg-quickrs-${{ matrix.target }}
+          path: dist/wg-quickrs-${{ matrix.target }}.tar.gz
 
   # --------------------------
   # Step 3: Publish to GitHub Release

@@ -1,4 +1,4 @@
-use crate::WG_RUSTEZE_CONFIG_FILE;
+use crate::WG_QUICKRS_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
 use rust_wasm::types::*;
@@ -47,9 +47,9 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         .read(true)
         .write(true)
         .open(
-            WG_RUSTEZE_CONFIG_FILE
+            WG_QUICKRS_CONFIG_FILE
                 .get()
-                .expect("WG_RUSTEZE_CONFIG_FILE not set"),
+                .expect("WG_QUICKRS_CONFIG_FILE not set"),
         )
         .expect("Failed to open config file");
 
@@ -385,7 +385,7 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     let mut config_file_reader = match OpenOptions::new()
         .read(true)
         .write(true)
-        .open(WG_RUSTEZE_CONFIG_FILE.get().unwrap())
+        .open(WG_QUICKRS_CONFIG_FILE.get().unwrap())
     {
         Ok(file) => file,
         Err(_) => {

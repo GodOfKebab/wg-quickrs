@@ -1,4 +1,4 @@
-use crate::WG_RUSTEZE_CONFIG_FILE;
+use crate::WG_QUICKRS_CONFIG_FILE;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{show_dump, status_tunnel};
 use rust_wasm::types::{Config, Summary, WireGuardStatus};
@@ -24,7 +24,7 @@ pub enum ConfUtilError {
 }
 
 pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
-    let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
+    let file_path = WG_QUICKRS_CONFIG_FILE.get().unwrap();
     let file_contents = match fs::read_to_string(file_path) {
         Ok(contents) => contents,
         Err(e) => {
@@ -45,7 +45,7 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
     let config: Config = get_config()?;
 
     let mut buf = [0u8; 64];
-    let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
+    let file_path = WG_QUICKRS_CONFIG_FILE.get().unwrap();
     let file_contents = match fs::read_to_string(file_path) {
         Ok(contents) => contents,
         Err(e) => {
@@ -91,7 +91,7 @@ pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
         }
     };
 
-    let file_path = WG_RUSTEZE_CONFIG_FILE.get().unwrap();
+    let file_path = WG_QUICKRS_CONFIG_FILE.get().unwrap();
     let mut file = match File::create(file_path) {
         Ok(f) => f,
         Err(e) => {

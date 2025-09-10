@@ -19,10 +19,10 @@ pub fn get_peer_wg_config(
     let mut wg_conf = String::new();
     use std::fmt::Write as FmtWrite; // brings `write!` macro for String
 
-    writeln!(wg_conf, "# auto-generated using wg-rusteze ({version})").unwrap();
+    writeln!(wg_conf, "# auto-generated using wg-quickrs ({version})").unwrap();
     writeln!(
         wg_conf,
-        "# wg-rusteze network identifier: {}\n",
+        "# wg-quickrs network identifier: {}\n",
         network.identifier
     )
     .unwrap();

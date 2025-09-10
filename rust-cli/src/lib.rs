@@ -5,15 +5,15 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(
     // version will be set by the implementation
-    name = "wg-rusteze",
+    name = "wg-quickrs",
     about = "A tool to manage the peer and network configuration of the \
              WireGuard-based overlay network over the web console",
 )]
 pub struct Cli {
     #[arg(short, long, help = "Increase verbosity level from Info to Debug")]
     pub verbose: bool,
-    #[arg(long, default_value = "~/.wg-rusteze")]
-    pub wg_rusteze_config_folder: PathBuf,
+    #[arg(long, default_value = "~/.wg-quickrs")]
+    pub wg_quickrs_config_folder: PathBuf,
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -21,10 +21,10 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     #[command(
-        about = "Initialize the wg-rusteze rust-agent.\nConfiguration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command"
+        about = "Initialize the wg-quickrs rust-agent.\nConfiguration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command"
     )]
     Init(Box<InitOptions>),
-    #[command(about = "Configure and run the wg-rusteze rust-agent")]
+    #[command(about = "Configure and run the wg-quickrs rust-agent")]
     Agent {
         #[cfg(target_os = "macos")]
         #[arg(long, default_value = "/opt/homebrew/etc/wireguard/")]
@@ -42,7 +42,7 @@ pub enum Commands {
 
 #[derive(Debug, Args)]
 pub struct InitOptions {
-    #[arg(long, default_value = None, long_help = "Set VPN network identifier", value_name = "wg-rusteze"
+    #[arg(long, default_value = None, long_help = "Set VPN network identifier", value_name = "wg-quickrs"
     )]
     pub network_identifier: Option<String>,
 
@@ -68,11 +68,11 @@ pub struct InitOptions {
     )]
     pub agent_web_https_port: Option<u16>,
 
-    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-rusteze home directory) to TLS certificate file for HTTPS", value_name = "certs/servers/localhost/cert.pem"
+    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-quickrs home directory) to TLS certificate file for HTTPS", value_name = "certs/servers/localhost/cert.pem"
     )]
     pub agent_web_https_tls_cert: Option<PathBuf>,
 
-    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-rusteze home directory) to TLS private key file for HTTPS", value_name = "certs/servers/localhost/key.pem"
+    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-quickrs home directory) to TLS private key file for HTTPS", value_name = "certs/servers/localhost/key.pem"
     )]
     pub agent_web_https_tls_key: Option<PathBuf>,
 
@@ -102,7 +102,7 @@ pub struct InitOptions {
     )]
     pub agent_firewall_utility: Option<PathBuf>,
 
-    #[arg(long, default_value = None, long_help = "Set agent peer name", value_name = "wg-rusteze-host"
+    #[arg(long, default_value = None, long_help = "Set agent peer name", value_name = "wg-quickrs-host"
     )]
     pub agent_peer_name: Option<String>,
 
@@ -238,11 +238,11 @@ pub enum AgentCommands {
     #[command(about = "Set port for the HTTPS web server")]
     SetWebHttpsPort(PortArg),
     #[command(
-        about = "Set path (relative to the wg-rusteze home directory) to TLS certificate file for HTTPS"
+        about = "Set path (relative to the wg-quickrs home directory) to TLS certificate file for HTTPS"
     )]
     SetWebHttpsTlsCert(PathArg),
     #[command(
-        about = "Set path (relative to the wg-rusteze home directory) to TLS private key file for HTTPS"
+        about = "Set path (relative to the wg-quickrs home directory) to TLS private key file for HTTPS"
     )]
     SetWebHttpsTlsKey(PathArg),
     // settings: password

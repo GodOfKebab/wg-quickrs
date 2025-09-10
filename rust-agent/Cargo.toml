@@ -1,5 +1,5 @@
 [package]
-name = "wg-rusteze"
+name = "wg-quickrs"
 version = "0.1.0"
 authors = ["Yaşar İdikut <yasar8000@gmail.com>"]
 edition = "2024"

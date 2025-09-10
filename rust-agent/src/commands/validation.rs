@@ -1,4 +1,4 @@
-use crate::WG_RUSTEZE_CONFIG_FOLDER;
+use crate::WG_QUICKRS_CONFIG_FOLDER;
 use rust_wasm::validation::{CheckResult, FieldValue, check_field, is_cidr};
 use std::path::PathBuf;
 
@@ -36,7 +36,7 @@ pub fn check_field_agent(field_name: &str, field_variable: &FieldValue) -> Check
             ret
         }
         "path" => {
-            let config_folder = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap();
+            let config_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
             let tls_file_path = config_folder.join(field_variable.str.clone());
             ret.status = tls_file_path.exists() && tls_file_path.is_file();
             if !ret.status {

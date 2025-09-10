@@ -2,7 +2,7 @@ use crate::commands::helpers;
 use crate::commands::validation::check_field_agent;
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
-use crate::{WG_RUSTEZE_CONFIG_FOLDER, conf};
+use crate::{WG_QUICKRS_CONFIG_FOLDER, conf};
 use dialoguer;
 use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
@@ -83,7 +83,7 @@ fn find_firewall_utility() -> Option<String> {
 }
 
 fn find_cert_server(web_address: String) -> (Option<String>, Option<String>) {
-    let config_folder = WG_RUSTEZE_CONFIG_FOLDER.get().unwrap();
+    let config_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
     let servers_folder = config_folder.join("certs/servers");
 
     if servers_folder.join(&web_address).join("cert.pem").exists()
@@ -322,10 +322,10 @@ macro_rules! get_init_pair_option {
 pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     if let Err(ConfUtilError::Read(..)) = conf::util::get_config() {
     } else {
-        log::error!("wg-rusteze rust-agent is already initialized.");
+        log::error!("wg-quickrs rust-agent is already initialized.");
         return ExitCode::FAILURE;
     }
-    log::info!("Initializing wg-rusteze rust-agent...");
+    log::info!("Initializing wg-quickrs rust-agent...");
 
     println!("[general network settings 1-2/24]");
     // [1/24] --network-identifier
@@ -337,7 +337,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[0],
         INIT_HELPS[0],
         true,
-        Some("wg-rusteze".into()),
+        Some("wg-quickrs".into()),
     );
 
     // [2/24] --network-subnet
@@ -539,7 +539,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[16],
         INIT_HELPS[16],
         true,
-        Some("wg-rusteze-host".into()),
+        Some("wg-quickrs-host".into()),
     );
 
     // update the address in the recommended endpoint

@@ -5,7 +5,7 @@ services:
       file: certificate-manager/docker-compose.yml
       service: certificate-manager
     volumes:
-      - .wg-rusteze-docker/certs:/app/certs
+      - .wg-quickrs-docker/certs:/app/certs
     environment:
       COUNTRY: "XX"
       STATE: "XXX"
@@ -15,15 +15,15 @@ services:
       ROOT_CN: "certificate-manager@XXX"
     command: [ "127.0.0.1", "localhost" ]
 
-  wg-rusteze-init:
-    container_name: wg-rusteze-init-cnt
+  wg-quickrs-init:
+    container_name: wg-quickrs-init-cnt
     build:
       target: runner
     volumes:
-      - .wg-rusteze-docker:/app/.wg-rusteze
+      - .wg-quickrs-docker:/app/.wg-quickrs
     command: >
       init --no-prompt true
-      --network-identifier wg-rusteze
+      --network-identifier wg-quickrs
       --network-subnet     10.0.34.0/24
 
       --agent-web-address          0.0.0.0
@@ -41,7 +41,7 @@ services:
       --agent-firewall-enabled     true
       --agent-firewall-utility     /usr/sbin/iptables
       
-      --agent-peer-name                     wg-rusteze-host
+      --agent-peer-name                     wg-quickrs-host
       --agent-peer-vpn-endpoint             TODO_YOUR_PUBLIC_IP_TODO:51820
       --agent-peer-vpn-internal-address     10.0.34.1
       --agent-peer-dns-enabled              true
