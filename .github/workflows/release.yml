@@ -104,7 +104,7 @@ jobs:
       - name: Build binary
         run: |
           if [ "${{ matrix.use_zig }}" = "true" ]; then
-            apt-get update && apt-get install -y musl-dev cmake clang llvm-dev libclang-dev pkg-config
+            sudo apt-get update && sudo apt-get install -y musl-dev cmake clang llvm-dev libclang-dev pkg-config
             cargo install cargo-zigbuild
             rustup target add ${{ matrix.target }}
             cargo zigbuild --release --package wg-rusteze --bin wg-rusteze --target=${{ matrix.target }}
