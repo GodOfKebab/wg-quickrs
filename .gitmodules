@@ -1,3 +1,0 @@
-[submodule "certificate-manager"]
-	path = certificate-manager
-	url = git@github.com:GodOfKebab/certificate-manager.git
