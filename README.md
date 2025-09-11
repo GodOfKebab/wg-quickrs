@@ -18,10 +18,6 @@ This script also allows you to configure the TLS certificates/keys.
 ```bash
 wget -qO installer.sh https://raw.githubusercontent.com/GodOfKebab/wg-quickrs/refs/heads/main/installer.sh
 sh installer.sh
-<details>
-  <summary>
-    output
-  </summary>
 # Detected target: aarch64-apple-darwin
 # Fetching latest release version...
 #     Using latest release: v0.1.11
@@ -60,7 +56,6 @@ sh installer.sh
 # After a successful initialization, you can start up your service with:
 # 
 #     wg-quickrs agent run
-</details>
 ```
 
 If you are not comfortable using the installer script, you can also manually set up your system.
