@@ -1,9 +1,7 @@
 services:
 
   certificate-manager:
-    extends:
-      file: certificate-manager/docker-compose.yml
-      service: certificate-manager
+    image: godofkebab/certificate-manager
     volumes:
       - .wg-quickrs-docker/certs:/app/certs
     environment:
