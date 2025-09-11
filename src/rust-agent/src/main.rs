@@ -4,6 +4,7 @@ use once_cell::sync::OnceCell;
 use rust_cli::AgentCommands;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 mod cli;
 mod commands;
