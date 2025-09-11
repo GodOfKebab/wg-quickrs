@@ -124,7 +124,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wg-quickrs-${{ matrix.target }}
-          path: dist/wg-quickrs-${{ matrix.target }}.tar.gz
+          path: src/dist/wg-quickrs-${{ matrix.target }}.tar.gz
 
   # --------------------------
   # Step 3: Publish to GitHub Release
