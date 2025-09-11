@@ -34,20 +34,18 @@ jobs:
         run: |
           cd src/rust-wasm
           wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
-          cd ..
 
       - name: Build web frontend
         run: |
-          cd web
+          cd src/web
           npm install
           npm run build
-          cd ..
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
         with:
           name: web-frontend
-          path: web/dist
+          path: src/web/dist
 
   # --------------------------
   # Step 2: Build Binaries
@@ -116,6 +114,7 @@ jobs:
 
       - name: Package binary + completions
         run: |
+          cd src
           mkdir -p dist/${{ matrix.target }}/bin
           cp target/${{ matrix.target }}/release/wg-quickrs dist/${{ matrix.target }}/bin/
           cp -r target/${{ matrix.target }}/release/completions dist/${{ matrix.target }}/

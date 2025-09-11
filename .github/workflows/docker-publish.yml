@@ -29,6 +29,7 @@ jobs:
       - name: Build and Push (Multi-arch)
         uses: docker/build-push-action@v5
         with:
+          context: .
           file: src/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
