@@ -132,7 +132,7 @@ docker run --rm \
     --agent-firewall-enabled     true                             \
     --agent-firewall-utility     /usr/sbin/iptables               \
     --agent-peer-name                     wg-quickrs-host                \
-    --agent-peer-vpn-endpoint             10.218.27.83:51820 \
+    --agent-peer-vpn-endpoint             YOUR_SERVER:51820 \
     --agent-peer-vpn-internal-address     10.0.34.1                      \
     --agent-peer-dns-enabled              true                           \
     --agent-peer-dns-server               1.1.1.1                        \
