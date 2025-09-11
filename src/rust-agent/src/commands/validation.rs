@@ -1,5 +1,5 @@
 use crate::WG_QUICKRS_CONFIG_FOLDER;
-use rust_wasm::validation::{CheckResult, FieldValue, check_field, is_cidr};
+use rust_wasm::validation::{check_field, is_cidr, CheckResult, FieldValue};
 use std::path::PathBuf;
 
 pub fn check_field_agent(field_name: &str, field_variable: &FieldValue) -> CheckResult {

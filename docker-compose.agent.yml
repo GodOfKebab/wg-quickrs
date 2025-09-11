@@ -2,6 +2,7 @@ services:
 
   wg-quickrs-runner:
     build:
+      dockerfile: src/Dockerfile
       target: runner
     cap_add:
       - NET_ADMIN
@@ -22,11 +23,11 @@ services:
       - "51820:51820/udp"
     command: [ "agent", "run" ]
 
-  wg-quickrs-agent-set-address:
-    container_name: wg-quickrs-agent-enable-set-address-cnt
+  wg-quickrs-agent-set-web-address:
+    container_name: wg-quickrs-agent-enable-set-web-address-cnt
     extends:
       service: wg-quickrs-runner
-    command: [ "agent", "set-address", "0.0.0.0" ]
+    command: [ "agent", "set-web-address", "0.0.0.0" ]
 
   wg-quickrs-agent-enable-web-http:
     container_name: wg-quickrs-agent-enable-web-http-cnt
@@ -76,24 +77,6 @@ services:
       service: wg-quickrs-runner
     command: [ "agent", "set-web-https-tls-key", "certs/servers/localhost/key.pem" ]
 
-  wg-quickrs-agent-enable-vpn:
-    container_name: wg-quickrs-agent-enable-vpn-cnt
-    extends:
-      service: wg-quickrs-runner
-    command: [ "agent", "enable-vpn" ]
-
-  wg-quickrs-agent-disable-vpn:
-    container_name: wg-quickrs-agent-disable-vpn-cnt
-    extends:
-      service: wg-quickrs-runner
-    command: [ "agent", "disable-vpn" ]
-
-  wg-quickrs-agent-set-vpn-port:
-    container_name: wg-quickrs-agent-set-vpn-port-cnt
-    extends:
-      service: wg-quickrs-runner
-    command: [ "agent", "set-vpn-port", "51820" ]
-
   wg-quickrs-agent-enable-web-password:
     container_name: wg-quickrs-agent-enable-web-password-cnt
     extends:
@@ -112,4 +95,21 @@ services:
       service: wg-quickrs-runner
     command: [ "agent", "reset-web-password", "--password", "test" ]
 
+  wg-quickrs-agent-enable-vpn:
+    container_name: wg-quickrs-agent-enable-vpn-cnt
+    extends:
+      service: wg-quickrs-runner
+    command: [ "agent", "enable-vpn" ]
+
+  wg-quickrs-agent-disable-vpn:
+    container_name: wg-quickrs-agent-disable-vpn-cnt
+    extends:
+      service: wg-quickrs-runner
+    command: [ "agent", "disable-vpn" ]
+
+  wg-quickrs-agent-set-vpn-port:
+    container_name: wg-quickrs-agent-set-vpn-port-cnt
+    extends:
+      service: wg-quickrs-runner
+    command: [ "agent", "set-vpn-port", "51820" ]
 

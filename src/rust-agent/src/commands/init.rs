@@ -2,9 +2,9 @@ use crate::commands::helpers;
 use crate::commands::validation::check_field_agent;
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
-use crate::{WG_QUICKRS_CONFIG_FOLDER, conf};
+use crate::{conf, WG_QUICKRS_CONFIG_FOLDER};
 use dialoguer;
-use get_if_addrs::{Interface, get_if_addrs};
+use get_if_addrs::{get_if_addrs, Interface};
 use ipnetwork::IpNetwork;
 use rust_cli::InitOptions;
 use rust_wasm::types::{

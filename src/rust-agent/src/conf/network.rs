@@ -11,7 +11,11 @@ fn ipv4_to_u32(ip: &str) -> u32 {
 
 /// Convert CIDR (e.g. "24") to subnet mask as u32
 fn cidr_to_u32(cidr: u8) -> u32 {
-    if cidr == 0 { 0 } else { (!0u32) << (32 - cidr) }
+    if cidr == 0 {
+        0
+    } else {
+        (!0u32) << (32 - cidr)
+    }
 }
 
 /// Convert u32 to IPv4 string

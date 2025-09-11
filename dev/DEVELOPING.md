@@ -13,7 +13,7 @@ Clone the repository:
 ```bash
 sudo apt install -y git
 git clone --recursive https://github.com/GodOfKebab/wg-quickrs.git
-cd wg-quickrs
+cd wg-quickrs/src
 ```
 
 ---

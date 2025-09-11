@@ -1,7 +1,7 @@
 use crate::conf;
 use crate::wireguard::cmd;
 use crate::wireguard::cmd::{disable_tunnel, enable_tunnel};
-use actix_web::{HttpResponse, web};
+use actix_web::{web, HttpResponse};
 use serde_json::json;
 
 pub(crate) fn get_wireguard_public_private_keys() -> HttpResponse {

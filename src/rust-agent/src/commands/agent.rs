@@ -1,5 +1,5 @@
 use crate::web::server;
-use crate::{WIREGUARD_CONFIG_FILE, conf, wireguard};
+use crate::{conf, wireguard, WIREGUARD_CONFIG_FILE};
 use std::path::Path;
 use std::process::ExitCode;
 

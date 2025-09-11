@@ -1,6 +1,6 @@
-use crate::WG_QUICKRS_CONFIG_FILE;
 use crate::conf::network;
 use crate::conf::timestamp;
+use crate::WG_QUICKRS_CONFIG_FILE;
 use rust_wasm::types::*;
 use rust_wasm::validation::*;
 use rust_wasm::*;
@@ -8,7 +8,7 @@ use rust_wasm::*;
 pub(crate) use crate::conf::util::get_config;
 use crate::conf::util::get_summary;
 use crate::wireguard::cmd::sync_conf;
-use actix_web::{HttpResponse, web};
+use actix_web::{web, HttpResponse};
 use chrono::Duration;
 use serde_json::json;
 use std::fs::OpenOptions;

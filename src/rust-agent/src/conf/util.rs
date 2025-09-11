@@ -1,6 +1,6 @@
-use crate::WG_QUICKRS_CONFIG_FILE;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{show_dump, status_tunnel};
+use crate::WG_QUICKRS_CONFIG_FILE;
 use rust_wasm::types::{Config, Summary, WireGuardStatus};
 use sha2::{Digest, Sha256};
 use std::fs;

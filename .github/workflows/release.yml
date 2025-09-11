@@ -32,7 +32,7 @@ jobs:
 
       - name: Build rust-wasm
         run: |
-          cd rust-wasm
+          cd src/rust-wasm
           wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
           cd ..
 
@@ -99,10 +99,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-frontend
-          path: web/dist
+          path: src/web/dist
 
       - name: Build binary
         run: |
+          cd src
           if [ "${{ matrix.use_zig }}" = "true" ]; then
             sudo apt-get update && sudo apt-get install -y musl-dev cmake clang llvm-dev libclang-dev pkg-config
             cargo install cargo-zigbuild

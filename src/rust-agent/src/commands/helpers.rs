@@ -1,6 +1,6 @@
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
-use rand::{RngCore, rng};
+use rand::{rng, RngCore};
 use std::process::ExitCode;
 
 pub(crate) fn calculate_password_hash(password: &str) -> Result<String, ExitCode> {

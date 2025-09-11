@@ -1,11 +1,11 @@
 use crate::conf;
 use crate::macros::*;
 use crate::wireguard;
-use actix_web::{HttpRequest, HttpResponse, Responder, get, patch, post, web};
+use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
-use rand::{RngCore, rng};
+use rand::{rng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};

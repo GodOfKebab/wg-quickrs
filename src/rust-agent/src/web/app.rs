@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, Responder, web};
+use actix_web::{web, HttpResponse, Responder};
 use mime_guess::from_path;
 use rust_embed::Embed;
 

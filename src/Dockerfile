@@ -1,12 +1,12 @@
 FROM --platform=linux/$BUILDARCH rust:1.89-slim AS rust-wasm-builder
 WORKDIR /app/rust-wasm
-COPY rust-wasm/ /app/rust-wasm
+COPY src/rust-wasm /app/rust-wasm
 RUN cargo install wasm-pack
 RUN wasm-pack build --target web --out-dir /app/web/pkg -- --features wasm
 
 FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
 WORKDIR /app/web
-COPY web/ .
+COPY src/web .
 RUN npm ci --omit=dev
 COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
 RUN npm run build
@@ -29,12 +29,11 @@ RUN case "$BUILDARCH" in \
     ln -s /usr/local/zig/zig /usr/local/bin/zig && \
     cargo install cargo-zigbuild
 
-COPY Cargo.toml /app/Cargo.toml
-COPY Cargo.lock /app/Cargo.lock
-COPY rust-wasm/ /app/rust-wasm
-COPY rust-agent/ /app/rust-agent
-COPY rust-cli/ /app/rust-cli
-COPY web/package.json /app/web/package.json
+COPY src/Cargo.toml /app/Cargo.toml
+COPY src/rust-wasm /app/rust-wasm
+COPY src/rust-agent /app/rust-agent
+COPY src/rust-cli /app/rust-cli
+COPY src/web/package.json /app/web/package.json
 COPY .git /app/.git
 
 # Setup target arch

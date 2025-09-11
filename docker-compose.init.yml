@@ -16,6 +16,7 @@ services:
   wg-quickrs-init:
     container_name: wg-quickrs-init-cnt
     build:
+      dockerfile: src/Dockerfile
       target: runner
     volumes:
       - .wg-quickrs-docker:/app/.wg-quickrs
