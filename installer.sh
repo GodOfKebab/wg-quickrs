@@ -40,12 +40,26 @@ echo "    Done."
 
 echo "Setting up TLS certs/keys at $INSTALL_DIR/certs..."
 
-export COUNTRY="XX"
-export STATE="XX"
-export LOCALITY="XX"
-export ORGANIZATION="XX"
-export ORGANIZATIONAL_UNIT="XX"
-export ROOT_CN="certificate-manager@XX"
+# Function to prompt the user with a default
+prompt_var() {
+  var_name=$1
+  default_value=$2
+  printf "Enter %s [%s]: " "$var_name" "$default_value"
+  read input
+  # Use default if empty
+  eval "$var_name=\"\${input:-$default_value}\""
+}
+
+# Prompt for certificate details
+prompt_var COUNTRY "XX"
+prompt_var STATE "XX"
+prompt_var LOCALITY "XX"
+prompt_var ORGANIZATION "XX"
+prompt_var ORGANIZATIONAL_UNIT "XX"
+prompt_var ROOT_CN "certificate-manager@XX"
+
+# Export variables for the current shell
+export COUNTRY STATE LOCALITY ORGANIZATION ORGANIZATIONAL_UNIT ROOT_CN
 
 (cd "$INSTALL_DIR" || exit ; wget -qO- https://raw.githubusercontent.com/GodOfKebab/certificate-manager/refs/heads/main/make-tls-certs.sh | sh -s all)
 echo "    ✅ Generated TLS certs/keys"
