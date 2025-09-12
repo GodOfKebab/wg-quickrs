@@ -21,51 +21,55 @@ else
     target="${cpu}-${os_triple}"
 fi
 
-echo "Detected target: $target"
+echo "✅ Detected target: $target"
 
-echo "Fetching latest release version..."
+echo "⏳ Fetching latest release version..."
 JSON=$(wget -qO- https://api.github.com/repos/GodOfKebab/wg-quickrs/releases/latest)
 TAG=$(printf '%s\n' "$JSON" | grep '"tag_name":' | head -n1 | cut -d '"' -f4)
 ASSET_URL=$(printf '%s\n' "$JSON" \
   | grep "browser_download_url" \
   | grep "aarch64-apple-darwin" \
   | cut -d '"' -f4)
-echo "    Using latest release: $TAG"
+echo "    ✅ Using latest release: $TAG"
 
 INSTALL_DIR="$HOME/.wg-quickrs"
-echo "Setting up and downloading the install directory at $INSTALL_DIR..."
+echo "⏳ Setting up and downloading the install directory at $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
-wget -qO- "$ASSET_URL" | tar -xzf - -C "$INSTALL_DIR"
-echo "    Done."
+if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
+  printf "⚠️ Files already exist in %s. Do you want to overwrite them? [y/N]: " "$INSTALL_DIR"
+  read overwrite
+  overwrite=${overwrite:-n}
+  if [ "$overwrite" = "y" ] || [ "$overwrite" = "Y" ]; then
+    wget -qO- "$ASSET_URL" | tar -xzf - -C "$INSTALL_DIR"
+    echo "    ✅ Overwritten and updated files."
+  else
+    echo "Exiting..."
+    exit
+  fi
+else
+  wget -qO- "$ASSET_URL" | tar -xzf - -C "$INSTALL_DIR"
+  echo "    ✅ Fresh install completed."
+fi
 
-echo "Setting up TLS certs/keys at $INSTALL_DIR/certs..."
+printf "🤔 Do you want to set up TLS certs/keys now? [Y/n]: "
+read setup_certs
+setup_certs=${setup_certs:-y}
 
-# Function to prompt the user with a default
-prompt_var() {
-  var_name=$1
-  default_value=$2
-  printf "Enter %s [%s]: " "$var_name" "$default_value"
-  read input
-  # Use default if empty
-  eval "$var_name=\"\${input:-$default_value}\""
-}
-
-# Prompt for certificate details
-prompt_var COUNTRY "XX"
-prompt_var STATE "XX"
-prompt_var LOCALITY "XX"
-prompt_var ORGANIZATION "XX"
-prompt_var ORGANIZATIONAL_UNIT "XX"
-prompt_var ROOT_CN "certificate-manager@XX"
-
-# Export variables for the current shell
-export COUNTRY STATE LOCALITY ORGANIZATION ORGANIZATIONAL_UNIT ROOT_CN
-
-(cd "$INSTALL_DIR" || exit ; wget -qO- https://raw.githubusercontent.com/GodOfKebab/certificate-manager/refs/heads/main/make-tls-certs.sh | sh -s all)
-echo "    ✅ Generated TLS certs/keys"
+if [ "$setup_certs" = "y" ] || [ "$setup_certs" = "Y" ]; then
+  echo "⏳ Setting up TLS certs/keys at $INSTALL_DIR/certs..."
+  wget -q https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh -O "$INSTALL_DIR/certs/tls-cert-generator.sh"
+  sh "$INSTALL_DIR/certs/tls-cert-generator.sh" -f -o "$INSTALL_DIR/certs" all
+  echo "    ✅ Generated TLS certs/keys"
+  echo "    ℹ️ If you want to generate cert/key for other servers, run the following with YOUR_SERVER1, YOUR_SERVER2, etc. filled in"
+  echo
+  echo "        sh $INSTALL_DIR/certs/tls-cert-generator.sh" -o "$INSTALL_DIR/certs" YOUR_SERVER1 YOUR_SERVER2
+  echo
+else
+  echo "    ⚠️ Skipping TLS cert setup. Remember to configure certs later!"
+fi
 
 
-echo "Setting up PATH and completions..."
+echo "⏳ Setting up PATH and completions..."
 
 current_shell=$(basename "$SHELL")
 
@@ -106,15 +110,15 @@ if [ -n "$RC" ]; then
     echo "$COMPLETION_LINE" >> "$RC"
   fi
 
-  echo "    ✅ Added PATH and completions to $RC"
+  echo "    📂 Added PATH and completions to $RC"
 
-  printf "\nOpen a new shell or run the following to use wg-quickrs command on this shell:\n\n"
+  printf "\n✨ Open a new shell or run the following to use wg-quickrs command on this shell:\n\n"
   echo "    $PATH_LINE"
   echo "    $COMPLETION_LINE"
 fi
 
-printf "\nThen, you are ready to initialize your service with:\n\n"
+printf "\n🛠️ Then, you are ready to initialize your service with:\n\n"
 printf "    wg-quickrs init\n"
-printf "\nAfter a successful initialization, you can start up your service with:\n\n"
+printf "\n🚀 After a successful initialization, you can start up your service with:\n\n"
 printf "    wg-quickrs agent run\n\n"
 
