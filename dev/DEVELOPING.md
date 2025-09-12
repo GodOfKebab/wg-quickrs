@@ -134,8 +134,8 @@ export STATE="Istanbul"
 export LOCALITY="Fatih"
 export ORGANIZATION="God Of Kebab Labs"
 export ORGANIZATIONAL_UNIT="God Of Kebab's Guide to the WWW"
-export ROOT_CN="certificate-manager@kebabnet"
-sh certificate-manager/make-tls-certs.sh all
+export ROOT_CN="tls-cert-generator@kebabnet"
+sh tls-cert-generator/make-tls-certs.sh all
 
 # If successful, you should see the certificates under
 ls -1 certs/servers/
@@ -304,11 +304,11 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-Edit the TLS certificate settings and enter the FQDN/Domain names for the certificates from `certificate-manager`
+Edit the TLS certificate settings and enter the FQDN/Domain names for the certificates from `tls-cert-generator`
 service in `docker-compose.init.yml`.
 
 ```bash
-docker compose -f docker-compose.init.yml up certificate-manager
+docker compose -f docker-compose.init.yml up tls-cert-generator
 tree .wg-quickrs
 # .wg-quickrs
 # └── certs

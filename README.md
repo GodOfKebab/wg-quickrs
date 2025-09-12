@@ -12,6 +12,19 @@ An intuitive and feature-rich WireGuard configuration management tool written ma
 
 ## Quick Start Guide
 
+### Requirements
+
+- `wg` and `wg-quick`
+- Firewall settings to accept HTTP/HTTPS traffic
+
+```bash
+# Install on Debian/Ubuntu
+sudo apt install -y wireguard wireguard-tools
+# Setup firewall on Debian/Ubuntu
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+```
+
 To get started, you can either use the pre-built binaries (recommended) or use the pre-built Docker image.
 
 ### 1. Use the pre-built binaries (recommended)
@@ -38,7 +51,7 @@ Enter STATE [XX]:
 Enter LOCALITY [XX]: 
 Enter ORGANIZATION [XX]: 
 Enter ORGANIZATIONAL_UNIT [XX]: 
-Enter ROOT_CN [certificate-manager@XX]: 
+Enter ROOT_CN [tls-cert-generator@XX]: 
 Generating key for rootCA ...
     certs/root/rootCA.key
     Done.
@@ -99,8 +112,8 @@ docker run --rm \
   -e LOCALITY="XX" \
   -e ORGANIZATION="XX" \
   -e ORGANIZATIONAL_UNIT="XX" \
-  -e ROOT_CN="certificate-manager@XX" \
-  godofkebab/certificate-manager \
+  -e ROOT_CN="tls-cert-generator@XX" \
+  godofkebab/tls-cert-generator \
   YOUR_SERVER
 ```
 

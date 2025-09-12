@@ -1,7 +1,7 @@
 services:
 
-  certificate-manager:
-    image: godofkebab/certificate-manager
+  tls-cert-generator:
+    image: godofkebab/tls-cert-generator
     volumes:
       - .wg-quickrs/certs:/app/certs
     environment:
@@ -10,7 +10,7 @@ services:
       LOCALITY: "XXX"
       ORGANIZATION: "XXX"
       ORGANIZATIONAL_UNIT: "XXX"
-      ROOT_CN: "certificate-manager@XXX"
+      ROOT_CN: "tls-cert-generator@XXX"
     command: [ "127.0.0.1", "localhost" ]
 
   wg-quickrs-init:
