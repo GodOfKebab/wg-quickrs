@@ -1,25 +1,20 @@
 #!/usr/bin/env sh
 
 # --- Detect rust target triple ---
-if command -v rustc >/dev/null 2>&1; then
-    target=$(rustc -vV | awk '/host:/ {print $2}')
-else
-    # fallback if rustc is not installed
-    arch=$(uname -m)
-    os=$(uname -s)
-    case "$arch" in
-        x86_64) cpu="x86_64" ;;
-        aarch64|arm64) cpu="aarch64" ;;
-        *) cpu="$arch" ;;
-    esac
-    case "$os" in
-        Linux)   os_triple="unknown-linux-gnu" ;;
-        Darwin)  os_triple="apple-darwin" ;;
-        MINGW*|MSYS*|CYGWIN*) os_triple="pc-windows-msvc" ;;
-        *) os_triple="unknown-$os" ;;
-    esac
-    target="${cpu}-${os_triple}"
-fi
+# fallback if rustc is not installed
+arch=$(uname -m)
+os=$(uname -s)
+case "$arch" in
+    x86_64) cpu="x86_64" ;;
+    aarch64|arm64) cpu="aarch64" ;;
+    *) cpu="$arch" ;;
+esac
+case "$os" in
+    Linux)   os_triple="unknown-linux-musleabihf" ;;
+    Darwin)  os_triple="apple-darwin" ;;
+    *) os_triple="unknown-$os" ;;
+esac
+target="${cpu}-${os_triple}"
 
 echo "✅ Detected target: $target"
 
@@ -28,7 +23,7 @@ JSON=$(wget -qO- https://api.github.com/repos/GodOfKebab/wg-quickrs/releases/lat
 TAG=$(printf '%s\n' "$JSON" | grep '"tag_name":' | head -n1 | cut -d '"' -f4)
 ASSET_URL=$(printf '%s\n' "$JSON" \
   | grep "browser_download_url" \
-  | grep "aarch64-apple-darwin" \
+  | grep "$target" \
   | cut -d '"' -f4)
 echo "    ✅ Using latest release: $TAG"
 
