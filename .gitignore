@@ -133,7 +133,6 @@ src/Cargo.lock
 # End of https://www.toptal.com/developers/gitignore/api/jetbrains,rust
 
 .wg-quickrs
-.wg-quickrs-docker
 
 certs
 

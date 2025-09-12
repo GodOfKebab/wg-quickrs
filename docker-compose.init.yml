@@ -3,7 +3,7 @@ services:
   certificate-manager:
     image: godofkebab/certificate-manager
     volumes:
-      - .wg-quickrs-docker/certs:/app/certs
+      - .wg-quickrs/certs:/app/certs
     environment:
       COUNTRY: "XX"
       STATE: "XXX"
@@ -19,7 +19,7 @@ services:
       dockerfile: src/Dockerfile
       target: runner
     volumes:
-      - .wg-quickrs-docker:/app/.wg-quickrs
+      - .wg-quickrs:/app/.wg-quickrs
     command: >
       init --no-prompt true
       --network-identifier wg-quickrs

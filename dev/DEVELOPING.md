@@ -309,8 +309,8 @@ service in `docker-compose.init.yml`.
 
 ```bash
 docker compose -f docker-compose.init.yml up certificate-manager
-tree .wg-quickrs-docker
-# .wg-quickrs-docker
+tree .wg-quickrs
+# .wg-quickrs
 # └── certs
 #     ├── root
 #     │   ├── rootCA.crt
@@ -329,8 +329,8 @@ Especially make sure that the IP addresses are updated and correct TLS cert/key 
 
 ```bash
 docker compose -f docker-compose.init.yml up wg-quickrs-init
-tree .wg-quickrs-docker
-# .wg-quickrs-docker
+tree .wg-quickrs
+# .wg-quickrs
 # └── certs
 #     ├── root
 #     │   ├── rootCA.crt

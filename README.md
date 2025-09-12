@@ -93,7 +93,7 @@ The following command will create a rootCA cert/key (at `$HOME/.wg-quickrs/certs
 
 ```bash
 docker run --rm \
-  -v "$HOME/.wg-quickrs-docker/certs:/app/certs" \
+  -v "$HOME/.wg-quickrs/certs:/app/certs" \
   -e COUNTRY="XX" \
   -e STATE="XX" \
   -e LOCALITY="XX" \
@@ -117,7 +117,7 @@ Generating cert for rootCA ...
 Generating cert/key for YOUR_SERVER ...
     Generated key at certs/servers/YOUR_SERVER/key.pem
     Generated cert at certs/servers/YOUR_SERVER/cert.pem
-tree "$HOME/.wg-quickrs-docker/certs"
+tree "$HOME/.wg-quickrs/certs"
 └── certs
     ├── root
     │   ├── rootCA.crt
@@ -135,7 +135,7 @@ Initialize your agent using the init command:
 ```bash
 docker run --rm \
   --name wg-quickrs-init-cnt \
-  -v "$HOME/.wg-quickrs-docker:/app/.wg-quickrs" \
+  -v "$HOME/.wg-quickrs:/app/.wg-quickrs" \
   godofkebab/wg-quickrs \
   init --no-prompt true \
     --network-identifier wg-quickrs   \
@@ -258,7 +258,7 @@ Then start the agent like so:
 ```bash
 docker run \
   --name wg-quickrs-agent-run-cnt \
-  -v "$HOME/.wg-quickrs-docker:/app/.wg-quickrs" \
+  -v "$HOME/.wg-quickrs:/app/.wg-quickrs" \
   --cap-add NET_ADMIN \
   --cap-add SYS_MODULE \
   --sysctl net.ipv4.ip_forward=1 \
