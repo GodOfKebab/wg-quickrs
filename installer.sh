@@ -4,15 +4,33 @@
 # fallback if rustc is not installed
 arch=$(uname -m)
 os=$(uname -s)
+os_triple="unknown-$os"
 case "$arch" in
-    x86_64) cpu="x86_64" ;;
-    aarch64|arm64) cpu="aarch64" ;;
+    x86_64)
+        cpu="x86_64"
+        case "$os" in
+            Linux)   os_triple="unknown-linux-musl" ;;
+            Darwin)  os_triple="apple-darwin" ;;
+            *) os_triple="unknown-$os" ;;
+        esac
+      ;;
+    aarch64|arm64)
+        cpu="aarch64"
+        case "$os" in
+            Linux)   os_triple="unknown-linux-musl" ;;
+            Darwin)  os_triple="apple-darwin" ;;
+            *) os_triple="unknown-$os" ;;
+        esac
+        ;;
+    armv7l)
+        cpu="armv7"
+        case "$os" in
+            Linux)   os_triple="unknown-linux-musleabihf" ;;
+            Darwin)  os_triple="apple-darwin" ;;
+            *) os_triple="unknown-$os" ;;
+        esac
+      ;;
     *) cpu="$arch" ;;
-esac
-case "$os" in
-    Linux)   os_triple="unknown-linux-musl" ;;
-    Darwin)  os_triple="apple-darwin" ;;
-    *) os_triple="unknown-$os" ;;
 esac
 target="${cpu}-${os_triple}"
 
