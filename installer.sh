@@ -10,7 +10,7 @@ case "$arch" in
     *) cpu="$arch" ;;
 esac
 case "$os" in
-    Linux)   os_triple="unknown-linux-musleabihf" ;;
+    Linux)   os_triple="unknown-linux-musl" ;;
     Darwin)  os_triple="apple-darwin" ;;
     *) os_triple="unknown-$os" ;;
 esac
