@@ -37,7 +37,7 @@ pub struct Summary {
     pub agent: Agent,
     pub network: Network,
     #[serde(default)]
-    pub telemetry: HashMap<String, TelemetryDatum>,
+    pub telemetry: Vec<HashMap<String, TelemetryDatum>>,
     #[serde(default)]
     pub digest: String,
     #[serde(default)]
@@ -57,7 +57,7 @@ impl From<&Summary> for Config {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct SummaryDigest {
-    pub telemetry: HashMap<String, TelemetryDatum>,
+    pub telemetry: Vec<HashMap<String, TelemetryDatum>>,
     pub digest: String,
     pub status: u8,
     pub timestamp: String,

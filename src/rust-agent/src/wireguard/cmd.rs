@@ -1,18 +1,24 @@
 use crate::WIREGUARD_CONFIG_FILE;
+use crate::conf::util::get_config;
 use crate::macros::*;
 use once_cell::sync::Lazy;
 use rust_wasm::helpers::get_peer_wg_config;
 use rust_wasm::types::{Config, TelemetryDatum, WireGuardStatus};
 use serde_json::{Value, json};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tempfile::NamedTempFile;
 use thiserror::Error;
+
+type TelemetryType = Lazy<Arc<Mutex<VecDeque<HashMap<String, TelemetryDatum>>>>>;
+pub static TELEMETRY: TelemetryType =
+    Lazy::new(|| Arc::new(Mutex::new(VecDeque::with_capacity(10))));
 
 #[derive(Error, Debug)]
 pub enum WireGuardCommandError {
@@ -44,6 +50,90 @@ pub enum WireGuardCommandError {
 
 static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
 
+pub(crate) async fn run_vpn_server(
+    config: &Config,
+    wireguard_config_folder: &Path,
+) -> std::io::Result<()> {
+    if !config.agent.vpn.enabled {
+        log::warn!("VPN server is disabled.");
+        return Ok(());
+    }
+    WIREGUARD_CONFIG_FILE
+        .set(wireguard_config_folder.join(format!("{}.conf", config.network.identifier)))
+        .expect("Failed to set WIREGUARD_CONFIG_FILE");
+    log::info!(
+        "using the wireguard config file at \"{}\"",
+        WIREGUARD_CONFIG_FILE.get().unwrap().display()
+    );
+
+    Box::pin(async move {
+        // override .conf from .yml
+        update_conf_file(config).unwrap_or_else(|e| {
+            log::error!("Failed to update the wireguard config file: {e}");
+        });
+
+        log::info!("At startup, disable then enable and ignore any error when disabling");
+        let _ = disable_tunnel(config);
+        enable_tunnel(config).unwrap_or_else(|e| {
+            log::error!("Failed to enable the wireguard tunnel: {e}");
+        });
+
+        log::info!(
+            "Started the wireguard tunnel at {}:{}",
+            config.agent.web.address,
+            config.agent.vpn.port
+        );
+
+        let mut ticker = tokio::time::interval(Duration::from_millis(1000));
+        tokio::select! {
+            _ = async {
+                loop {
+                    ticker.tick().await;
+                    run_loop();
+                }
+            } => {},
+            _ = tokio::signal::ctrl_c() => {
+                println!("Stopping the wireguard tunnel...");
+            }
+        }
+        match disable_tunnel(config) {
+            Ok(_) => log::info!("Stopped the wireguard tunnel"),
+            Err(e) => log::error!("Failed to stop the wireguard tunnel: {e}"),
+        };
+        Ok(())
+    })
+    .await
+}
+
+fn run_loop() {
+    let config = match get_config() {
+        Ok(config) => config,
+        Err(e) => {
+            log::error!("{e}");
+            return;
+        }
+    };
+
+    match show_dump(&config) {
+        Ok(telemetry) => {
+            let mut buf = TELEMETRY.lock().unwrap();
+            if buf.len() == 10 {
+                buf.pop_front(); // remove oldest
+            }
+            buf.push_back(telemetry); // add newest
+        }
+        Err(e) => log::error!("Failed to get telemetry data => {}", e),
+    }
+}
+
+pub(crate) fn get_telemetry() -> Result<Vec<HashMap<String, TelemetryDatum>>, WireGuardCommandError>
+{
+    match TELEMETRY.lock() {
+        Ok(buf) => Ok(buf.iter().cloned().collect()),
+        Err(e) => Err(WireGuardCommandError::LockFailed(e.to_string())),
+    }
+}
+
 pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> {
     let wg_interface_mut = WG_INTERFACE
         .lock()
@@ -54,9 +144,7 @@ pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> 
     Ok(WireGuardStatus::UP)
 }
 
-pub(crate) fn show_dump(
-    config: &Config,
-) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
+fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
     let wg_interface_mut = WG_INTERFACE
         .lock()
         .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
@@ -385,22 +473,6 @@ PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;",
             ));
         }
     };
-    Ok(())
-}
-
-pub(crate) fn start_tunnel(config: &Config) -> Result<(), WireGuardCommandError> {
-    // override .conf from .yml
-    update_conf_file(config)?;
-
-    // disable then enable and ignore any error when disabling
-    let _ = disable_tunnel(config);
-    enable_tunnel(config)?;
-
-    log::info!(
-        "wireguard tunnel accessible at {}:{}",
-        config.agent.web.address,
-        config.agent.vpn.port
-    );
     Ok(())
 }
 

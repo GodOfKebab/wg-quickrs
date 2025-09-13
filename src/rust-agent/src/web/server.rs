@@ -104,21 +104,30 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                 );
             }
 
-            let http_bind_addr = (config.agent.web.address.clone(), config.agent.web.http.port);
-            let http_server = HttpServer::new(app_factory)
-                .bind(http_bind_addr.clone())
-                .unwrap_or_else(|_| {
-                    panic!(
-                        "Failed to bind HTTP server on {}:{}",
-                        http_bind_addr.0, http_bind_addr.1
-                    )
-                });
-            log::info!(
-                "Started HTTP frontend/API at http://{}:{}/",
-                http_bind_addr.0,
-                http_bind_addr.1
-            );
-            http_server.run().await?;
+            let bind_addr = (config.agent.web.address.clone(), config.agent.web.http.port);
+            match HttpServer::new(app_factory).bind(bind_addr.clone()) {
+                Ok(http_server) => {
+                    log::info!(
+                        "Starting HTTP server at http://{}:{}/",
+                        bind_addr.0,
+                        bind_addr.1
+                    );
+                    http_server.run().await.unwrap_or_else(|e| {
+                        log::error!("Unable to run the http server: {e}");
+                    });
+                }
+                Err(e) => {
+                    log::error!(
+                        "Unable bind the http server to {}:{} => {}",
+                        bind_addr.0,
+                        bind_addr.1,
+                        e
+                    );
+                    return Ok(());
+                }
+            };
+
+            log::info!("Stopped HTTP server");
             if config.agent.firewall.enabled {
                 setup_firewall_rules(
                     config.agent.firewall.utility.clone(),
@@ -126,9 +135,10 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                     false,
                 );
             }
-            Ok::<(), std::io::Error>(())
+            Ok(())
         }))
     } else {
+        log::info!("HTTP server is disabled.");
         None
     };
 
@@ -140,7 +150,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                 true,
             );
         }
-        let https_bind_addr = (
+        let bind_addr = (
             config.agent.web.address.clone(),
             config.agent.web.https.port,
         );
@@ -150,20 +160,29 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
         tls_key.push(config.agent.web.https.tls_key.clone());
         match load_tls_config(&tls_cert, &tls_key) {
             Ok(tls_config) => Some(Box::pin(async move {
-                let https_server = HttpServer::new(app_factory)
-                    .bind_rustls_0_23(https_bind_addr.clone(), tls_config)
-                    .unwrap_or_else(|_| {
-                        panic!(
-                            "Failed to bind HTTPS server on {}:{}",
-                            https_bind_addr.0, https_bind_addr.1
-                        )
-                    });
-                log::info!(
-                    "Started HTTPS frontend/API at https://{}:{}/",
-                    https_bind_addr.0,
-                    https_bind_addr.1
-                );
-                https_server.run().await?;
+                match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr.clone(), tls_config) {
+                    Ok(https_server) => {
+                        log::info!(
+                            "Starting HTTPS server at https://{}:{}/",
+                            bind_addr.0,
+                            bind_addr.1
+                        );
+                        https_server.run().await.unwrap_or_else(|e| {
+                            log::error!("Unable to run the https server: {e}");
+                        });
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Unable bind the https server to {}:{} => {}",
+                            bind_addr.0,
+                            bind_addr.1,
+                            e
+                        );
+                        return Ok(());
+                    }
+                };
+
+                log::info!("Stopped HTTPS server");
                 if config.agent.firewall.enabled {
                     setup_firewall_rules(
                         config.agent.firewall.utility.clone(),
@@ -171,7 +190,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                         false,
                     );
                 }
-                Ok::<(), std::io::Error>(())
+                Ok(())
             })),
             Err(e) => {
                 log::error!("Failed to load TLS config (cert/key), HTTPS disabled: {e}");
@@ -179,6 +198,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             }
         }
     } else {
+        log::info!("HTTPS server is disabled.");
         None
     };
 

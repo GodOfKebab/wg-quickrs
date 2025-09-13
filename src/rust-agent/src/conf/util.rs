@@ -1,6 +1,6 @@
-use crate::conf::timestamp;
-use crate::wireguard::cmd::{show_dump, status_tunnel};
 use crate::WG_QUICKRS_CONFIG_FILE;
+use crate::conf::timestamp;
+use crate::wireguard::cmd::{get_telemetry, status_tunnel};
 use rust_wasm::types::{Config, Summary, WireGuardStatus};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -65,7 +65,7 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
     });
     let mut telemetry = Default::default();
     if status.value() == WireGuardStatus::UP.value() {
-        telemetry = show_dump(&config).unwrap_or_else(|e| {
+        telemetry = get_telemetry().unwrap_or_else(|e| {
             log::error!("{e}");
             Default::default()
         });
