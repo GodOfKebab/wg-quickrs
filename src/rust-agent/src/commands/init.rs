@@ -2,9 +2,9 @@ use crate::commands::helpers;
 use crate::commands::validation::check_field_agent;
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
-use crate::{conf, WG_QUICKRS_CONFIG_FOLDER};
+use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER, conf};
 use dialoguer;
-use get_if_addrs::{get_if_addrs, Interface};
+use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
 use rust_cli::InitOptions;
 use rust_wasm::types::{
@@ -922,7 +922,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     };
 
     conf::util::set_config(&mut config).expect("Failed to write config.yml");
-    println!("✅ Configuration saved to `config.yml`.");
+    println!(
+        "✅ Configuration saved to {}",
+        WG_QUICKRS_CONFIG_FILE.get().unwrap().display()
+    );
 
     ExitCode::SUCCESS
 }
