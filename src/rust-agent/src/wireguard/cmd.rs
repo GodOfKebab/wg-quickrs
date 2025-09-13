@@ -1,9 +1,9 @@
-use crate::macros::*;
 use crate::WIREGUARD_CONFIG_FILE;
+use crate::macros::*;
 use once_cell::sync::Lazy;
 use rust_wasm::helpers::get_peer_wg_config;
 use rust_wasm::types::{Config, TelemetryDatum, WireGuardStatus};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -313,10 +313,8 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
         && let Some(utility) = config.agent.firewall.utility.file_name()
         && utility.to_string_lossy() == "iptables"
     {
-        hidden_scripts = Some(format!(
+        let mut _hidden_scripts = format!(
             "### START OF HIDDEN SCRIPTS ###
-PostUp = sudo sysctl -w net.ipv4.ip_forward=1
-PostDown = sudo sysctl -w net.ipv4.ip_forward=0
 PostUp = {fw_utility} -t nat -A POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
 PostDown = {fw_utility} -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
 PostUp = {fw_utility} -A INPUT -p udp -m udp --dport {port} -j ACCEPT;
@@ -324,14 +322,23 @@ PostDown = {fw_utility} -D INPUT -p udp -m udp --dport {port} -j ACCEPT;
 PostUp = {fw_utility} -A FORWARD -i {interface} -j ACCEPT;
 PostDown = {fw_utility} -D FORWARD -i {interface} -j ACCEPT;
 PostUp = {fw_utility} -A FORWARD -o {interface} -j ACCEPT;
-PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;
-### END OF HIDDEN SCRIPTS ###",
+PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;",
             fw_utility = config.agent.firewall.utility.to_string_lossy(),
             subnet = config.network.subnet,
             gateway = config.agent.vpn.gateway,
             port = config.agent.vpn.port,
             interface = config.network.identifier,
-        ));
+        );
+        #[cfg(not(feature = "docker"))]
+        {
+            _hidden_scripts.push_str(
+                "\nPostUp = sudo sysctl -w net.ipv4.ip_forward=1;\n\
+                PostDown = sudo sysctl -w net.ipv4.ip_forward=0;",
+            );
+        }
+
+        _hidden_scripts.push_str("\n### END OF HIDDEN SCRIPTS ###\n");
+        hidden_scripts = Some(_hidden_scripts);
     }
     let wg_conf = match get_peer_wg_config(
         &config.network,
