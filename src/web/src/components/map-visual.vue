@@ -29,7 +29,6 @@ export default {
     return {
       initializedGraph: false,
       graph: null,
-      previous_telemetry: null,
     }
   },
   watch: {
@@ -126,27 +125,27 @@ export default {
     telemetry: {
       handler() {
         if (this.graph === null) return;
-        if (this.previous_telemetry === null) {
-          this.previous_telemetry = JSON.parse(JSON.stringify(this.telemetry));
-          return;
-        }
+        let last_data = this.telemetry.data[this.telemetry.data.length - 1];
+        if (Object.keys(last_data).length === 0) return;
+        let previous_data = this.telemetry.data[this.telemetry.data.length - 2];
+        if (Object.keys(previous_data).length === 0) return;
 
-        for (const [connection_id, telemetry_details] of Object.entries(this.telemetry.data)) {
+        for (const [connection_id, telemetry_details] of Object.entries(last_data)) {
           for (const link of this.graph.graphData().links) {
             if (link.source.id === undefined) continue;
             if (connection_id !== WireGuardHelper.getConnectionId(link.source.id, link.target.id)) continue;
 
-            const trafficBytesPrev = connection_id.startsWith(link.source.id) ? this.previous_telemetry.data[connection_id].transfer_a_to_b : this.previous_telemetry.data[connection_id].transfer_b_to_a;
+            const trafficBytesPrev = connection_id.startsWith(link.source.id) ? previous_data[connection_id].transfer_a_to_b : previous_data[connection_id].transfer_b_to_a;
             const trafficBytesCurr = connection_id.startsWith(link.source.id) ? telemetry_details.transfer_a_to_b : telemetry_details.transfer_b_to_a;
-            const trafficBytesDiff = trafficBytesCurr - trafficBytesPrev;
-            if (trafficBytesDiff === 0) continue;
-            const trafficBytesPerSecond = trafficBytesDiff * 1000 / ((new Date(Date.parse(this.telemetry.timestamp))) - (new Date(Date.parse(this.previous_telemetry.timestamp))));
-            // ~100Mb -> 10 particles
-            const particleCount = Math.ceil(Math.min(100. * trafficBytesPerSecond * 8. / 1024. / 1024. / 1024., 10));
+            const trafficBytesPerSec = trafficBytesCurr - trafficBytesPrev;
+            if (trafficMbps === 0) continue;
+            const trafficMbitsPerSec = trafficBytesPerSec * 8 / 1024. / 1024.;
+
+            // 80-100 mbps -> 5 particles
+            const particleCount = Math.ceil(Math.min(trafficMbitsPerSec / 20., 5));
             this.graphEmitParticles(link, particleCount).then().catch();
           }
         }
-        this.previous_telemetry = JSON.parse(JSON.stringify(this.telemetry));
       },
       deep: true
     }
