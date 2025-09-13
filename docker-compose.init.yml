@@ -11,8 +11,11 @@ services:
       ORGANIZATION: "XXX"
       ORGANIZATIONAL_UNIT: "XXX"
       ROOT_CN: "tls-cert-generator@XXX"
-    command: [ "127.0.0.1", "localhost" ]
+    command: [ "127.0.0.1", "localhost", "TODO_YOUR_SERVER_TODO" ] # <-- update with your public IP/domain
 
+  # <-- update TODO_YOUR_SERVER_TODO with the above server
+  # <-- update TODO_YOUR_PASSWORD_TODO with your password
+  # <-- update TODO_YOUR_PUBLIC_IP_TODO with the address (ip/domain) that would be in your wg endpoint
   wg-quickrs-init:
     container_name: wg-quickrs-init-cnt
     build:
@@ -30,8 +33,8 @@ services:
       --agent-web-http-port        80
       --agent-web-https-enabled    true
       --agent-web-https-port       443
-      --agent-web-https-tls-cert   certs/servers/localhost/cert.pem
-      --agent-web-https-tls-key    certs/servers/localhost/key.pem
+      --agent-web-https-tls-cert   certs/servers/TODO_YOUR_SERVER_TODO/cert.pem
+      --agent-web-https-tls-key    certs/servers/TODO_YOUR_SERVER_TODO/key.pem
       --agent-web-password-enabled true
       --agent-web-password         TODO_YOUR_PASSWORD_TODO
       --agent-vpn-enabled          true
