@@ -137,3 +137,5 @@ src/Cargo.lock
 certs
 
 .idea/
+
+tls-cert-generator.sh
