@@ -1,15 +1,16 @@
+use crate::WG_QUICKRS_CONFIG_FOLDER;
 use crate::web::api;
 use crate::web::app;
-use crate::WG_QUICKRS_CONFIG_FOLDER;
 #[cfg(debug_assertions)]
 use actix_cors::Cors;
-use actix_web::{middleware, App, HttpServer};
+use actix_web::{App, HttpServer, middleware};
 use rust_wasm::types::Config;
 use rustls::{
-    pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer},
     ServerConfig,
+    pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 use std::path::PathBuf;
+use std::process::Command;
 use thiserror::Error;
 use tokio::try_join;
 
@@ -17,6 +18,47 @@ use tokio::try_join;
 pub enum ServerError {
     #[error("web::server::error::tls_setup_failed -> failed to configure TLS for HTTPS: {0}")]
     TlsSetupFailed(String),
+}
+
+fn setup_firewall_rules(utility: PathBuf, port: u16, is_add_action: bool) {
+    if let Some(utility_fn) = utility.file_name()
+        && utility_fn.to_string_lossy() == "iptables"
+    {
+        // iptables -A/-D INPUT -p tcp --dport PORT -j ACCEPT
+        let readable_command = format!(
+            "$ {} {} INPUT -p tcp --dport {} -j ACCEPT",
+            utility.display(),
+            if is_add_action { "-A" } else { "-D" },
+            port
+        );
+        match Command::new(utility)
+            .arg(if is_add_action { "-A" } else { "-D" })
+            .arg("INPUT")
+            .arg("-p")
+            .arg("tcp")
+            .arg("--dport")
+            .arg(format!("{}", port))
+            .arg("-j")
+            .arg("ACCEPT")
+            .output()
+        {
+            Ok(output) => {
+                log::info!("{readable_command}");
+                if !output.stdout.is_empty() {
+                    log::debug!("{}", String::from_utf8_lossy(&output.stdout));
+                }
+                if !output.stderr.is_empty() {
+                    log::warn!("{}", String::from_utf8_lossy(&output.stderr));
+                }
+                if !output.status.success() {
+                    log::warn!("firewall input rule update for http(s) failed");
+                }
+            }
+            Err(_) => {
+                log::warn!("firewall input rule update for http(s) failed");
+            }
+        };
+    }
 }
 
 pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
@@ -53,26 +95,51 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
 
     // Futures for HTTP/HTTPS servers
     let http_future = if config.agent.web.http.enabled {
-        let http_bind_addr = (config.agent.web.address.clone(), config.agent.web.http.port);
-        let http_server = HttpServer::new(app_factory)
-            .bind(http_bind_addr.clone())
-            .unwrap_or_else(|_| {
-                panic!(
-                    "Failed to bind HTTP server on {}:{}",
-                    http_bind_addr.0, http_bind_addr.1
-                )
-            });
-        log::info!(
-            "Started HTTP frontend/API at http://{}:{}/",
-            http_bind_addr.0,
-            http_bind_addr.1
-        );
-        Some(http_server.run())
+        Some(Box::pin(async move {
+            if config.agent.firewall.enabled {
+                setup_firewall_rules(
+                    config.agent.firewall.utility.clone(),
+                    config.agent.web.http.port,
+                    true,
+                );
+            }
+
+            let http_bind_addr = (config.agent.web.address.clone(), config.agent.web.http.port);
+            let http_server = HttpServer::new(app_factory)
+                .bind(http_bind_addr.clone())
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "Failed to bind HTTP server on {}:{}",
+                        http_bind_addr.0, http_bind_addr.1
+                    )
+                });
+            log::info!(
+                "Started HTTP frontend/API at http://{}:{}/",
+                http_bind_addr.0,
+                http_bind_addr.1
+            );
+            http_server.run().await?;
+            if config.agent.firewall.enabled {
+                setup_firewall_rules(
+                    config.agent.firewall.utility.clone(),
+                    config.agent.web.http.port,
+                    false,
+                );
+            }
+            Ok::<(), std::io::Error>(())
+        }))
     } else {
         None
     };
 
     let https_future = if config.agent.web.https.enabled {
+        if config.agent.firewall.enabled {
+            setup_firewall_rules(
+                config.agent.firewall.utility.clone(),
+                config.agent.web.https.port,
+                true,
+            );
+        }
         let https_bind_addr = (
             config.agent.web.address.clone(),
             config.agent.web.https.port,
@@ -82,7 +149,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
         let mut tls_key = WG_QUICKRS_CONFIG_FOLDER.get().unwrap().clone();
         tls_key.push(config.agent.web.https.tls_key.clone());
         match load_tls_config(&tls_cert, &tls_key) {
-            Ok(tls_config) => {
+            Ok(tls_config) => Some(Box::pin(async move {
                 let https_server = HttpServer::new(app_factory)
                     .bind_rustls_0_23(https_bind_addr.clone(), tls_config)
                     .unwrap_or_else(|_| {
@@ -96,8 +163,16 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                     https_bind_addr.0,
                     https_bind_addr.1
                 );
-                Some(https_server.run())
-            }
+                https_server.run().await?;
+                if config.agent.firewall.enabled {
+                    setup_firewall_rules(
+                        config.agent.firewall.utility.clone(),
+                        config.agent.web.https.port,
+                        false,
+                    );
+                }
+                Ok::<(), std::io::Error>(())
+            })),
             Err(e) => {
                 log::error!("Failed to load TLS config (cert/key), HTTPS disabled: {e}");
                 None
