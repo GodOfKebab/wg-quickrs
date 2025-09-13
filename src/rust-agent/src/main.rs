@@ -47,7 +47,9 @@ async fn main() -> ExitCode {
         });
 
     // get the wg_quickrs config file path
-    let config_folder = expand_tilde(args.wg_quickrs_config_folder.clone());
+    let config_folder = expand_tilde(args.wg_quickrs_config_folder.clone())
+        .canonicalize()
+        .expect("Failed to set WG_QUICKRS_CONFIG_FOLDER");
     WG_QUICKRS_CONFIG_FOLDER
         .set(config_folder.clone())
         .expect("Failed to set WG_QUICKRS_CONFIG_FOLDER");
