@@ -332,8 +332,8 @@ PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;",
         #[cfg(not(feature = "docker"))]
         {
             _hidden_scripts.push_str(
-                "\nPostUp = sudo sysctl -w net.ipv4.ip_forward=1;\n\
-                PostDown = sudo sysctl -w net.ipv4.ip_forward=0;",
+                "\nPostUp = sysctl -w net.ipv4.ip_forward=1;\n\
+                PostDown = sysctl -w net.ipv4.ip_forward=0;",
             );
         }
 
