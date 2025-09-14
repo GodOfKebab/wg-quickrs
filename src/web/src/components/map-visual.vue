@@ -106,9 +106,9 @@ export default {
               .linkDirectionalParticleSpeed(0.025)
               .linkDirectionalParticleColor((particle_info) => {
                 if (particle_info.source.id == this.network.this_peer) {
-                  return 'rgba(34,197,94,0.5)';
+                  return 'rgba(59,130,246,0.5)';  // RX
                 } else if (particle_info.target.id == this.network.this_peer) {
-                  return 'rgba(59,130,246,0.5)';
+                  return 'rgba(34,197,94,0.5)';  // TX
                 }
                 return particle_info.color;
               })
@@ -146,10 +146,10 @@ export default {
 
             const trafficBytesPrev = connection_id.startsWith(link.source.id) ? previous_data.datum[connection_id].transfer_a_to_b : previous_data.datum[connection_id].transfer_b_to_a;
             const trafficBytesCurr = connection_id.startsWith(link.source.id) ? telemetry_details.transfer_a_to_b : telemetry_details.transfer_b_to_a;
-            // const trafficBytesDiff = trafficBytesCurr - trafficBytesPrev;
-            const trafficBytesDiff = 1;
+            const trafficBytesDiff = trafficBytesCurr - trafficBytesPrev;
             if (trafficBytesDiff === 0) continue;
-            const trafficMbitsPerSec = (trafficBytesDiff * 1000. / (last_data.timestamp - previous_data.timestamp)) * 8 / 1024. / 1024.;
+            const ts = (last_data.timestamp - previous_data.timestamp) / 1000.;
+            const trafficMbitsPerSec = trafficBytesDiff / ts * 8 / 1000. / 1000.;
 
             // 80-100 mbps -> 10 particles
             const particleCount = Math.ceil(Math.min(trafficMbitsPerSec / 10., 10));
