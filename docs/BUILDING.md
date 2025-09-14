@@ -1,7 +1,7 @@
 # Developing wg-quickrs
 
-⚠️ This project is **under active development**.
-Expect breaking changes and incomplete features.
+_⚠️ This project is **under active development**.
+Expect breaking changes and incomplete features._
 
 This document is optimized for Debian 13.
 
