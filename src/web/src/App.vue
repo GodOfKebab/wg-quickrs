@@ -166,6 +166,7 @@
 import {initFlowbite} from 'flowbite'
 
 import API from "./js/api.js";
+import TrafficGraph from "./components/traffic-graph.vue";
 import MapVisual from "./components/map-visual.vue";
 import CustomDialog from "./components/custom-dialog.vue";
 import PasswordDialog from "./components/password-dialog.vue";
@@ -180,7 +181,7 @@ dayjs.extend(relativeTime);
 
 export default {
   name: "app",
-  components: {PasswordDialog, MapVisual, CustomDialog, PeerConfigWindow, PeerCreateWindow},
+  components: {PasswordDialog, TrafficGraph, MapVisual, CustomDialog, PeerConfigWindow, PeerCreateWindow},
   data() {
     return {
       refreshRate: 1000,
