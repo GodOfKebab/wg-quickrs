@@ -17,7 +17,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tempfile::NamedTempFile;
 use thiserror::Error;
 
-const TELEMETRY_CAPACITY: usize = 10;
+const TELEMETRY_CAPACITY: usize = 21; // 20 throughput measurements
 const TELEMETRY_INTERVAL: u64 = 1000;
 type TelemetryType = Lazy<Arc<Mutex<VecDeque<TelemetryData>>>>;
 pub static TELEMETRY: TelemetryType =
