@@ -225,6 +225,8 @@ Follow the prompts to configure network, agent, and default peer settings. This 
 
 #### 1.1.8 Run the Agent
 
+[//]: # (build-src-debian: 1.1.8 Run the Agent)
+
 ```sh
 # Run on System:
 wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs agent run
@@ -239,9 +241,7 @@ wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs agent run
 
 ---
 
-#### 1.1.9 Setup systemd service (only needed to manage service on a server)
-
-[//]: # (build-src-debian: 1.1.9 Setup systemd)
+#### 1.1.9 Setup systemd service (optional)
 
 ```sh
 # setup a new user with less permissions
@@ -280,9 +280,7 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable wg-quickrs
 sudo systemctl start wg-quickrs
-sleep 1
-sudo systemctl restart wg-quickrs
-# sudo systemctl status wg-quickrs
+sudo systemctl status wg-quickrs
 # sudo journalctl -u wg-quickrs.service -n 50
 ```
 
