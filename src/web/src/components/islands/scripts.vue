@@ -1,7 +1,7 @@
 <template>
 
-  <div :class="[color_div]" class="p-1 shadow-md border rounded">
-    <div class="text-gray-800 mb-0.5">
+  <div :class="[color_div]" class="my-2 py-2 px-3 shadow-md border rounded">
+    <div class="text-gray-800 mb-1">
       Configure Script Snippets:
     </div>
     <div v-for="field in ['pre_up', 'post_up', 'pre_down', 'post_down']">

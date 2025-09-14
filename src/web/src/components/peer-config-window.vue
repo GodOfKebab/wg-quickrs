@@ -17,7 +17,7 @@
 
       <!-- title and top bar -->
       <div class="flex flex-col items-center">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 inline mb-2 text-start w-full">
+        <h3 class="text-xl leading-6 font-medium text-gray-900 inline mb-2 text-start w-full">
           Configuration for <strong>{{ peer_conf.name }}</strong>:
         </h3>
         <span class="order-last w-full flex justify-between p-1 px-2 mb-1">

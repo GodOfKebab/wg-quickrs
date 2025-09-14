@@ -1,7 +1,7 @@
 <template>
 
-  <div :class="[color_div]" class="my-2 p-1 shadow-md border rounded">
-    <div class="text-gray-800 mb-0.5">
+  <div :class="[color_div]" class="my-2 py-2 px-3 shadow-md border rounded">
+    <div class="text-gray-800 mb-1">
       Configure DNS and MTU:
     </div>
     <div class="grid grid-cols-2 gap-2 mb-0.5">

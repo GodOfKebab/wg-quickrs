@@ -5,10 +5,10 @@
     <!-- Tx/Rx labels on the right -->
     <div
         class="absolute top-2 right-5 flex flex-col items-end space-y-1 text-sm text-gray-700 bg-white/80 px-1 py-1 rounded">
-      <div class="font-semibold font-mono"
+      <div class="font-semibold"
            style="color: rgba(59,130,246,0.8)">Tx: {{ tx_avg }}
       </div>
-      <div class="font-semibold font-mono"
+      <div class="font-semibold"
            style="color: rgba(34,197,94,0.8)">Rx: {{ rx_avg }}
       </div>
     </div>

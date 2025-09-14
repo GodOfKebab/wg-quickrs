@@ -1,6 +1,6 @@
 <template>
 
-  <div :class="[color_div]" class="my-2 mr-2 p-1 shadow-md border rounded">
+  <div :class="[color_div]" class="my-2 p-1 px-3 shadow-md border rounded">
 
     <!--  Name  -->
     <div class="my-0.5 truncate flex items-center relative">

@@ -2,7 +2,7 @@
 
   <div
       :class="[this.are_keys_updated ? 'bg-green-100' : 'bg-green-50']"
-      class="p-1 shadow-md border rounded relative">
+      class="my-2 p-2 px-3 shadow-md border rounded relative">
     <div
         v-if="are_keys_updated"
         class="inline-block float-right absolute z-20 right-[0.2rem] top-[0rem]">
@@ -16,13 +16,13 @@
     </div>
     <div class="overflow-x-auto">
       <div v-for="peerConfigKey in ['public_key', 'private_key', 'created_at', 'updated_at']">
-        <div v-if="peer_local[peerConfigKey]" class="grid grid-cols-10 text-sm refresh-key">
-          <div class="col-span-2">
+        <div v-if="peer_local[peerConfigKey]" class="grid grid-cols-9 text-sm refresh-key">
+          <div class="col-span-2 mb-0.5">
             <span class="text-gray-800">
               <strong>{{ PEER_DETAILS_KEY_LOOKUP[peerConfigKey] }}</strong>
             </span>
           </div>
-          <div class="col-span-8 text-sm whitespace-nowrap">
+          <div class="col-span-7 text-sm whitespace-nowrap">
             <span class="text-gray-800 text-xs mr-1">:</span>
             <div v-if="['created_at', 'updated_at'].includes(peerConfigKey)"
                  class="text-gray-800 text-xs pr-4 inline-block">

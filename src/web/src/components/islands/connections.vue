@@ -3,7 +3,7 @@
   <div v-if="other_static_peer_ids.length +  other_roaming_peer_ids.length > 0">
     <!-- selection box -->
     <div :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peers_box]]"
-        class="my-2 p-1 shadow-md border rounded relative">
+         class="my-2 p-1 px-3 shadow-md border rounded relative">
 
       <!-- static neighbors -->
       <div v-if="other_static_peer_ids.length > 0">
@@ -103,7 +103,7 @@
          class="relative">
       <div v-if="all_attached_peer_ids_local.includes(otherPeerId)"
            :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peer_box[otherPeerId]]]"
-           class="my-2 p-1 shadow-md border rounded overflow-x-auto whitespace-nowrap highlight-remove-box">
+           class="my-2 py-2 px-3 shadow-md border rounded overflow-x-auto whitespace-nowrap highlight-remove-box">
 
         <!-- enabled checkbox-->
         <div class="form-check ml-0">
@@ -124,14 +124,14 @@
         <div v-show="connections_local.enabled[otherPeerId]" class="mt-1 mb-0.5 mx-0.5 text-xs text-gray-800">
           <hr class="w-full h-1"/>
 
-          <div class="grid grid-cols-3 gap-1">
+          <div class="grid grid-cols-7 gap-2">
             <!-- Pre Shared Key -->
-            <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-1 flex">
+            <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-3 flex">
                   <span class="align-middle flex">
                      <strong class="align-middle">PreSharedKey</strong>
                   </span>
             </div>
-            <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-2 flex">
+            <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-4 flex">
                   <span class="pr-1 align-middle">
                     :
                   </span>
@@ -146,12 +146,12 @@
             </div>
 
             <!-- Persistent Keepalive -->
-            <div v-if="connections_local.persistent_keepalive[otherPeerId]" class="col-span-1 flex">
+            <div v-if="connections_local.persistent_keepalive[otherPeerId]" class="col-span-3 flex">
                   <span class="align-middle flex">
                      <strong class="align-middle">Persistent Keepalive</strong>
                   </span>
             </div>
-            <div v-if="connections_local.persistent_keepalive[otherPeerId]" class="col-span-2 flex">
+            <div v-if="connections_local.persistent_keepalive[otherPeerId]" class="col-span-4 flex">
               <div class="inline-block align-middle">
                 <label class="flex items-center">
                       <span class="pr-1 align-middle">
