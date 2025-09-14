@@ -3,7 +3,7 @@ use crate::conf::util::get_config;
 use crate::macros::*;
 use once_cell::sync::Lazy;
 use rust_wasm::helpers::get_peer_wg_config;
-use rust_wasm::types::{Config, TelemetryDatum, WireGuardStatus};
+use rust_wasm::types::{Config, TelemetryData, TelemetryDatum, WireGuardStatus};
 use serde_json::{Value, json};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
@@ -13,12 +13,35 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tempfile::NamedTempFile;
 use thiserror::Error;
 
-type TelemetryType = Lazy<Arc<Mutex<VecDeque<HashMap<String, TelemetryDatum>>>>>;
+const TELEMETRY_CAPACITY: usize = 10;
+const TELEMETRY_INTERVAL: u64 = 1000;
+type TelemetryType = Lazy<Arc<Mutex<VecDeque<TelemetryData>>>>;
 pub static TELEMETRY: TelemetryType =
-    Lazy::new(|| Arc::new(Mutex::new(VecDeque::with_capacity(10))));
+    Lazy::new(|| Arc::new(Mutex::new(VecDeque::with_capacity(TELEMETRY_CAPACITY))));
+
+static LAST_TELEMETRY_QUERY_TS: Lazy<Arc<Mutex<u64>>> = Lazy::new(|| Arc::new(Mutex::new(0)));
+
+fn update_timestamp(ts: &Arc<Mutex<u64>>) {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let mut ts = ts.lock().unwrap();
+    *ts = now;
+}
+
+fn get_since_timestamp(ts: &Arc<Mutex<u64>>) -> u64 {
+    let start = *ts.lock().unwrap();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    now.saturating_sub(start) * 1000
+}
 
 #[derive(Error, Debug)]
 pub enum WireGuardCommandError {
@@ -84,7 +107,7 @@ pub(crate) async fn run_vpn_server(
             config.agent.vpn.port
         );
 
-        let mut ticker = tokio::time::interval(Duration::from_millis(1000));
+        let mut ticker = tokio::time::interval(Duration::from_millis(TELEMETRY_INTERVAL));
         tokio::select! {
             _ = async {
                 loop {
@@ -106,6 +129,13 @@ pub(crate) async fn run_vpn_server(
 }
 
 fn run_loop() {
+    // don't check telemetry if not queried recently (60 seconds)
+    if get_since_timestamp(&LAST_TELEMETRY_QUERY_TS)
+        > TELEMETRY_INTERVAL * TELEMETRY_CAPACITY as u64
+    {
+        return;
+    }
+
     let config = match get_config() {
         Ok(config) => config,
         Err(e) => {
@@ -117,17 +147,31 @@ fn run_loop() {
     match show_dump(&config) {
         Ok(telemetry) => {
             let mut buf = TELEMETRY.lock().unwrap();
-            if buf.len() == 10 {
+            if buf.len() == TELEMETRY_CAPACITY {
                 buf.pop_front(); // remove oldest
             }
-            buf.push_back(telemetry); // add newest
+            buf.push_back(TelemetryData {
+                datum: telemetry,
+                timestamp: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis(),
+            }); // add newest
         }
         Err(e) => log::error!("Failed to get telemetry data => {}", e),
     }
 }
 
-pub(crate) fn get_telemetry() -> Result<Vec<HashMap<String, TelemetryDatum>>, WireGuardCommandError>
-{
+pub(crate) fn get_telemetry() -> Result<Vec<TelemetryData>, WireGuardCommandError> {
+    // if the last telem data is old, reset the buffer
+    if get_since_timestamp(&LAST_TELEMETRY_QUERY_TS)
+        > TELEMETRY_INTERVAL * TELEMETRY_CAPACITY as u64
+    {
+        let mut buf = TELEMETRY.lock().unwrap();
+        *buf = VecDeque::with_capacity(TELEMETRY_CAPACITY);
+    }
+    update_timestamp(&LAST_TELEMETRY_QUERY_TS);
+
     match TELEMETRY.lock() {
         Ok(buf) => Ok(buf.iter().cloned().collect()),
         Err(e) => Err(WireGuardCommandError::LockFailed(e.to_string())),

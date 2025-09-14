@@ -239,7 +239,7 @@ export default {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.wireguardStatus = summary.status;
           need_to_update_network = this.digest !== summary.digest;
-          this.telemetry = {data: summary.telemetry, timestamp: summary.timestamp};
+          this.telemetry = summary.telemetry;
 
           this.last_fetch.rfc3339 = summary.timestamp;
           const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
@@ -262,7 +262,7 @@ export default {
         await this.api.get_network_summary('?only_digest=false').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.digest = summary.digest;
-          this.telemetry = {data: summary.telemetry, timestamp: summary.timestamp};
+          this.telemetry = summary.telemetry;
           this.network = summary.network;
           this.network.static_peer_ids = [];
           this.network.roaming_peer_ids = [];
