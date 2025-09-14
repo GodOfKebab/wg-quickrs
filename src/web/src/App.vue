@@ -80,6 +80,13 @@
     </div>
   </div>
 
+  <!-- Traffic Graph -->
+  <div class="container mx-auto max-w-6xl px-3">
+    <traffic-graph :network="network"
+                   :telemetry="telemetry"
+                   @peer-selected="onPeerSelected"></traffic-graph>
+  </div>
+
   <!-- Map -->
   <div class="container mx-auto mt-3 max-w-6xl">
     <map-visual :network="network"
