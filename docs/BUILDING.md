@@ -27,7 +27,9 @@ I use this to quickly initialize a server in the cloud.
 ```sh
 # Local build
 $SHELL run-md.sh ../docs/BUILDING.md install-deps-debian
+. "$HOME/.cargo/env"
 $SHELL run-md.sh ../docs/BUILDING.md build-src-debian
+. ~/.bashrc
 $SHELL run-md.sh ../docs/BUILDING.md run-agent-debian
 $SHELL run-md.sh ../docs/BUILDING.md set-up-systemd-debian
 
