@@ -3,7 +3,7 @@
 _⚠️ This project is **under active development**.
 Expect breaking changes and incomplete features._
 
-This document is optimized for Debian 13.
+This document is optimized for a fresh installation of Debian 13 that you would get when you spin up a VPS.
 
 ---
 
@@ -19,58 +19,44 @@ git clone https://github.com/GodOfKebab/wg-quickrs.git
 cd wg-quickrs/src
 ```
 
+You can either follow this document directly or use the following command to extract out the commands from this Markdown
+document and run using the following script.
+There are hidden comments on certain code snippets that allow the following command to extract out the important ones.
+I use this to quickly initialize a server in the cloud.
+
+```sh
+# Local build
+$SHELL run-md.sh ../docs/BUILDING.md install-deps-debian
+$SHELL run-md.sh ../docs/BUILDING.md build-src-debian
+$SHELL run-md.sh ../docs/BUILDING.md run-agent-debian
+$SHELL run-md.sh ../docs/BUILDING.md set-up-systemd-debian
+
+# Docker
+$SHELL run-md.sh ../docs/BUILDING.md build-src-docker
+$SHELL run-md.sh ../docs/BUILDING.md run-agent-docker
+```
+
 ---
 
 ### 1.1 Build from Scratch
 
 #### Requirements
 
-* `iptables`
 * Rust and Cargo
 * Node.js/npm (for the web frontend)
+* `iptables` (for setting NAT/port input allows for the agent)
 
-The project is split into:
+The project is split into three parts:
 
 * **`rust-wasm`** – Rust code for the web frontend
 * **`web`** – frontend assets
 * **`rust-agent`** – backend, frontend server, and scripting tools bundled in `wg-quickrs` binary
 
-You can either follow this document directly or use the following command to extract out the commands using the
-following command and run.
-There are hidden comments on certain code snippets that allow the following command to extract out the important ones.
-I use this to quickly initialize a server in the cloud.
-
-```sh
-awk -v tag="build-src-debian" '
-  # Match lines like: [//]: # (build-src-debian: description)
-  $0 ~ "^[[]//[]]: # \\(" tag ": " {
-      desc = substr($0, length(tag)+12, length($0)-length(tag)-12)
-      tagged=1
-      next
-  }
-
-  /^```sh$/ && tagged {
-      inblock=1
-      tagged=0
-      print "echo " "\"" desc "\""
-      next
-  }
-
-  /^```/ && inblock {
-      inblock=0
-      print ""
-      next
-  }
-
-  inblock { print }
-' ../dev/DEVELOPING.md > .build-agent.sh
-bash .build-agent.sh
-```
 ---
 
 #### 1.1.1 Install Rust/Cargo
 
-[//]: # (build-src-debian: 1.1.1 Install Rust/Cargo)
+[//]: # (install-deps-debian: 1.1.1 Install Rust/Cargo)
 
 ```sh
 curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -81,10 +67,19 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 #### 1.1.2 Build `rust-wasm`
 
-[//]: # (build-src-debian: 1.1.2 Build rust-wasm)
+Install `wasm-pack` dependency.
+
+[//]: # (install-deps-debian: 1.1.2 Build rust-wasm - Install 'wasm-pack' dependency)
 
 ```sh
 cargo install wasm-pack
+```
+
+Build `rust-wasm` directory.
+
+[//]: # (build-src-debian: 1.1.2 Build rust-wasm - Build 'rust-wasm' directory.)
+
+```sh
 cd rust-wasm
 wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
 cd ..
@@ -94,10 +89,19 @@ cd ..
 
 #### 1.1.3 Build the web frontend
 
-[//]: # (build-src-debian: 1.1.3 Build the web frontend)
+Install `npm` dependency.
+
+[//]: # (install-deps-debian: 1.1.3 Build the web frontend - Install 'npm' dependency.)
 
 ```sh
 sudo apt install -y npm
+```
+
+Build `web` directory.
+
+[//]: # (build-src-debian: 1.1.3 Build the web frontend - Build 'web' directory.)
+
+```sh
 cd web
 npm install
 npm run build
@@ -108,18 +112,20 @@ cd ..
 
 #### 1.1.4 Build and Install `wg-quickrs`
 
-This might take some time on slower machines.
-The build process described here is simpler and slightly different from the ones in `.github/workflows/release.yml` and
-`src/Dockerfile`.
-This is because those are optimized for cross-platform builds.
-If the following method doesn't meet your needs, you can look into building with `Zig` as in those methods.
-If errors relating to `aws-lc-sys` are raised, make sure you have the required packages:
+Install packages for the `aws-lc-sys` dependency.
 
-[//]: # (build-src-debian: 1.1.4 Build and Install wg-quickrs - install deps)
+[//]: # (install-deps-debian: 1.1.4 Build and Install wg-quickrs - Install packages for the 'aws-lc-sys' dependency.)
 
 ```sh
 sudo apt-get update && sudo apt-get install -y musl-dev cmake clang llvm-dev libclang-dev pkg-config
 ```
+
+Build the `rust-agent` directory.
+
+This might take some time on slower machines.
+The build process described here is simpler and slightly different from the ones in `.github/workflows/release.yml` and
+`src/Dockerfile`. This is because those are optimized for cross-architecture/platform builds.
+If the following method doesn't meet your needs, you can look into building with `Zig` as in those methods.
 
 [//]: # (build-src-debian: 1.1.4 Build and Install wg-quickrs - build)
 
@@ -131,6 +137,8 @@ sudo install -m 755 target/release/wg-quickrs /usr/local/bin/
 if ! printf %s "$PATH" | grep -q "/usr/local/bin"; then echo 'export PATH="/usr/local/bin:$PATH"' >> "$HOME/.profile"; fi
 . $HOME/.profile
 ```
+
+Install Bash/ZSH auto completions.
 
 [//]: # (build-src-debian: 1.1.4 Build and Install wg-quickrs - completions)
 
@@ -147,6 +155,8 @@ cp target/release/completions/_wg-quickrs ~/.zsh/completions/
 grep -qxF 'fpath=(~/.zsh/completions $fpath)' ~/.zshrc || printf '\nfpath=(~/.zsh/completions $fpath)\nautoload -Uz compinit\ncompinit\n' >> ~/.zshrc
 . ~/.zshrc
 ```
+
+Check to make sure the script is accessible.
 
 [//]: # (build-src-debian: 1.1.4 Build and Install wg-quickrs - sanity check)
 
@@ -182,7 +192,11 @@ wg-quickrs --help
 
 #### 1.1.5 Configure TLS/HTTPS Certificates
 
-[//]: # (build-src-debian: 1.1.5 Configure TLS/HTTPS Certificates)
+I use the [tls-cert-generator](https://github.com/GodOfKebab/tls-cert-generator) to create TLS certificates locally.
+See the documentation to generate certificates for other domains/servers.
+Following grabs all the hostnames, IPv4+IPv6 interface addresses of the system and generates certificates for them.
+
+[//]: # (install-deps-debian: 1.1.5 Configure TLS/HTTPS Certificates)
 
 ```sh
 # Install to System:
@@ -200,7 +214,9 @@ sh /etc/wg-quickrs/certs/tls-cert-generator.sh -o /etc/wg-quickrs/certs all
 
 #### 1.1.6 Install WireGuard
 
-[//]: # (build-src-debian: 1.1.6 Install WireGuard)
+Install packages for the `wg` and `wg-quick` dependency.
+
+[//]: # (install-deps-debian: 1.1.6 Install WireGuard)
 
 ```sh
 sudo apt install -y wireguard wireguard-tools
@@ -210,7 +226,13 @@ sudo apt install -y wireguard wireguard-tools
 
 #### 1.1.7 Initialize and Configure the Agent
 
-[//]: # (build-src-debian: 1.1.7 Initialize and Configure the Agent)
+Run the following and follow the prompts to configure network, agent, and default peer settings when generating new
+peers/connections.
+This generates `/etc/wg-quickrs/conf.yml`, where all the settings/configurations are stored.
+If you want to later edit the configuration, you can either use the scripting commands at `wg-quickrs agent <TAB>` or
+manually edit this file and restart your agent.
+
+[//]: # (run-agent-debian: 1.1.7 Initialize and Configure the Agent)
 
 ```sh
 # Install to System:
@@ -219,36 +241,44 @@ wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs init
 # wg-quickrs init
 ```
 
-Follow the prompts to configure network, agent, and default peer settings. This generates `$HOME/.wg-quickrs/conf.yml`.
-
 ---
 
 #### 1.1.8 Run the Agent
 
-[//]: # (build-src-debian: 1.1.8 Run the Agent)
+Run the agent.
+
+[//]: # (run-agent-debian: 1.1.8 Run the Agent)
 
 ```sh
 # Run on System:
 wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs agent run
 # Run on User:
 # wg-quickrs agent run
-
 ```
-
-* HTTP frontend/API: `http://<your-ip>:80/`
-* HTTPS frontend/API: `https://<your-ip>:443/`
-* WireGuard tunnel: `<public-ip>:51820`
 
 ---
 
 #### 1.1.9 Setup systemd service (optional)
 
+Configure `systemd` for easily managing the agent.
+
+Following creates:
+
+* A user `wg-quickrs-user` with relatively weak privileges but a part of `wg-quickrs-group`
+* A group `wg-quickrs-group` with
+  * passwordless `sudo` access to `wg` and `wg-quick` executables
+  * read/write/execute permissions for files under `/etc/wg-quickrs` and `/etc/wireguard`
+* The systemd service `wg-quickrs` that is enabled and started
+  * This service also gives necessary networking-related permissions.
+
+[//]: # (set-up-systemd-debian: 1.1.9 Setup systemd service)
+
 ```sh
-# setup a new user with less permissions
+# setup a new user with weak permissions
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin --no-user-group wg-quickrs-user
 sudo groupadd wg-quickrs-group
 sudo usermod -aG wg-quickrs-group wg-quickrs-user
-echo "wg-quickrs-user ALL=(ALL) NOPASSWD: $(which wg), $(which wg-quick), $(which wg-quick)" | sudo tee /etc/sudoers.d/wg-quickrs
+echo "wg-quickrs-user ALL=(ALL) NOPASSWD: $(which wg), $(which wg-quick)" | sudo tee /etc/sudoers.d/wg-quickrs
 sudo chmod 440 /etc/sudoers.d/wg-quickrs
 
 # setup file permissions
@@ -267,10 +297,9 @@ After=network.target
 Type=simple
 User=wg-quickrs-user
 Group=wg-quickrs-group
-ExecStart=/usr/local/bin/wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs agent run
-
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
 
+ExecStart=/usr/local/bin/wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs agent run
 Restart=always
 RestartSec=5
 
@@ -288,41 +317,13 @@ sudo systemctl status wg-quickrs
 
 ### 1.2 Using Docker
 
-You can either follow this document directly or use the following command to extract out the commands using the
-following command and run.
-There are hidden comments on certain code snippets that allow the following command to extract out the important ones.
-I use this to quickly initialize a server in the cloud.
-
-```sh
-awk -v tag="build-src-docker" '
-  # Match lines like: [//]: # (build-src-docker: description)
-  $0 ~ "^[[]//[]]: # \\(" tag ": " {
-      desc = substr($0, length(tag)+12, length($0)-length(tag)-12)
-      tagged=1
-      next
-  }
-
-  /^```sh$/ && tagged {
-      inblock=1
-      tagged=0
-      print "echo " "\"" desc "\""
-      next
-  }
-
-  /^```/ && inblock {
-      inblock=0
-      print ""
-      next
-  }
-
-  inblock { print }
-' ../dev/DEVELOPING.md > .build-docker.sh
-bash .build-docker.sh
-```
+This might take some time on slower machines.
+The build process of the Dockerfile is slightly different from the local build alternative because the Dockerfile is
+optimized to build images for other architectures.
 
 ---
 
-Install Docker on Debian 13:
+[Install Docker on Debian 13](https://docs.docker.com/engine/install/debian/#install-using-the-repository):
 
 [//]: # (build-src-docker: 1.2 - Install docker)
 
@@ -339,8 +340,11 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-Edit the TLS certificate settings and enter the FQDN/Domain names for the certificates from `tls-cert-generator`
-service in `docker-compose.init.yml`.
+In the `docker-compose.init.yml` file:
+
+* For the `tls-cert-generator` service (see [repo](https://github.com/GodOfKebab/tls-cert-generator)), edit the TLS
+  certificate settings and enter the FQDN/Domain names for the certificates
+* For the `wg-quickrs-init` service, edit the wg-quickrs settings
 
 [//]: # (build-src-docker: 1.2 - Edit docker compose file)
 
@@ -349,24 +353,19 @@ cd ..
 nano docker-compose.init.yml
 ```
 
-[//]: # (build-src-docker: 1.2 - Generate certs)
+Run the services to initialize the agent.
+
+[//]: # (run-agent-docker: 1.2 - Generate certs)
 
 ```sh
 docker compose -f docker-compose.init.yml up tls-cert-generator
-```
-
-Edit the wg-quickrs settings from `wg-quickrs-init` service in `docker-compose.init.yml`.
-Especially make sure that the IP addresses are updated and correct TLS cert/key paths are entered.
-
-[//]: # (build-src-docker: 1.2 - Initialize agent)
-
-```sh
 docker compose -f docker-compose.init.yml up wg-quickrs-init
+
 ```
 
 After initialization, you can run the `wg-quickrs-agent-run` service in `docker-compose.agent.yml`.
 
-[//]: # (build-src-docker: 1.2 - Run agent)
+[//]: # (run-agent-docker: 1.2 - Run agent)
 
 ```sh
 docker compose -f docker-compose.agent.yml up wg-quickrs-agent-run
