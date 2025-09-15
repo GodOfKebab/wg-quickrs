@@ -1,9 +1,9 @@
 <template>
 
-  <div :class="[color_div]" class="my-2 p-1 px-3 shadow-md border rounded">
+  <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
 
     <!--  Name  -->
-    <div class="my-0.5 truncate flex items-center relative">
+    <div class="my-0.5 truncate flex items-center relative ml-2">
                                    <span class="text-gray-800 text-xs mr-1">
                                      <strong class="text-sm">Name:</strong>
                                    </span>
@@ -13,7 +13,7 @@
           class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow"
           placeholder="Name" type="text"/>
       <div v-if="!_fast_equal(peer_local.name, peer.name)"
-           class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
+           class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
         <button
             :disabled="_fast_equal(peer_local.name, peer.name)"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
@@ -25,7 +25,7 @@
     </div>
 
     <!--  Address  -->
-    <div class="mb-0.5 truncate flex items-center relative">
+    <div class="mb-0.5 truncate flex items-center relative ml-2">
                                    <span class="text-gray-800 text-xs mr-1">
                                      <strong class="text-sm">Address:</strong>
                                    </span>
@@ -39,7 +39,7 @@
           @change=""/> <!--TODO: update connection address on change  -->
       <!--TODO: get placeholder address to have an actual working address  -->
       <div v-if="!_fast_equal(peer_local.address, peer.address) && !isNewPeer"
-           class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
+           class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
         <button
             :disabled="_fast_equal(peer_local.address, peer.address)"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition undo-button-itself"
@@ -55,7 +55,7 @@
       <label class="form-check-label flex items-center">
         <input
             :checked="peer_local.endpoint.enabled"
-            class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
+            class="h-4 w-4"
             type="checkbox"
             :disabled="isHost"
             @change="peer_local.endpoint.enabled = !peer_local.endpoint.enabled;">
@@ -73,7 +73,7 @@
           type="text"/>
       <div
           v-if="!_fast_equal(peer_local.endpoint, peer.endpoint)"
-          class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
+          class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
         <button
             :disabled="_fast_equal(peer_local.endpoint, peer.endpoint)"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"

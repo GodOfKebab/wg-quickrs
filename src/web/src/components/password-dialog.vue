@@ -37,16 +37,16 @@
               </p>
             </div>
 
-            <div class="flex justify-between">
+            <div class="flex justify-center">
               <div class="flex items-start">
                 <div class="flex items-center h-5">
-                  <input id="remember"
-                         v-model="remember"
-                         class="w-4 h-4 border border-gray-300 rounded-sm bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-600 dark:border-gray-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800"
-                         type="checkbox"/>
+                  <label class="text-sm font-medium text-gray-900 dark:text-gray-300">
+                    <input v-model="remember"
+                           class="w-4 h-4"
+                           type="checkbox"/>
+                    <span>Remember me</span>
+                  </label>
                 </div>
-                <label class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300" for="remember">Remember
-                  me</label>
               </div>
               <!--              <a class="text-sm text-blue-700 hover:underline dark:text-blue-500" href="#">Lost Password?</a>-->
             </div>

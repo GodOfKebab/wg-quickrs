@@ -1,7 +1,7 @@
 <template>
 
-  <div :class="[color_div]" class="my-2 py-2 px-3 shadow-md border rounded">
-    <div class="text-gray-800 mb-1">
+  <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
+    <div class="text-gray-800 mb-1 ml-2">
       Configure DNS and MTU:
     </div>
     <div class="grid grid-cols-2 gap-2 mb-0.5">
@@ -11,7 +11,7 @@
             <label class="form-check-label flex items-center">
               <input
                   v-model="peer_local[field].enabled"
-                  class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
+                  class="h-4 w-4"
                   type="checkbox">
               <span class="text-gray-800 cursor-pointer text-xs">
                 <strong class="text-sm"> {{ field.toLocaleUpperCase() }} </strong>
@@ -29,7 +29,7 @@
               </option>
             </datalist>
             <div v-if="is_changed_field[field]"
-                 class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
+                 class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
               <button
                   :disabled="!is_changed_field[field]"
                   class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"

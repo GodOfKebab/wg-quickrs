@@ -38,9 +38,8 @@
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-              :class="peerConfigWindow === 'file' ? 'bg-gray-600' : ''"
               title="See the configuration file for this peer"
-              @click="peerConfigWindow = 'file'">
+              disabled>
             <img alt="WireGuard Configuration File" class="h-6" src="/icons/flowbite/file-code.svg"/>
           </button>
           <button

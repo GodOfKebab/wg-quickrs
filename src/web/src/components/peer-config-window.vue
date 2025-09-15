@@ -40,19 +40,22 @@
                   @click="peerConfigWindow = 'edit'">
             <img alt="Edit Configuration" class="h-6" src="/icons/flowbite/file-pen.svg"/>
           </button>
-          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
+          <button :disabled="changeDetected"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   :class="peerConfigWindow === 'file' ? 'bg-gray-600' : ''"
                   title="See the configuration file for this peer"
                   @click="peerConfigWindow = 'file'">
             <img alt="WireGuard Configuration File" class="h-6" src="/icons/flowbite/file-code.svg"/>
           </button>
-          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
+          <button :disabled="changeDetected"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   :class="overlayDialogId === 'qr' ? 'bg-gray-600' : ''"
                   title="Show QR Code"
                   @click="drawQRCode(); overlayDialogId = 'qr'">
             <img alt="QR Code" class="h-6" src="/icons/flowbite/qr-code.svg"/>
           </button>
-          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
+          <button :disabled="changeDetected"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="Download Configuration"
                   @click="downloadPeerConfig()">
             <img alt="Download" class="h-6" src="/icons/flowbite/download.svg"/>

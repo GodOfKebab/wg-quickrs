@@ -59,14 +59,15 @@
       <div class="flex items-center opacity-50">
 
         <!-- Network Identifier -->
-        <div v-if="network.this_peer" class="inline-block mr-auto text-gray-800 text-xs ml-3">
-          <span>Network Identifier: <strong class="text-sm inline-block">{{ network.identifier }}</strong></span>
+        <div v-if="network.this_peer"
+             class="inline-block text-gray-800 text-xs ml-3 text-left">
+          <span>Network Identifier: <strong class="inline-block">{{ network.identifier }}</strong></span>
         </div>
 
         <div v-if="network.this_peer"
-             class=" inline-block overflow-auto ml-auto mr-3 text-gray-800 text-xs text-right">
+             class="inline-block text-gray-800 text-xs mr-3 text-right">
           <span>
-            Host: <strong class="text-sm inline-block whitespace-pre-wrap">{{
+            Host: <strong class="inline-block whitespace-pre-wrap">{{
               network.peers[network.this_peer].name
             }}</strong>
           </span>

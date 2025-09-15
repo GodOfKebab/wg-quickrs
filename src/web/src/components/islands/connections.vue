@@ -3,11 +3,11 @@
   <div v-if="other_static_peer_ids.length +  other_roaming_peer_ids.length > 0">
     <!-- selection box -->
     <div :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peers_box]]"
-         class="my-2 p-1 px-3 shadow-md border rounded relative">
+         class="my-2 py-2 pl-1 pr-3 shadow-md border rounded relative">
 
       <!-- static neighbors -->
       <div v-if="other_static_peer_ids.length > 0">
-        <div class="text-gray-800">
+        <div class="text-gray-800 ml-2">
           Attached static peers:
         </div>
 
@@ -15,7 +15,7 @@
           <label class="form-check-label flex items-center text-gray-800 cursor-pointer text-sm">
             <input
                 v-model="selectAllStaticPeers"
-                class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
+                class="h-4 w-4"
                 type="checkbox"
                 @change="toggleConnection('all')">
             <span class="align-middle">Select All</span>
@@ -25,15 +25,15 @@
         <div class="grid grid-cols-2">
           <div v-for="peerId in other_static_peer_ids"
                class="relative overflow-hidden">
-            <div class="form-check truncate">
-              <label>
+            <div class="form-check mt-1 flex">
+              <label class="form-check-label truncate items-center text-gray-800 cursor-pointer text-sm py-1">
                 <input
                     v-model="attached_static_peer_ids_local"
                     :value="peerId"
-                    class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
+                    class="h-4 w-4"
                     type="checkbox"
                     @change="toggleConnection(peerId)">
-                <span class="text-gray-800 cursor-pointer text-xs align-middle">
+                <span class="align-middle">
                            <strong class="text-sm">{{
                                network.peers[peerId].name
                              }}</strong> {{ network.peers[peerId].address }} ({{
@@ -48,14 +48,14 @@
 
       <!-- roaming neighbors -->
       <div v-if=" other_roaming_peer_ids.length > 0">
-        <div class="text-gray-800">
+        <div class="text-gray-800 ml-2">
           Attached roaming peers:
         </div>
         <div class="form-check mt-1 flex">
           <label class="form-check-label flex items-center text-gray-800 cursor-pointer text-sm">
             <input
                 v-model="selectAllRoamingPeers"
-                class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer inline-block"
+                class="h-4 w-4"
                 type="checkbox">
             <span class="align-middle">Select All</span>
           </label>
@@ -63,15 +63,15 @@
         <div class="grid grid-cols-2">
           <div v-for="peerId in  other_roaming_peer_ids"
                class="relative overflow-hidden">
-            <div class="form-check truncate">
-              <label>
+            <div class="form-check mt-1 flex">
+              <label class="form-check-label truncate items-center text-gray-800 cursor-pointer text-sm py-1">
                 <input
                     v-model="attached_roaming_peer_ids_local"
                     :value="peerId"
-                    class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
+                    class="h-4 w-4"
                     type="checkbox"
                     @change="toggleConnection(peerId)">
-                <span class="text-gray-800 cursor-pointer text-xs align-middle">
+                <span class="align-middle">
                            <strong class="text-sm">{{
                                network.peers[peerId].name
                              }}</strong> {{ network.peers[peerId].address }} ({{
@@ -86,7 +86,7 @@
 
       <!-- undo button -->
       <div v-if="is_changed_field.attached_peers_box"
-           class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
+           class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
         <button
             :disabled="!is_changed_field.attached_peers_box"
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
@@ -100,19 +100,19 @@
 
     <!-- connection islands -->
     <div v-for="otherPeerId in [...other_static_peer_ids, ...other_roaming_peer_ids]"
-         class="relative">
+         class="relative text-sm">
       <div v-if="all_attached_peer_ids_local.includes(otherPeerId)"
            :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peer_box[otherPeerId]]]"
-           class="my-2 py-2 px-3 shadow-md border rounded overflow-x-auto whitespace-nowrap highlight-remove-box">
+           class="my-2 py-2 pl-1 pr-3 shadow-md border rounded overflow-x-auto whitespace-nowrap highlight-remove-box">
 
         <!-- enabled checkbox-->
-        <div class="form-check ml-0">
-          <label class="form-check-label text-gray-800 cursor-pointer text-sm flex items-center">
+        <div class="form-check flex">
+          <label class="form-check-label items-center text-gray-800 cursor-pointer text-sm">
             <input
                 v-model="connections_local.enabled[otherPeerId]"
-                class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer inline-block"
+                class="h-4 w-4"
                 type="checkbox">
-            <span class="text-gray-800 text-xs">
+            <span class="text-gray-800">
                   <strong class="text-sm">{{ network.peers[otherPeerId].name }}</strong>
                   {{ network.peers[otherPeerId].address }}
                   ({{ otherPeerId }})
@@ -121,10 +121,10 @@
         </div>
 
         <!-- connection details  -->
-        <div v-show="connections_local.enabled[otherPeerId]" class="mt-1 mb-0.5 mx-0.5 text-xs text-gray-800">
-          <hr class="w-full h-1"/>
+        <div v-show="connections_local.enabled[otherPeerId]" class="mt-1 mb-0.5 mx-2 text-gray-800">
+          <hr class="w-full h-1 mb-1"/>
 
-          <div class="grid grid-cols-7 gap-2">
+          <div class="grid grid-cols-7 gap-1">
             <!-- Pre Shared Key -->
             <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-3 flex">
                   <span class="align-middle flex">
@@ -159,7 +159,7 @@
                       </span>
                   <input
                       v-model="connections_local.persistent_keepalive[otherPeerId].enabled"
-                      class="form-check-input appearance-none h-3.5 w-3.5 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left ml-0.5 mr-1 cursor-pointer inline-block"
+                      class="h-3.5 w-3.5"
                       type="checkbox">
                 </label>
               </div>
@@ -171,7 +171,7 @@
           </div>
 
           <!-- Allowed IPs -->
-          <div class="relative text-gray-800 text-xs">
+          <div class="relative text-gray-800">
             <div class="mt-1">
                     <span class="flex-none"><strong>{{
                         network.peers[peerId].name
@@ -180,12 +180,12 @@
                      v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
                      :list="otherPeerId + 'focusPeerName to peerDetails.name'"
-                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow">
+                     class="text-gray-800 mx-1 rounded-md px-1 grow">
               <input v-else
                      v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
                      :list="otherPeerId + 'focusPeerName to peerDetails.name'"
-                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow">
+                     class="text-gray-800 mx-1 rounded-md px-1 grow">
               <span class="flex-none pr-2"> to <strong>{{ network.peers[otherPeerId].name }}</strong></span>
             </div>
             <div class="mt-1">
@@ -196,12 +196,12 @@
                      v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
                      :list="otherPeerId + 'peerDetails.name to focusPeerName'"
-                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow">
+                     class="text-gray-800 mx-1 rounded-md px-1 grow">
               <input v-else
                      v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
                      :list="otherPeerId + 'peerDetails.name to focusPeerName'"
-                     class="text-gray-800 text-xs mx-1 rounded-md px-1 grow">
+                     class="text-gray-800 mx-1 rounded-md px-1 grow">
               <span class="flex-none pr-2"> to <strong>{{ network.peers[peerId].name }}</strong></span>
             </div>
             <datalist
@@ -228,7 +228,7 @@
 
         <!-- undo button -->
         <div v-if="is_changed_field.attached_peer_box[otherPeerId]"
-             class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
+             class="inline-block float-right absolute z-20 right-[5px] top-[5px]">
           <button
               :disabled="!is_changed_field.attached_peer_box[otherPeerId]"
               class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"

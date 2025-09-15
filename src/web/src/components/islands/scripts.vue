@@ -1,7 +1,7 @@
 <template>
 
-  <div :class="[color_div]" class="my-2 py-2 px-3 shadow-md border rounded">
-    <div class="text-gray-800 mb-1">
+  <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
+    <div class="text-gray-800 mb-1 ml-2">
       Configure Script Snippets:
     </div>
     <div v-for="field in ['pre_up', 'post_up', 'pre_down', 'post_down']">
@@ -10,7 +10,7 @@
         <label class="form-check-label flex items-center">
           <input
               :checked="peer_local.scripts[field].enabled"
-              class="form-check-input appearance-none h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition duration-200 bg-no-repeat bg-center bg-contain float-left mr-1 cursor-pointer"
+              class="h-4 w-4"
               type="checkbox"
               @change="peer_local.scripts[field].enabled = !peer_local.scripts[field].enabled;">
           <span class="text-gray-800 cursor-pointer text-xs mr-1">
@@ -26,7 +26,7 @@
             type="text"/>
         <div
             v-if="is_changed_script_field[field]"
-            class="inline-block float-right absolute z-20 right-[3px] top-[-1px]">
+            class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
           <button
               :disabled="!is_changed_script_field[field]"
               class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"

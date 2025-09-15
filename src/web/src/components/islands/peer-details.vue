@@ -5,7 +5,7 @@
       class="my-2 p-2 px-3 shadow-md border rounded relative">
     <div
         v-if="are_keys_updated"
-        class="inline-block float-right absolute z-20 right-[0.2rem] top-[0rem]">
+        class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
       <button
           :disabled="!are_keys_updated"
           class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
