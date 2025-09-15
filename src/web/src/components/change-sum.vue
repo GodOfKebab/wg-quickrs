@@ -96,10 +96,8 @@ export default {
       if (field === undefined) {
         return false;
       }
-      if (Object.keys(field).length === 0) {
-        return false;
-      }
-      return true;
+      return Object.keys(field).length !== 0;
+
     }
   },
   computed: {

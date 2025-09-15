@@ -166,8 +166,7 @@
               <input v-model="connections_local.persistent_keepalive[otherPeerId].value"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.persistent_keepalive[otherPeerId]]]"
                      :disabled="!connections_local.persistent_keepalive[otherPeerId].enabled"
-                     class="mr-1 rounded-md pl-1 align-middle inline-block disabled:bg-gray-100"
-                     type="string">
+                     class="mr-1 rounded-md pl-1 align-middle inline-block disabled:bg-gray-100">
             </div>
           </div>
 
@@ -249,7 +248,6 @@
 <script>
 import FastEqual from "fast-deep-equal";
 import WireGuardHelper from "../../js/wg-helper.js";
-import API from "../../js/api.js";
 
 
 export default {
@@ -508,10 +506,10 @@ export default {
       handler() {
         const changed_fields = {};
         for (const other_peer_id of this.all_attached_peer_ids_local) {
-          let msg = "";
-          [this.is_changed_field.persistent_keepalive[other_peer_id], msg] = this.check_connection_field_status(other_peer_id, 'persistent_keepalive');
-          [this.is_changed_field.allowed_ips_a_to_b[other_peer_id], msg] = this.check_connection_field_status(other_peer_id, 'allowed_ips_a_to_b');
-          [this.is_changed_field.allowed_ips_b_to_a[other_peer_id], msg] = this.check_connection_field_status(other_peer_id, 'allowed_ips_b_to_a');
+          let _msg = "";
+          [this.is_changed_field.persistent_keepalive[other_peer_id], _msg] = this.check_connection_field_status(other_peer_id, 'persistent_keepalive');
+          [this.is_changed_field.allowed_ips_a_to_b[other_peer_id], _msg] = this.check_connection_field_status(other_peer_id, 'allowed_ips_a_to_b');
+          [this.is_changed_field.allowed_ips_b_to_a[other_peer_id], _msg] = this.check_connection_field_status(other_peer_id, 'allowed_ips_b_to_a');
 
           const connection_id = this._WireGuardHelper_getConnectionId(other_peer_id);
           const connection_details = {
