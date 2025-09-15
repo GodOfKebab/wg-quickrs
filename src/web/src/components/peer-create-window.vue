@@ -289,8 +289,7 @@ export default {
 
     },
     errorDetected() {
-      return Object.keys(this.change_sum.errors.peers[this.peerId]).length
-          + Object.keys(this.change_sum.errors.connections).length
+      return !!(Object.keys(this.change_sum.errors.peers[this.peerId]).length + Object.keys(this.change_sum.errors.connections).length)
     },
     peer_wg_conf_file() {
       const wg_network = this.network_w_new_peer;
