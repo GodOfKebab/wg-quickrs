@@ -47,9 +47,6 @@
 </template>
 
 <script>
-import API from "../../js/api.js";
-
-
 export default {
   name: "peer-details-island",
   props: {

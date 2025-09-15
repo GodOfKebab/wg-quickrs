@@ -144,7 +144,6 @@ import ScriptsIsland from "./islands/scripts.vue";
 import PeerDetails from "./islands/peer-details.vue";
 import ConnectionIslands from "./islands/connections.vue";
 import ChangeSum from "./change-sum.vue";
-import API from "../js/api.js";
 import WireGuardHelper from "../js/wg-helper";
 
 export default {

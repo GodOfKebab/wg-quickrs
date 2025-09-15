@@ -166,7 +166,6 @@ import PeerDetails from "./islands/peer-details.vue";
 import ConnectionIslands from "./islands/connections.vue";
 import ChangeSum from "./change-sum.vue";
 import WireGuardHelper from "../js/wg-helper";
-import API from "../js/api.js";
 import QRCode from "qrcode";
 
 export default {
