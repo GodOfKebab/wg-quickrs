@@ -25,7 +25,7 @@ services:
       - .wg-quickrs:/app/.wg-quickrs
     command: >
       init --no-prompt true
-      --network-identifier wg-quickrs
+      --network-identifier wg-quickrs-home
       --network-subnet     10.0.34.0/24
 
       --agent-web-address          0.0.0.0

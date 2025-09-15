@@ -337,7 +337,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_FLAGS[0],
         INIT_HELPS[0],
         true,
-        Some("wg-quickrs".into()),
+        Some("wg-quickrs-home".into()),
     );
 
     // [2/24] --network-subnet

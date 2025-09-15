@@ -151,9 +151,9 @@ docker run --rm \
   -v "$HOME/.wg-quickrs:/app/.wg-quickrs" \
   godofkebab/wg-quickrs \
   init --no-prompt true \
-    --network-identifier wg-quickrs   \
-    --network-subnet     10.0.34.0/24 \
-    --agent-web-address          0.0.0.0 \
+    --network-identifier wg-quickrs-home \
+    --network-subnet     10.0.34.0/24    \
+    --agent-web-address          0.0.0.0                          \
     --agent-web-http-enabled     true                             \
     --agent-web-http-port        80                               \
     --agent-web-https-enabled    true                             \
@@ -206,7 +206,7 @@ backend: v0.1.0, frontend: v0.0.0, build: unknown#unknown@2025-09-10T03:54:51Z
 2025-09-10T04:34:04.818Z INFO  [wg_quickrs] using the wg-quickrs config file at ".wg-quickrs/conf.yml"
 2025-09-10T04:34:04.818Z INFO  [wg_quickrs::commands::init] Initializing wg-quickrs rust-agent...
 [general network settings 1-2/24]
-	[ 1/24] Using Set VPN network identifier from CLI option '--network-identifier': wg-quickrs
+	[ 1/24] Using Set VPN network identifier from CLI option '--network-identifier': wg-quickrs-home
 	[ 2/24] Using Set VPN network CIDR subnet from CLI option '--network-subnet': 10.0.34.0/24
 [general network settings complete]
 [agent settings 3-17/24]
