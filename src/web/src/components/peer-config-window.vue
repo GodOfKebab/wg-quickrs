@@ -25,37 +25,37 @@
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="Delete this peer"
                   @click="overlayDialogId = 'confirm-delete'">
-            <img alt="Delete" class="h-6" src="../icons/flowbite/trash-bin.svg"/>
+            <img alt="Delete" class="h-6" src="/icons/flowbite/trash-bin.svg"/>
           </button>
           <button :disabled="!changeDetected"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   :class="peerConfigWindow === 'view-changes' ? 'bg-gray-600' : ''"
                   title="See the configuration differences for this peer"
                   @click="peerConfigWindow = 'view-changes'">
-            <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/merge-cells.svg"/>
+            <img alt="Compare Configuration" class="h-6" src="/icons/flowbite/merge-cells.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
                   :class="peerConfigWindow === 'edit' ? 'bg-gray-600' : ''"
                   title="Edit the configuration for this peer"
                   @click="peerConfigWindow = 'edit'">
-            <img alt="Edit Configuration" class="h-6" src="../icons/flowbite/file-pen.svg"/>
+            <img alt="Edit Configuration" class="h-6" src="/icons/flowbite/file-pen.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   :class="peerConfigWindow === 'file' ? 'bg-gray-600' : ''"
                   title="See the configuration file for this peer"
                   @click="peerConfigWindow = 'file'">
-            <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
+            <img alt="WireGuard Configuration File" class="h-6" src="/icons/flowbite/file-code.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   :class="overlayDialogId === 'qr' ? 'bg-gray-600' : ''"
                   title="Show QR Code"
                   @click="drawQRCode(); overlayDialogId = 'qr'">
-            <img alt="QR Code" class="h-6" src="../icons/flowbite/qr-code.svg"/>
+            <img alt="QR Code" class="h-6" src="/icons/flowbite/qr-code.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill"
                   title="Download Configuration"
                   @click="downloadPeerConfig()">
-            <img alt="Download" class="h-6" src="../icons/flowbite/download.svg"/>
+            <img alt="Download" class="h-6" src="/icons/flowbite/download.svg"/>
           </button>
         </span>
       </div>
@@ -146,7 +146,7 @@
       <div class="bg-black bg-opacity-50 fixed top-0 right-0 left-0 bottom-0 flex items-center justify-center z-20">
         <div class="bg-white rounded-md shadow-lg relative p-8">
           <button class="absolute right-4 top-4 text-gray-600 hover:text-gray-800" @click="overlayDialogId = ''">
-            <img alt="Close QR Code Window" class="h-6" src="../icons/flowbite/close.svg"/>
+            <img alt="Close QR Code Window" class="h-6" src="/icons/flowbite/close.svg"/>
           </button>
           <canvas id="qr-canvas"></canvas>
         </div>

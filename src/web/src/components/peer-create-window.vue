@@ -20,40 +20,40 @@
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
               disabled
               title="Delete this peer">
-            <img alt="Delete" class="h-6" src="../icons/flowbite/trash-bin.svg"/>
+            <img alt="Delete" class="h-6" src="/icons/flowbite/trash-bin.svg"/>
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
               :class="peerConfigWindow === 'view-changes' ? 'bg-gray-600' : ''"
                   title="See the configuration differences for this peer"
                   @click="peerConfigWindow = 'view-changes'">
-            <img alt="Compare Configuration" class="h-6" src="../icons/flowbite/merge-cells.svg"/>
+            <img alt="Compare Configuration" class="h-6" src="/icons/flowbite/merge-cells.svg"/>
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
               :class="peerConfigWindow === 'edit' ? 'bg-gray-600' : ''"
               title="Edit the configuration for this peer"
               @click="peerConfigWindow = 'edit'">
-            <img alt="Edit Configuration" class="h-6" src="../icons/flowbite/file-pen.svg"/>
+            <img alt="Edit Configuration" class="h-6" src="/icons/flowbite/file-pen.svg"/>
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
               :class="peerConfigWindow === 'file' ? 'bg-gray-600' : ''"
               title="See the configuration file for this peer"
               @click="peerConfigWindow = 'file'">
-            <img alt="WireGuard Configuration File" class="h-6" src="../icons/flowbite/file-code.svg"/>
+            <img alt="WireGuard Configuration File" class="h-6" src="/icons/flowbite/file-code.svg"/>
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
               disabled
               title="Show QR Code">
-            <img alt="QR Code" class="h-6" src="../icons/flowbite/qr-code.svg"/>
+            <img alt="QR Code" class="h-6" src="/icons/flowbite/qr-code.svg"/>
           </button>
           <button
               class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
               disabled
               title="Download Configuration">
-            <img alt="Download" class="h-6" src="../icons/flowbite/download.svg"/>
+            <img alt="Download" class="h-6" src="/icons/flowbite/download.svg"/>
           </button>
         </span>
       </div>

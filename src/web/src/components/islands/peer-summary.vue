@@ -19,7 +19,7 @@
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
             @click="peer_local.name = peer.name">
-          <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
+          <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
         </button>
       </div>
     </div>
@@ -45,7 +45,7 @@
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition undo-button-itself"
             title="Undo Changes"
             @click="peer_local.address = peer.address">
-          <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
+          <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
         </button>
       </div>
     </div>
@@ -79,7 +79,7 @@
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
             @click="peer_local.endpoint.value = peer.endpoint.value; peer_local.endpoint.enabled = peer.endpoint.enabled;">
-          <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
+          <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
         </button>
       </div>
     </div>

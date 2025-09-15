@@ -11,7 +11,7 @@
           class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
           title="Undo Changes"
           @click="peer_local.public_key = peer.public_key; peer_local.private_key = peer.private_key">
-        <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
+        <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
       </button>
     </div>
     <div class="overflow-x-auto">
@@ -31,7 +31,7 @@
             <div v-else class="pr-4 inline-block">
               <button class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mr-1"
                       @click="refreshPeerEditKeys()">
-                <img alt="Refresh Keys" class="h-4" src="../../icons/flowbite/refresh.svg"/>
+                <img alt="Refresh Keys" class="h-4" src="/icons/flowbite/refresh.svg"/>
               </button>
               <span v-if="peerConfigKey === 'public_key'" class="text-gray-800 text-xs">{{
                   peer_local.public_key

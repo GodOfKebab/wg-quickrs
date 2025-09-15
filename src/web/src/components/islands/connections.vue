@@ -92,7 +92,7 @@
             class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
             title="Undo Changes"
             @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids; update_added_removed_change_sum();">
-          <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
+          <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
         </button>
       </div>
 
@@ -138,7 +138,7 @@
               <button
                   class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mr-1 inline-block shrink-0"
                   @click="refreshPreSharedKey(otherPeerId)">
-                <img alt="Refresh Keys" class="h-4" src="../../icons/flowbite/refresh.svg"/>
+                <img alt="Refresh Keys" class="h-4" src="/icons/flowbite/refresh.svg"/>
               </button>
               <span class="pr-1 align-middle">
                     {{ connections_local.pre_shared_key[otherPeerId] }}
@@ -234,7 +234,7 @@
               class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
               title="Undo Changes"
               @click="undo_connection_changes(otherPeerId);">
-            <img alt="Undo" class="h-4" src="../../icons/flowbite/undo.svg"/>
+            <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
           </button>
         </div>
 

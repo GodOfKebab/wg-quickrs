@@ -64,7 +64,7 @@
         </div>
 
         <div v-if="network.this_peer"
-             class=" inline-block overflow-auto ml-auto mr-3 text-gray-800 text-xs flex-0 text-right">
+             class=" inline-block overflow-auto ml-auto mr-3 text-gray-800 text-xs text-right">
           <span>
             Host: <strong class="text-sm inline-block whitespace-pre-wrap">{{
               network.peers[network.this_peer].name

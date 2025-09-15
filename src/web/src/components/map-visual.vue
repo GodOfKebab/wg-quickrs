@@ -9,9 +9,9 @@ import ForceGraph from "force-graph";
 import FastEqual from "fast-deep-equal";
 import WireGuardHelper from "../js/wg-helper.js";
 
-import staticNodeIcon from "../icons/svgrepo/globe-05-svgrepo-com.svg";
-import roamingNodeIcon from "../icons/svgrepo/rss-02-svgrepo-com.svg";
-import thisNodeMarker from "../icons/flowbite/home.svg";
+import staticNodeIcon from "/icons/svgrepo/globe-05-svgrepo-com.svg";
+import roamingNodeIcon from "/icons/svgrepo/rss-02-svgrepo-com.svg";
+import thisNodeMarker from "/icons/flowbite/home.svg";
 
 export default {
   name: "map-visual",
