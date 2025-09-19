@@ -12,8 +12,15 @@ use std::path::PathBuf;
 pub struct Cli {
     #[arg(short, long, help = "Increase verbosity level from Info to Debug")]
     pub verbose: bool,
-    #[arg(long, default_value = "~/.wg-quickrs")]
+    #[cfg(target_os = "macos")]
+    #[arg(long, default_value = "/opt/homebrew/etc/wg-quickrs/")]
     pub wg_quickrs_config_folder: PathBuf,
+    #[cfg(target_os = "linux")]
+    #[arg(long, default_value = "/etc/wg-quickrs/")]
+    wg_quickrs_config_folder: PathBuf,
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    #[arg(long)]
+    wg_quickrs_config_folder: PathBuf,
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -33,7 +40,7 @@ pub enum Commands {
         #[arg(long, default_value = "/etc/wireguard/")]
         wireguard_config_folder: PathBuf,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        #[arg(long, default_value = "/tmp/wireguard/")]
+        #[arg(long)]
         wireguard_config_folder: PathBuf,
         #[command(subcommand)]
         commands: AgentCommands,
@@ -68,11 +75,11 @@ pub struct InitOptions {
     )]
     pub agent_web_https_port: Option<u16>,
 
-    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-quickrs home directory) to TLS certificate file for HTTPS", value_name = "certs/servers/localhost/cert.pem"
+    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-quickrs config folder) to TLS certificate file for HTTPS", value_name = "certs/servers/localhost/cert.pem"
     )]
     pub agent_web_https_tls_cert: Option<PathBuf>,
 
-    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-quickrs home directory) to TLS private key file for HTTPS", value_name = "certs/servers/localhost/key.pem"
+    #[arg(long, default_value = None, long_help = "Set path (relative to the wg-quickrs config folder) to TLS private key file for HTTPS", value_name = "certs/servers/localhost/key.pem"
     )]
     pub agent_web_https_tls_key: Option<PathBuf>,
 
@@ -238,11 +245,11 @@ pub enum AgentCommands {
     #[command(about = "Set port for the HTTPS web server")]
     SetWebHttpsPort(PortArg),
     #[command(
-        about = "Set path (relative to the wg-quickrs home directory) to TLS certificate file for HTTPS"
+        about = "Set path (relative to the wg-quickrs config folder) to TLS certificate file for HTTPS"
     )]
     SetWebHttpsTlsCert(PathArg),
     #[command(
-        about = "Set path (relative to the wg-quickrs home directory) to TLS private key file for HTTPS"
+        about = "Set path (relative to the wg-quickrs config folder) to TLS private key file for HTTPS"
     )]
     SetWebHttpsTlsKey(PathArg),
     // settings: password
