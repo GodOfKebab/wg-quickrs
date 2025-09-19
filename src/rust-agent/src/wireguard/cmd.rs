@@ -20,7 +20,7 @@ use thiserror::Error;
 const TELEMETRY_CAPACITY: usize = 21; // 20 throughput measurements
 const TELEMETRY_INTERVAL: u64 = 1000;
 type TelemetryType = Lazy<Arc<Mutex<VecDeque<TelemetryData>>>>;
-pub static TELEMETRY: TelemetryType =
+static TELEMETRY: TelemetryType =
     Lazy::new(|| Arc::new(Mutex::new(VecDeque::with_capacity(TELEMETRY_CAPACITY))));
 
 static LAST_TELEMETRY_QUERY_TS: Lazy<Arc<Mutex<u64>>> = Lazy::new(|| Arc::new(Mutex::new(0)));
@@ -45,8 +45,8 @@ fn get_since_timestamp(ts: &Arc<Mutex<u64>>) -> u64 {
 
 #[derive(Error, Debug)]
 pub enum WireGuardCommandError {
-    #[error("wireguard::cmd::error::lock_failed -> failed to acquire lock: {0}")]
-    LockFailed(String),
+    #[error("wireguard::cmd::error::mutex_lock_failed -> failed to acquire lock: {0}")]
+    MutexLockFailed(String),
     #[error("wireguard::cmd::error::interface_missing -> wireguard interface doesn't exist")]
     InterfaceMissing,
     #[error("wireguard::cmd::error::command_exec_error -> command for {0} failed: {1}")]
@@ -174,14 +174,14 @@ pub(crate) fn get_telemetry() -> Result<Vec<TelemetryData>, WireGuardCommandErro
 
     match TELEMETRY.lock() {
         Ok(buf) => Ok(buf.iter().cloned().collect()),
-        Err(e) => Err(WireGuardCommandError::LockFailed(e.to_string())),
+        Err(e) => Err(WireGuardCommandError::MutexLockFailed(e.to_string())),
     }
 }
 
 pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> {
     let wg_interface_mut = WG_INTERFACE
         .lock()
-        .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
     if (*wg_interface_mut).is_empty() {
         return Ok(WireGuardStatus::DOWN);
     }
@@ -191,7 +191,7 @@ pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> 
 fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
     let wg_interface_mut = WG_INTERFACE
         .lock()
-        .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
     if (*wg_interface_mut).is_empty() {
         return Err(WireGuardCommandError::InterfaceMissing);
@@ -320,7 +320,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
 
     let wg_interface_mut = WG_INTERFACE
         .lock()
-        .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
     // wg syncconf WG_INTERFACE <(wg-quick strip WG_INTERFACE)
     match Command::new("sudo")
@@ -375,7 +375,8 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
             }
             *WG_INTERFACE
                 .lock()
-                .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))? = String::new();
+                .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
+                String::new();
             Ok(())
         }
         Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
@@ -402,7 +403,7 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
             if !output.stderr.is_empty() {
                 let mut wg_interface_mut = WG_INTERFACE
                     .lock()
-                    .map_err(|e| WireGuardCommandError::LockFailed(e.to_string()))?;
+                    .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
                 match String::from_utf8_lossy(&output.stderr)
                     .lines()
