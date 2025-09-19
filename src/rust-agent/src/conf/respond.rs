@@ -1,14 +1,14 @@
 use crate::conf::network;
 use crate::conf::timestamp;
-use crate::WG_QUICKRS_CONFIG_FILE;
+use crate::{WG_QUICKRS_CONFIG_FILE, conf};
 use rust_wasm::types::*;
 use rust_wasm::validation::*;
 use rust_wasm::*;
 
 pub(crate) use crate::conf::util::get_config;
-use crate::conf::util::get_summary;
+use crate::conf::util::{CONFIG_W_DIGEST, ConfUtilError, ConfigWDigest, get_summary};
 use crate::wireguard::cmd::sync_conf;
-use actix_web::{web, HttpResponse};
+use actix_web::{HttpResponse, web};
 use chrono::Duration;
 use serde_json::json;
 use std::fs::OpenOptions;
@@ -42,24 +42,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     };
 
     log::info!("update_config with the change_sum = \n{:?}", change_sum);
-    // Open the config file for reading and writing
-    let mut config_file_reader = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(
-            WG_QUICKRS_CONFIG_FILE
-                .get()
-                .expect("WG_QUICKRS_CONFIG_FILE not set"),
-        )
-        .expect("Failed to open config file");
-
-    // Read the existing contents
-    let mut config_str = String::new();
-    config_file_reader
-        .read_to_string(&mut config_str)
-        .expect("Failed to read config file");
-    let mut config: Config = serde_yml::from_str(&config_str).unwrap();
-    // TODO: process errors
 
     // process changed_fields
     macro_rules! update_bool {
@@ -74,9 +56,9 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         ($val_res:expr, $field_parent:expr, $field:ident) => {
             if !$val_res.status {
                 return HttpResponse::BadRequest().json(json!({
-                        "status": "bad_request",
-                        "message": format!("{}.{}: {}", $field_parent, stringify!($field), $val_res.msg)
-                    }));
+                    "status": "bad_request",
+                    "message": format!("{}.{}: {}", $field_parent, stringify!($field), $val_res.msg)
+                }));
             }
         }
     }
@@ -121,12 +103,31 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         };
     }
 
-    // TODO: updated_at not updating
+    let mut_opt = CONFIG_W_DIGEST.get();
+    if mut_opt.is_none() {
+        return HttpResponse::InternalServerError().json(json!({
+            "status": "internal_server_error",
+            "message": "can't handle request: internal config variables are not initialized"
+        }));
+    }
+
+    let mut_lock_opt = mut_opt.unwrap().lock();
+    if mut_lock_opt.is_err() {
+        return HttpResponse::InternalServerError().json(json!({
+            "status": "internal_server_error",
+            "message": "can't handle request: unable to acquire lock on config variables"
+        }));
+    }
+
+    let mut c = mut_lock_opt.unwrap();
+    let this_peer = c.config.network.this_peer.clone();
+
+    // TODO: process errors
     if let Some(changed_fields) = change_sum.changed_fields {
         if let Some(changed_fields_peers) = changed_fields.peers {
             for (peer_id, peer_details) in changed_fields_peers {
-                if let Some(peer_config) = config.network.peers.get_mut(&peer_id) {
-                    if peer_id == config.network.this_peer && peer_details.endpoint.is_some() {
+                if let Some(peer_config) = c.config.network.peers.get_mut(&peer_id) {
+                    if peer_id == this_peer && peer_details.endpoint.is_some() {
                         log::info!("A client tried to change the host's endpoint! (forbidden)");
                         return HttpResponse::Forbidden().json(json!({
                             "status": "forbidden",
@@ -201,7 +202,8 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         }
         if let Some(changed_fields_connections) = changed_fields.connections {
             for (connection_id, connection_details) in changed_fields_connections {
-                if let Some(connection_config) = config.network.connections.get_mut(&connection_id)
+                if let Some(connection_config) =
+                    c.config.network.connections.get_mut(&connection_id)
                 {
                     update_bool!(connection_config, connection_details, enabled);
                     validate_then_update_str!(
@@ -287,9 +289,9 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                 let mut added_peer = rust_wasm::types::Peer::from(&peer_details);
                 added_peer.created_at = timestamp::get_now_timestamp_formatted();
                 added_peer.updated_at = added_peer.created_at.clone();
-                config.network.peers.insert(peer_id.clone(), added_peer);
+                c.config.network.peers.insert(peer_id.clone(), added_peer);
                 // remove the new peer id/address from the lease
-                config
+                c.config
                     .network
                     .leases
                     .retain(|lease| lease.peer_id != peer_id);
@@ -301,7 +303,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(removed_peers) = change_sum.removed_peers {
         for peer_id in removed_peers {
             {
-                config.network.peers.remove(peer_id.as_str());
+                c.config.network.peers.remove(peer_id.as_str());
             }
         }
     }
@@ -330,7 +332,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     format!("added_connections.{}", connection_id),
                     persistent_keepalive
                 );
-                config
+                c.config
                     .network
                     .connections
                     .insert(connection_id.clone(), connection_details);
@@ -342,29 +344,42 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(removed_connections) = change_sum.removed_connections {
         for connection_id in removed_connections {
             {
-                config.network.connections.remove(connection_id.as_str());
+                c.config.network.connections.remove(connection_id.as_str());
             }
         }
     }
+    c.config.network.updated_at = timestamp::get_now_timestamp_formatted();
 
-    config.network.updated_at = timestamp::get_now_timestamp_formatted();
+    let config_str = match serde_yml::to_string(&c.config).map_err(ConfUtilError::Serialization) {
+        Ok(s) => s,
+        Err(_) => {
+            return HttpResponse::InternalServerError().json(json!({
+                "status": "internal_server_error",
+                "message": "can't handle request: unable to serialize config"
+            }));
+        }
+    };
+    c.digest = match ConfigWDigest::from_config_w_str(c.config.clone(), config_str.clone()) {
+        Ok(c_w_d) => c_w_d.digest,
+        Err(_) => {
+            return HttpResponse::InternalServerError().json(json!({
+                "status": "internal_server_error",
+                "message": "can't handle request: unable to compute config digest"
+            }));
+        }
+    };
+    match conf::util::write_config(config_str) {
+        Ok(_) => {}
+        Err(_) => {
+            return HttpResponse::InternalServerError().json(json!({
+                "status": "internal_server_error",
+                "message": "can't handle request: unable to write config"
+            }));
+        }
+    }
 
-    let config_str = serde_yml::to_string(&config).expect("Failed to serialize config");
-
-    // Move back to the beginning and truncate before writing
-    config_file_reader
-        .set_len(0)
-        .expect("Failed to truncate config file");
-    config_file_reader
-        .seek(SeekFrom::Start(0))
-        .expect("Failed to seek to start");
-    config_file_reader
-        .write_all(config_str.as_bytes())
-        .expect("Failed to write to config file");
-    log::info!("updated config file");
-
-    if config.agent.vpn.enabled {
-        match sync_conf(&config) {
+    if c.config.agent.vpn.enabled {
+        match sync_conf(&c.config) {
             Ok(_) => {}
             Err(e) => {
                 log::error!("{e}");
