@@ -139,33 +139,17 @@ export default defineComponent({
               }
             }
 
-            txs.push((tx / ts) * 8);
-            rxs.push((rx / ts) * 8);
+            txs.push((tx / ts));
+            rxs.push((rx / ts));
             timestamps.push(telem_data.timestamp);
             prev_telem_data = telem_data;
 
           }
-          // let tx_sum = 0;
-          // let rx_sum = 0;
-          // let ts_sum = 0;
-          // let counter = 0;
-          // const zipped = txs.map((val, i) => [val, rxs[i], timestamps[i]]);
-          // zipped.reverse()
-          // for (const [tx, rx, ts] of zipped) {
-          //   // get the average speed of the ~last two seconds
-          //   if (ts_sum > 2.5) continue;
-          //   ts_sum += ts;
-          //   tx_sum += tx;
-          //   rx_sum += rx;
-          //   counter += 1;
-          // }
 
-          tx_avg.value = formatThroughputBits(txs[txs.length - 1] / 8.);
-          rx_avg.value = formatThroughputBits(rxs[rxs.length - 1] / 8.);
-          // tx_avg.value = formatThroughputBits(tx_sum / counter / 8.);
-          // rx_avg.value = formatThroughputBits(rx_sum / counter / 8.);
+          tx_avg.value = formatThroughputBits(txs[txs.length - 1]);
+          rx_avg.value = formatThroughputBits(rxs[rxs.length - 1]);
 
-          // Update chart directly
+          // Update the chart directly
           const chart = lineChart.value.chart;
           chart.data.labels = timestamps;
           chart.data.datasets[0].data = rxs;
