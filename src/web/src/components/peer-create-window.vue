@@ -73,6 +73,12 @@
                              class="my-2 mr-2"
                              @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"></peer-summary-island>
 
+        <peer-kind-icon-island v-if="default_peer_conf.kind !== undefined
+                                   && default_peer_conf.icon !== undefined"
+                               :peer="default_peer_conf"
+                               class="my-2 mr-2"
+                               @updated-change-sum="onUpdatedPeerKindIconIslandChangeSum"></peer-kind-icon-island>
+
         <dnsmtu-island v-if="default_peer_conf.dns !== undefined
                              && default_peer_conf.mtu !== undefined"
                        :default-dnsmtu="{dns: network.defaults.peer.dns, mtu: network.defaults.peer.mtu}"
@@ -144,10 +150,12 @@ import PeerDetails from "./islands/peer-details.vue";
 import ConnectionIslands from "./islands/connections.vue";
 import ChangeSum from "./change-sum.vue";
 import WireGuardHelper from "../js/wg-helper";
+import PeerKindIconIsland from "@/components/islands/peer-kind-icon.vue";
 
 export default {
   name: "peer-config-window",
   components: {
+    PeerKindIconIsland,
     'custom-dialog': CustomDialog,
     'peer-summary-island': PeerSummaryIsland,
     'dnsmtu-island': DNSMTUIsland,
@@ -180,6 +188,7 @@ export default {
       peerConfigWindow: "",
 
       peerSummaryIslandChangeSum: null,
+      peerKindIconIslandChangeSum: null,
       dnsmtuIslandChangeSum: null,
       scriptsIslandChangeSum: null,
       peerDetailsIslandChangeSum: null,
@@ -215,6 +224,9 @@ export default {
   methods: {
     onUpdatedPeerSummaryIslandChangeSum(data) {
       this.peerSummaryIslandChangeSum = data;
+    },
+    onUpdatedPeerKindIconIslandChangeSum(data) {
+      this.peerKindIconIslandChangeSum = data;
     },
     onUpdatedDnsmtuIslandChangeSum(data) {
       this.dnsmtuIslandChangeSum = data;

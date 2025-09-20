@@ -76,6 +76,11 @@
                              @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"
                              class="my-2 mr-2"></peer-summary-island>
 
+        <peer-kind-icon-island :default-kind-icon="{kind: network.defaults.peer.kind, icon: network.defaults.peer.icon}"
+                               :peer="peer_conf"
+                               class="my-2 mr-2"
+                               @updated-change-sum="onUpdatedPeerKindIconIslandChangeSum"></peer-kind-icon-island>
+
         <dnsmtu-island :peer="peer_conf"
                        :default-dnsmtu="{dns: network.defaults.peer.dns, mtu: network.defaults.peer.mtu}"
                        @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"
@@ -163,6 +168,7 @@
 <script>
 import CustomDialog from "./custom-dialog.vue";
 import PeerSummaryIsland from "./islands/peer-summary.vue";
+import PeerKindIconIsland from "./islands/peer-kind-icon.vue";
 import DNSMTUIsland from "./islands/dnsmtu.vue";
 import ScriptsIsland from "./islands/scripts.vue";
 import PeerDetails from "./islands/peer-details.vue";
@@ -176,6 +182,7 @@ export default {
   components: {
     'custom-dialog': CustomDialog,
     'peer-summary-island': PeerSummaryIsland,
+    'peer-kind-icon-island': PeerKindIconIsland,
     'dnsmtu-island': DNSMTUIsland,
     'scripts-island': ScriptsIsland,
     'peer-details-island': PeerDetails,
@@ -210,6 +217,7 @@ export default {
       peerConfigWindow: "",
 
       peerSummaryIslandChangeSum: null,
+      peerKindIconIslandChangeSum: null,
       dnsmtuIslandChangeSum: null,
       scriptsIslandChangeSum: null,
       peerDetailsIslandChangeSum: null,
@@ -228,6 +236,9 @@ export default {
   methods: {
     onUpdatedPeerSummaryIslandChangeSum(data) {
       this.peerSummaryIslandChangeSum = data;
+    },
+    onUpdatedPeerKindIconIslandChangeSum(data) {
+      this.peerKindIconIslandChangeSum = data;
     },
     onUpdatedDnsmtuIslandChangeSum(data) {
       this.dnsmtuIslandChangeSum = data;
@@ -286,7 +297,7 @@ export default {
       // check for errors + changed fields for this peer
       data.errors.peers[this.peerId] = {};
       data.changed_fields.peers[this.peerId] = {};
-      for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum, this.peerDetailsIslandChangeSum]) {
+      for (const island_datum of [this.peerSummaryIslandChangeSum, this.peerKindIconIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum, this.peerDetailsIslandChangeSum]) {
         if (!island_datum) continue;
         for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
           if (island_field === "scripts" && island_value) {
