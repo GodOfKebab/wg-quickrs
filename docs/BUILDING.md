@@ -14,6 +14,7 @@ You can either build from scratch or use Docker.
 Clone the repository:
 
 ```sh
+sudo apt update
 sudo apt install -y git
 git clone https://github.com/GodOfKebab/wg-quickrs.git
 cd wg-quickrs/src
