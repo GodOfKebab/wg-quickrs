@@ -94,6 +94,16 @@ pub fn check_field(field_name: &str, field_variable: &FieldValue) -> CheckResult
             }
         }
 
+        // TODO: implement me
+        "kind" => {
+            ret.status = true;
+        }
+
+        // TODO: implement me
+        "icon" => {
+            ret.status = true;
+        }
+
         "dns" => {
             ret.status = true;
             if field_variable.enabled_value.enabled {

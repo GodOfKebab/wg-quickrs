@@ -113,13 +113,25 @@ pub struct InitOptions {
     )]
     pub agent_peer_name: Option<String>,
 
+    #[arg(long, default_value = None, long_help = "Set internal IPv4 address for agent in VPN network", value_name = "10.0.34.1"
+    )]
+    pub agent_peer_vpn_internal_address: Option<String>,
+
     #[arg(long, default_value = None, long_help = "Set publicly accessible endpoint(IP/FQDN:PORT) for VPN endpoint"
     )]
     pub agent_peer_vpn_endpoint: Option<String>,
 
-    #[arg(long, default_value = None, long_help = "Set internal IPv4 address for agent in VPN network", value_name = "10.0.34.1"
+    #[arg(long, default_value = None, long_help = "Set peer kind for agent"
     )]
-    pub agent_peer_vpn_internal_address: Option<String>,
+    pub agent_peer_kind: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable peer icon for agent"
+    )]
+    pub agent_peer_icon_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set peer icon for agent"
+    )]
+    pub agent_peer_icon_src: Option<String>,
 
     #[arg(long, default_value = None, long_help = "Enable DNS configuration for agent")]
     pub agent_peer_dns_enabled: Option<bool>,
@@ -165,6 +177,18 @@ pub struct InitOptions {
     pub agent_peer_script_post_down_line: Option<String>,
 
     // default settings for new peers/connections
+    #[arg(long, default_value = None, long_help = "Set peer kind for new peers by default"
+    )]
+    pub default_peer_kind: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable peer icon for new peers by default"
+    )]
+    pub default_peer_icon_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set peer icon for new peers by default"
+    )]
+    pub default_peer_icon_src: Option<String>,
+
     #[arg(long, default_value = None, long_help = "Enable DNS for new peers by default")]
     pub default_peer_dns_enabled: Option<bool>,
 
