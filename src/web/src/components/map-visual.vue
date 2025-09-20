@@ -7,7 +7,7 @@
 <script>
 import ForceGraph from "force-graph";
 import FastEqual from "fast-deep-equal";
-import WireGuardHelper from "../js/wg-helper.js";
+import WireGuardHelper from "@/js/wg-helper.js";
 
 import staticNodeIcon from "/icons/svgrepo/globe-05-svgrepo-com.svg";
 import roamingNodeIcon from "/icons/svgrepo/rss-02-svgrepo-com.svg";

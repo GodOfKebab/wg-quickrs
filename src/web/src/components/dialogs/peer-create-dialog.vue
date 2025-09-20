@@ -142,15 +142,15 @@
 </template>
 
 <script>
-import CustomDialog from "./custom-dialog.vue";
-import PeerSummaryIsland from "../islands/peer-summary.vue";
-import DNSMTUIsland from "../islands/dnsmtu.vue";
-import ScriptsIsland from "../islands/scripts.vue";
-import PeerDetails from "../islands/peer-details.vue";
-import ConnectionIslands from "../islands/connections.vue";
-import ChangeSum from "../change-sum.vue";
-import WireGuardHelper from "../../js/wg-helper.js";
+import CustomDialog from "@/components/dialogs/custom-dialog.vue";
+import PeerSummaryIsland from "@/components/islands/peer-summary.vue";
 import PeerKindIconIsland from "@/components/islands/peer-kind-icon.vue";
+import DNSMTUIsland from "@/components/islands/dnsmtu.vue";
+import ScriptsIsland from "@/components/islands/scripts.vue";
+import PeerDetails from "@/components/islands/peer-details.vue";
+import ConnectionIslands from "@/components/islands/connections.vue";
+import ChangeSum from "@/components/change-sum.vue";
+import WireGuardHelper from "@/js/wg-helper.js";
 
 export default {
   name: "peer-config-dialog",

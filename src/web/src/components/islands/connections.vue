@@ -247,7 +247,7 @@
 
 <script>
 import FastEqual from "fast-deep-equal";
-import WireGuardHelper from "../../js/wg-helper.js";
+import WireGuardHelper from "@/js/wg-helper.js";
 
 
 export default {
