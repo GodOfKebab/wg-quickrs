@@ -144,6 +144,14 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                         peer_id,
                         endpoint
                     );
+                    validate_then_update_str!(peer_config, peer_details, peer, peer_id, kind);
+                    validate_then_update_enabled_value!(
+                        peer_config,
+                        peer_details,
+                        peer,
+                        peer_id,
+                        icon
+                    );
                     validate_then_update_enabled_value!(
                         peer_config,
                         peer_details,
@@ -253,6 +261,12 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     peer_details.endpoint,
                     format!("added_peers.{}", peer_id),
                     endpoint
+                );
+                validate_str!(peer_details.kind, format!("added_peers.{}", peer_id), kind);
+                validate_enabled_value!(
+                    peer_details.icon,
+                    format!("added_peers.{}", peer_id),
+                    icon
                 );
                 validate_enabled_value!(peer_details.dns, format!("added_peers.{}", peer_id), dns);
                 validate_enabled_value!(peer_details.mtu, format!("added_peers.{}", peer_id), mtu);
