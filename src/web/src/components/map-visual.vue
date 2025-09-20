@@ -1,6 +1,6 @@
 <template>
 
-  <div id="graph"></div>
+  <div id="graph" class="shadow-md rounded-lg bg-white justify-center"></div>
 
 </template>
 
@@ -29,7 +29,17 @@ export default {
     return {
       initializedGraph: false,
       graph: null,
+      container: null,
     }
+  },
+  mounted() {
+    this.container = document.getElementById('graph-app');
+
+    // resize on window change
+    window.addEventListener('resize', () => {
+      if (this.graph === null) return;
+      this.graph.width(this.container.offsetWidth).height(this.container.offsetHeight);
+    });
   },
   watch: {
     network: function (newVal, oldVal) { // watch it
@@ -112,7 +122,9 @@ export default {
                 }
                 return particle_info.color;
               })
-              .cooldownTicks(10);
+              .cooldownTicks(10)
+              .width(this.container.offsetWidth)
+              .height(this.container.offsetHeight);
 
           this.graph.onEngineStop(() => this.graph.zoomToFit(400, 20));
           this.graph.onBackgroundClick(() => this.graph.zoomToFit(400, 20));
@@ -159,9 +171,6 @@ export default {
       },
       deep: true
     }
-  },
-  mounted: function () {
-
   },
   computed: {},
   methods: {

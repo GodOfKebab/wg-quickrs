@@ -1,9 +1,9 @@
 <template>
 
-  <div class="font-mono">
+  <div class="flex flex-col font-mono h-screen">
 
     <!-- Header -->
-    <div class="container mx-auto max-w-3xl relative">
+    <div class="container mx-auto shrink-0 max-w-3xl relative">
       <!--  Logo + Name  -->
       <div class="flex mt-5">
 
@@ -82,23 +82,21 @@
     </div>
 
     <!-- Traffic Graph -->
-    <div class="container mx-auto max-w-6xl px-3">
+    <div class="container mx-auto shrink-0 max-w-6xl px-3">
       <traffic-graph :network="network"
                      :telemetry="telemetry"
                      @peer-selected="onPeerSelected"></traffic-graph>
     </div>
 
     <!-- Map -->
-    <div class="container mx-auto mt-3 max-w-6xl">
+    <div id="graph-app" class="container mx-auto flex-1 max-w-6xl mt-1 px-3 overflow-hidden">
       <map-visual :network="network"
                   :telemetry="telemetry"
-                  class="shadow-md rounded-lg bg-white overflow-hidden mx-3 my-2 justify-center"
-                  style="max-height: 80vh"
                   @peer-selected="onPeerSelected"></map-visual>
     </div>
 
     <!-- Add a Peer Buttons -->
-    <div class="container mx-auto max-w-6xl">
+    <div class="container mx-auto shrink-0 max-w-6xl">
       <!-- Add a Peer -->
       <div class="items-center justify-center p-3 px-5 border-gray-100">
         <button :disabled="webServerStatus !== ServerStatusEnum.up"
@@ -110,7 +108,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-gray-500 my-5 mx-2">
+    <footer class="text-center text-gray-500 my-5 mx-2 shrink-0">
       <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
         backend: <strong>{{ version.backend }}</strong>
       </small>
