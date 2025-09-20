@@ -14,7 +14,7 @@
                   class="h-4 w-4"
                   type="checkbox">
               <span class="text-gray-800 cursor-pointer text-xs">
-                <strong class="text-sm"> {{ field.toLocaleUpperCase() }} </strong>
+                <strong class="text-sm"> {{ field.toLocaleUpperCase() }}: </strong>
               </span>
             </label>
             <input v-model="peer_local[field].value" :class="[FIELD_COLOR_LOOKUP[is_changed_field[field]]]"
