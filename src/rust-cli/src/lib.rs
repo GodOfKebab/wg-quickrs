@@ -17,10 +17,10 @@ pub struct Cli {
     pub wg_quickrs_config_folder: PathBuf,
     #[cfg(target_os = "linux")]
     #[arg(long, default_value = "/etc/wg-quickrs/")]
-    wg_quickrs_config_folder: PathBuf,
+    pub wg_quickrs_config_folder: PathBuf,
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     #[arg(long)]
-    wg_quickrs_config_folder: PathBuf,
+    pub wg_quickrs_config_folder: PathBuf,
     #[command(subcommand)]
     pub command: Commands,
 }
