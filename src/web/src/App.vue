@@ -175,10 +175,10 @@ import {initFlowbite} from 'flowbite'
 import API from "./js/api.js";
 import TrafficGraph from "./components/traffic-graph.vue";
 import MapVisual from "./components/map-visual.vue";
-import CustomDialog from "./components/custom-dialog.vue";
-import PasswordDialog from "./components/password-dialog.vue";
-import PeerConfigDialog from "./components/peer-config-dialog.vue";
-import PeerCreateDialog from "./components/peer-create-dialog.vue";
+import CustomDialog from "./components/dialogs/custom-dialog.vue";
+import PasswordDialog from "./components/dialogs/password-dialog.vue";
+import PeerConfigDialog from "./components/dialogs/peer-config-dialog.vue";
+import PeerCreateDialog from "./components/dialogs/peer-create-dialog.vue";
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';

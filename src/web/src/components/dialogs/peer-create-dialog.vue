@@ -143,13 +143,13 @@
 
 <script>
 import CustomDialog from "./custom-dialog.vue";
-import PeerSummaryIsland from "./islands/peer-summary.vue";
-import DNSMTUIsland from "./islands/dnsmtu.vue";
-import ScriptsIsland from "./islands/scripts.vue";
-import PeerDetails from "./islands/peer-details.vue";
-import ConnectionIslands from "./islands/connections.vue";
-import ChangeSum from "./change-sum.vue";
-import WireGuardHelper from "../js/wg-helper";
+import PeerSummaryIsland from "../islands/peer-summary.vue";
+import DNSMTUIsland from "../islands/dnsmtu.vue";
+import ScriptsIsland from "../islands/scripts.vue";
+import PeerDetails from "../islands/peer-details.vue";
+import ConnectionIslands from "../islands/connections.vue";
+import ChangeSum from "../change-sum.vue";
+import WireGuardHelper from "../../js/wg-helper.js";
 import PeerKindIconIsland from "@/components/islands/peer-kind-icon.vue";
 
 export default {
