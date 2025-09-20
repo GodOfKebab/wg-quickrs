@@ -1,6 +1,8 @@
 <template>
-  <div class="w-full h-16 relative">
-    <Line ref="lineChart" :data="chartData" :options="chartOptions"/>
+  <div class="w-full h-16 relative overflow-hidden">
+    <div ref="box" class="h-16">
+      <Line ref="lineChart" :data="chartData" :options="chartOptions"/>
+    </div>
 
     <!-- Tx/Rx labels on the right -->
     <div
@@ -70,8 +72,8 @@ export default defineComponent({
   },
   components: {Line},
   setup(props) {
-    const tx_avg = ref(formatThroughputBits(0));
-    const rx_avg = ref(formatThroughputBits(0));
+    const tx_avg = ref("? b/s");
+    const rx_avg = ref("? b/s");
     const lineChart = ref(null);
 
     const chartData = ref({
@@ -101,23 +103,52 @@ export default defineComponent({
     const chartOptions = {
       responsive: true,
       maintainAspectRatio: false,
-      animation: {
-        duration: 500, // smooth animation
-        easing: "linear",
-      },
+      animation: false,
       plugins: {},
       scales: {x: {display: false}, y: {display: false, beginAtZero: true}},
     };
 
-    watch(() => props.telemetry, (newTelemetry) => {
-          if (!newTelemetry || Object.keys(newTelemetry).length < 2) return;
+    const box = ref(null);
+    let intervalId = null;
+    let pos = 0;
 
+    // move function
+    function startMove(ratio, duration = 1000) {
+      if (intervalId) return; // prevent multiple timers
+      const refresh_interval = 20;
+      intervalId = setInterval(() => {
+        if (box.value) {
+          pos += 1;
+          const total_margin = ratio * box.value.getBoundingClientRect().width
+          box.value.style.marginLeft = `${Math.round(-2 * total_margin)}px`;
+          const total_transform = total_margin * (1 - pos / (duration / refresh_interval));
+          box.value.style.transform = `translateX(${Math.round(total_transform)}px)`;
+        }
+      }, refresh_interval); // every interval milliseconds
+    }
+
+// reset function
+    function resetMove(ratio) {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      pos = 0;
+      if (box.value) {
+        const total_margin = ratio * box.value.getBoundingClientRect().width
+        box.value.style.marginLeft = `${Math.round(-2 * total_margin)}px`;
+        box.value.style.transform = `translateX(${Math.round(total_margin)}px)`;
+      }
+    }
+
+    watch(() => props.telemetry, (newTelemetry) => {
+          if (Object.keys(newTelemetry.data).length < 2) return;
           const txs = [];
           const rxs = [];
           const timestamps = [];
           let prev_telem_data = {};
 
-          for (const telem_data of newTelemetry) {
+          for (const telem_data of newTelemetry.data) {
             if (Object.keys(prev_telem_data).length === 0) {
               prev_telem_data = telem_data;
               continue;
@@ -139,27 +170,37 @@ export default defineComponent({
               }
             }
 
-            txs.push((tx / ts));
-            rxs.push((rx / ts));
+            txs.push(tx / ts);
+            rxs.push(rx / ts);
             timestamps.push(telem_data.timestamp);
             prev_telem_data = telem_data;
 
           }
+          tx_avg.value = formatThroughputBits(txs.at(-1));
+          rx_avg.value = formatThroughputBits(rxs.at(-1));
 
-          tx_avg.value = formatThroughputBits(txs[txs.length - 1]);
-          rx_avg.value = formatThroughputBits(rxs[rxs.length - 1]);
+          if (Object.keys(newTelemetry.data).length < 2) return;
+          let latest_timestamp_dt = timestamps.at(-1) - timestamps.at(-2);
+          while (txs.length < newTelemetry.max_len - 1) {
+            txs.unshift(0);
+            rxs.unshift(0);
+            timestamps.unshift(timestamps[0] - latest_timestamp_dt);
+          }
 
           // Update the chart directly
           const chart = lineChart.value.chart;
           chart.data.labels = timestamps;
           chart.data.datasets[0].data = rxs;
           chart.data.datasets[1].data = txs;
+          let ratio_new_data = latest_timestamp_dt / (timestamps.at(-1) - timestamps[0]);
+          resetMove(ratio_new_data)
           chart.update();
+          startMove(ratio_new_data);
         },
         {deep: true}
     );
 
-    return {chartData, chartOptions, lineChart, tx_avg, rx_avg};
+    return {chartData, chartOptions, lineChart, tx_avg, rx_avg, box};
   }
 });
 </script>

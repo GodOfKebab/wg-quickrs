@@ -3,7 +3,7 @@ use crate::conf::util::get_config;
 use crate::macros::*;
 use once_cell::sync::Lazy;
 use rust_wasm::helpers::get_peer_wg_config;
-use rust_wasm::types::{Config, TelemetryData, TelemetryDatum, WireGuardStatus};
+use rust_wasm::types::{Config, Telemetry, TelemetryData, TelemetryDatum, WireGuardStatus};
 use serde_json::{Value, json};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
@@ -162,7 +162,7 @@ fn run_loop() {
     }
 }
 
-pub(crate) fn get_telemetry() -> Result<Vec<TelemetryData>, WireGuardCommandError> {
+pub(crate) fn get_telemetry() -> Result<Option<Telemetry>, WireGuardCommandError> {
     // if the last telem data is old, reset the buffer
     if get_since_timestamp(&LAST_TELEMETRY_QUERY_TS)
         > TELEMETRY_INTERVAL * TELEMETRY_CAPACITY as u64
@@ -173,7 +173,10 @@ pub(crate) fn get_telemetry() -> Result<Vec<TelemetryData>, WireGuardCommandErro
     update_timestamp(&LAST_TELEMETRY_QUERY_TS);
 
     match TELEMETRY.lock() {
-        Ok(buf) => Ok(buf.iter().cloned().collect()),
+        Ok(buf) => Ok(Some(Telemetry {
+            max_len: TELEMETRY_CAPACITY as u8,
+            data: buf.iter().cloned().collect(),
+        })),
         Err(e) => Err(WireGuardCommandError::MutexLockFailed(e.to_string())),
     }
 }

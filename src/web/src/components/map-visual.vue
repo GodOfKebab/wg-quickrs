@@ -76,7 +76,7 @@ export default {
               .linkTarget('target')
               .linkAutoColorBy('color')
               .linkWidth('strength')
-              .linkDirectionalParticleCanvasObject((x, y, link, ctx, globalScale) => {
+              .linkDirectionalParticleCanvasObject((x, y, link, ctx, _globalScale) => {
                 const target = link.target;
                 const dx = target.x - x;
                 const dy = target.y - y;
@@ -105,9 +105,9 @@ export default {
               })
               .linkDirectionalParticleSpeed(0.025)
               .linkDirectionalParticleColor((particle_info) => {
-                if (particle_info.source.id == this.network.this_peer) {
+                if (particle_info.source.id === this.network.this_peer) {
                   return 'rgba(59,130,246,0.5)';  // RX
-                } else if (particle_info.target.id == this.network.this_peer) {
+                } else if (particle_info.target.id === this.network.this_peer) {
                   return 'rgba(34,197,94,0.5)';  // TX
                 }
                 return particle_info.color;
@@ -134,9 +134,9 @@ export default {
     telemetry: {
       handler() {
         if (this.graph === null) return;
-        if (this.telemetry.length < 2) return;
-        let last_data = this.telemetry[this.telemetry.length - 1];
-        let previous_data = this.telemetry[this.telemetry.length - 2];
+        if (this.telemetry.data.length < 2) return;
+        let last_data = this.telemetry.data[this.telemetry.data.length - 1];
+        let previous_data = this.telemetry.data[this.telemetry.data.length - 2];
 
         for (const [connection_id, telemetry_details] of Object.entries(last_data.datum)) {
           for (const link of this.graph.graphData().links) {

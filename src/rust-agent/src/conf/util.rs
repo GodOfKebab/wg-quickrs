@@ -100,13 +100,15 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
         log::error!("{e}");
         WireGuardStatus::UNKNOWN
     });
-    let mut telemetry = Default::default();
-    if status.value() == WireGuardStatus::UP.value() {
-        telemetry = get_telemetry().unwrap_or_else(|e| {
+    // let telemetry = None;
+    let telemetry = if status.value() == WireGuardStatus::UP.value() {
+        get_telemetry().unwrap_or_else(|e| {
             log::error!("{e}");
-            Default::default()
-        });
-    }
+            None
+        })
+    } else {
+        None
+    };
     let timestamp = timestamp::get_now_timestamp_formatted();
 
     Ok(Summary {

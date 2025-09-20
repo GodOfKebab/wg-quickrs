@@ -36,13 +36,9 @@ pub struct Config {
 pub struct Summary {
     pub agent: Agent,
     pub network: Network,
-    #[serde(default)]
-    pub telemetry: Vec<TelemetryData>,
-    #[serde(default)]
+    pub telemetry: Option<Telemetry>,
     pub digest: String,
-    #[serde(default)]
     pub status: u8,
-    #[serde(default)]
     pub timestamp: String,
 }
 
@@ -57,7 +53,7 @@ impl From<&Summary> for Config {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct SummaryDigest {
-    pub telemetry: Vec<TelemetryData>,
+    pub telemetry: Option<Telemetry>,
     pub digest: String,
     pub status: u8,
     pub timestamp: String,
@@ -195,6 +191,12 @@ pub struct Lease {
     pub address: String,
     pub peer_id: String,
     pub valid_until: String,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct Telemetry {
+    pub max_len: u8,
+    pub data: Vec<TelemetryData>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
