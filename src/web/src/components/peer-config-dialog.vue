@@ -5,14 +5,14 @@
     <custom-dialog :left-button-click="() => { $emit('update:dialogId', ''); }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['enabled:bg-green-700', 'enabled:hover:bg-green-800', 'enabled:focus:outline-none', 'bg-gray-200', 'disabled:hover:bg-gray-200', 'disabled:cursor-not-allowed', 'text-white']"
-                   :rightButtonDisabled="peerConfigWindow !== 'file' && (!changeDetected || errorDetected)"
-                   :right-button-click="peerConfigWindow === 'file' ? () => { navigator.clipboard.writeText(peer_wg_conf_file).then(() => {
+                   :right-button-click="page === 'file' ? () => { navigator.clipboard.writeText(peer_wg_conf_file).then(() => {
                                           alert('successfully copied');
                                           })
                                           .catch(() => {
                                           alert('something went wrong');
                                           }); } : () => { overlayDialogId = 'confirm-changes' }"
-                   :right-button-text="peerConfigWindow === 'file' ? 'Copy To Clipboard' : 'Save Configuration'"
+                   :right-button-text="page === 'file' ? 'Copy To Clipboard' : 'Save Configuration'"
+                   :rightButtonDisabled="page !== 'file' && (!changeDetected || errorDetected)"
                    class="z-10">
 
       <!-- title and top bar -->
@@ -29,22 +29,22 @@
           </button>
           <button :disabled="!changeDetected"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-                  :class="peerConfigWindow === 'view-changes' ? 'bg-gray-600' : ''"
+                  :class="page === 'view-changes' ? 'bg-gray-600' : ''"
                   title="See the configuration differences for this peer"
-                  @click="peerConfigWindow = 'view-changes'">
+                  @click="page = 'view-changes'">
             <img alt="Compare Configuration" class="h-6" src="/icons/flowbite/merge-cells.svg"/>
           </button>
           <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
-                  :class="peerConfigWindow === 'edit' ? 'bg-gray-600' : ''"
+                  :class="page === 'edit' ? 'bg-gray-600' : ''"
                   title="Edit the configuration for this peer"
-                  @click="peerConfigWindow = 'edit'">
+                  @click="page = 'edit'">
             <img alt="Edit Configuration" class="h-6" src="/icons/flowbite/file-pen.svg"/>
           </button>
           <button :disabled="changeDetected"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-                  :class="peerConfigWindow === 'file' ? 'bg-gray-600' : ''"
+                  :class="page === 'file' ? 'bg-gray-600' : ''"
                   title="See the configuration file for this peer"
-                  @click="peerConfigWindow = 'file'">
+                  @click="page = 'file'">
             <img alt="WireGuard Configuration File" class="h-6" src="/icons/flowbite/file-code.svg"/>
           </button>
           <button :disabled="changeDetected"
@@ -64,12 +64,12 @@
       </div>
 
       <!-- show config -->
-      <div v-show="peerConfigWindow === 'file'" class="mt-2 w-full overflow-scroll h-96">
+      <div v-show="page === 'file'" class="mt-2 w-full overflow-scroll h-96">
         <span class="text-sm text-gray-500 whitespace-pre">{{ peer_wg_conf_file }}</span>
       </div>
 
       <!-- edit config -->
-      <div v-show="peerConfigWindow === 'edit'" class="mt-0 w-full overflow-scroll h-96">
+      <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll h-96">
 
         <peer-summary-island :peer="peer_conf"
                              :is-host="peerId === network.this_peer"
@@ -104,7 +104,7 @@
       </div>
 
       <!-- view changes -->
-      <div v-show="peerConfigWindow === 'view-changes'" class="mt-2 w-full overflow-scroll h-96">
+      <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll h-96">
         <change-sum :change-sum="changeSum"
                     :network="network"
                     :peer-id="peerId"></change-sum>
@@ -116,7 +116,7 @@
                    :left-button-click="() => { overlayDialogId = ''; }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['text-white', 'bg-green-600', 'hover:bg-green-700']"
-                   :right-button-click="() => { updateConfiguration(); overlayDialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', ''); }"
+                   :right-button-click="() => { updateConfiguration(); overlayDialogId = ''; page = 'edit'; $emit('update:dialogId', ''); }"
                    :right-button-text="'Do it!'"
                    class="z-20"
                    icon="danger">
@@ -137,7 +137,7 @@
                    :left-button-click="() => { overlayDialogId = '' }"
                    :left-button-text="'Cancel'"
                    :right-button-classes="['text-white', 'bg-red-600', 'hover:bg-red-700']"
-                   :right-button-click="() => { deletePeer(); overlayDialogId = ''; peerConfigWindow = 'edit'; $emit('update:dialogId', ''); }"
+                   :right-button-click="() => { deletePeer(); overlayDialogId = ''; page = 'edit'; $emit('update:dialogId', ''); }"
                    :right-button-text="'Delete!'"
                    class="z-20"
                    icon="danger">
@@ -178,7 +178,7 @@ import WireGuardHelper from "../js/wg-helper";
 import QRCode from "qrcode";
 
 export default {
-  name: "peer-config-window",
+  name: "peer-config-dialog",
   components: {
     'custom-dialog': CustomDialog,
     'peer-summary-island': PeerSummaryIsland,
@@ -214,7 +214,7 @@ export default {
   emits: ['update:dialogId'],
   data() {
     return {
-      peerConfigWindow: "",
+      page: "",
 
       peerSummaryIslandChangeSum: null,
       peerKindIconIslandChangeSum: null,
@@ -231,7 +231,7 @@ export default {
     }
   },
   mounted: function () {
-    this.peerConfigWindow = 'edit'
+    this.page = 'edit'
   },
   methods: {
     onUpdatedPeerSummaryIslandChangeSum(data) {

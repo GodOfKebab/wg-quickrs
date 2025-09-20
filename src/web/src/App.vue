@@ -152,19 +152,19 @@
     </custom-dialog>
 
     <!-- Dialog: Peer View/Edit -->
-    <peer-config-window v-if="dialogId.startsWith('selected-peer-id=')"
+    <peer-config-dialog v-if="dialogId.startsWith('selected-peer-id=')"
                         v-model:dialog-id="dialogId"
                         :api="api"
                         :network="network"
                         :peer-id="dialogId.slice(17, dialogId.length)"
-                        :version="version"></peer-config-window>
+                        :version="version"></peer-config-dialog>
 
     <!-- Dialog: Peer Create -->
-    <peer-create-window v-if="dialogId === 'create-peer'"
+    <peer-create-dialog v-if="dialogId === 'create-peer'"
                         v-model:dialog-id="dialogId"
                         :api="api"
                         :network="network"
-                        :version="version"></peer-create-window>
+                        :version="version"></peer-create-dialog>
 
   </div>
 </template>
@@ -177,8 +177,8 @@ import TrafficGraph from "./components/traffic-graph.vue";
 import MapVisual from "./components/map-visual.vue";
 import CustomDialog from "./components/custom-dialog.vue";
 import PasswordDialog from "./components/password-dialog.vue";
-import PeerConfigWindow from "./components/peer-config-window.vue";
-import PeerCreateWindow from "./components/peer-create-window.vue";
+import PeerConfigDialog from "./components/peer-config-dialog.vue";
+import PeerCreateDialog from "./components/peer-create-dialog.vue";
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -188,7 +188,14 @@ dayjs.extend(relativeTime);
 
 export default {
   name: "app",
-  components: {PasswordDialog, TrafficGraph, MapVisual, CustomDialog, PeerConfigWindow, PeerCreateWindow},
+  components: {
+    PasswordDialog,
+    TrafficGraph,
+    MapVisual,
+    CustomDialog,
+    PeerConfigDialog,
+    PeerCreateDialog
+  },
   data() {
     return {
       refreshRate: 1000,
