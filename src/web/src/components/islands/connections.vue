@@ -7,19 +7,20 @@
 
       <!-- static neighbors -->
       <div v-if="other_static_peer_ids.length > 0">
-        <div class="text-gray-800 ml-2">
-          Attached static peers:
-        </div>
+        <div class="flex mx-5">
+          <div class="text-gray-800 ml-2 text-lg">
+            <strong>Attached static peers</strong>:
+          </div>
 
-        <div class="form-check mt-1 flex">
-          <label class="form-check-label flex items-center text-gray-800 cursor-pointer text-sm">
-            <input
-                v-model="selectAllStaticPeers"
-                class="h-4 w-4"
-                type="checkbox"
-                @change="toggleConnection('all')">
-            <span class="align-middle">Select All</span>
-          </label>
+          <div class="form-check mt-1 flex ml-auto">
+            <label class="form-check-label flex items-center text-gray-800 cursor-pointer text-sm">
+              <input
+                  v-model="selectAllStaticPeers"
+                  class="h-4 w-4"
+                  type="checkbox">
+              <span class="align-middle">Select All</span>
+            </label>
+          </div>
         </div>
 
         <div class="grid grid-cols-2">
@@ -48,18 +49,23 @@
 
       <!-- roaming neighbors -->
       <div v-if=" other_roaming_peer_ids.length > 0">
-        <div class="text-gray-800 ml-2">
-          Attached roaming peers:
+
+        <div class="flex mx-5">
+          <div class="text-gray-800 ml-2 text-lg">
+            <strong>Attached roaming peers</strong>:
+          </div>
+
+          <div class="form-check mt-1 flex ml-auto">
+            <label class="form-check-label flex items-center text-gray-800 cursor-pointer text-sm">
+              <input
+                  v-model="selectAllRoamingPeers"
+                  class="h-4 w-4"
+                  type="checkbox">
+              <span class="align-middle">Select All</span>
+            </label>
+          </div>
         </div>
-        <div class="form-check mt-1 flex">
-          <label class="form-check-label flex items-center text-gray-800 cursor-pointer text-sm">
-            <input
-                v-model="selectAllRoamingPeers"
-                class="h-4 w-4"
-                type="checkbox">
-            <span class="align-middle">Select All</span>
-          </label>
-        </div>
+
         <div class="grid grid-cols-2">
           <div v-for="peerId in  other_roaming_peer_ids"
                class="relative overflow-hidden">

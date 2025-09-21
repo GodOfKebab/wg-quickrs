@@ -1,9 +1,6 @@
 <template>
 
   <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
-    <div class="text-gray-800 mb-1 ml-2">
-      Configure Script Snippets:
-    </div>
     <div v-for="field in ['pre_up', 'post_up', 'pre_down', 'post_down']">
       <div
           class="form-check truncate flex items-center relative mb-0.5">

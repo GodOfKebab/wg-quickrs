@@ -63,52 +63,56 @@
         </span>
       </div>
 
-      <!-- show config -->
-      <div v-show="page === 'file'" class="mt-2 w-full overflow-scroll h-96 text-start">
-        <span class="text-sm text-gray-500 whitespace-pre">{{ peer_wg_conf_file }}</span>
-      </div>
+      <div class="flex max-h-[calc(100vh-20rem)] flex-col overflow-y-auto">
+        <!-- show config -->
+        <div v-show="page === 'file'" class="mt-2 w-full overflow-scroll text-start">
+          <span class="text-sm text-gray-500 whitespace-pre">{{ peer_wg_conf_file }}</span>
+        </div>
 
-      <!-- edit config -->
-      <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll h-96 text-start">
+        <!-- edit config -->
+        <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll text-start">
 
-        <peer-summary-island :peer="peer_conf"
-                             :is-host="peerId === network.this_peer"
-                             @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"
-                             class="my-2 mr-2"></peer-summary-island>
-
-        <peer-kind-icon-island :default-kind-icon="{kind: network.defaults.peer.kind, icon: network.defaults.peer.icon}"
+          <peer-summary-island :is-host="peerId === network.this_peer"
                                :peer="peer_conf"
                                class="my-2 mr-2"
-                               @updated-change-sum="onUpdatedPeerKindIconIslandChangeSum"></peer-kind-icon-island>
+                               @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"></peer-summary-island>
 
-        <dnsmtu-island :peer="peer_conf"
-                       :default-dnsmtu="{dns: network.defaults.peer.dns, mtu: network.defaults.peer.mtu}"
-                       @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"
-                       class="my-2 mr-2"></dnsmtu-island>
+          <peer-kind-icon-island
+              :default-kind-icon="{kind: network.defaults.peer.kind, icon: network.defaults.peer.icon}"
+              :peer="peer_conf"
+              class="my-2 mr-2"
+              @updated-change-sum="onUpdatedPeerKindIconIslandChangeSum"></peer-kind-icon-island>
 
-        <scripts-island :peer="peer_conf"
-                        :default-scripts="network.defaults.peer.scripts"
-                        @updated-change-sum="onUpdatedScriptsIslandChangeSum"
-                        class="my-2 mr-2"></scripts-island>
+          <dnsmtu-island :default-dnsmtu="{dns: network.defaults.peer.dns, mtu: network.defaults.peer.mtu}"
+                         :peer="peer_conf"
+                         class="my-2 mr-2"
+                         @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"></dnsmtu-island>
 
-        <peer-details-island @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"
-                             :peer="peer_conf"
-                             :api="api"
-                             class="my-2 mr-2"></peer-details-island>
+          <scripts-island :default-scripts="network.defaults.peer.scripts"
+                          :peer="peer_conf"
+                          class="my-2 mr-2"
+                          @updated-change-sum="onUpdatedScriptsIslandChangeSum"></scripts-island>
 
-        <connection-islands @updated-change-sum="onUpdatedConnectionsIslandsChangeSum"
-                            :network="network"
-                            :peer-id="peerId"
-                            :api="api"
-                            class="my-2 mr-2"></connection-islands>
+          <peer-details-island :api="api"
+                               :peer="peer_conf"
+                               class="my-2 mr-2"
+                               @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"></peer-details-island>
+
+          <connection-islands :api="api"
+                              :network="network"
+                              :peer-id="peerId"
+                              class="my-2 mr-2"
+                              @updated-change-sum="onUpdatedConnectionsIslandsChangeSum"></connection-islands>
+        </div>
+
+        <!-- view changes -->
+        <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll text-start">
+          <change-sum :change-sum="changeSum"
+                      :network="network"
+                      :peer-id="peerId"></change-sum>
+        </div>
       </div>
 
-      <!-- view changes -->
-      <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll h-96 text-start">
-        <change-sum :change-sum="changeSum"
-                    :network="network"
-                    :peer-id="peerId"></change-sum>
-      </div>
     </custom-dialog>
 
     <!-- Dialog: Confirm Changes-->
@@ -127,9 +131,11 @@
         Are you sure you want to make these changes?
       </div>
 
-      <change-sum :change-sum="changeSum"
-                  :network="network"
-                  :peer-id="peerId"></change-sum>
+      <div class="flex max-h-[calc(100vh-20rem)] flex-col overflow-y-auto">
+        <change-sum :change-sum="changeSum"
+                    :network="network"
+                    :peer-id="peerId"></change-sum>
+      </div>
     </custom-dialog>
 
     <!-- Dialog: Confirm Delete -->

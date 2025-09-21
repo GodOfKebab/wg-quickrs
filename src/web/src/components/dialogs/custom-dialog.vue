@@ -1,14 +1,12 @@
 <template>
-  <div class="fixed inset-0 overflow-y-auto">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+  <div class="fixed inset-0 my-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 text-center">
       <div aria-hidden="true" class="fixed inset-0 transition-opacity">
         <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
       </div>
-
-      <span aria-hidden="true" class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
       <div
           aria-modal="true"
-          class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+          class="inline-block bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all align-middle max-w-3xl w-full"
           role="dialog">
         <div class="bg-white px-4 pt-4 sm:px-6 sm:pt-6">
           <div class="pr-4">

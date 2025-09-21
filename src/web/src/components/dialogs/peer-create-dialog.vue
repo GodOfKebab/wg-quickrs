@@ -16,99 +16,102 @@
           Create a new Peer:
         </h3>
         <span class="order-last w-full flex justify-between px-1 mb-1">
-          <button
-              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-              disabled
-              title="Delete this peer">
-            <img alt="Delete" class="h-6" src="/icons/flowbite/trash-bin.svg"/>
-          </button>
-          <button
-              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-              :class="page === 'view-changes' ? 'bg-gray-600' : ''"
-                  title="See the configuration differences for this peer"
-              @click="page = 'view-changes'">
-            <img alt="Compare Configuration" class="h-6" src="/icons/flowbite/merge-cells.svg"/>
-          </button>
-          <button
-              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
-              :class="page === 'edit' ? 'bg-gray-600' : ''"
-              title="Edit the configuration for this peer"
-              @click="page = 'edit'">
-            <img alt="Edit Configuration" class="h-6" src="/icons/flowbite/file-pen.svg"/>
-          </button>
-          <button
-              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-              title="See the configuration file for this peer"
-              disabled>
-            <img alt="WireGuard Configuration File" class="h-6" src="/icons/flowbite/file-code.svg"/>
-          </button>
-          <button
-              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-              disabled
-              title="Show QR Code">
-            <img alt="QR Code" class="h-6" src="/icons/flowbite/qr-code.svg"/>
-          </button>
-          <button
-              class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
-              disabled
-              title="Download Configuration">
-            <img alt="Download" class="h-6" src="/icons/flowbite/download.svg"/>
-          </button>
-        </span>
+            <button
+                class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                disabled
+                title="Delete this peer">
+              <img alt="Delete" class="h-6" src="/icons/flowbite/trash-bin.svg"/>
+            </button>
+            <button
+                :class="page === 'view-changes' ? 'bg-gray-600' : ''"
+                class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                title="See the configuration differences for this peer"
+                @click="page = 'view-changes'">
+              <img alt="Compare Configuration" class="h-6" src="/icons/flowbite/merge-cells.svg"/>
+            </button>
+            <button
+                :class="page === 'edit' ? 'bg-gray-600' : ''"
+                class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
+                title="Edit the configuration for this peer"
+                @click="page = 'edit'">
+              <img alt="Edit Configuration" class="h-6" src="/icons/flowbite/file-pen.svg"/>
+            </button>
+            <button
+                class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                disabled
+                title="See the configuration file for this peer">
+              <img alt="WireGuard Configuration File" class="h-6" src="/icons/flowbite/file-code.svg"/>
+            </button>
+            <button
+                class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                disabled
+                title="Show QR Code">
+              <img alt="QR Code" class="h-6" src="/icons/flowbite/qr-code.svg"/>
+            </button>
+            <button
+                class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                disabled
+                title="Download Configuration">
+              <img alt="Download" class="h-6" src="/icons/flowbite/download.svg"/>
+            </button>
+          </span>
       </div>
 
-      <!-- edit config -->
-      <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll h-96 text-start">
+      <div class="flex max-h-[calc(100vh-20rem)] flex-col overflow-y-auto">
+        <!-- edit config -->
+        <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll text-start">
 
-        <peer-summary-island v-if="default_peer_conf.name !== undefined
-                                   && default_peer_conf.address !== undefined
-                                   && default_peer_conf.endpoint !== undefined"
-                             :is-new-peer="true"
-                             :peer="default_peer_conf"
-                             class="my-2 mr-2"
-                             @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"></peer-summary-island>
-
-        <peer-kind-icon-island v-if="default_peer_conf.kind !== undefined
-                                   && default_peer_conf.icon !== undefined"
+          <peer-summary-island v-if="default_peer_conf.name !== undefined
+                                     && default_peer_conf.address !== undefined
+                                     && default_peer_conf.endpoint !== undefined"
+                               :is-new-peer="true"
                                :peer="default_peer_conf"
                                class="my-2 mr-2"
-                               @updated-change-sum="onUpdatedPeerKindIconIslandChangeSum"></peer-kind-icon-island>
+                               @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"></peer-summary-island>
 
-        <dnsmtu-island v-if="default_peer_conf.dns !== undefined
-                             && default_peer_conf.mtu !== undefined"
-                       :default-dnsmtu="{dns: network.defaults.peer.dns, mtu: network.defaults.peer.mtu}"
-                       :peer="default_peer_conf"
-                       class="my-2 mr-2"
-                       @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"></dnsmtu-island>
+          <peer-kind-icon-island v-if="default_peer_conf.kind !== undefined
+                                     && default_peer_conf.icon !== undefined"
+                                 :peer="default_peer_conf"
+                                 class="my-2 mr-2"
+                                 @updated-change-sum="onUpdatedPeerKindIconIslandChangeSum"></peer-kind-icon-island>
 
-        <scripts-island v-if="default_peer_conf.scripts !== undefined"
-                        :default-scripts="network.defaults.peer.scripts"
-                        :peer="default_peer_conf"
-                        class="my-2 mr-2"
-                        @updated-change-sum="onUpdatedScriptsIslandChangeSum"></scripts-island>
+          <dnsmtu-island v-if="default_peer_conf.dns !== undefined
+                               && default_peer_conf.mtu !== undefined"
+                         :default-dnsmtu="{dns: network.defaults.peer.dns, mtu: network.defaults.peer.mtu}"
+                         :peer="default_peer_conf"
+                         class="my-2 mr-2"
+                         @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"></dnsmtu-island>
 
-        <peer-details-island v-if="default_peer_conf.private_key !== undefined
-                                   && default_peer_conf.public_key !== undefined"
-                             :peer="default_peer_conf"
-                             :api="api"
-                             class="my-2 mr-2"
-                             @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"></peer-details-island>
+          <scripts-island v-if="default_peer_conf.scripts !== undefined"
+                          :default-scripts="network.defaults.peer.scripts"
+                          :peer="default_peer_conf"
+                          class="my-2 mr-2"
+                          @updated-change-sum="onUpdatedScriptsIslandChangeSum"></scripts-island>
 
-        <connection-islands v-if="network_w_new_peer"
-                            :is-new-peer="true"
-                            :network="network_w_new_peer"
-                            :peer-id="peerId"
-                            :api="api"
-                            class="my-2 mr-2"
-                            @updated-change-sum="onUpdatedConnectionsIslandsChangeSum"></connection-islands>
-      </div>
+          <peer-details-island v-if="default_peer_conf.private_key !== undefined
+                                     && default_peer_conf.public_key !== undefined"
+                               :api="api"
+                               :peer="default_peer_conf"
+                               class="my-2 mr-2"
+                               @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"></peer-details-island>
 
-      <!-- view changes -->
-      <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll h-96 text-start">
+          <connection-islands v-if="network_w_new_peer"
+                              :api="api"
+                              :is-new-peer="true"
+                              :network="network_w_new_peer"
+                              :peer-id="peerId"
+                              class="my-2 mr-2"
+                              @updated-change-sum="onUpdatedConnectionsIslandsChangeSum"></connection-islands>
+        </div>
+
+        <!-- view changes -->
+        <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll text-start">
         <change-sum :change-sum="change_sum"
                     :network="network"
                     :peer-id="peerId"></change-sum>
       </div>
+      </div>
+
     </custom-dialog>
 
     <!-- Dialog: Confirm -->
@@ -127,9 +130,11 @@
         Are you sure you want to add this new peer?
       </div>
 
-      <change-sum :change-sum="change_sum"
-                  :network="network"
-                  :peer-id="peerId"></change-sum>
+      <div class="flex max-h-[calc(100vh-20rem)] flex-col overflow-y-auto">
+        <change-sum :change-sum="change_sum"
+                    :network="network"
+                    :peer-id="peerId"></change-sum>
+      </div>
     </custom-dialog>
 
   </div>
