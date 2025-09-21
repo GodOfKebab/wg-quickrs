@@ -262,6 +262,7 @@ export default {
           this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
           this.last_fetch.since = 0;
         }).catch(err => {
+          this.telemetry = {data: []};
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
             this.webServerStatus = this.ServerStatusEnum.down;
@@ -298,6 +299,7 @@ export default {
           this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
           this.last_fetch.since = 0;
         }).catch(err => {
+          this.telemetry = {data: []};
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
             this.webServerStatus = this.ServerStatusEnum.down;

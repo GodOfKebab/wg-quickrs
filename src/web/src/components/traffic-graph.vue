@@ -142,7 +142,11 @@ export default defineComponent({
     }
 
     watch(() => props.telemetry, (newTelemetry) => {
-          if (Object.keys(newTelemetry.data).length < 2) return;
+          if (Object.keys(newTelemetry.data).length < 2) {
+            tx_avg.value = "? b/s";
+            rx_avg.value = "? b/s";
+            return;
+          }
           const txs = [];
           const rxs = [];
           const timestamps = [];
