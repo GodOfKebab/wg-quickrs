@@ -59,6 +59,7 @@
                  :disabled="!peer_local.icon.enabled"
                  class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none text-xs text-gray-500 disabled:bg-gray-100 inline-block ml-1 w-full"
                  list="icon-recs"
+                 placeholder="(e.g. data:image/png;base64,iVBOR...)"
                  type="text"/>
           <datalist id="icon-recs">
             <option :value="defaultKindIcon.icon.value">
