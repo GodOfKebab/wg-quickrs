@@ -57,13 +57,8 @@
         </span>
       </div>
 
-      <!-- show config -->
-      <div v-if="page === 'file' && network_w_new_peer" class="mt-2 w-full overflow-scroll h-96">
-        <span class="text-sm text-gray-500 whitespace-pre">{{ peer_wg_conf_file }}</span>
-      </div>
-
       <!-- edit config -->
-      <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll h-96">
+      <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll h-96 text-start">
 
         <peer-summary-island v-if="default_peer_conf.name !== undefined
                                    && default_peer_conf.address !== undefined
@@ -109,7 +104,7 @@
       </div>
 
       <!-- view changes -->
-      <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll h-96">
+      <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll h-96 text-start">
         <change-sum :change-sum="change_sum"
                     :network="network"
                     :peer-id="peerId"></change-sum>
