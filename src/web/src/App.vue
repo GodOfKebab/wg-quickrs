@@ -170,8 +170,6 @@
 </template>
 
 <script>
-import {initFlowbite} from 'flowbite'
-
 import API from "@/js/api.js";
 import TrafficGraph from "@/components/traffic-graph.vue";
 import MapVisual from "@/components/map-visual.vue";
@@ -235,8 +233,6 @@ export default {
     if (localStorage.getItem('remember') === 'true') {
       this.api.token = localStorage.getItem('token') || '';
     }
-
-    initFlowbite();
 
     setInterval(() => {
       this.refresh()
