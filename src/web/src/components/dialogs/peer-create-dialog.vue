@@ -256,7 +256,7 @@ export default {
       // check for errors + changed fields for this peer
       data.errors.peers[this.peerId] = {};
       data.added_peers[this.peerId] = JSON.parse(JSON.stringify(this.default_peer_conf));
-      for (const island_datum of [this.peerSummaryIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum, this.peerDetailsIslandChangeSum]) {
+      for (const island_datum of [this.peerSummaryIslandChangeSum, this.peerKindIconIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum, this.peerDetailsIslandChangeSum]) {
         if (!island_datum) continue;
         for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
           if (island_field === "scripts" && island_value) {
