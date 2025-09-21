@@ -17,48 +17,49 @@
 
       <!-- title and top bar -->
       <div class="flex flex-col items-center">
-        <h3 class="text-xl leading-6 font-medium text-gray-900 inline mb-2 text-start w-full">
+        <h3 class="text-3xl leading-tight font-medium text-gray-900 inline mb-5 text-start w-full">
           Configuration for <strong>{{ peer_conf.name }}</strong>:
         </h3>
         <span class="order-last w-full flex justify-between p-1 px-2 mb-1">
           <button :disabled="peerId === network.this_peer"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill enabled:cursor-pointer"
                   title="Delete this peer"
                   @click="overlayDialogId = 'confirm-delete'">
-            <img alt="Delete" class="h-6" src="/icons/flowbite/trash-bin.svg"/>
+            <img alt="Delete" class="h-10" src="/icons/flowbite/trash-bin.svg"/>
           </button>
           <button :disabled="!changeDetected"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill enabled:cursor-pointer"
                   :class="page === 'view-changes' ? 'bg-gray-600' : ''"
                   title="See the configuration differences for this peer"
                   @click="page = 'view-changes'">
-            <img alt="Compare Configuration" class="h-6" src="/icons/flowbite/merge-cells.svg"/>
+            <img alt="Compare Configuration" class="h-10" src="/icons/flowbite/merge-cells.svg"/>
           </button>
-          <button class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill-edit"
+          <button
+              class="align-middle bg-gray-100 hover:bg-gray-600 p-1 px-2 rounded transition special-fill-edit enabled:cursor-pointer"
                   :class="page === 'edit' ? 'bg-gray-600' : ''"
                   title="Edit the configuration for this peer"
                   @click="page = 'edit'">
-            <img alt="Edit Configuration" class="h-6" src="/icons/flowbite/file-pen.svg"/>
+            <img alt="Edit Configuration" class="h-10" src="/icons/flowbite/file-pen.svg"/>
           </button>
           <button :disabled="changeDetected"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill enabled:cursor-pointer"
                   :class="page === 'file' ? 'bg-gray-600' : ''"
                   title="See the configuration file for this peer"
                   @click="page = 'file'">
-            <img alt="WireGuard Configuration File" class="h-6" src="/icons/flowbite/file-code.svg"/>
+            <img alt="WireGuard Configuration File" class="h-10" src="/icons/flowbite/file-code.svg"/>
           </button>
           <button :disabled="changeDetected"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill enabled:cursor-pointer"
                   :class="overlayDialogId === 'qr' ? 'bg-gray-600' : ''"
                   title="Show QR Code"
                   @click="drawQRCode(); overlayDialogId = 'qr'">
-            <img alt="QR Code" class="h-6" src="/icons/flowbite/qr-code.svg"/>
+            <img alt="QR Code" class="h-10" src="/icons/flowbite/qr-code.svg"/>
           </button>
           <button :disabled="changeDetected"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill enabled:cursor-pointer"
                   title="Download Configuration"
                   @click="downloadPeerConfig()">
-            <img alt="Download" class="h-6" src="/icons/flowbite/download.svg"/>
+            <img alt="Download" class="h-10" src="/icons/flowbite/download.svg"/>
           </button>
         </span>
       </div>
