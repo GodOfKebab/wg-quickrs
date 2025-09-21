@@ -40,12 +40,12 @@
 
       <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
         <button v-if="rightButtonText" :class="rightButtonClasses" :disabled="rightButtonDisabled"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium sm:ml-3 sm:w-auto sm:text-sm"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium sm:ml-3 sm:w-auto sm:text-sm enabled:cursor-pointer"
                 type="button" @click="rightButtonClick">
           {{ rightButtonText }}
         </button>
         <button v-if="leftButtonText" :class="leftButtonClasses" :disabled="leftButtonDisabled"
-                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm enabled:cursor-pointer"
                 type="button" @click="leftButtonClick">
           {{ leftButtonText }}
         </button>
