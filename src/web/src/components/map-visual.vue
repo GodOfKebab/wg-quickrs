@@ -46,7 +46,8 @@ export default {
     // resize on window change
     window.addEventListener('resize', () => {
       if (this.graph === null) return;
-      this.graph.width(this.container.offsetWidth).height(this.container.offsetHeight);
+      // 24px = px-3 padding
+      this.graph.width(this.container.offsetWidth - 24).height(this.container.offsetHeight);
     });
   },
   watch: {
@@ -85,8 +86,8 @@ export default {
                 ctx.fillStyle = color;
                 ctx.fill();
               })
-              .height(document.getElementById('graph').clientHeight)
-              .width(document.getElementById('graph').clientWidth)
+              .width(this.container.offsetWidth - 24)
+              .height(this.container.offsetHeight)
               .d3Force('center', null)
               .zoomToFit(100, 20)
               .nodeId('id')
@@ -131,9 +132,7 @@ export default {
                 }
                 return particle_info.color;
               })
-              .cooldownTicks(10)
-              .width(this.container.offsetWidth)
-              .height(this.container.offsetHeight);
+              .cooldownTicks(10);
 
           this.graph.onEngineStop(() => this.graph.zoomToFit(400, 20));
           this.graph.onBackgroundClick(() => this.graph.zoomToFit(400, 20));
