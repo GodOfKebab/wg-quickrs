@@ -9,9 +9,17 @@ import ForceGraph from "force-graph";
 import FastEqual from "fast-deep-equal";
 import WireGuardHelper from "@/js/wg-helper.js";
 
-import staticNodeIcon from "/icons/svgrepo/globe-05-svgrepo-com.svg";
-import roamingNodeIcon from "/icons/svgrepo/rss-02-svgrepo-com.svg";
-import thisNodeMarker from "/icons/flowbite/home.svg";
+
+const nodeKindIconMap = {
+  "server": "/icons/flowbite/server.svg",
+  "desktop": "/icons/flowbite/desktop-pc.svg",
+  "laptop": "/icons/flowbite/laptop-code.svg",
+  "tablet": "/icons/flowbite/tablet.svg",
+  "phone": "/icons/flowbite/mobile-phone.svg",
+  "IoT": "/icons/flowbite/cloud-arrow-up.svg",
+  "other": "/icons/flowbite/question-circle.svg",
+}
+const thisNodeMarker = "/icons/flowbite/landmark.svg";
 
 export default {
   name: "map-visual",
@@ -60,14 +68,15 @@ export default {
           this.graph = ForceGraph()(document.getElementById('graph'))
               .nodeCanvasObject((node, ctx) => {
                 const img = new Image();
-                img.src = node.endpoint.enabled ? staticNodeIcon : roamingNodeIcon;
+                if (node.icon.enabled) img.src = node.icon.value;
+                img.src = img.src || nodeKindIconMap[node.kind] || nodeKindIconMap['other'];
                 const cis = this.getGraphNodeIcon(img, 500);
                 ctx.drawImage(cis, node.x - node.size / 2, node.y - node.size / 2, node.size, node.size);
                 if (node.id === this.network.this_peer) {
                   const marker_img = new Image();
                   marker_img.src = thisNodeMarker;
                   const marker = this.getGraphNodeIcon(marker_img, 500);
-                  ctx.drawImage(marker, node.x, node.y, node.size / 2, node.size / 2);
+                  ctx.drawImage(marker, node.x - node.size / 4, node.y - 3 * node.size / 4, node.size / 2, node.size / 2);
                 }
               })
               .nodePointerAreaPaint((node, color, ctx) => {
@@ -131,7 +140,7 @@ export default {
           this.graph.onNodeClick(node => {
             // Center/zoom on node
             this.graph.centerAt(node.x, node.y, 400);
-            this.graph.zoom(8, 400);
+            this.graph.zoom(20, 400);
 
             this.$emit('peer-selected', node.id);
           });
@@ -219,7 +228,8 @@ export default {
           endpoint: peerDetails.endpoint,
           size: Math.sqrt(peerSize[peerId]) * 7,
           color: network.static_peer_ids.includes(peerId) ? 'rgb(21 128 61)' : 'rgb(7 89 133)',
-          // icon: this.peerAvatarCanvases[peerId],
+          kind: peerDetails.kind,
+          icon: peerDetails.icon,
         });
       }
       return forceG;
