@@ -1,83 +1,22 @@
 <template>
 
   <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
-    <div class="grid grid-cols-3 gap-2 mb-0.5">
+    <div class="grid grid-cols-3 gap-2">
 
-
-      <!-- Kind -->
-      <div class="truncate col-span-1">
-        <div class="flex relative">
-          <div class="flex items-center ml-2">
-            <span class="text-gray-800 cursor-pointer text-xs">
-              <strong class="text-sm"> Kind: </strong>
-            </span>
-          </div>
-
-          <input v-model="peer_local.kind" :class="[FIELD_COLOR_LOOKUP[is_changed_field.kind]]"
-                 class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none text-xs text-gray-500 disabled:bg-gray-100 inline-block ml-1 w-full"
-                 list="kind-recs"
-                 type="text"/>
-          <datalist id="kind-recs">
-            <!--            <option :value="defaultKindIcon.kind">-->
-            <!--              {{ defaultKindIcon.kind }}-->
-            <!--            </option>-->
-            <option value="server">Server</option>
-            <option value="desktop">Desktop</option>
-            <option value="laptop">Laptop</option>
-            <option value="tablet">Tablet</option>
-            <option value="phone">Phone</option>
-            <option value="IoT">IoT</option>
-            <option value="other">Other</option>
-          </datalist>
-          <div v-if="is_changed_field.kind"
-               class="inline-block float-right absolute z-20 right-[5px] top-[0px]">
-            <button
-                :disabled="!is_changed_field.kind"
-                class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
-                title="Undo Changes"
-                @click="peer_local.kind = JSON.parse(JSON.stringify(peer.kind))">
-              <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
-            </button>
-          </div>
-        </div>
-      </div>
+      <!--  Kind  -->
+      <input-field v-model="peer_local.kind" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.kind]"
+                   :value-prev="peer.kind"
+                   field-label="Kind"
+                   field-placeholder="Kind"></input-field>
 
 
       <!-- Icon -->
-      <div class="truncate col-span-2">
-        <div class="flex relative">
-          <label class="form-check-label flex items-center">
-            <input
-                v-model="peer_local.icon.enabled"
-                class="h-4 w-4"
-                type="checkbox">
-            <span class="text-gray-800 cursor-pointer text-xs">
-                <strong class="text-sm"> Icon: </strong>
-              </span>
-          </label>
-          <input v-model="peer_local.icon.value" :class="[FIELD_COLOR_LOOKUP[is_changed_field.icon]]"
-                 :disabled="!peer_local.icon.enabled"
-                 class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none text-xs text-gray-500 disabled:bg-gray-100 inline-block ml-1 w-full"
-                 list="icon-recs"
-                 placeholder="(e.g. data:image/png;base64,iVBOR...)"
-                 type="text"/>
-          <datalist id="icon-recs">
-            <option :value="defaultKindIcon.icon.value">
-              {{ defaultKindIcon.icon.value }}
-            </option>
-          </datalist>
-          <div v-if="is_changed_field.icon"
-               class="inline-block float-right absolute z-20 right-[5px] top-[0px]">
-            <button
-                :disabled="!is_changed_field.icon"
-                class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
-                title="Undo Changes"
-                @click="peer_local.icon = JSON.parse(JSON.stringify(peer.icon))">
-              <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
-            </button>
-          </div>
-        </div>
-      </div>
+      <input-field v-model="peer_local.icon" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.icon]"
+                   :is-enabled-value="true"
+                   :value-prev="peer.icon"
+                   class="col-span-2"
+                   field-label="Icon"
+                   field-placeholder="(e.g. data:image/png;base64,iVBOR...)"></input-field>
     </div>
   </div>
 </template>
@@ -85,10 +24,12 @@
 <script>
 import WireGuardHelper from "@/js/wg-helper.js";
 import FastEqual from "fast-deep-equal";
+import InputField from "@/components/ui/input-field.vue";
 
 
 export default {
   name: "peer-kind-icon-island",
+  components: {InputField},
   props: {
     peer: {
       type: Object,

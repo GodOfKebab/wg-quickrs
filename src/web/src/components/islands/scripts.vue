@@ -1,39 +1,37 @@
 <template>
 
   <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
-    <div v-for="field in ['pre_up', 'post_up', 'pre_down', 'post_down']">
-      <div
-          class="form-check truncate flex items-center relative mb-0.5">
-        <label class="form-check-label flex items-center">
-          <input
-              :checked="peer_local.scripts[field].enabled"
-              class="h-4 w-4"
-              type="checkbox"
-              @change="peer_local.scripts[field].enabled = !peer_local.scripts[field].enabled;">
-          <span class="text-gray-800 cursor-pointer text-xs mr-1">
-            <strong class="text-sm">{{ SCRIPTS_KEY_LOOKUP[field] }}:</strong>
-          </span>
-        </label>
-        <input
-            v-model="peer_local.scripts[field].value"
-            :class="[`enabled:${FIELD_COLOR_LOOKUP[is_changed_script_field[field]]}`]"
-            :disabled="!peer_local.scripts[field].enabled"
-            :placeholder="`${SCRIPTS_KEY_LOOKUP[field]} Script (e.g. echo 'Hey, this is ${SCRIPTS_KEY_LOOKUP[field]} Script';)`"
-            class="rounded p-1 border-1 border-gray-100 focus:border-gray-200 outline-none w-full text-xs text-gray-500 grow disabled:bg-gray-100"
-            type="text"/>
-        <div
-            v-if="is_changed_script_field[field]"
-            class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
-          <button
-              :disabled="!is_changed_script_field[field]"
-              class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
-              title="Undo Changes"
-              @click="peer_local.scripts[field] = JSON.parse(JSON.stringify(peer.scripts[field]))">
-            <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- PreUp -->
+    <input-field v-model="peer_local_scripts.pre_up"
+                 :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.pre_up]"
+                 :is-enabled-value="true"
+                 :value-prev="peer.scripts.pre_up"
+                 field-label="PreUp"
+                 field-placeholder="PreUp Script (e.g. echo 'Hey, this is PreUp Script';)"></input-field>
+
+    <!-- PostUp -->
+    <input-field v-model="peer_local_scripts.post_up"
+                 :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.post_up]"
+                 :is-enabled-value="true"
+                 :value-prev="peer.scripts.post_up"
+                 field-label="PostUp"
+                 field-placeholder="PostUp Script (e.g. echo 'Hey, this is PostUp Script';)"></input-field>
+
+    <!-- PreDown -->
+    <input-field v-model="peer_local_scripts.pre_down"
+                 :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.pre_down]"
+                 :is-enabled-value="true"
+                 :value-prev="peer.scripts.pre_down"
+                 field-label="PreDown"
+                 field-placeholder="PreDown Script (e.g. echo 'Hey, this is PreDown Script';)"></input-field>
+
+    <!-- PostDown -->
+    <input-field v-model="peer_local_scripts.post_down"
+                 :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.post_down]"
+                 :is-enabled-value="true"
+                 :value-prev="peer.scripts.post_down"
+                 field-label="PostDown"
+                 field-placeholder="PostDown Script (e.g. echo 'Hey, this is PostDown Script';)"></input-field>
   </div>
 
 </template>
@@ -41,10 +39,12 @@
 <script>
 import WireGuardHelper from "@/js/wg-helper.js";
 import FastEqual from "fast-deep-equal";
+import InputField from "@/components/ui/input-field.vue";
 
 
 export default {
   name: "scripts-island",
+  components: {InputField},
   props: {
     peer: {
       type: Object,
@@ -62,13 +62,11 @@ export default {
   },
   data() {
     return {
-      peer_local: {
-        scripts: {
-          pre_up: {enabled: false, value: ""},
-          post_up: {enabled: false, value: ""},
-          pre_down: {enabled: false, value: ""},
-          post_down: {enabled: false, value: ""}
-        }
+      peer_local_scripts: {
+        pre_up: {enabled: false, value: ""},
+        post_up: {enabled: false, value: ""},
+        pre_down: {enabled: false, value: ""},
+        post_down: {enabled: false, value: ""}
       },
       island_change_sum: {
         changed_fields: {scripts: {}},
@@ -90,13 +88,13 @@ export default {
     };
   },
   created() {
-    this.peer_local.scripts = JSON.parse(JSON.stringify(this.peer.scripts));
+    this.peer_local_scripts = JSON.parse(JSON.stringify(this.peer.scripts));
   },
   emits: ['updated-change-sum'],
   methods: {
     check_scripts_field_status(field_name) {
-      if (FastEqual(this.peer_local.scripts[field_name], this.peer.scripts[field_name])) return [0, ''];
-      const ret = WireGuardHelper.checkField('script', this.peer_local.scripts[field_name]);
+      if (FastEqual(this.peer_local_scripts[field_name], this.peer.scripts[field_name])) return [0, ''];
+      const ret = WireGuardHelper.checkField('script', this.peer_local_scripts[field_name]);
       if (!ret.status) return [-1, ret.msg];
       return [1, ''];
     },
@@ -112,15 +110,15 @@ export default {
     }
   },
   watch: {
-    peer_local: {
+    peer_local_scripts: {
       handler() {
         let errorDetected = false;
         let changeDetected = false;
-        for (let field in this.peer_local.scripts) {
+        for (let field in this.peer_local_scripts) {
           let msg = "";
           [this.is_changed_script_field[field], msg] = this.check_scripts_field_status(field);
           this.island_change_sum.errors.scripts[field] = this.is_changed_script_field[field] === -1 ? msg : null;
-          this.island_change_sum.changed_fields.scripts[field] = this.is_changed_script_field[field] === 1 ? this.peer_local.scripts[field] : null;
+          this.island_change_sum.changed_fields.scripts[field] = this.is_changed_script_field[field] === 1 ? this.peer_local_scripts[field] : null;
 
           errorDetected ||= this.is_changed_script_field[field] === -1;
           changeDetected ||= this.is_changed_script_field[field] !== 0;
