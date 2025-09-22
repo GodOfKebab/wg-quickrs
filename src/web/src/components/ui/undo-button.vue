@@ -15,7 +15,7 @@ export default {
   name: "undo-button",
   props: {
     disabled: false,
-    alignmentClasses: [],
+    alignmentClasses: "",
   },
   emits: ['click'],
 }
