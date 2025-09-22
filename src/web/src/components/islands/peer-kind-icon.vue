@@ -1,22 +1,28 @@
 <template>
-
   <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
     <div class="grid grid-cols-3 gap-2">
-
       <!--  Kind  -->
       <input-field v-model="peer_local.kind" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.kind]"
                    :value-prev="peer.kind"
-                   field-label="Kind"
-                   field-placeholder="Kind"></input-field>
-
+                   label="Kind"
+                   placeholder="Kind"></input-field>
+      <datalist id="Kind-list">
+        <option value="server"></option>
+        <option value="desktop"></option>
+        <option value="laptop"></option>
+        <option value="tablet"></option>
+        <option value="phone"></option>
+        <option value="IoT"></option>
+        <option value="other"></option>
+      </datalist>
 
       <!-- Icon -->
       <input-field v-model="peer_local.icon" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.icon]"
                    :is-enabled-value="true"
                    :value-prev="peer.icon"
                    class="col-span-2"
-                   field-label="Icon"
-                   field-placeholder="(e.g. data:image/png;base64,iVBOR...)"></input-field>
+                   label="Icon"
+                   placeholder="(e.g. data:image/png;base64,iVBOR...)"></input-field>
     </div>
   </div>
 </template>

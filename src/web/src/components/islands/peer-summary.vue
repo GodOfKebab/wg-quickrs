@@ -3,23 +3,23 @@
     <!--  Name  -->
     <input-field v-model="peer_local.name" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.name]"
                  :value-prev="peer.name"
-                 field-label="Name"
-                 field-placeholder="Name"></input-field>
+                 label="Name"
+                 placeholder="Name"></input-field>
 
     <!--  Address  -->
     <!-- TODO: update connection address on change -->
     <input-field v-model="peer_local.address" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.address]"
-                 :is-new-peer="isNewPeer"
+                 :disabled="isNewPeer"
                  :value-prev="peer.address"
-                 field-label="Address"
-                 field-placeholder="Address (e.g. 10.8.0.1)"></input-field>
+                 label="Address"
+                 placeholder="Address (e.g. 10.8.0.1)"></input-field>
 
     <!--  Endpoint  -->
     <input-field v-model="peer_local.endpoint" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.endpoint]"
                  :is-enabled-value="true"
                  :value-prev="peer.endpoint"
-                 field-label="Static Endpoint"
-                 field-placeholder="Endpoint (e.g. 1.2.3.4:51820 or example.com:51820)"></input-field>
+                 label="Static Endpoint"
+                 placeholder="Endpoint (e.g. 1.2.3.4:51820 or example.com:51820)"></input-field>
   </div>
 </template>
 

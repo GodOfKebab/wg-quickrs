@@ -1,37 +1,36 @@
 <template>
-
   <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
     <!-- PreUp -->
     <input-field v-model="peer_local_scripts.pre_up"
                  :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.pre_up]"
                  :is-enabled-value="true"
                  :value-prev="peer.scripts.pre_up"
-                 field-label="PreUp"
-                 field-placeholder="PreUp Script (e.g. echo 'Hey, this is PreUp Script';)"></input-field>
+                 label="PreUp"
+                 placeholder="PreUp Script (e.g. echo 'Hey, this is PreUp Script';)"></input-field>
 
     <!-- PostUp -->
     <input-field v-model="peer_local_scripts.post_up"
                  :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.post_up]"
                  :is-enabled-value="true"
                  :value-prev="peer.scripts.post_up"
-                 field-label="PostUp"
-                 field-placeholder="PostUp Script (e.g. echo 'Hey, this is PostUp Script';)"></input-field>
+                 label="PostUp"
+                 placeholder="PostUp Script (e.g. echo 'Hey, this is PostUp Script';)"></input-field>
 
     <!-- PreDown -->
     <input-field v-model="peer_local_scripts.pre_down"
                  :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.pre_down]"
                  :is-enabled-value="true"
                  :value-prev="peer.scripts.pre_down"
-                 field-label="PreDown"
-                 field-placeholder="PreDown Script (e.g. echo 'Hey, this is PreDown Script';)"></input-field>
+                 label="PreDown"
+                 placeholder="PreDown Script (e.g. echo 'Hey, this is PreDown Script';)"></input-field>
 
     <!-- PostDown -->
     <input-field v-model="peer_local_scripts.post_down"
                  :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.post_down]"
                  :is-enabled-value="true"
                  :value-prev="peer.scripts.post_down"
-                 field-label="PostDown"
-                 field-placeholder="PostDown Script (e.g. echo 'Hey, this is PostDown Script';)"></input-field>
+                 label="PostDown"
+                 placeholder="PostDown Script (e.g. echo 'Hey, this is PostDown Script';)"></input-field>
   </div>
 
 </template>

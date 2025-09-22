@@ -1,23 +1,32 @@
 <template>
-
   <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
     <div class="grid grid-cols-2 gap-2 mb-0.5">
-
       <!-- DNS -->
       <input-field v-model="peer_local.dns"
-                   :field-placeholder="defaultDnsmtu.dns.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
+                   :placeholder="defaultDnsmtu.dns.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
                    :input-color="FIELD_COLOR_LOOKUP[is_changed_field.dns]"
                    :is-enabled-value="true"
                    :value-prev="peer.dns"
-                   field-label="DNS"></input-field>
+                   label="DNS"></input-field>
+      <datalist id="DNS-list">
+        <option :value="defaultDnsmtu.dns.value">
+          Forward all DNS related traffic to {{ defaultDnsmtu.dns.value }}
+        </option>
+      </datalist>
 
       <!-- MTU -->
+      <!-- TODO: fix the undo button shadow -->
       <input-field v-model="peer_local.mtu"
-                   :field-placeholder="defaultDnsmtu.mtu.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
+                   :placeholder="defaultDnsmtu.mtu.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
                    :input-color="FIELD_COLOR_LOOKUP[is_changed_field.mtu]"
                    :is-enabled-value="true"
                    :value-prev="peer.mtu"
-                   field-label="MTU"></input-field>
+                   label="MTU"></input-field>
+      <datalist id="MTU-list">
+        <option :value="`${defaultDnsmtu.mtu.value}`">
+          Set MTU to {{ defaultDnsmtu.mtu.value }}
+        </option>
+      </datalist>
     </div>
   </div>
 </template>
