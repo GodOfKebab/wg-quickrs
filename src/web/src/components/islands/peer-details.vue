@@ -35,18 +35,6 @@
       </div>
     </div>
 
-    <!--    <div-->
-    <!--        v-if="are_keys_updated"-->
-    <!--        class="inline-block float-right absolute z-20 right-[5px] top-[3px]">-->
-    <!--      <button-->
-    <!--          :disabled="!are_keys_updated"-->
-    <!--          class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"-->
-    <!--          title="Undo Changes"-->
-    <!--          @click="peer_local.public_key = peer.public_key; peer_local.private_key = peer.private_key">-->
-    <!--        <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>-->
-    <!--      </button>-->
-    <!--    </div>-->
-
     <!-- Undo Button -->
     <undo-button v-if="are_keys_updated"
                  :disabled="!are_keys_updated"
