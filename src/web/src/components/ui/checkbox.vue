@@ -20,7 +20,7 @@
       </span>
 
       <!-- Label text -->
-      <field :field="label" class="ml-[11px]"></field>
+      <field :field="label" class="ml-2"></field>
     </label>
   </div>
 </template>

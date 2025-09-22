@@ -44,7 +44,7 @@
       </div>
 
       <!-- roaming neighbors -->
-      <div v-if=" other_roaming_peer_ids.length > 0">
+      <div v-if=" other_roaming_peer_ids.length > 0" class="mb-2">
 
         <div class="flex mx-2">
           <field field="Attached roaming peers:"></field>
@@ -98,102 +98,89 @@
            class="my-2 py-2 pl-1 pr-3 shadow-md border rounded overflow-x-auto whitespace-nowrap highlight-remove-box">
 
         <!-- enabled checkbox-->
-        <div class="form-check flex">
-          <label class="form-check-label items-center text-gray-800 cursor-pointer text-sm">
+        <div class="ml-2 mt-1 items-center">
+          <label class="flex items-center cursor-pointer relative">
             <input
                 v-model="connections_local.enabled[otherPeerId]"
-                class="h-4 w-4"
-                type="checkbox">
-            <span class="text-gray-800">
-                  <strong class="text-sm">{{ network.peers[otherPeerId].name }}</strong>
-                  {{ network.peers[otherPeerId].address }}
-                  ({{ otherPeerId }})
+                class="h-5 w-5 cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border bg-gray-100 border-slate-300 checked:bg-blue-600 checked:border-blue-600 shrink-0"
+                type="checkbox"
+                @change="toggleConnection(peerId)">
+
+            <span v-if="connections_local.enabled[otherPeerId]"
+                  class="absolute text-white opacity-100 top-13/24 left-0.5 transform -translate-y-1/2 pointer-events-none">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path clip-rule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          fill="currentColor" fill-rule="evenodd"></path>
+                  </svg>
+                </span>
+
+            <span class="align-middle ml-1">
+                  <strong class="text-lg">{{ network.peers[otherPeerId].name }}</strong>
+                  {{ network.peers[otherPeerId].address }} ({{ otherPeerId }})
                 </span>
           </label>
         </div>
 
         <!-- connection details  -->
-        <div v-show="connections_local.enabled[otherPeerId]" class="mt-1 mb-0.5 mx-2 text-gray-800">
-          <hr class="w-full h-1 mb-1"/>
+        <hr v-show="connections_local.enabled[otherPeerId]" class="h-1 mt-1 ml-2"/>
+        <div v-show="connections_local.enabled[otherPeerId]" class="mt-1 mb-0.5 text-gray-800 text-lg ml-4">
 
-          <div class="grid grid-cols-7 gap-1">
-            <!-- Pre Shared Key -->
-            <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-3 flex">
-                  <span class="align-middle flex">
-                     <strong class="align-middle">PreSharedKey</strong>
-                  </span>
-            </div>
-            <div v-if="connections_local.pre_shared_key[otherPeerId]" class="col-span-4 flex">
-                  <span class="pr-1 align-middle">
-                    :
-                  </span>
-              <button
-                  class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mr-1 inline-block shrink-0"
-                  @click="refreshPreSharedKey(otherPeerId)">
-                <img alt="Refresh Keys" class="h-4" src="/icons/flowbite/refresh.svg"/>
-              </button>
-              <span class="pr-1 align-middle">
-                    {{ connections_local.pre_shared_key[otherPeerId] }}
-                  </span>
-            </div>
+          <!-- Pre Shared Key -->
+          <div class="ml-2">
+            <field class="inline-block whitespace-pre-wrap" field="PreSharedKey:"></field>
+            <button
+                class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2 cursor-pointer"
+                @click="refreshPreSharedKey(otherPeerId)">
+              <img alt="Refresh Keys" class="h-6" src="/icons/flowbite/refresh.svg"/>
+            </button>
+            <span class="text-gray-800">{{ connections_local.pre_shared_key[otherPeerId] }}</span>
+          </div>
 
-            <!-- Persistent Keepalive -->
-            <div v-if="connections_local.persistent_keepalive[otherPeerId]" class="col-span-3 flex">
-                  <span class="align-middle flex">
-                     <strong class="align-middle">Persistent Keepalive</strong>
-                  </span>
-            </div>
-            <div v-if="connections_local.persistent_keepalive[otherPeerId]" class="col-span-4 flex">
-              <div class="inline-block align-middle">
-                <label class="flex items-center">
-                      <span class="pr-1 align-middle">
-                        :
-                      </span>
-                  <input
-                      v-model="connections_local.persistent_keepalive[otherPeerId].enabled"
-                      class="h-3.5 w-3.5"
-                      type="checkbox">
-                </label>
-              </div>
-              <input v-model="connections_local.persistent_keepalive[otherPeerId].value"
-                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.persistent_keepalive[otherPeerId]]]"
-                     :disabled="!connections_local.persistent_keepalive[otherPeerId].enabled"
-                     class="mr-1 rounded-md pl-1 align-middle inline-block disabled:bg-gray-100">
-            </div>
+          <!-- Persistent Keepalive -->
+          <div class="w-92">
+            <input-field v-model="connections_local.persistent_keepalive[otherPeerId]"
+                         :input-color="FIELD_COLOR_LOOKUP[is_changed_field.persistent_keepalive[otherPeerId]]"
+                         :is-enabled-value="true"
+                         :value-prev="network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].persistent_keepalive"
+                         label="PersistentKeepalive"
+                         placeholder="(e.g. data:image/png;base64,iVBOR...)"></input-field>
           </div>
 
           <!-- Allowed IPs -->
-          <div class="relative text-gray-800">
-            <div class="mt-1">
-                    <span class="flex-none"><strong>{{
-                        network.peers[peerId].name
-                      }}</strong> will forward IP subnet(s)</span>
+          <div class="relative text-gray-800 ml-2">
+            <div class="mt-0">
+              <span class="flex-none">
+                <strong>{{ network.peers[peerId].name }}</strong>
+                will forward IP subnet(s)
+              </span>
               <input v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
                      v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
                      :list="otherPeerId + 'focusPeerName to peerDetails.name'"
-                     class="text-gray-800 mx-1 rounded-md px-1 grow">
+                     class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
               <input v-else
                      v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
                      :list="otherPeerId + 'focusPeerName to peerDetails.name'"
-                     class="text-gray-800 mx-1 rounded-md px-1 grow">
+                     class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
               <span class="flex-none pr-2"> to <strong>{{ network.peers[otherPeerId].name }}</strong></span>
             </div>
-            <div class="mt-1">
-                  <span class="flex-none"><strong>{{
-                      network.peers[otherPeerId].name
-                    }}</strong> will forward IP subnet(s)</span>
+            <div class="mt-0">
+              <span class="flex-none">
+                <strong>{{ network.peers[otherPeerId].name }}</strong>
+                will forward IP subnet(s)
+              </span>
               <input v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
                      v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
                      :list="otherPeerId + 'peerDetails.name to focusPeerName'"
-                     class="text-gray-800 mx-1 rounded-md px-1 grow">
+                     class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
               <input v-else
                      v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
                      :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
                      :list="otherPeerId + 'peerDetails.name to focusPeerName'"
-                     class="text-gray-800 mx-1 rounded-md px-1 grow">
+                     class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
               <span class="flex-none pr-2"> to <strong>{{ network.peers[peerId].name }}</strong></span>
             </div>
             <datalist
@@ -215,21 +202,14 @@
               </option>
             </datalist>
           </div>
-
         </div>
 
-        <!-- undo button -->
-        <div v-if="is_changed_field.attached_peer_box[otherPeerId]"
-             class="inline-block float-right absolute z-20 right-[5px] top-[5px]">
-          <button
-              :disabled="!is_changed_field.attached_peer_box[otherPeerId]"
-              class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
-              title="Undo Changes"
-              @click="undo_connection_changes(otherPeerId);">
-            <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
-          </button>
-        </div>
-
+        <!-- Undo Button -->
+        <undo-button v-if="is_changed_field.attached_peer_box[otherPeerId]"
+                     :disabled="!is_changed_field.attached_peer_box[otherPeerId]"
+                     alignment-classes="right-[5px] top-[4px]"
+                     @click="undo_connection_changes(otherPeerId);">
+        </undo-button>
       </div>
     </div>
 
@@ -243,11 +223,12 @@ import WireGuardHelper from "@/js/wg-helper.js";
 import Checkbox from "@/components/ui/checkbox.vue";
 import Field from "@/components/ui/field.vue";
 import UndoButton from "@/components/ui/undo-button.vue";
+import InputField from "@/components/ui/input-field.vue";
 
 
 export default {
   name: "connection-islands",
-  components: {UndoButton, Field, Checkbox},
+  components: {InputField, UndoButton, Field, Checkbox},
   props: {
     network: {
       type: Object,
