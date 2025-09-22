@@ -1,6 +1,6 @@
 <template>
   <span class="text-gray-800 flex items-center">
-    <strong class="text-xl mt-[1px]">{{ field }}</strong>
+    <strong class="text-lg mt-[1px]">{{ field }}</strong>
   </span>
 </template>
 
