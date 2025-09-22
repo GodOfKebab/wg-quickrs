@@ -6,41 +6,37 @@
          class="my-2 py-2 pl-1 pr-3 shadow-md border rounded relative">
 
       <!-- static neighbors -->
-      <div v-if="other_static_peer_ids.length > 0">
-        <div class="flex mx-5">
-          <div class="text-gray-800 ml-2 text-lg">
-            <strong>Attached static peers</strong>:
-          </div>
-
-          <div class="form-check mt-1 flex ml-auto">
-            <label class="form-check-label flex items-center text-gray-800 cursor-pointer text-sm">
-              <input
-                  v-model="selectAllStaticPeers"
-                  class="h-4 w-4"
-                  type="checkbox">
-              <span class="align-middle">Select All</span>
-            </label>
-          </div>
+      <div v-if="other_static_peer_ids.length > 0" class="mb-5">
+        <div class="flex mx-2">
+          <field field="Attached static peers:"></field>
+          <checkbox :checked="selectAllStaticPeers" class="ml-auto" label="Select All" size="5.5"
+                    @click="selectAllStaticPeers = !selectAllStaticPeers"></checkbox>
         </div>
 
-        <div class="grid grid-cols-2">
-          <div v-for="peerId in other_static_peer_ids"
-               class="relative overflow-hidden">
-            <div class="form-check mt-1 flex">
-              <label class="form-check-label truncate items-center text-gray-800 cursor-pointer text-sm py-1">
+        <div class="grid grid-cols-2 px-2 gap-3">
+          <div v-for="peerId in other_static_peer_ids" class="overflow-hidden">
+            <div class="mt-1 items-center">
+              <label class="flex items-center cursor-pointer relative flex-1 min-w-0">
                 <input
                     v-model="attached_static_peer_ids_local"
                     :value="peerId"
-                    class="h-4 w-4"
+                    class="h-5 w-5 cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border bg-gray-100 border-slate-300 checked:bg-blue-600 checked:border-blue-600 shrink-0"
                     type="checkbox"
                     @change="toggleConnection(peerId)">
-                <span class="align-middle">
-                           <strong class="text-sm">{{
-                               network.peers[peerId].name
-                             }}</strong> {{ network.peers[peerId].address }} ({{
-                    peerId
-                  }})
-                         </span>
+
+                <span v-if="attached_static_peer_ids_local.includes(peerId)"
+                      class="absolute text-white opacity-100 top-13/24 left-0.5 transform -translate-y-1/2 pointer-events-none">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path clip-rule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          fill="currentColor" fill-rule="evenodd"></path>
+                  </svg>
+                </span>
+
+                <span class="align-middle ml-1 truncate">
+                  <strong class="text-lg">{{ network.peers[peerId].name }}</strong>
+                  {{ network.peers[peerId].address }} ({{ peerId }})
+                </span>
               </label>
             </div>
           </div>
@@ -50,58 +46,48 @@
       <!-- roaming neighbors -->
       <div v-if=" other_roaming_peer_ids.length > 0">
 
-        <div class="flex mx-5">
-          <div class="text-gray-800 ml-2 text-lg">
-            <strong>Attached roaming peers</strong>:
-          </div>
-
-          <div class="form-check mt-1 flex ml-auto">
-            <label class="form-check-label flex items-center text-gray-800 cursor-pointer text-sm">
-              <input
-                  v-model="selectAllRoamingPeers"
-                  class="h-4 w-4"
-                  type="checkbox">
-              <span class="align-middle">Select All</span>
-            </label>
-          </div>
+        <div class="flex mx-2">
+          <field field="Attached roaming peers:"></field>
+          <checkbox :checked="selectAllRoamingPeers" class="ml-auto" label="Select All" size="5.5"
+                    @click="selectAllRoamingPeers = !selectAllRoamingPeers"></checkbox>
         </div>
 
-        <div class="grid grid-cols-2">
-          <div v-for="peerId in  other_roaming_peer_ids"
-               class="relative overflow-hidden">
-            <div class="form-check mt-1 flex">
-              <label class="form-check-label truncate items-center text-gray-800 cursor-pointer text-sm py-1">
+        <div class="grid grid-cols-2 px-2 gap-3">
+          <div v-for="peerId in other_roaming_peer_ids" class="overflow-hidden">
+            <div class="mt-1 items-center">
+              <label class="flex items-center cursor-pointer relative flex-1 min-w-0">
                 <input
                     v-model="attached_roaming_peer_ids_local"
                     :value="peerId"
-                    class="h-4 w-4"
+                    class="h-5 w-5 cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border bg-gray-100 border-slate-300 checked:bg-blue-600 checked:border-blue-600 shrink-0"
                     type="checkbox"
                     @change="toggleConnection(peerId)">
-                <span class="align-middle">
-                           <strong class="text-sm">{{
-                               network.peers[peerId].name
-                             }}</strong> {{ network.peers[peerId].address }} ({{
-                    peerId
-                  }})
-                         </span>
+
+                <span v-if="attached_roaming_peer_ids_local.includes(peerId)"
+                      class="absolute text-white opacity-100 top-13/24 left-0.5 transform -translate-y-1/2 pointer-events-none">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path clip-rule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          fill="currentColor" fill-rule="evenodd"></path>
+                  </svg>
+                </span>
+
+                <span class="align-middle ml-1 truncate">
+                  <strong class="text-lg">{{ network.peers[peerId].name }}</strong>
+                  {{ network.peers[peerId].address }} ({{ peerId }})
+                </span>
               </label>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- undo button -->
-      <div v-if="is_changed_field.attached_peers_box"
-           class="inline-block float-right absolute z-20 right-[5px] top-[3px]">
-        <button
-            :disabled="!is_changed_field.attached_peers_box"
-            class="align-middle p-0.5 rounded bg-gray-100 hover:bg-gray-500 hover:text-white transition"
-            title="Undo Changes"
-            @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids; update_added_removed_change_sum();">
-          <img alt="Undo" class="h-4" src="/icons/flowbite/undo.svg"/>
-        </button>
-      </div>
-
+      <!-- Undo Button -->
+      <undo-button v-if="is_changed_field.attached_peers_box"
+                   :disabled="!is_changed_field.attached_peers_box"
+                   alignment-classes="right-[4px] top-[4px]"
+                   @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids; update_added_removed_change_sum();">
+      </undo-button>
     </div>
 
     <!-- connection islands -->
@@ -254,10 +240,14 @@
 <script>
 import FastEqual from "fast-deep-equal";
 import WireGuardHelper from "@/js/wg-helper.js";
+import Checkbox from "@/components/ui/checkbox.vue";
+import Field from "@/components/ui/field.vue";
+import UndoButton from "@/components/ui/undo-button.vue";
 
 
 export default {
   name: "connection-islands",
+  components: {UndoButton, Field, Checkbox},
   props: {
     network: {
       type: Object,
