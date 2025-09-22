@@ -9,7 +9,7 @@
       <div v-if="other_static_peer_ids.length > 0" class="mb-5">
         <div class="flex mx-2">
           <field field="Attached static peers:"></field>
-          <checkbox :checked="selectAllStaticPeers" class="ml-auto" label="Select All" size="5.5"
+          <checkbox :checked="selectAllStaticPeers" class="ml-auto" label="Select All" size="5"
                     @click="selectAllStaticPeers = !selectAllStaticPeers"></checkbox>
         </div>
 
@@ -48,7 +48,7 @@
 
         <div class="flex mx-2">
           <field field="Attached roaming peers:"></field>
-          <checkbox :checked="selectAllRoamingPeers" class="ml-auto" label="Select All" size="5.5"
+          <checkbox :checked="selectAllRoamingPeers" class="ml-auto" label="Select All" size="5"
                     @click="selectAllRoamingPeers = !selectAllRoamingPeers"></checkbox>
         </div>
 
