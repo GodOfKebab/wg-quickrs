@@ -139,12 +139,13 @@
 
           <!-- Persistent Keepalive -->
           <div class="w-92">
-            <input-field v-model="connections_local.persistent_keepalive[otherPeerId]"
+            <input-field v-if="connections_local.persistent_keepalive[otherPeerId]"
+                         v-model="connections_local.persistent_keepalive[otherPeerId]"
                          :input-color="FIELD_COLOR_LOOKUP[is_changed_field.persistent_keepalive[otherPeerId]]"
                          :is-enabled-value="true"
-                         :value-prev="network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].persistent_keepalive"
+                         :value-prev="Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId)) ? network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].persistent_keepalive : network.defaults.connection.persistent_keepalive"
                          label="PersistentKeepalive"
-                         placeholder="(e.g. data:image/png;base64,iVBOR...)"></input-field>
+                         placeholder="seconds"></input-field>
           </div>
 
           <!-- Allowed IPs -->
@@ -205,8 +206,8 @@
         </div>
 
         <!-- Undo Button -->
-        <undo-button v-if="is_changed_field.attached_peer_box[otherPeerId]"
-                     :disabled="!is_changed_field.attached_peer_box[otherPeerId]"
+        <undo-button v-if="is_changed_field.attached_peer_box[otherPeerId] && !isNewPeer"
+                     :disabled="!is_changed_field.attached_peer_box[otherPeerId] || isNewPeer"
                      alignment-classes="right-[5px] top-[4px]"
                      @click="undo_connection_changes(otherPeerId);">
         </undo-button>
