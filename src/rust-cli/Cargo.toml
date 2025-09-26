@@ -1,5 +1,5 @@
 [package]
-name = "rust_cli"
+name = "rust-cli"
 edition = "2024"
 
 [dependencies]
