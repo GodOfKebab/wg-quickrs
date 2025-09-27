@@ -84,8 +84,7 @@
     <!-- Traffic Graph -->
     <div class="container mx-auto shrink-0 max-w-6xl px-3">
       <traffic-graph :network="network"
-                     :telemetry="telemetry"
-                     @peer-selected="onPeerSelected"></traffic-graph>
+                     :telemetry="telemetry"></traffic-graph>
     </div>
 
     <!-- Map -->
