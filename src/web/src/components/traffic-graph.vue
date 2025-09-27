@@ -18,15 +18,7 @@
 </template>
 
 <script>
-import {
-  Chart,
-  LineElement,
-  LinearScale,
-  LineController,
-  PointElement,
-  Filler
-} from "chart.js";
-
+const {Chart, LineElement, LinearScale, LineController, PointElement, Filler} = await import("chart.js");
 Chart.register(
     LineElement,
     LinearScale,
