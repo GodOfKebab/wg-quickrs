@@ -12,7 +12,7 @@
 
       <!-- title and top bar -->
       <div class="flex flex-col items-center">
-        <h3 class="text-xl leading-6 font-medium text-gray-900 inline mb-2 text-start w-full">
+        <h3 class="text-3xl leading-6 font-medium text-gray-900 inline mb-5 text-start w-full">
           Create a new Peer:
         </h3>
         <span class="order-last w-full flex justify-between px-1 mb-1">
