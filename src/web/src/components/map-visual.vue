@@ -21,6 +21,54 @@ const nodeKindIconMap = {
 }
 const thisNodeMarker = "/icons/flowbite/landmark.svg";
 
+const tw_gray_50 = 'oklch(98.5% 0.002 247.839)';
+const tw_gray_200 = 'oklch(92.8% 0.006 264.531)';
+const tw_gray_300 = 'oklch(87.2% 0.01 258.338)';
+const tw_gray_500 = 'oklch(55.1% 0.027 264.364)';
+const tw_orange_600 = 'oklch(70.5% 0.213 47.604)';
+const tw_emerald_600 = 'oklch(59.6% 0.145 163.225)';
+const tw_red_600 = 'oklch(57.7% 0.245 27.325)';
+const tw_indigo_600 = 'oklch(51.1% 0.262 276.966)';
+const tw_amber_600 = 'oklch(68.1% 0.162 75.834)';
+const tw_purple_600 = 'oklch(55.8% 0.288 302.321)';
+const tw_pink_600 = 'oklch(59.2% 0.249 0.584)';
+const tw_sky_600 = 'oklch(58.8% 0.158 241.966)';
+const tw_gray_600 = 'oklch(44.6% 0.03 256.802)';
+
+const nodeHoverHighlightColorMap = {
+  "node": tw_orange_600,
+  "neighbor": tw_emerald_600,
+}
+
+const nodeKindHighlightColorMap = {
+  "server": tw_red_600,
+  "desktop": tw_indigo_600,
+  "laptop": tw_amber_600,
+  "tablet": tw_purple_600,
+  "phone": tw_pink_600,
+  "IoT": tw_sky_600,
+  "other": tw_gray_600,
+}
+
+const highlightNodes = new Set();
+const highlightLinks = new Set();
+let hoverNode = null;
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
 export default {
   name: "map-visual",
   props: {
@@ -67,7 +115,30 @@ export default {
       if (!this.initializedGraph) {
         try {
           this.graph = ForceGraph()(document.getElementById('graph'))
+              .autoPauseRedraw(false)
+              .width(this.container.offsetWidth - 24)
+              .height(this.container.offsetHeight)
+              .d3Force('center', null)
+              .zoomToFit(100, 20)
+              .nodeId('id')
+              .nodeLabel(null)
               .nodeCanvasObject((node, ctx) => {
+                if (hoverNode === node) {
+                  ctx.beginPath();
+                  ctx.arc(node.x, node.y, node.size * 0.65, 0, 2 * Math.PI, false);
+                  ctx.fillStyle = nodeHoverHighlightColorMap['node'];
+                  ctx.fill();
+                } else if (highlightNodes.has(node)) {
+                  ctx.beginPath();
+                  ctx.arc(node.x, node.y, node.size * 0.65, 0, 2 * Math.PI, false);
+                  ctx.fillStyle = nodeHoverHighlightColorMap['neighbor'];
+                  ctx.fill();
+                }
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.size * 0.55, 0, 2 * Math.PI, false);
+                ctx.fillStyle = nodeKindHighlightColorMap[node.kind] || nodeKindHighlightColorMap['other'];
+                ctx.fill();
+
                 const img = new Image();
                 if (node.icon.enabled) img.src = node.icon.value;
                 img.src = img.src || nodeKindIconMap[node.kind] || nodeKindIconMap['other'];
@@ -79,23 +150,65 @@ export default {
                   const marker = this.getGraphNodeIcon(marker_img, 500);
                   ctx.drawImage(marker, node.x - node.size / 4, node.y - 3 * node.size / 4, node.size / 2, node.size / 2);
                 }
+
+                const fontSize = 2;
+                ctx.font = `${fontSize}px monospace`;
+                const textWidth = ctx.measureText(node.name).width;
+                const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.3); // some padding
+
+                ctx.fillStyle = tw_gray_50;
+                roundRect(ctx,
+                    node.x - bckgDimensions[0] / 2,
+                    node.y + node.size / 2 - bckgDimensions[1] / 2,
+                    bckgDimensions[0],
+                    bckgDimensions[1],
+                    1 // corner radius
+                );
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'oklch(37.3% 0.034 259.733)';
+                ctx.fillText(node.name, node.x, node.y + node.size / 2 + bckgDimensions[1] / 8);
+                node.__bckgDimensions = bckgDimensions;
               })
               .nodePointerAreaPaint((node, color, ctx) => {
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, node.size / 2, 0, Math.PI * 2, true);
                 ctx.fillStyle = color;
+                const bckgDimensions = node.__bckgDimensions;
+                roundRect(ctx,
+                    node.x - bckgDimensions[0] / 2,
+                    node.y + node.size / 2 - bckgDimensions[1] / 2,
+                    bckgDimensions[0],
+                    bckgDimensions[1],
+                    1 // corner radius
+                );
                 ctx.fill();
               })
-              .width(this.container.offsetWidth - 24)
-              .height(this.container.offsetHeight)
-              .d3Force('center', null)
-              .zoomToFit(100, 20)
-              .nodeId('id')
-              .nodeLabel('name')
+              .onNodeHover(node => {
+                highlightNodes.clear();
+                highlightLinks.clear();
+                if (node) {
+                  highlightNodes.add(node);
+                  node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                  node.links.forEach(link => highlightLinks.add(link));
+                }
+
+                hoverNode = node || null;
+              })
+              .onLinkHover(link => {
+                highlightNodes.clear();
+                highlightLinks.clear();
+
+                if (link) {
+                  highlightLinks.add(link);
+                  highlightNodes.add(link.source);
+                  highlightNodes.add(link.target);
+                }
+              })
               .linkSource('source')
               .linkTarget('target')
               .linkAutoColorBy('color')
-              .linkWidth('strength')
+              .linkWidth(link => highlightLinks.has(link) ? 10 : link.strength)
               .linkDirectionalParticleCanvasObject((x, y, link, ctx, _globalScale) => {
                 const target = link.target;
                 const dx = target.x - x;
@@ -110,7 +223,7 @@ export default {
                 ctx.translate(x, y);
                 ctx.rotate(angle + Math.PI / 2); // fix direction mismatch
 
-                // GTA-style arrow shape
+                // arrow shape
                 ctx.beginPath();
                 ctx.moveTo(0, -h);                   // Tip
                 ctx.lineTo(w * 0.6, h * 0.4);        // Right wing
@@ -188,6 +301,20 @@ export default {
         peerSize[peerId] = 1;
       });
       const forceG = {nodes: [], links: []};
+      for (const [peerId, peerDetails] of Object.entries(network.peers)) {
+        forceG.nodes.push({
+          id: peerId,
+          name: peerDetails.name,
+          endpoint: peerDetails.endpoint,
+          size: Math.sqrt(peerSize[peerId]) * 7,
+          kind: peerDetails.kind,
+          icon: peerDetails.icon,
+          neighbors: [],
+          links: [],
+          __bckgDimensions: [0, 0]
+        });
+      }
+
       for (const [connectionId, connectionDetails] of Object.entries(network.connections)) {
         if (connectionDetails.enabled) {
           const {a, b} = WireGuardHelper.getConnectionPeers(connectionId);
@@ -198,13 +325,13 @@ export default {
           // eslint-disable-next-line default-case
           switch (linkColorStrength) {
             case 1:
-              color = 'rgb(229 231 235)';
+              color = tw_gray_200;
               break;
             case 2:
-              color = 'rgb(209 213 219)';
+              color = tw_gray_300;
               break;
             case 3:
-              color = 'rgb(107 114 128)';
+              color = tw_gray_500;
               break;
           }
           forceG.links.push({
@@ -213,22 +340,16 @@ export default {
           forceG.links.push({
             source: b, target: a, particleCount: 0, color, strength: linkColorStrength,
           });
-          // for (const ab of [a, b]) {
-          //   peerSize[ab] += network.static_peer_ids.includes(ab) ? 0.925 : 0.0625;
-          //   peerSize[ab] += connectionDetails.enabled ? 0.125 : 0.03125;
-          // }
         }
-      }
 
-      for (const [peerId, peerDetails] of Object.entries(network.peers)) {
-        forceG.nodes.push({
-          id: peerId,
-          name: peerDetails.name,
-          endpoint: peerDetails.endpoint,
-          size: Math.sqrt(peerSize[peerId]) * 7,
-          color: network.static_peer_ids.includes(peerId) ? 'rgb(21 128 61)' : 'rgb(7 89 133)',
-          kind: peerDetails.kind,
-          icon: peerDetails.icon,
+        // cross-link node objects
+        forceG.links.forEach(link => {
+          const a = forceG.nodes.find(item => item.id === link.source);
+          const b = forceG.nodes.find(item => item.id === link.target);
+          a.neighbors.push(b);
+          b.neighbors.push(a);
+          a.links.push(link);
+          b.links.push(link);
         });
       }
       return forceG;
@@ -246,7 +367,7 @@ export default {
       tmpCtx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
       tmpCtx.closePath();
       tmpCtx.clip();
-      tmpCtx.fillStyle = 'rgb(249 250 251)';
+      tmpCtx.fillStyle = tw_gray_50;
       tmpCtx.fillRect(0, 0, size, size);
       tmpCtx.drawImage(image, size / 4, size / 4, size / 2, size / 2);
       return tmpCanvas;
