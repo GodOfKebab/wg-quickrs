@@ -38,7 +38,8 @@
     <!-- Undo Button -->
     <undo-button v-if="are_keys_updated"
                  :disabled="!are_keys_updated"
-                 alignment-classes="right-[4px] top-[4px]"
+                 alignment-classes="right-[6px] top-[6px]"
+                 image-classes="h-7"
                  @click="peer_local.public_key = peer.public_key; peer_local.private_key = peer.private_key;">
     </undo-button>
   </div>

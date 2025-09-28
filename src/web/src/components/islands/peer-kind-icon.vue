@@ -5,6 +5,7 @@
       <input-field v-model="peer_local.kind" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.kind]"
                    :value-prev="peer.kind"
                    label="Kind"
+                   undo-button-alignment-classes="right-[5px] top-[6px]"
                    placeholder="Kind"></input-field>
       <datalist id="Kind-list">
         <option value="server"></option>
@@ -22,6 +23,7 @@
                    :value-prev="peer.icon"
                    class="col-span-2"
                    label="Icon"
+                   undo-button-alignment-classes="right-[5px] top-[6px]"
                    placeholder="(e.g. data:image/png;base64,iVBOR...)"></input-field>
     </div>
   </div>

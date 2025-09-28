@@ -85,7 +85,8 @@
       <!-- Undo Button -->
       <undo-button v-if="is_changed_field.attached_peers_box"
                    :disabled="!is_changed_field.attached_peers_box"
-                   alignment-classes="right-[4px] top-[4px]"
+                   alignment-classes="right-[6px] top-[6px]"
+                   image-classes="h-7"
                    @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids; update_added_removed_change_sum();">
       </undo-button>
     </div>
@@ -98,7 +99,7 @@
            class="my-2 py-2 pl-1 pr-3 shadow-md border rounded overflow-x-auto whitespace-nowrap highlight-remove-box">
 
         <!-- enabled checkbox-->
-        <div class="ml-2 mt-1 items-center">
+        <div class="ml-2 items-center">
           <label class="flex items-center cursor-pointer relative">
             <input
                 v-model="connections_local.enabled[otherPeerId]"
@@ -144,27 +145,45 @@
                          :input-color="FIELD_COLOR_LOOKUP[is_changed_field.persistent_keepalive[otherPeerId]]"
                          :is-enabled-value="true"
                          :value-prev="Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId)) ? network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].persistent_keepalive : network.defaults.connection.persistent_keepalive"
+                         undo-button-alignment-classes="right-[6px] top-[4px]"
                          label="PersistentKeepalive"
                          placeholder="seconds"></input-field>
           </div>
 
           <!-- Allowed IPs -->
-          <div class="relative text-gray-800 ml-2">
+          <div class="text-gray-800 ml-2">
             <div class="mt-0">
               <span class="flex-none">
                 <strong>{{ network.peers[peerId].name }}</strong>
                 will forward IP subnet(s)
               </span>
-              <input v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
-                     v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
-                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
-                     :list="otherPeerId + 'focusPeerName to peerDetails.name'"
-                     class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
-              <input v-else
-                     v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
-                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
-                     :list="otherPeerId + 'focusPeerName to peerDetails.name'"
-                     class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
+              <div class="inline-block relative">
+                <input v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
+                       v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
+                       :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
+                       :list="otherPeerId + 'focusPeerName to peerDetails.name'"
+                       class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
+                <input v-else
+                       v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
+                       :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
+                       :list="otherPeerId + 'focusPeerName to peerDetails.name'"
+                       class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
+                <!-- Undo Button -->
+                <undo-button
+                    v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && is_changed_field.allowed_ips_a_to_b[otherPeerId] && !isNewPeer"
+                    :disabled="!is_changed_field.allowed_ips_a_to_b[otherPeerId]"
+                    alignment-classes="right-[5px] top-[2px]"
+                    image-classes="h-5"
+                    @click="connections_local.allowed_ips_a_to_b[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b;">
+                </undo-button>
+                <undo-button
+                    v-else-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && is_changed_field.allowed_ips_b_to_a[otherPeerId] && !isNewPeer"
+                    :disabled="!is_changed_field.allowed_ips_b_to_a[otherPeerId]"
+                    alignment-classes="right-[5px] top-[2px]"
+                    image-classes="h-5"
+                    @click="connections_local.allowed_ips_b_to_a[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a;">
+                </undo-button>
+              </div>
               <span class="flex-none pr-2"> to <strong>{{ network.peers[otherPeerId].name }}</strong></span>
             </div>
             <div class="mt-0">
@@ -172,16 +191,33 @@
                 <strong>{{ network.peers[otherPeerId].name }}</strong>
                 will forward IP subnet(s)
               </span>
-              <input v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
-                     v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
-                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
-                     :list="otherPeerId + 'peerDetails.name to focusPeerName'"
-                     class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
-              <input v-else
-                     v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
-                     :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
-                     :list="otherPeerId + 'peerDetails.name to focusPeerName'"
-                     class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
+              <div class="inline-block relative">
+                <input v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
+                       v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
+                       :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
+                       :list="otherPeerId + 'peerDetails.name to focusPeerName'"
+                       class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
+                <input v-else
+                       v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
+                       :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
+                       :list="otherPeerId + 'peerDetails.name to focusPeerName'"
+                       class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
+                <!-- Undo Button -->
+                <undo-button
+                    v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && is_changed_field.allowed_ips_a_to_b[otherPeerId] && !isNewPeer"
+                    :disabled="!is_changed_field.allowed_ips_a_to_b[otherPeerId]"
+                    alignment-classes="right-[5px] top-[2px]"
+                    image-classes="h-5"
+                    @click="connections_local.allowed_ips_a_to_b[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b;">
+                </undo-button>
+                <undo-button
+                    v-else-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && is_changed_field.allowed_ips_b_to_a[otherPeerId] && !isNewPeer"
+                    :disabled="!is_changed_field.allowed_ips_b_to_a[otherPeerId]"
+                    alignment-classes="right-[5px] top-[2px]"
+                    image-classes="h-5"
+                    @click="connections_local.allowed_ips_b_to_a[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a;">
+                </undo-button>
+              </div>
               <span class="flex-none pr-2"> to <strong>{{ network.peers[peerId].name }}</strong></span>
             </div>
             <datalist
@@ -208,7 +244,8 @@
         <!-- Undo Button -->
         <undo-button v-if="is_changed_field.attached_peer_box[otherPeerId] && !isNewPeer"
                      :disabled="!is_changed_field.attached_peer_box[otherPeerId] || isNewPeer"
-                     alignment-classes="right-[5px] top-[4px]"
+                     alignment-classes="right-[7px] top-[7px]"
+                     image-classes="h-7"
                      @click="undo_connection_changes(otherPeerId);">
         </undo-button>
       </div>

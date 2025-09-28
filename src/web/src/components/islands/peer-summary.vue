@@ -4,6 +4,7 @@
     <input-field v-model="peer_local.name" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.name]"
                  :value-prev="peer.name"
                  label="Name"
+                 undo-button-alignment-classes="right-[5px] top-[6px]"
                  placeholder="Name"></input-field>
 
     <!--  Address  -->
@@ -12,6 +13,7 @@
                  :disabled="isNewPeer"
                  :value-prev="peer.address"
                  label="Address"
+                 undo-button-alignment-classes="right-[5px] top-[6px]"
                  placeholder="Address (e.g. 10.8.0.1)"></input-field>
 
     <!--  Endpoint  -->
@@ -19,6 +21,7 @@
                  :is-enabled-value="true"
                  :value-prev="peer.endpoint"
                  label="Static Endpoint"
+                 undo-button-alignment-classes="right-[5px] top-[6px]"
                  placeholder="Endpoint (e.g. 1.2.3.4:51820 or example.com:51820)"></input-field>
   </div>
 </template>

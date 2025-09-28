@@ -7,6 +7,7 @@
                    :input-color="FIELD_COLOR_LOOKUP[is_changed_field.dns]"
                    :is-enabled-value="true"
                    :value-prev="peer.dns"
+                   undo-button-alignment-classes="right-[5px] top-[6px]"
                    label="DNS"></input-field>
       <datalist id="DNS-list">
         <option :value="defaultDnsmtu.dns.value">
@@ -21,6 +22,7 @@
                    :input-color="FIELD_COLOR_LOOKUP[is_changed_field.mtu]"
                    :is-enabled-value="true"
                    :value-prev="peer.mtu"
+                   undo-button-alignment-classes="right-[5px] top-[6px]"
                    label="MTU"></input-field>
       <datalist id="MTU-list">
         <option :value="`${defaultDnsmtu.mtu.value}`">

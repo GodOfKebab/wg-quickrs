@@ -5,6 +5,7 @@
                  :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.pre_up]"
                  :is-enabled-value="true"
                  :value-prev="peer.scripts.pre_up"
+                 undo-button-alignment-classes="right-[5px] top-[6px]"
                  label="PreUp"
                  placeholder="PreUp Script (e.g. echo 'Hey, this is PreUp Script';)"></input-field>
 
@@ -13,6 +14,7 @@
                  :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.post_up]"
                  :is-enabled-value="true"
                  :value-prev="peer.scripts.post_up"
+                 undo-button-alignment-classes="right-[5px] top-[6px]"
                  label="PostUp"
                  placeholder="PostUp Script (e.g. echo 'Hey, this is PostUp Script';)"></input-field>
 
@@ -21,6 +23,7 @@
                  :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.pre_down]"
                  :is-enabled-value="true"
                  :value-prev="peer.scripts.pre_down"
+                 undo-button-alignment-classes="right-[5px] top-[6px]"
                  label="PreDown"
                  placeholder="PreDown Script (e.g. echo 'Hey, this is PreDown Script';)"></input-field>
 
@@ -29,6 +32,7 @@
                  :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.post_down]"
                  :is-enabled-value="true"
                  :value-prev="peer.scripts.post_down"
+                 undo-button-alignment-classes="right-[5px] top-[6px]"
                  label="PostDown"
                  placeholder="PostDown Script (e.g. echo 'Hey, this is PostDown Script';)"></input-field>
   </div>
