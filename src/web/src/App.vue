@@ -157,7 +157,7 @@
 
     <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = '' }"
                    :left-button-text="'Cancel'"
-                   :right-button-classes="wireguardStatus === ServerStatusEnum.up ? ['text-white', 'bg-red-600', 'hover:bg-red-700'] : ['text-white', 'bg-green-600', 'hover:bg-green-700']"
+                   :right-button-classes="wireguardStatus === ServerStatusEnum.up ? ['text-white', 'bg-red-600', 'hover:bg-red-700', 'border-red-900'] : ['text-white', 'bg-green-600', 'hover:bg-green-700', 'border-green-900']"
                    :right-button-click="() => { toggleWireGuardNetworking(); dialogId = ''; }"
                    :right-button-text="wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable'"
                    class="z-10"
