@@ -40,12 +40,8 @@
             <div class="flex justify-center">
               <div class="flex items-start">
                 <div class="flex items-center h-5">
-                  <label class="text-sm font-medium text-gray-900 dark:text-gray-300">
-                    <input v-model="remember"
-                           class="w-4 h-4"
-                           type="checkbox"/>
-                    <span>Remember me</span>
-                  </label>
+                  <checkbox :checked="remember" label="Remember me" size="4"
+                            @click="remember = !remember"></checkbox>
                 </div>
               </div>
             </div>
@@ -62,8 +58,11 @@
 </template>
 
 <script>
+import Checkbox from "@/components/ui/checkbox.vue";
+
 export default {
   name: "password-dialog",
+  components: {Checkbox},
   props: {
     api: {
       type: Object,
