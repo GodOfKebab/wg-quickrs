@@ -20,7 +20,7 @@
                 <input
                     v-model="attached_static_peer_ids_local"
                     :value="peerId"
-                    class="h-5 w-5 cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border bg-gray-100 border-slate-300 checked:bg-blue-600 checked:border-blue-600 shrink-0"
+                    class="h-5 w-5 shrink-0"
                     type="checkbox"
                     @change="toggleConnection(peerId)">
 
@@ -59,7 +59,7 @@
                 <input
                     v-model="attached_roaming_peer_ids_local"
                     :value="peerId"
-                    class="h-5 w-5 cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border bg-gray-100 border-slate-300 checked:bg-blue-600 checked:border-blue-600 shrink-0"
+                    class="h-5 w-5 shrink-0"
                     type="checkbox"
                     @change="toggleConnection(peerId)">
 
@@ -103,7 +103,7 @@
           <label class="flex items-center cursor-pointer relative">
             <input
                 v-model="connections_local.enabled[otherPeerId]"
-                class="h-5 w-5 cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border bg-gray-100 border-slate-300 checked:bg-blue-600 checked:border-blue-600 shrink-0"
+                class="h-5 w-5 shrink-0"
                 type="checkbox"
                 @change="toggleConnection(peerId)">
 
