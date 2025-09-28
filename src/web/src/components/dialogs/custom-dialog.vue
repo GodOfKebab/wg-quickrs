@@ -5,7 +5,7 @@
 
     <!-- Modal -->
     <div aria-modal="true"
-         class="relative inline-block bg-white rounded-lg text-left shadow-xl transform transition-all max-w-3xl w-full"
+         class="relative inline-block bg-white rounded-lg overflow-hidden text-left shadow-xl transform transition-all max-w-3xl w-full"
          role="dialog">
       <div class="bg-white px-4 pt-4 sm:px-6 sm:pt-6">
         <div class="pr-4">
