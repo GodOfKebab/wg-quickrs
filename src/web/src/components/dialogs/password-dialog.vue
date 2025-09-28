@@ -78,7 +78,7 @@ export default {
   },
   methods: {
     async on_submit() {
-      this.api.refresh_api_token(this.password).then((_) => {
+      this.api.update_api_token(this.password).then((_) => {
         if (this.remember) {
           localStorage.setItem('token', this.api.token);
           localStorage.setItem('remember', 'true');

@@ -2,11 +2,10 @@
 
 export default class API {
     token;
-    password;
     does_need_auth = false;
 
     async call({method, path, headers, body}) {
-        if (this.does_need_auth && this.token === '') {
+        if (this.does_need_auth) {
             throw new Error(`A valid token required for ${method} ${path}!`);
         }
 
@@ -24,17 +23,9 @@ export default class API {
 
         // get a new token
         if (res.status === 401) {
-            console.error(`Unauthorized: ${res.status}, requesting a new token...`);
+            console.error(`Unauthorized: ${res.status}`);
             this.does_need_auth = true;
-            this.token = '';
-            if (this.password === '') {
-                console.error(`Password is not entered yet`);
-                throw new Error(res.statusText);
-            }
-            await this.refresh_api_token(this.password); // errors out if not successful
-            return this.call({method, path, headers, body}); // retry call
         }
-
 
         if (res.status === 204) {
             return undefined;
@@ -49,8 +40,7 @@ export default class API {
         return json;
     }
 
-    async refresh_api_token(password) {
-        this.password = password;
+    async update_api_token(password) {
         const token_res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}/api/token?client_id=web&password=${password}`, {
             method: "post"
         });
@@ -58,9 +48,7 @@ export default class API {
         if (token_res.status === 200) {
             this.does_need_auth = false;
             this.token = token;
-            console.log(`Received the new token. Retrying...`);
         } else {
-            this.password = "";
             throw new Error("Unauthorized access");
         }
     }

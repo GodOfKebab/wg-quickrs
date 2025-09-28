@@ -9,11 +9,32 @@
 
         <!-- Middle (grows + truncates) -->
         <div class="float-left px-3 flex items-center flex-grow min-w-0">
+          <div class="inline-block relative">
+            <!-- Settings Button -->
+            <button
+                :class="[settingsDropdownOpen ? 'bg-gray-300': '']"
+                class="mt-0.5 mr-2 h-8 w-8 rounded-md bg-gray-200 hover:bg-gray-300 cursor-pointer flex items-center justify-center shrink-0"
+                @click="settingsDropdownOpen = !settingsDropdownOpen">
+              <img alt="settings" class="h-6" src="/icons/iconfinder/ionicons-211751_gear_icon.svg">
+            </button>
+
+            <!-- Settings Dropdown -->
+            <div v-if="settingsDropdownOpen"
+                 class="absolute left-0 top-9 w-24 bg-white border border-gray-200 rounded-md shadow-lg z-20 flex items-center justify-center">
+              <button
+                  class="block w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+                  @click="settingsDropdownOpen = false; logout();">
+                <img alt="logout" class="inline-block float-left h-5 mr-1"
+                     src="/icons/iconfinder/iconoir-9042719_log_out_icon.svg">
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+          <!-- Title -->
           <h1 class="text-4xl truncate font-semibold py-1">
-            <span>* wg-quickrs web console</span>
+            <span>wg-quickrs web console</span>
           </h1>
         </div>
-
 
         <!--   Indicators/Buttons   -->
         <div class="inline-block float-right pr-3 my-auto">
@@ -215,7 +236,7 @@ export default {
       },
       wasmInitialized: false,
       api: {does_need_auth: false},
-      temp_password: "",
+      settingsDropdownOpen: false
     }
   },
   async mounted() {
@@ -331,6 +352,12 @@ export default {
     },
     onPeerSelected(peer_id) {
       this.dialogId = `selected-peer-id=${peer_id}`;
+    },
+    logout() {
+      this.api.token = '';
+      localStorage.removeItem('token');
+      localStorage.removeItem('remember');
+      this.refresh();
     }
   }
 }
