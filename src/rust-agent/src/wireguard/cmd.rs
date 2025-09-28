@@ -65,13 +65,16 @@ pub enum WireGuardCommandError {
     FileCreationError(PathBuf, std::io::Error),
     #[error("wireguard::cmd::error::file_write_error -> failed to write file at {0} failed: {1}")]
     FileWriteError(PathBuf, std::io::Error),
-    #[error("wireguard::cmd::error::interface_sync_failed -> failed to sync wireguard interface")]
-    InterfaceSyncFailed,
+    #[error(
+        "wireguard::cmd::error::interface_sync_failed -> failed to sync wireguard interface: {0}"
+    )]
+    InterfaceSyncFailed(String),
     #[error("wireguard::cmd::error::other -> unexpected error: {0}")]
     Other(String),
 }
 
 static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
+static WG_STATUS: Mutex<WireGuardStatus> = Mutex::new(WireGuardStatus::DOWN);
 
 pub(crate) async fn run_vpn_server(
     config: &Config,
@@ -129,6 +132,19 @@ pub(crate) async fn run_vpn_server(
 }
 
 fn run_loop() {
+    // don't check if not up
+    match WG_STATUS.lock() {
+        Ok(status) => {
+            if status.clone() != WireGuardStatus::UP {
+                return;
+            }
+        }
+        Err(e) => {
+            log::error!("{}", WireGuardCommandError::MutexLockFailed(e.to_string()));
+            return;
+        }
+    }
+
     // don't check telemetry if not queried recently (60 seconds)
     if get_since_timestamp(&LAST_TELEMETRY_QUERY_TS)
         > TELEMETRY_INTERVAL * TELEMETRY_CAPACITY as u64
@@ -182,13 +198,10 @@ pub(crate) fn get_telemetry() -> Result<Option<Telemetry>, WireGuardCommandError
 }
 
 pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> {
-    let wg_interface_mut = WG_INTERFACE
+    let wg_status_mut = WG_STATUS
         .lock()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
-    if (*wg_interface_mut).is_empty() {
-        return Ok(WireGuardStatus::DOWN);
-    }
-    Ok(WireGuardStatus::UP)
+    Ok(wg_status_mut.clone())
 }
 
 fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
@@ -202,6 +215,7 @@ fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGua
 
     // sudo wg show INTERFACE dump
     let readable_command = format!("$ sudo wg show {} dump", &*wg_interface_mut);
+    log::info!("{readable_command}");
     match Command::new("sudo")
         .arg("wg")
         .arg("show")
@@ -210,7 +224,6 @@ fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGua
         .output()
     {
         Ok(output) => {
-            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -277,14 +290,14 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     };
 
     // wg-quick strip WG_INTERFACE
-    let readable_command = format!("$ wg-quick strip {}", config.network.identifier.clone());
+    let mut readable_command = format!("$ wg-quick strip {}", config.network.identifier.clone());
+    log::info!("{readable_command}");
     let stripped_output = match Command::new("wg-quick")
         .arg("strip")
         .arg(config.network.identifier.clone())
         .output()
     {
         Ok(output) => {
-            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -326,6 +339,12 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
     // wg syncconf WG_INTERFACE <(wg-quick strip WG_INTERFACE)
+    readable_command = format!(
+        "$ wg syncconf {} <(wg-quick strip {})",
+        &*wg_interface_mut,
+        config.network.identifier.clone()
+    );
+    log::info!("{readable_command}");
     match Command::new("sudo")
         .arg("wg")
         .arg("syncconf")
@@ -334,11 +353,6 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
         .output()
     {
         Ok(output) => {
-            log::info!(
-                "$ wg syncconf {} <(wg-quick strip {})",
-                &*wg_interface_mut,
-                config.network.identifier.clone()
-            );
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -346,7 +360,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
                 log::warn!("{}", String::from_utf8_lossy(&output.stderr));
             }
             if !output.status.success() {
-                return Err(WireGuardCommandError::InterfaceSyncFailed);
+                return Err(WireGuardCommandError::InterfaceSyncFailed(readable_command));
             }
             Ok(())
         }
@@ -355,8 +369,17 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
 }
 
 pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandError> {
+    *WG_STATUS
+        .lock()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
+        WireGuardStatus::UNKNOWN;
+    *WG_INTERFACE
+        .lock()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? = String::new();
+
     // sudo wg-quick down INTERFACE
     let readable_command = format!("$ sudo wg-quick down {}", config.network.identifier.clone());
+    log::info!("{readable_command}");
     match Command::new("sudo")
         .arg("wg-quick")
         .arg("down")
@@ -364,7 +387,6 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
         .output()
     {
         Ok(output) => {
-            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -376,10 +398,13 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
                     readable_command,
                 ));
             }
-            *WG_INTERFACE
+            *WG_STATUS
                 .lock()
                 .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
-                String::new();
+                WireGuardStatus::DOWN;
+            // reset the telemetry
+            let mut buf = TELEMETRY.lock().unwrap();
+            *buf = VecDeque::with_capacity(TELEMETRY_CAPACITY);
             Ok(())
         }
         Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
@@ -387,8 +412,14 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
 }
 
 pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError> {
+    *WG_STATUS
+        .lock()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
+        WireGuardStatus::UNKNOWN;
+
     // sudo wg-quick up INTERFACE
     let readable_command = format!("$ sudo wg-quick up {}", config.network.identifier.clone());
+    log::info!("{readable_command}");
     match Command::new("sudo")
         .arg("wg-quick")
         .arg("up")
@@ -396,7 +427,6 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
         .output()
     {
         Ok(output) => {
-            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -430,6 +460,10 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
                         *wg_interface_mut = config.network.identifier.clone();
                     }
                 }
+                *WG_STATUS
+                    .lock()
+                    .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
+                    WireGuardStatus::UP;
             }
             if !output.status.success() {
                 return Err(WireGuardCommandError::CommandExecNotSuccessful(
@@ -530,9 +564,9 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
 
     // wg genkey
     let readable_command = "$ wg genkey".to_string();
+    log::info!("{readable_command}");
     match Command::new("wg").arg("genkey").output() {
         Ok(output) => {
-            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }
@@ -553,6 +587,7 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
 
     // wg genkey | wg pubkey
     let readable_command = "$ wg genkey | wg pubkey".to_string();
+    log::info!("{readable_command}");
     match Command::new("wg")
         .arg("pubkey")
         .stdin(Stdio::piped())
@@ -575,7 +610,6 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
             }
             match child.wait_with_output() {
                 Ok(output) => {
-                    log::info!("{readable_command}");
                     if !output.stdout.is_empty() {
                         log::debug!("{}", String::from_utf8_lossy(&output.stdout));
                     }
@@ -602,9 +636,9 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
 pub(crate) fn get_pre_shared_key() -> Result<Value, WireGuardCommandError> {
     // wg genpsk
     let readable_command = "$ wg genpsk".to_string();
+    log::info!("{readable_command}");
     match Command::new("wg").arg("genpsk").output() {
         Ok(output) => {
-            log::info!("{readable_command}");
             if !output.stdout.is_empty() {
                 log::debug!("{}", String::from_utf8_lossy(&output.stdout));
             }

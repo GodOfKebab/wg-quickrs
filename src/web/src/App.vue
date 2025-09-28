@@ -282,8 +282,6 @@ export default {
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
             this.webServerStatus = this.ServerStatusEnum.down;
-          } else if (err.toString() === 'Error: Unauthorized access') {
-            this.webServerStatus = this.ServerStatusEnum.unknown;
           } else {
             this.webServerStatus = this.ServerStatusEnum.unknown;
             console.log(err);
@@ -319,8 +317,6 @@ export default {
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
             this.webServerStatus = this.ServerStatusEnum.down;
-          } else if (err.toString() === 'Error: Unauthorized access') {
-            this.webServerStatus = this.ServerStatusEnum.unknown;
           } else {
             this.webServerStatus = this.ServerStatusEnum.unknown;
             console.log(err);
@@ -349,6 +345,7 @@ export default {
           }).catch(err => {
         console.log(err);
       });
+      this.wireguardStatus = this.ServerStatusEnum.unknown;
     },
     onPeerSelected(peer_id) {
       this.dialogId = `selected-peer-id=${peer_id}`;
