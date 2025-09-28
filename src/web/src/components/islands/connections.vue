@@ -8,7 +8,9 @@
       <!-- static neighbors -->
       <div v-if="other_static_peer_ids.length > 0" class="mb-5">
         <div class="flex mx-2">
-          <field field="Attached static peers:"></field>
+          <span class="text-gray-800 flex items-center">
+            <strong class="text-xl mt-[1px]">Attached static peers:</strong>
+          </span>
           <checkbox :checked="selectAllStaticPeers" class="ml-auto" label="Select All" size="5"
                     @click="selectAllStaticPeers = !selectAllStaticPeers"></checkbox>
         </div>
@@ -47,7 +49,9 @@
       <div v-if=" other_roaming_peer_ids.length > 0" class="mb-2">
 
         <div class="flex mx-2">
-          <field field="Attached roaming peers:"></field>
+          <span class="text-gray-800 flex items-center">
+            <strong class="text-xl mt-[1px]">Attached roaming peers:</strong>
+          </span>
           <checkbox :checked="selectAllRoamingPeers" class="ml-auto" label="Select All" size="5"
                     @click="selectAllRoamingPeers = !selectAllRoamingPeers"></checkbox>
         </div>
