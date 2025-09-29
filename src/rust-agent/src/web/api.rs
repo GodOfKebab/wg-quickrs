@@ -1,11 +1,11 @@
 use crate::conf;
 use crate::macros::*;
 use crate::wireguard;
-use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{HttpRequest, HttpResponse, Responder, get, patch, post, web};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use once_cell::sync::Lazy;
-use rand::{rng, RngCore};
+use rand::{RngCore, rng};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -13,7 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
     sub: String, // Subject (user id)
-    exp: u64,    // Expiration time as timestamp
+    exp: u64,    // Expiration time as a timestamp
 }
 
 // Secret key for signing tokens
@@ -29,8 +29,7 @@ static JWT_SECRETS: Lazy<(EncodingKey, DecodingKey)> = Lazy::new(|| {
 #[get("/version")]
 async fn get_version() -> impl Responder {
     HttpResponse::Ok().json(json!({
-        "backend": backend_version!(),
-        "frontend": frontend_version!(),
+        "version": wg_quickrs_version!(),
         "build": build_info!(),
     }))
 }

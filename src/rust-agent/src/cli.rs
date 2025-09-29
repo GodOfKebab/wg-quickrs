@@ -1,4 +1,4 @@
-use crate::macros::{backend_version, build_info, frontend_version, full_version};
+use crate::macros::full_version;
 use clap::{CommandFactory, FromArgMatches};
 use rust_cli::Cli;
 

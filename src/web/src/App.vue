@@ -130,10 +130,7 @@
     <!-- Footer -->
     <footer class="text-center text-gray-500 my-5 mx-2 shrink-0">
       <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
-        backend: <strong>{{ version.backend }}</strong>
-      </small>
-      <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
-        frontend: <strong>{{ version.frontend }}</strong>
+        version: <strong>{{ version.version }}</strong>
       </small>
       <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
         build: <strong>{{ version.build }}</strong>
@@ -328,10 +325,9 @@ export default {
         this.api.get_version().then(response => {
           const last_build_date = (new Date(Date.parse(response.build.split("@").pop())))
           this.version = {
-            backend: response.backend,
-            frontend: response.frontend,
+            version: response.version,
             build: response.build,
-            full_version: `backend: ${response.backend}, frontend: ${response.frontend}, build: ${response.build}`,
+            full_version: `version: ${response.version}, build: ${response.build}`,
             readable_datetime: `${last_build_date} [${dayjs(last_build_date).fromNow()}]`
           }
         });
