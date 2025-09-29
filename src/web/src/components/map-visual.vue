@@ -25,6 +25,7 @@ const tw_gray_50 = 'oklch(98.5% 0.002 247.839)';
 const tw_gray_200 = 'oklch(92.8% 0.006 264.531)';
 const tw_gray_300 = 'oklch(87.2% 0.01 258.338)';
 const tw_gray_500 = 'oklch(55.1% 0.027 264.364)';
+const tw_gray_700 = 'oklch(37.3% 0.034 259.733)';
 const tw_orange_600 = 'oklch(70.5% 0.213 47.604)';
 const tw_emerald_600 = 'oklch(59.6% 0.145 163.225)';
 const tw_red_600 = 'oklch(57.7% 0.245 27.325)';
@@ -151,38 +152,41 @@ export default {
                   ctx.drawImage(marker, node.x - node.size / 4, node.y - 3 * node.size / 4, node.size / 2, node.size / 2);
                 }
 
+                // node label "div"
                 const fontSize = 2;
-                ctx.font = `${fontSize}px monospace`;
                 const textWidth = ctx.measureText(node.name).width;
                 const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.3); // some padding
-
                 ctx.fillStyle = tw_gray_50;
                 roundRect(ctx,
-                    node.x - bckgDimensions[0] / 2,
-                    node.y + node.size / 2 - bckgDimensions[1] / 2,
+                    node.x - bckgDimensions[0] / 2.,
+                    node.y + node.size / 2. - bckgDimensions[1] / 2.,
                     bckgDimensions[0],
                     bckgDimensions[1],
-                    1 // corner radius
+                    1. // corner radius
                 );
+
+                // node label "text"
+                ctx.fillStyle = tw_gray_700;
+                ctx.font = `${fontSize}px monospace`;
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = 'oklch(37.3% 0.034 259.733)';
-                ctx.fillText(node.name, node.x, node.y + node.size / 2 + bckgDimensions[1] / 8);
+                ctx.textBaseline = "alphabetic";
+                ctx.fillText(node.name, node.x, node.y + node.size / 2. + fontSize * 0.3);
                 node.__bckgDimensions = bckgDimensions;
               })
               .nodePointerAreaPaint((node, color, ctx) => {
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, node.size / 2, 0, Math.PI * 2, true);
+                ctx.arc(node.x, node.y, node.size * 0.55, 0, 2 * Math.PI, false);
                 ctx.fillStyle = color;
+                ctx.fill();
+
                 const bckgDimensions = node.__bckgDimensions;
                 roundRect(ctx,
-                    node.x - bckgDimensions[0] / 2,
-                    node.y + node.size / 2 - bckgDimensions[1] / 2,
+                    node.x - bckgDimensions[0] / 2.,
+                    node.y + node.size / 2. - bckgDimensions[1] / 2.,
                     bckgDimensions[0],
                     bckgDimensions[1],
                     1 // corner radius
                 );
-                ctx.fill();
               })
               .onNodeHover(node => {
                 highlightNodes.clear();
@@ -192,8 +196,22 @@ export default {
                   node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
                   node.links.forEach(link => highlightLinks.add(link));
                 }
-
                 hoverNode = node || null;
+              })
+              .onNodeDrag(node => {
+                highlightNodes.clear();
+                highlightLinks.clear();
+                if (node) {
+                  highlightNodes.add(node);
+                  node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
+                  node.links.forEach(link => highlightLinks.add(link));
+                }
+                hoverNode = node || null;
+              })
+              .onNodeDragEnd(node => {
+                highlightNodes.clear();
+                highlightLinks.clear();
+                hoverNode = null;
               })
               .onLinkHover(link => {
                 highlightNodes.clear();
