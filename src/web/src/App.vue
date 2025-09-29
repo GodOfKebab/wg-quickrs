@@ -128,23 +128,58 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-gray-500 my-5 mx-2 shrink-0">
+    <footer class="text-center text-gray-500 mb-5 mx-2 shrink-0">
       <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
-        version: <strong>{{ version.version }}</strong>
+        version:
+        <strong>
+          <a :href="`https://github.com/GodOfKebab/wg-quickrs/releases/tag/${version.version}`"
+             class="hover:underline"
+             target="_blank">
+            {{ version.version }}
+          </a>
+        </strong>
       </small>
       <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
-        build: <strong>{{ version.build }}</strong>
+        build:
+        <strong>
+          <a :href="`https://github.com/GodOfKebab/wg-quickrs/commits/${version.build_sha_and_date[0].split('#')[1]}`"
+             class="hover:underline"
+             target="_blank">
+            {{ version.build_sha_and_date[0] }}
+          </a>
+        </strong>
+        <strong>@{{ version.build_sha_and_date[1] }}</strong>
       </small>
       <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
         last fetched:
-        <strong v-if="last_fetch.since < 0" class="text-red-400">Never</strong>
+        <strong v-if="last_fetch.since < 0" class="text-red-700">Never</strong>
         <strong v-else-if="last_fetch.since > refreshRate * 5"
-                class="text-yellow-400">{{ last_fetch.rfc3339 }}</strong>
-        <strong v-else class="text-green-400">{{ last_fetch.rfc3339 }}</strong>
+                class="text-yellow-700">{{ last_fetch.rfc3339 }}</strong>
+        <strong v-else class="text-green-700">{{ last_fetch.rfc3339 }}</strong>
       </small>
       <br/>
-      <small>&copy; Copyright 2024-2025, <a class="hover:underline" href="https://yasar.idikut.cc/">Yaşar
-        İdikut</a></small>
+      <br/>
+      <small>
+        <a class="hover:underline" href="https://www.wireguard.com/" target="_blank">
+          "WireGuard" and the "WireGuard" logo are registered trademarks of Jason A. Donenfeld.
+        </a>
+      </small>
+      <br/>
+      <small>
+        <span>
+          © 2025
+        </span>
+        <strong>
+          <a class="hover:underline" href="https://github.com/GodOfKebab/wg-quickrs" target="_blank">wg-quickrs</a>
+        </strong>
+        <span>
+          -
+        </span>
+        <a class="hover:underline" href="https://yasar.idikut.cc/" target="_blank">
+          Yaşar İdikut
+        </a>
+      </small>
+
     </footer>
 
     <!-- Dialog: Ask Password -->
@@ -323,11 +358,12 @@ export default {
 
       if (this.version === null) {
         this.api.get_version().then(response => {
-          const last_build_date = (new Date(Date.parse(response.build.split("@").pop())))
+          const build_sha_and_date = response.build.split("@");
+          const last_build_date = (new Date(Date.parse(build_sha_and_date[1])))
           this.version = {
             version: response.version,
             build: response.build,
-            full_version: `version: ${response.version}, build: ${response.build}`,
+            build_sha_and_date: build_sha_and_date,
             readable_datetime: `${last_build_date} [${dayjs(last_build_date).fromNow()}]`
           }
         });
