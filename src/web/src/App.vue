@@ -120,7 +120,7 @@
       <!-- Add a Peer -->
       <div class="items-center justify-center p-3 px-5 border-gray-100">
         <button :disabled="webServerStatus !== ServerStatusEnum.up"
-                class="bg-gray-200 text-gray-700 border-2 border-gray-500 py-2 px-4 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white enabled:cursor-pointer"
+                class="bg-green-100 text-gray-700 border-2 border-gray-500 py-2 px-4 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white enabled:cursor-pointer"
                 @click="dialogId = 'create-peer'">
           <span class="text-sm">Add a Peer</span>
         </button>
