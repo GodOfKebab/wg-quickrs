@@ -66,7 +66,6 @@ export default {
       rx_avg: "? b/s",
       box_div_element: null,
       intervalId: null,
-      pos: 0,
       chart: null,
     }
   },
@@ -169,40 +168,30 @@ export default {
         this.chart.data.datasets[0].data = rxs;
         this.chart.data.datasets[1].data = txs;
         let ratio_new_data = latest_timestamp_dt / (timestamps.at(-1) - timestamps[0]);
-        // console.log(latest_timestamp_dt);
         this.resetMove(ratio_new_data)
         this.chart.update();
-        this.startMove(ratio_new_data);
       },
       deep: true
     }
   },
   methods: {
-    startMove(ratio) {
-      if (this.intervalId) return; // prevent multiple timers
-      const duration = 900; // glitches at 1000 ms interval
-      const refresh_interval = 20.;
-      this.intervalId = setInterval(() => {
-        if (this.box_div_element) {
-          this.pos += 1;
-          const total_margin = ratio * this.box_div_element.getBoundingClientRect().width
-          this.box_div_element.style.marginLeft = `${Math.round(-2 * total_margin)}px`;
-          const total_transform = total_margin * (1 - this.pos / (duration / refresh_interval));
-          this.box_div_element.style.transform = `translateX(${Math.round(total_transform)}px)`;
-        }
-      }, refresh_interval); // every interval milliseconds
-    },
     resetMove(ratio) {
       if (this.intervalId) {
         clearInterval(this.intervalId);
         this.intervalId = null;
       }
-      this.pos = 0;
-      if (this.box_div_element) {
-        const total_margin = ratio * this.box_div_element.getBoundingClientRect().width
-        this.box_div_element.style.marginLeft = `${Math.round(-2 * total_margin)}px`;
-        this.box_div_element.style.transform = `translateX(${Math.round(total_margin)}px)`;
-      }
+      const duration = 1000.;
+      const refresh_interval = 40.; // 25Hz
+      const total_margin = ratio * this.box_div_element.getBoundingClientRect().width
+      this.box_div_element.style.marginLeft = `${Math.round(-2. * total_margin)}px`;
+      this.box_div_element.style.transform = `translateX(${Math.round(total_margin)}px)`;
+
+      let start_time = Date.now();
+      this.intervalId = setInterval(() => {
+        const pos = (Date.now() - start_time) / duration;
+        const total_transform = total_margin * (1. - pos);
+        this.box_div_element.style.transform = `translateX(${Math.round(total_transform)}px)`;
+      }, refresh_interval); // roughly every interval milliseconds
     }
   }
 }
