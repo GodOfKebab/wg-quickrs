@@ -13,7 +13,7 @@
             <!-- Settings Button -->
             <button
                 :class="[settingsDropdownOpen ? 'bg-gray-300': '']"
-                class="mt-0.5 mr-2 h-8 w-8 rounded-md bg-gray-200 hover:bg-gray-300 cursor-pointer flex items-center justify-center shrink-0"
+                class="mt-0.5 mr-2 h-8 w-8 rounded-md bg-gray-200 hover:bg-gray-300 flex items-center justify-center shrink-0"
                 @click="settingsDropdownOpen = !settingsDropdownOpen">
               <img alt="settings" class="h-6" src="/icons/iconfinder/ionicons-211751_gear_icon.svg">
             </button>
@@ -22,7 +22,7 @@
             <div v-if="settingsDropdownOpen"
                  class="absolute left-0 top-9 w-24 bg-white border border-gray-200 rounded-md shadow-lg z-20 flex items-center justify-center">
               <button
-                  class="block w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+                  class="block w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
                   @click="settingsDropdownOpen = false; logout();">
                 <img alt="logout" class="inline-block float-left h-5 mr-1"
                      src="/icons/iconfinder/iconoir-9042719_log_out_icon.svg">
@@ -120,7 +120,7 @@
       <!-- Add a Peer -->
       <div class="items-center justify-center p-3 px-5 border-gray-100">
         <button :disabled="webServerStatus !== ServerStatusEnum.up"
-                class="bg-green-100 text-gray-700 border-2 border-gray-500 py-2 px-4 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white enabled:cursor-pointer"
+                class="bg-green-100 text-gray-700 border-2 border-gray-500 py-2 px-4 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white"
                 @click="dialogId = 'create-peer'">
           <span class="text-sm">Add a Peer</span>
         </button>

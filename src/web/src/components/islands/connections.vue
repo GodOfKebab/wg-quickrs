@@ -135,7 +135,7 @@
           <div class="ml-2">
             <field class="inline-block whitespace-pre-wrap" field="PreSharedKey:"></field>
             <button
-                class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2 cursor-pointer"
+                class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2"
                 @click="refreshPreSharedKey(otherPeerId)">
               <img alt="Refresh Keys" class="h-6" src="/icons/flowbite/refresh.svg"/>
             </button>

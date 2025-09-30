@@ -6,7 +6,7 @@
       <div class="mb-1">
         <field class="inline-block" field="PublicKey  :"></field>
         <button
-            class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2 cursor-pointer"
+            class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2"
             @click="refreshPeerEditKeys()">
           <img alt="Refresh Keys" class="h-6" src="/icons/flowbite/refresh.svg"/>
         </button>
@@ -15,7 +15,7 @@
       <div class="mb-1">
         <field class="inline-block" field="PrivateKey:"></field>
         <button
-            class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2 cursor-pointer"
+            class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2"
             @click="refreshPeerEditKeys()">
           <img alt="Refresh Keys" class="h-6" src="/icons/flowbite/refresh.svg"/>
         </button>

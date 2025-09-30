@@ -5,3 +5,7 @@
         @apply cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border bg-gray-100 border-slate-300 checked:bg-blue-600 checked:border-blue-600;
     }
 }
+
+button {
+    @apply enabled:cursor-pointer;
+}
