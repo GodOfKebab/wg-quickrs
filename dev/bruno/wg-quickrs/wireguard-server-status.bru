@@ -1,0 +1,21 @@
+meta {
+  name: wireguard/server/status
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base-url}}/api/wireguard/server/status
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "status": 2
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,24 @@
+meta {
+  name: authenticate
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base-url}}/api/token?client_id=bruno&password={{password}}
+  body: none
+  auth: none
+}
+
+params:query {
+  client_id: bruno
+  password: {{password}}
+}
+
+script:post-response {
+  bru.setVar("token", res.body);
+}
+
+settings {
+  encodeUrl: true
+}

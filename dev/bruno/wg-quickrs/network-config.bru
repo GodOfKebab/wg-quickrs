@@ -1,0 +1,30 @@
+meta {
+  name: network/config
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{base-url}}/api/network/config
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "changed_fields": {
+          "peers": {
+              "e7dd8fce-7bcb-451d-97e8-316d631c7b7e": {
+                  "dns": {
+                      "enabled": true,
+                      "value": "1.1.1.1"
+                  }
+              }
+          }
+      }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

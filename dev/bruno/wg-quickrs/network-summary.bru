@@ -1,0 +1,19 @@
+meta {
+  name: network/summary
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base-url}}/api/network/summary?only_digest=false
+  body: none
+  auth: inherit
+}
+
+params:query {
+  only_digest: false
+}
+
+settings {
+  encodeUrl: true
+}

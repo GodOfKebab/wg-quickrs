@@ -1,0 +1,15 @@
+meta {
+  name: wireguard/pre_shared_key
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base-url}}/api/wireguard/pre_shared_key
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
