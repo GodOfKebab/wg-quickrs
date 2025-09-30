@@ -1,6 +1,6 @@
 use crate::conf::network;
 use crate::conf::timestamp;
-use crate::{WG_QUICKRS_CONFIG_FILE, conf};
+use crate::conf;
 use rust_wasm::types::*;
 use rust_wasm::validation::*;
 use rust_wasm::*;
@@ -11,8 +11,6 @@ use crate::wireguard::cmd::sync_conf;
 use actix_web::{HttpResponse, web};
 use chrono::Duration;
 use serde_json::json;
-use std::fs::OpenOptions;
-use std::io::{Read, Seek, SeekFrom, Write};
 use uuid::Uuid;
 
 pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody>) -> HttpResponse {
@@ -29,6 +27,61 @@ pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody
     };
     HttpResponse::Ok().json(response_data)
 }
+
+macro_rules! get_mg_config_w_digest {
+    () => {{
+        let mut_opt = CONFIG_W_DIGEST.get();
+        if mut_opt.is_none() {
+            return HttpResponse::InternalServerError().json(json!({
+                "status": "internal_server_error",
+                "message": "can't handle request: internal config variables are not initialized"
+            }));
+        }
+
+        let mut_lock_opt = mut_opt.unwrap().lock();
+        if mut_lock_opt.is_err() {
+            return HttpResponse::InternalServerError().json(json!({
+                "status": "internal_server_error",
+                "message": "can't handle request: unable to acquire lock on config variables"
+            }));
+        }
+
+        mut_lock_opt.unwrap()
+    }};
+}
+
+macro_rules! post_mg_config_w_digest {
+    ($c:expr) => {
+        let config_str = match serde_yml::to_string(&$c.config).map_err(ConfUtilError::Serialization) {
+            Ok(s) => s,
+            Err(_) => {
+                return HttpResponse::InternalServerError().json(json!({
+                    "status": "internal_server_error",
+                    "message": "can't handle request: unable to serialize config"
+                }));
+            }
+        };
+        $c.digest = match ConfigWDigest::from_config_w_str($c.config.clone(), config_str.clone()) {
+            Ok(c_w_d) => c_w_d.digest,
+            Err(_) => {
+                return HttpResponse::InternalServerError().json(json!({
+                    "status": "internal_server_error",
+                    "message": "can't handle request: unable to compute config digest"
+                }));
+            }
+        };
+        match conf::util::write_config(config_str) {
+            Ok(_) => {}
+            Err(_) => {
+                return HttpResponse::InternalServerError().json(json!({
+                    "status": "internal_server_error",
+                    "message": "can't handle request: unable to write config"
+                }));
+            }
+        }
+    };
+}
+
 
 pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     let body_raw = String::from_utf8_lossy(&body);
@@ -131,23 +184,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         };
     }
 
-    let mut_opt = CONFIG_W_DIGEST.get();
-    if mut_opt.is_none() {
-        return HttpResponse::InternalServerError().json(json!({
-            "status": "internal_server_error",
-            "message": "can't handle request: internal config variables are not initialized"
-        }));
-    }
-
-    let mut_lock_opt = mut_opt.unwrap().lock();
-    if mut_lock_opt.is_err() {
-        return HttpResponse::InternalServerError().json(json!({
-            "status": "internal_server_error",
-            "message": "can't handle request: unable to acquire lock on config variables"
-        }));
-    }
-
-    let mut c = mut_lock_opt.unwrap();
+    let mut c = get_mg_config_w_digest!();
     let this_peer = c.config.network.this_peer.clone();
 
     if let Some(changed_fields) = change_sum.changed_fields {
@@ -374,34 +411,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         }
     }
     c.config.network.updated_at = timestamp::get_now_timestamp_formatted();
-
-    let config_str = match serde_yml::to_string(&c.config).map_err(ConfUtilError::Serialization) {
-        Ok(s) => s,
-        Err(_) => {
-            return HttpResponse::InternalServerError().json(json!({
-                "status": "internal_server_error",
-                "message": "can't handle request: unable to serialize config"
-            }));
-        }
-    };
-    c.digest = match ConfigWDigest::from_config_w_str(c.config.clone(), config_str.clone()) {
-        Ok(c_w_d) => c_w_d.digest,
-        Err(_) => {
-            return HttpResponse::InternalServerError().json(json!({
-                "status": "internal_server_error",
-                "message": "can't handle request: unable to compute config digest"
-            }));
-        }
-    };
-    match conf::util::write_config(config_str) {
-        Ok(_) => {}
-        Err(_) => {
-            return HttpResponse::InternalServerError().json(json!({
-                "status": "internal_server_error",
-                "message": "can't handle request: unable to write config"
-            }));
-        }
-    }
+    post_mg_config_w_digest!(c);
 
     if c.config.agent.vpn.enabled {
         match sync_conf(&c.config) {
@@ -420,50 +430,20 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 }
 
 pub(crate) fn get_network_lease_id_address() -> HttpResponse {
-    // Open the config file for reading and writing
-    // Can't use get_config and set_config to prevent race issues.
-    let mut config_file_reader = match OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(WG_QUICKRS_CONFIG_FILE.get().unwrap())
-    {
-        Ok(file) => file,
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .body("Failed to open config file".to_string());
-        }
-    };
-
-    // Read the existing contents
-    let mut file_contents = String::new();
-    match config_file_reader.read_to_string(&mut file_contents) {
-        Ok(_) => {}
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .body("Failed to read config file".to_string());
-        }
-    }
-    let mut config: Config = match serde_yml::from_str(&file_contents) {
-        Ok(c) => c,
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .body("Failed to read config file".to_string());
-        }
-    };
+    let mut c = get_mg_config_w_digest!();
 
     let mut reserved_addresses = Vec::<String>::new();
-    for peer in config.network.peers.values() {
+    for peer in c.config.network.peers.values() {
         reserved_addresses.push(peer.address.clone());
     }
-    config.network.leases.retain(|lease| {
-        timestamp::get_duration_since_formatted(lease.valid_until.clone()) > Duration::zero()
+    c.config.network.leases.retain(|lease| {
+        timestamp::get_duration_since_formatted(lease.valid_until.clone()) < Duration::zero()
     });
-
-    for lease in config.network.leases.clone() {
+    for lease in c.config.network.leases.clone() {
         reserved_addresses.push(lease.address.clone());
     }
     let next_address =
-        match network::get_next_available_address(&config.network.subnet, &reserved_addresses) {
+        match network::get_next_available_address(&c.config.network.subnet, &reserved_addresses) {
             Some(next_address) => next_address,
             None => {
                 return HttpResponse::InternalServerError()
@@ -477,36 +457,9 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
         valid_until: timestamp::get_future_timestamp_formatted(Duration::minutes(10)),
     };
     log::info!("leased address {} until {}", body.address, body.valid_until);
-    config.network.leases.push(body.clone());
-    config.network.updated_at = timestamp::get_now_timestamp_formatted();
-    file_contents = match serde_yml::to_string(&config) {
-        Ok(c) => c,
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .body("Failed to serialize config".to_string());
-        }
-    };
+    c.config.network.leases.push(body.clone());
+    c.config.network.updated_at = timestamp::get_now_timestamp_formatted();
+    post_mg_config_w_digest!(c);
 
-    // Move back to the beginning and truncate before writing
-    match config_file_reader.set_len(0) {
-        Ok(_) => {}
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .body("Failed to truncate config file".to_string());
-        }
-    }
-    match config_file_reader.seek(SeekFrom::Start(0)) {
-        Ok(_) => {}
-        Err(_) => {
-            return HttpResponse::InternalServerError().body("Failed to seek to start".to_string());
-        }
-    }
-    match config_file_reader.write_all(file_contents.as_bytes()) {
-        Ok(_) => {}
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .body("Failed to write to config file".to_string());
-        }
-    }
     HttpResponse::Ok().json(json!(body))
 }
