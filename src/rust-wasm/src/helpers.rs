@@ -48,17 +48,25 @@ pub fn get_peer_wg_config(
     if let Some(hidden_scripts) = peer_hidden_scripts {
         writeln!(wg_conf, "{}", hidden_scripts).unwrap();
     }
-    if script_fields.pre_up.enabled {
-        writeln!(wg_conf, "PreUp = {}", script_fields.pre_up.value).unwrap();
+    for script_field in &script_fields.pre_up {
+        if script_field.enabled {
+            writeln!(wg_conf, "PreUp = {}", script_field.value).unwrap();
+        }
     }
-    if script_fields.post_up.enabled {
-        writeln!(wg_conf, "PostUp = {}", script_fields.post_up.value).unwrap();
+    for script_field in &script_fields.post_up {
+        if script_field.enabled {
+            writeln!(wg_conf, "PostUp = {}", script_field.value).unwrap();
+        }
     }
-    if script_fields.pre_down.enabled {
-        writeln!(wg_conf, "PreDown = {}", script_fields.pre_down.value).unwrap();
+    for script_field in &script_fields.pre_down {
+        if script_field.enabled {
+            writeln!(wg_conf, "PreDown = {}", script_field.value).unwrap();
+        }
     }
-    if script_fields.post_down.enabled {
-        writeln!(wg_conf, "PostDown = {}", script_fields.post_down.value).unwrap();
+    for script_field in &script_fields.post_down {
+        if script_field.enabled {
+            writeln!(wg_conf, "PostDown = {}", script_field.value).unwrap();
+        }
     }
     writeln!(wg_conf).unwrap();
 

@@ -674,7 +674,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     cli_field_counter += 2;
 
     // [16/28] --agent-peer-script-pre-up-enabled & --agent-peer-script-pre-up-line
-    let (agent_peer_script_pre_up_enabled, agent_peer_script_pre_up_line) = get_init_pair_option!(
+    let (_, agent_peer_script_pre_up_string_lines) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "script",
@@ -689,9 +689,19 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+    let mut agent_peer_script_pre_up_lines: Vec<EnabledValue> = Vec::new();
+    for script_string_line in agent_peer_script_pre_up_string_lines
+        .split(";")
+        .filter(|&x| !x.is_empty())
+    {
+        agent_peer_script_pre_up_lines.push(EnabledValue {
+            enabled: true,
+            value: format!("{script_string_line};"),
+        })
+    }
 
     // [17/28] --agent-peer-script-post-up-enabled & --agent-peer-script-post-up-line
-    let (agent_peer_script_post_up_enabled, agent_peer_script_post_up_line) = get_init_pair_option!(
+    let (_, agent_peer_script_post_up_string_lines) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "script",
@@ -706,9 +716,19 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+    let mut agent_peer_script_post_up_lines: Vec<EnabledValue> = Vec::new();
+    for script_string_line in agent_peer_script_post_up_string_lines
+        .split(";")
+        .filter(|&x| !x.is_empty())
+    {
+        agent_peer_script_post_up_lines.push(EnabledValue {
+            enabled: true,
+            value: format!("{script_string_line};"),
+        })
+    }
 
     // [18/28] --agent-peer-script-pre-down-enabled & --agent-peer-script-pre-down-line
-    let (agent_peer_script_pre_down_enabled, agent_peer_script_pre_down_line) = get_init_pair_option!(
+    let (_, agent_peer_script_pre_down_string_lines) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "script",
@@ -723,9 +743,19 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+    let mut agent_peer_script_pre_down_lines: Vec<EnabledValue> = Vec::new();
+    for script_string_line in agent_peer_script_pre_down_string_lines
+        .split(";")
+        .filter(|&x| !x.is_empty())
+    {
+        agent_peer_script_pre_down_lines.push(EnabledValue {
+            enabled: true,
+            value: format!("{script_string_line};"),
+        })
+    }
 
     // [19/28] --agent-peer-script-post-down-enabled & --agent-peer-script-post-down-line
-    let (agent_peer_script_post_down_enabled, agent_peer_script_post_down_line) = get_init_pair_option!(
+    let (_, agent_peer_script_post_down_string_lines) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "script",
@@ -740,6 +770,16 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+    let mut agent_peer_script_post_down_lines: Vec<EnabledValue> = Vec::new();
+    for script_string_line in agent_peer_script_post_down_string_lines
+        .split(";")
+        .filter(|&x| !x.is_empty())
+    {
+        agent_peer_script_post_down_lines.push(EnabledValue {
+            enabled: true,
+            value: format!("{script_string_line};"),
+        })
+    }
 
     println!("[agent settings complete]");
     println!("[new peer/connection default settings 20-28/28]"); // TODO: use numbers instead of 20-28/28
@@ -810,7 +850,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     cli_field_counter += 2;
 
     // [24/28] --default-peer-script-pre-up-enabled & --default-peer-script-pre-up-line
-    let (default_peer_script_pre_up_enabled, default_peer_script_pre_up_line) = get_init_pair_option!(
+    let (_, default_peer_script_pre_up_string_lines) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "script",
@@ -825,9 +865,19 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+    let mut default_peer_script_pre_up_lines: Vec<EnabledValue> = Vec::new();
+    for script_string_line in default_peer_script_pre_up_string_lines
+        .split(";")
+        .filter(|&x| !x.is_empty())
+    {
+        default_peer_script_pre_up_lines.push(EnabledValue {
+            enabled: true,
+            value: format!("{script_string_line};"),
+        })
+    }
 
     // [25/28] --default-peer-script-post-up-enabled & --default-peer-script-post-up-line
-    let (default_peer_script_post_up_enabled, default_peer_script_post_up_line) = get_init_pair_option!(
+    let (_, default_peer_script_post_up_string_lines) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "script",
@@ -842,9 +892,19 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+    let mut default_peer_script_post_up_lines: Vec<EnabledValue> = Vec::new();
+    for script_string_line in default_peer_script_post_up_string_lines
+        .split(";")
+        .filter(|&x| !x.is_empty())
+    {
+        default_peer_script_post_up_lines.push(EnabledValue {
+            enabled: true,
+            value: format!("{script_string_line};"),
+        })
+    }
 
     // [26/28] --default-peer-script-pre-down-enabled & --default-peer-script-pre-down-line
-    let (default_peer_script_pre_down_enabled, default_peer_script_pre_down_line) = get_init_pair_option!(
+    let (_, default_peer_script_pre_down_string_lines) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "script",
@@ -859,9 +919,19 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+    let mut default_peer_script_pre_down_lines: Vec<EnabledValue> = Vec::new();
+    for script_string_line in default_peer_script_pre_down_string_lines
+        .split(";")
+        .filter(|&x| !x.is_empty())
+    {
+        default_peer_script_pre_down_lines.push(EnabledValue {
+            enabled: true,
+            value: format!("{script_string_line};"),
+        })
+    }
 
     // [27/28] --default-peer-script-post-down-enabled & --default-peer-script-post-down-line
-    let (default_peer_script_post_down_enabled, default_peer_script_post_down_line) = get_init_pair_option!(
+    let (_, default_peer_script_post_down_string_lines) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "script",
@@ -876,6 +946,16 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+    let mut default_peer_script_post_down_lines: Vec<EnabledValue> = Vec::new();
+    for script_string_line in default_peer_script_post_down_string_lines
+        .split(";")
+        .filter(|&x| !x.is_empty())
+    {
+        default_peer_script_post_down_lines.push(EnabledValue {
+            enabled: true,
+            value: format!("{script_string_line};"),
+        })
+    }
 
     // [28/28] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
     let (
@@ -944,22 +1024,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
             value: agent_peer_mtu_value,
         },
         scripts: Scripts {
-            pre_up: EnabledValue {
-                enabled: agent_peer_script_pre_up_enabled,
-                value: agent_peer_script_pre_up_line,
-            },
-            post_up: EnabledValue {
-                enabled: agent_peer_script_post_up_enabled,
-                value: agent_peer_script_post_up_line,
-            },
-            pre_down: EnabledValue {
-                enabled: agent_peer_script_pre_down_enabled,
-                value: agent_peer_script_pre_down_line,
-            },
-            post_down: EnabledValue {
-                enabled: agent_peer_script_post_down_enabled,
-                value: agent_peer_script_post_down_line,
-            },
+            pre_up: agent_peer_script_pre_up_lines,
+            post_up: agent_peer_script_post_up_lines,
+            pre_down: agent_peer_script_pre_down_lines,
+            post_down: agent_peer_script_post_down_lines,
         },
     };
 
@@ -1024,22 +1092,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
                         value: default_peer_mtu_value,
                     },
                     scripts: Scripts {
-                        pre_up: EnabledValue {
-                            enabled: default_peer_script_pre_up_enabled,
-                            value: default_peer_script_pre_up_line,
-                        },
-                        post_up: EnabledValue {
-                            enabled: default_peer_script_post_up_enabled,
-                            value: default_peer_script_post_up_line,
-                        },
-                        pre_down: EnabledValue {
-                            enabled: default_peer_script_pre_down_enabled,
-                            value: default_peer_script_pre_down_line,
-                        },
-                        post_down: EnabledValue {
-                            enabled: default_peer_script_post_down_enabled,
-                            value: default_peer_script_post_down_line,
-                        },
+                        pre_up: default_peer_script_pre_up_lines,
+                        post_up: default_peer_script_post_up_lines,
+                        pre_down: default_peer_script_pre_down_lines,
+                        post_down: default_peer_script_post_down_lines,
                     },
                 },
                 connection: DefaultConnection {

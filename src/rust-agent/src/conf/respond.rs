@@ -103,6 +103,34 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         };
     }
 
+    macro_rules! validate_then_update_script {
+        ($target:expr, $source:expr, $id:expr, $field:ident) => {
+            if let Some(enabled_values) = $source.$field {
+                $target.scripts.$field = Vec::new();
+                for (i, enabled_value) in enabled_values.iter().enumerate() {
+                    validate_enabled_value!(
+                        enabled_value,
+                        format!("changed_fields.peer.{}.scripts[{}]", $id, i),
+                        $field
+                    );
+
+                    if !enabled_value.enabled {
+                        $target.scripts.$field.push(enabled_value.clone());
+                        continue;
+                    }
+                    for script_string_line in
+                        enabled_value.value.split(";").filter(|&x| !x.is_empty())
+                    {
+                        $target.scripts.$field.push(EnabledValue {
+                            enabled: true,
+                            value: format!("{script_string_line};"),
+                        })
+                    }
+                }
+            }
+        };
+    }
+
     let mut_opt = CONFIG_W_DIGEST.get();
     if mut_opt.is_none() {
         return HttpResponse::InternalServerError().json(json!({
@@ -122,7 +150,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     let mut c = mut_lock_opt.unwrap();
     let this_peer = c.config.network.this_peer.clone();
 
-    // TODO: process errors
     if let Some(changed_fields) = change_sum.changed_fields {
         if let Some(changed_fields_peers) = changed_fields.peers {
             for (peer_id, peer_details) in changed_fields_peers {
@@ -176,34 +203,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     );
 
                     if let Some(scripts) = peer_details.scripts {
-                        validate_then_update_enabled_value!(
-                            peer_config.scripts,
-                            scripts,
-                            peer,
-                            format!("{peer_id}.scripts"),
-                            pre_up
-                        );
-                        validate_then_update_enabled_value!(
-                            peer_config.scripts,
-                            scripts,
-                            peer,
-                            format!("{peer_id}.scripts"),
-                            post_up
-                        );
-                        validate_then_update_enabled_value!(
-                            peer_config.scripts,
-                            scripts,
-                            peer,
-                            format!("{peer_id}.scripts"),
-                            pre_down
-                        );
-                        validate_then_update_enabled_value!(
-                            peer_config.scripts,
-                            scripts,
-                            peer,
-                            format!("{peer_id}.scripts"),
-                            post_down
-                        );
+                        validate_then_update_script!(peer_config, scripts, peer_id, pre_up);
+                        validate_then_update_script!(peer_config, scripts, peer_id, post_up);
+                        validate_then_update_script!(peer_config, scripts, peer_id, pre_down);
+                        validate_then_update_script!(peer_config, scripts, peer_id, post_down);
                     }
                 }
             }
@@ -280,26 +283,34 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     format!("added_peers.{}", peer_id),
                     private_key
                 );
-                validate_enabled_value!(
-                    peer_details.scripts.pre_up,
-                    format!("added_peers.{}.scripts", peer_id),
-                    pre_up
-                );
-                validate_enabled_value!(
-                    peer_details.scripts.post_up,
-                    format!("added_peers.{}.scripts", peer_id),
-                    post_up
-                );
-                validate_enabled_value!(
-                    peer_details.scripts.pre_down,
-                    format!("added_peers.{}.scripts", peer_id),
-                    pre_down
-                );
-                validate_enabled_value!(
-                    peer_details.scripts.post_down,
-                    format!("added_peers.{}.scripts", peer_id),
-                    post_down
-                );
+                for (i, enabled_value) in peer_details.scripts.pre_up.iter().enumerate() {
+                    validate_enabled_value!(
+                        enabled_value,
+                        format!("added_peers.{}.scripts.pre_up[{}]", peer_id, i),
+                        pre_up
+                    );
+                }
+                for (i, enabled_value) in peer_details.scripts.post_up.iter().enumerate() {
+                    validate_enabled_value!(
+                        enabled_value,
+                        format!("added_peers.{}.scripts.post_up[{}]", peer_id, i),
+                        post_up
+                    );
+                }
+                for (i, enabled_value) in peer_details.scripts.pre_down.iter().enumerate() {
+                    validate_enabled_value!(
+                        enabled_value,
+                        format!("added_peers.{}.scripts.pre_down[{}]", peer_id, i),
+                        pre_down
+                    );
+                }
+                for (i, enabled_value) in peer_details.scripts.post_down.iter().enumerate() {
+                    validate_enabled_value!(
+                        enabled_value,
+                        format!("added_peers.{}.scripts.post_down[{}]", peer_id, i),
+                        post_down
+                    );
+                }
                 let mut added_peer = rust_wasm::types::Peer::from(&peer_details);
                 added_peer.created_at = timestamp::get_now_timestamp_formatted();
                 added_peer.updated_at = added_peer.created_at.clone();

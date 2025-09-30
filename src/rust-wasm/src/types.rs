@@ -154,10 +154,10 @@ pub struct EnabledValue {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Scripts {
-    pub pre_up: EnabledValue,
-    pub post_up: EnabledValue,
-    pub pre_down: EnabledValue,
-    pub post_down: EnabledValue,
+    pub pre_up: Vec<EnabledValue>,
+    pub post_up: Vec<EnabledValue>,
+    pub pre_down: Vec<EnabledValue>,
+    pub post_down: Vec<EnabledValue>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -218,10 +218,10 @@ pub struct TelemetryDatum {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct OptionalScripts {
-    pub pre_up: Option<EnabledValue>,
-    pub post_up: Option<EnabledValue>,
-    pub pre_down: Option<EnabledValue>,
-    pub post_down: Option<EnabledValue>,
+    pub pre_up: Option<Vec<EnabledValue>>,
+    pub post_up: Option<Vec<EnabledValue>>,
+    pub pre_down: Option<Vec<EnabledValue>>,
+    pub post_down: Option<Vec<EnabledValue>>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
