@@ -364,6 +364,7 @@ export default {
             version: response.version,
             build: response.build,
             build_sha_and_date: build_sha_and_date,
+            full_version: `version: ${response.version} | build: ${response.build}`,
             readable_datetime: `${last_build_date} [${dayjs(last_build_date).fromNow()}]`
           }
         });
