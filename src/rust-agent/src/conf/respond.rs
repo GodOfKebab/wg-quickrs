@@ -79,6 +79,7 @@ macro_rules! post_mg_config_w_digest {
                 }));
             }
         }
+        log::info!("updated config file");
     };
 }
 
@@ -186,6 +187,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 
     let mut c = get_mg_config_w_digest!();
     let this_peer = c.config.network.this_peer.clone();
+    let mut changed_config = false;
 
     if let Some(changed_fields) = change_sum.changed_fields {
         if let Some(changed_fields_peers) = changed_fields.peers {
@@ -245,6 +247,12 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                         validate_then_update_script!(peer_config, scripts, peer_id, pre_down);
                         validate_then_update_script!(peer_config, scripts, peer_id, post_down);
                     }
+                    changed_config = true;
+                } else {
+                    return HttpResponse::NotFound().json(json!({
+                        "status": "not_found",
+                        "message": format!("peer '{peer_id}' does not exist")
+                    }));
                 }
             }
         }
@@ -282,6 +290,12 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                         connection_id,
                         persistent_keepalive
                     );
+                    changed_config = true;
+                } else {
+                    return HttpResponse::NotFound().json(json!({
+                        "status": "not_found",
+                        "message": format!("connection '{connection_id}' does not exist")
+                    }));
                 }
             }
         }
@@ -357,6 +371,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     .network
                     .leases
                     .retain(|lease| lease.peer_id != peer_id);
+                changed_config = true;
             }
         }
     }
@@ -366,6 +381,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         for peer_id in removed_peers {
             {
                 c.config.network.peers.remove(peer_id.as_str());
+                changed_config = true;
             }
         }
     }
@@ -398,6 +414,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     .network
                     .connections
                     .insert(connection_id.clone(), connection_details);
+                changed_config = true;
             }
         }
     }
@@ -407,9 +424,18 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         for connection_id in removed_connections {
             {
                 c.config.network.connections.remove(connection_id.as_str());
+                changed_config = true;
             }
         }
     }
+    if !changed_config {
+        log::info!("nothing to update");
+        return HttpResponse::BadRequest().json(json!({
+            "status": "bad_request",
+            "message": "nothing to update"
+        }));
+    }
+
     c.config.network.updated_at = timestamp::get_now_timestamp_formatted();
     post_mg_config_w_digest!(c);
 
