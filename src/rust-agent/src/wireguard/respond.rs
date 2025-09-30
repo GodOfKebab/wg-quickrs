@@ -1,6 +1,6 @@
 use crate::conf;
 use crate::wireguard::cmd;
-use crate::wireguard::cmd::{disable_tunnel, enable_tunnel};
+use crate::wireguard::cmd::{disable_tunnel, enable_tunnel, WG_STATUS};
 use actix_web::{web, HttpResponse};
 use serde_json::json;
 
@@ -38,6 +38,9 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
             }));
         }
     };
+    if status_body.status == WG_STATUS.lock().unwrap().value() {
+        return HttpResponse::Ok().json(json!(status_body));
+    }
 
     let conf = match conf::respond::get_config() {
         Ok(conf) => conf,

@@ -74,7 +74,7 @@ pub enum WireGuardCommandError {
 }
 
 static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
-static WG_STATUS: Mutex<WireGuardStatus> = Mutex::new(WireGuardStatus::DOWN);
+pub static WG_STATUS: Mutex<WireGuardStatus> = Mutex::new(WireGuardStatus::DOWN);
 
 pub(crate) async fn run_vpn_server(
     config: &Config,
