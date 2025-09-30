@@ -1,5 +1,5 @@
 <template>
-  <div class="inline-flex items-center">
+  <div class="inline-flex items-center shrink-0">
     <label class="flex items-center cursor-pointer relative">
       <!-- Checkbox -->
       <input

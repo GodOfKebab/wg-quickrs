@@ -1,9 +1,10 @@
 <template>
   <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
       <!--  Kind  -->
       <input-field v-model="peer_local.kind" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.kind]"
                    :value-prev="peer.kind"
+                   class="col-span-2 md:col-span-1"
                    label="Kind"
                    undo-button-alignment-classes="right-[5px] top-[6px]"
                    placeholder="Kind"></input-field>
