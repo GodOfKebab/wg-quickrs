@@ -67,6 +67,7 @@ export default {
       box_div_element: null,
       intervalId: null,
       chart: null,
+      prevGraphMax: 0,
     }
   },
   mounted() {
@@ -168,14 +169,14 @@ export default {
         this.chart.data.datasets[0].data = rxs;
         this.chart.data.datasets[1].data = txs;
         let ratio_new_data = latest_timestamp_dt / (timestamps.at(-1) - timestamps[0]);
-        this.resetMove(ratio_new_data)
+        this.resetMove(ratio_new_data, Math.max(...txs, ...rxs) * 1.02);
         this.chart.update();
       },
       deep: true
     }
   },
   methods: {
-    resetMove(ratio) {
+    resetMove(ratio, newGraphMax) {
       if (this.intervalId) {
         clearInterval(this.intervalId);
         this.intervalId = null;
@@ -191,6 +192,14 @@ export default {
         const pos = (Date.now() - start_time) / duration;
         const total_transform = total_margin * (1. - pos);
         this.box_div_element.style.transform = `translateX(${Math.round(total_transform)}px)`;
+
+        // minimize the number of chart.update calls
+        if (newGraphMax !== this.prevGraphMax) {
+          // If pos > 0.9, complete y-axis scaling animation
+          this.chart.options.scales.y.max = this.prevGraphMax + (newGraphMax - this.prevGraphMax) * (pos > 0.9 ? 1. : pos);
+          this.prevGraphMax = this.chart.options.scales.y.max;
+          this.chart.update();
+        }
       }, refresh_interval); // roughly every interval milliseconds
     }
   }
