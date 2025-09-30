@@ -6,12 +6,19 @@
 
     <!-- Tx/Rx labels on the right -->
     <div
-        class="absolute top-2 right-5 flex flex-col items-end space-y-1 text-sm text-gray-700 bg-white/80 px-1 py-1 rounded">
-      <div class="font-semibold"
-           style="color: rgba(59,130,246,0.8)">Tx: {{ tx_avg }}
+        class="absolute top-2 left-5 flex-col items-end space-y-1 text-sm bg-white/40 px-1 py-1 rounded hidden sm:block">
+      <div class="font-semibold whitespace-pre-wrap text-blue-600/30">Tx peak ({{ telem_span }}): {{ tx_peak }}
       </div>
-      <div class="font-semibold"
-           style="color: rgba(34,197,94,0.8)">Rx: {{ rx_avg }}
+      <div class="font-semibold whitespace-pre-wrap text-green-600/30">Rx peak ({{ telem_span }}): {{ rx_peak }}
+      </div>
+    </div>
+
+    <!-- Tx/Rx labels on the right -->
+    <div
+        class="absolute top-2 right-5 flex flex-col items-end space-y-1 text-sm bg-white/40 px-1 py-1 rounded">
+      <div class="font-semibold whitespace-pre-wrap text-blue-600/30">Tx: {{ tx_avg }}
+      </div>
+      <div class="font-semibold whitespace-pre-wrap text-green-600/30">Rx: {{ rx_avg }}
       </div>
     </div>
   </div>
@@ -64,6 +71,9 @@ export default {
     return {
       tx_avg: "? b/s",
       rx_avg: "? b/s",
+      tx_peak: "? b/s",
+      rx_peak: "? b/s",
+      telem_span: "?",
       box_div_element: null,
       intervalId: null,
       chart: null,
@@ -151,16 +161,26 @@ export default {
           prev_telem_data = telem_data;
 
         }
-        this.tx_avg = formatThroughputBits(txs.at(-1));
-        this.rx_avg = formatThroughputBits(rxs.at(-1));
+        const tx_avg = formatThroughputBits(txs.at(-1));
+        const rx_avg = formatThroughputBits(rxs.at(-1));
+        const maxAvgLen = Math.max(tx_avg.length, rx_avg.length);
+        this.tx_avg = tx_avg.padStart(maxAvgLen, " ");
+        this.rx_avg = rx_avg.padStart(maxAvgLen, " ");
 
-        if (Object.keys(this.telemetry.data).length < 2) return;
         let latest_timestamp_dt = timestamps.at(-1) - timestamps.at(-2);
         while (txs.length < this.telemetry.max_len - 1) {
           txs.unshift(0);
           rxs.unshift(0);
           timestamps.unshift(timestamps[0] - latest_timestamp_dt);
         }
+        const tx_peak_n = Math.max(...txs);
+        const rx_peak_n = Math.max(...rxs);
+        const tx_peak = formatThroughputBits(tx_peak_n);
+        const rx_peak = formatThroughputBits(rx_peak_n);
+        const maxPeakLen = Math.max(tx_peak.length, rx_peak.length);
+        this.tx_peak = tx_peak.padStart(maxPeakLen, " ");
+        this.rx_peak = rx_peak.padStart(maxPeakLen, " ");
+        this.telem_span = `${Math.round((this.telemetry.data.at(-1).timestamp - this.telemetry.data[0].timestamp) / 1000.)}s`;
 
         // Update the chart directly
         this.chart.data.labels = timestamps;
@@ -169,7 +189,7 @@ export default {
         this.chart.data.datasets[0].data = rxs;
         this.chart.data.datasets[1].data = txs;
         let ratio_new_data = latest_timestamp_dt / (timestamps.at(-1) - timestamps[0]);
-        this.resetMove(ratio_new_data, Math.max(...txs, ...rxs) * 1.02);
+        this.resetMove(ratio_new_data, Math.max(tx_peak_n, rx_peak_n) * 1.03);
         this.chart.update();
       },
       deep: true
