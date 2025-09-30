@@ -20,7 +20,7 @@
         <h3 class="text-3xl leading-tight font-medium text-gray-900 inline mb-5 text-start w-full">
           Configuration for <strong>{{ peer_conf.name }}</strong>:
         </h3>
-        <span class="order-last w-full flex justify-between p-1 px-2 mb-1 pr-8">
+        <span class="order-last w-full flex justify-between p-1 px-2 mb-1 pr-4">
           <button :disabled="peerId === network.this_peer"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded transition special-fill enabled:cursor-pointer"
                   title="Delete this peer"

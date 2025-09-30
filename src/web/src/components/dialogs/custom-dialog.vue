@@ -8,7 +8,7 @@
          class="relative inline-block bg-white rounded-lg overflow-hidden text-left shadow-xl transform transition-all max-w-3xl w-full"
          role="dialog">
       <div class="bg-white px-4 pt-4 sm:px-6 sm:pt-6">
-        <div class="pr-4">
+        <div class="pr-2">
           <div v-if="icon === 'danger'"
                class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
             <svg aria-hidden="true" class="h-6 w-6 text-red-600" fill="none" stroke="currentColor"
