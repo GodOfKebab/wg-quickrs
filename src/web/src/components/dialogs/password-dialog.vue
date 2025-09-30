@@ -6,11 +6,11 @@
       <div class="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
 
       <!-- Modal content -->
-      <div class="relative bg-gray-100 rounded-lg shadow-sm dark:bg-gray-700 z-50">
+      <div class="relative bg-gray-100 rounded-lg shadow-sm z-50">
         <!-- Modal header -->
         <div
-            class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-white text-center w-full">
+            class="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-200">
+          <h3 class="text-xl font-semibold text-gray-900 text-center w-full">
             Sign in to wg-quickrs
           </h3>
         </div>
@@ -20,14 +20,14 @@
                 @submit.prevent="on_submit()">
             <div>
               <label
-                  :class="wrong_password ? ['text-red-700', 'dark:text-red-500'] : ['text-gray-900', 'dark:text-white']"
+                  :class="wrong_password ? ['text-red-700'] : ['text-gray-900']"
                   class="block mb-2 text-sm font-medium"
                   for="password">Password</label>
               <input id="password"
                      v-model="password"
                      :class="wrong_password ?
-                     ['bg-red-50',  'border-red-500',  'text-red-900',  'placeholder-red-700', 'focus:ring-red-500', 'focus:border-red-500', 'dark:text-red-500', 'dark:placeholder-red-500', 'dark:placeholder-red-500', 'dark:border-red-500', 'text-red-600', 'dark:text-red-500'] :
-                     ['bg-gray-50', 'border-gray-300', 'text-gray-900', 'focus:ring-blue-500', 'focus:border-blue-500', 'dark:bg-gray-600', 'dark:border-gray-500', 'dark:placeholder-gray-400', 'dark:text-white']"
+                     ['bg-red-50',  'border-red-500',  'text-red-900',  'placeholder-red-700', 'focus:ring-red-500', 'focus:border-red-500', 'text-red-600'] :
+                     ['bg-gray-50', 'border-gray-300', 'text-gray-900', 'focus:ring-blue-500', 'focus:border-blue-500']"
                      class=" border text-sm rounded-lg block w-full p-2.5"
                      name="password"
                      placeholder="••••••••"
@@ -46,7 +46,7 @@
               </div>
             </div>
             <button
-                class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                 type="submit">
               Login to your account
             </button>
