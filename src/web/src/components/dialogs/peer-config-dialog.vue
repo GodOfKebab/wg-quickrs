@@ -22,41 +22,41 @@
         </h3>
         <span class="order-last w-full flex justify-between p-1 px-0 md:px-2 mb-1 mr-2">
           <button :disabled="peerId === network.this_peer"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded transition"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
                   title="Delete this peer"
                   @click="overlayDialogId = 'confirm-delete'">
             <img alt="Delete" class="h-10" src="/icons/flowbite/trash-bin.svg"/>
           </button>
           <button :class="page === 'view-changes' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
                   :disabled="!(changeDetected || errorDetected)"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded transition"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
                   title="See the configuration differences for this peer"
                   @click="page = 'view-changes'">
             <img alt="Compare Configuration" class="h-10" src="/icons/flowbite/merge-cells.svg"/>
           </button>
           <button
               :class="page === 'edit' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
-              class="align-middle bg-gray-100 hover:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded transition"
+              class="align-middle bg-gray-100 hover:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
                   title="Edit the configuration for this peer"
                   @click="page = 'edit'">
             <img alt="Edit Configuration" class="h-10 invert-30" src="/icons/flowbite/file-pen.svg"/>
           </button>
           <button :class="page === 'file' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
                   :disabled="changeDetected || errorDetected"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded transition"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
                   title="See the configuration file for this peer"
                   @click="page = 'file'">
             <img alt="WireGuard Configuration File" class="h-10" src="/icons/flowbite/file-code.svg"/>
           </button>
           <button :class="overlayDialogId === 'qr' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
                   :disabled="changeDetected || errorDetected"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded transition"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
                   title="Show QR Code"
                   @click="drawQRCode(); overlayDialogId = 'qr'">
             <img alt="QR Code" class="h-10" src="/icons/flowbite/qr-code.svg"/>
           </button>
           <button :disabled="changeDetected || errorDetected"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded transition"
+                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
                   title="Download Configuration"
                   @click="downloadPeerConfig()">
             <img alt="Download" class="h-10" src="/icons/flowbite/download.svg"/>
