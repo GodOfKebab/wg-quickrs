@@ -132,13 +132,9 @@
         <div v-show="connections_local.enabled[otherPeerId]" class="mt-1 mb-0.5 text-gray-800 text-lg ml-4">
 
           <!-- Pre Shared Key -->
-          <div class="ml-2">
+          <div class="ml-2 flex items-center">
             <field class="inline-block whitespace-pre-wrap" field="PreSharedKey:"></field>
-            <button
-                class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2"
-                @click="refreshPreSharedKey(otherPeerId)">
-              <img alt="Refresh Keys" class="h-6" src="/icons/flowbite/refresh.svg"/>
-            </button>
+            <refresh-button title="Refresh PreShared Key" @click="refreshPreSharedKey(otherPeerId)"></refresh-button>
             <span class="text-gray-800">{{ connections_local.pre_shared_key[otherPeerId] }}</span>
           </div>
 
@@ -266,11 +262,12 @@ import Checkbox from "@/components/ui/checkbox.vue";
 import Field from "@/components/ui/field.vue";
 import UndoButton from "@/components/ui/buttons/undo.vue";
 import InputField from "@/components/ui/input-field.vue";
+import RefreshButton from "@/components/ui/buttons/refresh.vue";
 
 
 export default {
   name: "connection-islands",
-  components: {InputField, UndoButton, Field, Checkbox},
+  components: {RefreshButton, InputField, UndoButton, Field, Checkbox},
   props: {
     network: {
       type: Object,

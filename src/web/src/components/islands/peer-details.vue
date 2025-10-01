@@ -3,22 +3,14 @@
   <div :class="[this.are_keys_updated ? 'bg-green-100' : 'bg-green-50']"
       class="my-2 p-2 px-3 shadow-md border rounded relative">
     <div class="overflow-x-auto text-lg whitespace-nowrap">
-      <div class="mb-1">
+      <div class="mb-1 flex items-center">
         <field class="inline-block" field="PublicKey  :"></field>
-        <button
-            class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2"
-            @click="refreshPeerEditKeys()">
-          <img alt="Refresh Keys" class="h-6" src="/icons/flowbite/refresh.svg"/>
-        </button>
+        <refresh-button title="Refresh Public/Private Keys" @click="refreshPeerEditKeys()"></refresh-button>
         <span class="text-gray-800">{{ peer_local.public_key }}</span>
       </div>
-      <div class="mb-1">
+      <div class="mb-1 flex items-center">
         <field class="inline-block" field="PrivateKey:"></field>
-        <button
-            class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2"
-            @click="refreshPeerEditKeys()">
-          <img alt="Refresh Keys" class="h-6" src="/icons/flowbite/refresh.svg"/>
-        </button>
+        <refresh-button title="Refresh Public/Private Keys" @click="refreshPeerEditKeys()"></refresh-button>
         <span class="text-gray-800">{{ peer_local.private_key }}</span>
       </div>
       <div class="mb-1">
@@ -49,10 +41,11 @@
 <script>
 import Field from "@/components/ui/field.vue";
 import UndoButton from "@/components/ui/buttons/undo.vue";
+import RefreshButton from "@/components/ui/buttons/refresh.vue";
 
 export default {
   name: "peer-details-island",
-  components: {UndoButton, Field},
+  components: {RefreshButton, UndoButton, Field},
   props: {
     peer: {
       type: Object,
