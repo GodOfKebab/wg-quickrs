@@ -77,7 +77,6 @@
                          @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"></dnsmtu-island>
 
           <scripts-island v-if="default_peer_conf.scripts !== undefined"
-                          :default-scripts="network.defaults.peer.scripts"
                           :peer="default_peer_conf"
                           class="my-2 mr-2"
                           @updated-change-sum="onUpdatedScriptsIslandChangeSum"></scripts-island>

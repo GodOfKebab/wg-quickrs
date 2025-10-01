@@ -1,79 +1,79 @@
 <template>
-  <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
-    <!-- PreUp -->
-    <input-field v-model="peer_local_scripts.pre_up"
-                 :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.pre_up]"
-                 :is-enabled-value="true"
-                 :value-prev="peer.scripts.pre_up"
-                 undo-button-alignment-classes="right-[5px] top-[6px]"
-                 label="PreUp"
-                 placeholder="PreUp Script (e.g. echo 'Hey, this is PreUp Script';)"></input-field>
+  <div :class="[color_div]" class="py-2 pl-1 pr-3 shadow-md border rounded">
+    <!-- Add buttons -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pl-2 pb-1">
+      <div v-for="field in Object.keys(SCRIPTS_KEY_LOOKUP)" :key="field" class="items-center justify-center pt-1 border-gray-100">
+        <button class="text-gray-700 border-2 border-gray-500 py-2 px-1 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white"
+                @click="peer_local_scripts[field].push({enabled: true, value: ''})">
+          <span class="text-base inline-block whitespace-pre">+ Add a </span>
+          <span class="text-base inline-block"><strong>{{ SCRIPTS_KEY_LOOKUP[field] }}</strong> Script</span>
+        </button>
+      </div>
+    </div>
 
-    <!-- PostUp -->
-    <input-field v-model="peer_local_scripts.post_up"
-                 :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.post_up]"
-                 :is-enabled-value="true"
-                 :value-prev="peer.scripts.post_up"
-                 undo-button-alignment-classes="right-[5px] top-[6px]"
-                 label="PostUp"
-                 placeholder="PostUp Script (e.g. echo 'Hey, this is PostUp Script';)"></input-field>
-
-    <!-- PreDown -->
-    <input-field v-model="peer_local_scripts.pre_down"
-                 :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.pre_down]"
-                 :is-enabled-value="true"
-                 :value-prev="peer.scripts.pre_down"
-                 undo-button-alignment-classes="right-[5px] top-[6px]"
-                 label="PreDown"
-                 placeholder="PreDown Script (e.g. echo 'Hey, this is PreDown Script';)"></input-field>
-
-    <!-- PostDown -->
-    <input-field v-model="peer_local_scripts.post_down"
-                 :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field.post_down]"
-                 :is-enabled-value="true"
-                 :value-prev="peer.scripts.post_down"
-                 undo-button-alignment-classes="right-[5px] top-[6px]"
-                 label="PostDown"
-                 placeholder="PostDown Script (e.g. echo 'Hey, this is PostDown Script';)"></input-field>
+    <!-- enabled value lists -->
+    <div v-for="field in Object.keys(SCRIPTS_KEY_LOOKUP)" :key="field">
+      <div v-for="i in peer_local_scripts[field].length" :key="i" class="flex">
+        <div class="inline-block my-auto flex-none pl-2">
+          <button class="flex items-center justify-center bg-red-100 hover:bg-red-600 hover:[&>img]:invert-[90%] p-1 rounded"
+                  title="Delete this peer"
+                  @click="peer_local_scripts.deleted[field].add(i-1); peer_local_scripts[field][i-1] = peer.scripts[field][i-1] ? peer.scripts[field][i-1] : { enabled: true, value: ''}">
+            <img alt="Delete" class="h-6" src="/icons/flowbite/trash-bin.svg"/>
+          </button>
+        </div>
+        <div class="inline-block flex-1 relative">
+          <input-field v-model="peer_local_scripts[field][i-1]"
+                       :class="peer_local_scripts.deleted[field].has(i-1) ? 'opacity-50' : ''"
+                       :disabled="peer_local_scripts.deleted[field].has(i-1)"
+                       :input-color="FIELD_COLOR_LOOKUP[is_changed_script_field[field][i-1]]"
+                       :is-enabled-value="true"
+                       :value-prev="peer.scripts[field][i-1] ? peer.scripts[field][i-1] : { enabled: true, value: ''}"
+                       undo-button-alignment-classes="right-[5px] top-[6px]"
+                       :label="SCRIPTS_KEY_LOOKUP[field]"
+                       :placeholder="`${SCRIPTS_KEY_LOOKUP[field]} Script (e.g. echo 'Hey, this is ${SCRIPTS_KEY_LOOKUP[field]} Script';)`"></input-field>
+          <!-- Undo Button -->
+          <undo-button v-if="peer_local_scripts.deleted[field].has(i-1)"
+                       :disabled="!peer_local_scripts.deleted[field].has(i-1)"
+                       alignment-classes="right-[6px] top-[5px] bg-gray-200"
+                       image-classes="h-7"
+                       class="rounded"
+                       @click="peer_local_scripts.deleted[field].delete(i-1)">
+          </undo-button>
+        </div>
+      </div>
+    </div>
   </div>
-
 </template>
 
 <script>
 import WireGuardHelper from "@/js/wg-helper.js";
 import FastEqual from "fast-deep-equal";
 import InputField from "@/components/ui/input-field.vue";
+import UndoButton from "@/components/ui/undo-button.vue";
 
 
 export default {
   name: "scripts-island",
-  components: {InputField},
+  components: {UndoButton, InputField},
   props: {
     peer: {
       type: Object,
       default: {},
     },
-    defaultScripts: {
-      type: Object,
-      default: {
-        pre_up: {enabled: false, value: ""},
-        post_up: {enabled: false, value: ""},
-        pre_down: {enabled: false, value: ""},
-        post_down: {enabled: false, value: ""},
-      },
-    },
   },
   data() {
     return {
       peer_local_scripts: {
-        pre_up: {enabled: false, value: ""},
-        post_up: {enabled: false, value: ""},
-        pre_down: {enabled: false, value: ""},
-        post_down: {enabled: false, value: ""}
-      },
-      island_change_sum: {
-        changed_fields: {scripts: {}},
-        errors: {scripts: {}},
+        pre_up: [],
+        post_up: [],
+        pre_down: [],
+        post_down: [],
+        deleted: { // to be initialized in created()
+          pre_up: null,
+          post_up: null,
+          pre_down: null,
+          post_down: null,
+        }
       },
       SCRIPTS_KEY_LOOKUP: {
         pre_up: 'PreUp',
@@ -90,19 +90,26 @@ export default {
       color_div: 'bg-green-50',
     };
   },
-  created() {
-    this.peer_local_scripts = JSON.parse(JSON.stringify(this.peer.scripts));
+  beforeMount() {
+    const peer_local_scripts = JSON.parse(JSON.stringify(this.peer.scripts));
+    this.peer_local_scripts.pre_up = peer_local_scripts.pre_up;
+    this.peer_local_scripts.post_up = peer_local_scripts.post_up;
+    this.peer_local_scripts.pre_down = peer_local_scripts.pre_down;
+    this.peer_local_scripts.post_down = peer_local_scripts.post_down;
+    this.peer_local_scripts.deleted.pre_up = new Set();
+    this.peer_local_scripts.deleted.post_up = new Set();
+    this.peer_local_scripts.deleted.pre_down = new Set();
+    this.peer_local_scripts.deleted.post_down = new Set();
   },
   emits: ['updated-change-sum'],
   methods: {
-    check_scripts_field_status(field_name) {
-      if (FastEqual(this.peer_local_scripts[field_name], this.peer.scripts[field_name])) return [0, ''];
-      const ret = WireGuardHelper.checkField('script', this.peer_local_scripts[field_name]);
+    check_scripts_field_status(field_name, i) {
+      if (FastEqual(this.peer_local_scripts[field_name][i], this.peer.scripts[field_name][i])) return [0, ''];
+      const ret = WireGuardHelper.checkField('script', this.peer_local_scripts[field_name][i]);
       if (!ret.status) return [-1, ret.msg];
       return [1, ''];
     },
-    emit_island_change_sum() {
-      let island_change_sum = JSON.parse(JSON.stringify(this.island_change_sum));
+    emit_island_change_sum(island_change_sum) {
       for (let field in island_change_sum.errors.scripts) {
         if (island_change_sum.errors.scripts[field] === null) delete island_change_sum.errors.scripts[field];
       }
@@ -115,18 +122,57 @@ export default {
   watch: {
     peer_local_scripts: {
       handler() {
+        const island_change_sum = {
+          changed_fields: {
+            scripts: {
+              pre_up: null,
+              post_up: null,
+              pre_down: null,
+              post_down: null,
+            },
+          },
+          errors: {
+            scripts: {
+              pre_up: null,
+              post_up: null,
+              pre_down: null,
+              post_down: null,
+            }
+          }
+        }
         let errorDetected = false;
         let changeDetected = false;
-        for (let field in this.peer_local_scripts) {
-          let msg = "";
-          [this.is_changed_script_field[field], msg] = this.check_scripts_field_status(field);
-          this.island_change_sum.errors.scripts[field] = this.is_changed_script_field[field] === -1 ? msg : null;
-          this.island_change_sum.changed_fields.scripts[field] = this.is_changed_script_field[field] === 1 ? this.peer_local_scripts[field] : null;
+        const is_changed_script_field = {}
+        for (const field of Object.keys(this.SCRIPTS_KEY_LOOKUP)) {
+          let errorDetectedField = false;
+          let changeDetectedField = false;
+          is_changed_script_field[field] = [];
+          for (let i = 0; i < this.peer_local_scripts[field].length; i++) {
+            let msg = "";
+            is_changed_script_field[field].push(0);
+            [is_changed_script_field[field][i], msg] = this.check_scripts_field_status(field, i);
+            island_change_sum.errors.scripts[field] = is_changed_script_field[field][i] === -1 ? msg : island_change_sum.errors.scripts[field];
+            island_change_sum.changed_fields.scripts[field] = is_changed_script_field[field][i] === 1 ? this.peer_local_scripts[field] : island_change_sum.changed_fields.scripts[field];
 
-          errorDetected ||= this.is_changed_script_field[field] === -1;
-          changeDetected ||= this.is_changed_script_field[field] !== 0;
+            errorDetectedField ||= is_changed_script_field[field][i] === -1;
+            changeDetectedField ||= is_changed_script_field[field][i] !== 0;
+          }
+
+          if (this.peer_local_scripts[field].length !== this.peer.scripts[field].length && changeDetectedField && !errorDetectedField) {
+            island_change_sum.changed_fields.scripts[field] = this.peer_local_scripts[field];
+          }
+          if (this.peer_local_scripts.deleted[field].size > 0 && !errorDetectedField) {
+            island_change_sum.changed_fields.scripts[field] = JSON.parse(JSON.stringify(this.peer_local_scripts[field]));
+            for (const i of this.peer_local_scripts.deleted[field].values()) {
+              island_change_sum.changed_fields.scripts[field].splice(i, 1);
+            }
+          }
+
+          errorDetected ||= errorDetectedField;
+          changeDetected ||= changeDetectedField;
         }
-        this.emit_island_change_sum();
+        this.is_changed_script_field = is_changed_script_field;
+        this.emit_island_change_sum(island_change_sum);
         this.color_div = errorDetected ? 'bg-red-50' : changeDetected ? 'bg-green-100' : 'bg-green-50';
       },
       deep: true,

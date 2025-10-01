@@ -3,6 +3,7 @@
     <label class="flex items-center cursor-pointer relative">
       <!-- Checkbox -->
       <input
+          :disabled="disabled"
           :checked="checked"
           :class="`h-${size} w-${size}`"
           type="checkbox"
@@ -32,6 +33,7 @@ export default {
   components: {Field},
   props: {
     checked: false,
+    disabled: false,
     label: "",
     size: 6
   },

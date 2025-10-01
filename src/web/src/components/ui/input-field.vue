@@ -1,7 +1,7 @@
 <template>
   <div class="my-0.5 truncate flex items-center relative ml-2">
     <!-- Label -->
-    <checkbox v-if="isEnabledValue" :checked="modelValue.enabled" :label="`${label}:`" class="mr-1" size="5"
+    <checkbox v-if="isEnabledValue" :checked="modelValue.enabled" :label="`${label}:`" class="mr-1" size="5" :disabled="disabled"
               @click="$emit('update:modelValue',{enabled: !modelValue.enabled, value: modelValue.value})"></checkbox>
     <field v-else :field="`${label}:`" class="mr-1"></field>
 
