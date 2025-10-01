@@ -33,11 +33,9 @@
           <qr-button disabled="true"
                      image-classes="h-10 w-10"
                      title="Show QR Code"></qr-button>
-          <button class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded"
-                  disabled
-                  title="Download Configuration">
-            <img alt="Download" class="h-10" src="/icons/flowbite/download.svg"/>
-          </button>
+          <download-button disabled="true"
+                           image-classes="h-10 w-10"
+                           title="Download Configuration"></download-button>
         </span>
       </div>
 
@@ -139,10 +137,12 @@ import CompareButton from "@/components/ui/buttons/compare.vue";
 import EditButton from "@/components/ui/buttons/edit.vue";
 import ConfButton from "@/components/ui/buttons/conf.vue";
 import QrButton from "@/components/ui/buttons/qr.vue";
+import DownloadButton from "@/components/ui/buttons/download.vue";
 
 export default {
   name: "peer-config-dialog",
   components: {
+    DownloadButton,
     QrButton,
     ConfButton,
     EditButton,
