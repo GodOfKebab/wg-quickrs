@@ -30,11 +30,9 @@
           <conf-button disabled="true"
                        image-classes="h-10 w-10"
                        title="See the configuration file for this peer"></conf-button>
-          <button class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded"
-                  disabled
-                  title="Show QR Code">
-            <img alt="QR Code" class="h-10" src="/icons/flowbite/qr-code.svg"/>
-          </button>
+          <qr-button disabled="true"
+                     image-classes="h-10 w-10"
+                     title="Show QR Code"></qr-button>
           <button class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded"
                   disabled
                   title="Download Configuration">
@@ -140,10 +138,12 @@ import DeleteButton from "@/components/ui/buttons/delete.vue";
 import CompareButton from "@/components/ui/buttons/compare.vue";
 import EditButton from "@/components/ui/buttons/edit.vue";
 import ConfButton from "@/components/ui/buttons/conf.vue";
+import QrButton from "@/components/ui/buttons/qr.vue";
 
 export default {
   name: "peer-config-dialog",
   components: {
+    QrButton,
     ConfButton,
     EditButton,
     CompareButton,
