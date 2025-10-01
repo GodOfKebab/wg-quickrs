@@ -121,6 +121,7 @@ export default {
               .height(this.container.offsetHeight)
               .d3Force('center', null)
               .zoomToFit(100, 20)
+              .maxZoom(20)
               .nodeId('id')
               .nodeLabel(null)
               .nodeCanvasObject((node, ctx) => {
@@ -152,8 +153,11 @@ export default {
                   ctx.drawImage(marker, node.x - node.size / 4, node.y - 3 * node.size / 4, node.size / 2, node.size / 2);
                 }
 
-                // node label "div"
+                // node label "text" 1/2
                 const fontSize = 2;
+                ctx.font = `${fontSize}px monospace`;
+
+                // node label "div"
                 const textWidth = ctx.measureText(node.name).width;
                 const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.3); // some padding
                 ctx.fillStyle = tw_gray_50;
@@ -165,9 +169,8 @@ export default {
                     1. // corner radius
                 );
 
-                // node label "text"
+                // node label "text" 2/2
                 ctx.fillStyle = tw_gray_700;
-                ctx.font = `${fontSize}px monospace`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = "alphabetic";
                 ctx.fillText(node.name, node.x, node.y + node.size / 2. + fontSize * 0.3);
