@@ -16,6 +16,7 @@ use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tempfile::NamedTempFile;
 use thiserror::Error;
+use tokio::signal::unix::{signal, SignalKind};
 
 const TELEMETRY_CAPACITY: usize = 21; // 20 throughput measurements
 const TELEMETRY_INTERVAL: u64 = 1000;
@@ -110,6 +111,8 @@ pub(crate) async fn run_vpn_server(
             config.agent.vpn.port
         );
 
+        let mut signal_terminate = signal(SignalKind::terminate()).unwrap();
+        let mut signal_interrupt = signal(SignalKind::interrupt()).unwrap();
         let mut ticker = tokio::time::interval(Duration::from_millis(TELEMETRY_INTERVAL));
         tokio::select! {
             _ = async {
@@ -118,14 +121,11 @@ pub(crate) async fn run_vpn_server(
                     run_loop();
                 }
             } => {},
-            _ = tokio::signal::ctrl_c() => {
-                println!("Stopping the wireguard tunnel...");
-            }
+            _ = signal_terminate.recv() => log::info!("Received SIGTERM"),
+            _ = signal_interrupt.recv() => log::info!("Received SIGINT"),
         }
-        match disable_tunnel(config) {
-            Ok(_) => log::info!("Stopped the wireguard tunnel"),
-            Err(e) => log::error!("Failed to stop the wireguard tunnel: {e}"),
-        };
+        log::info!("Stopping the wireguard tunnel... (ignore errors if it fails to find interface because \"Backgrounding route monitor\" might have stopped wg already)");
+        let _ = disable_tunnel(config);
         Ok(())
     })
     .await
