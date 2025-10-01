@@ -15,11 +15,9 @@
     <div v-for="field in Object.keys(SCRIPTS_KEY_LOOKUP)" :key="field">
       <div v-for="i in peer_local_scripts[field].length" :key="i" class="flex">
         <div class="inline-block my-auto flex-none pl-2">
-          <button class="flex items-center justify-center bg-red-100 hover:bg-red-600 hover:[&>img]:invert-[90%] p-1 rounded"
-                  title="Delete this peer"
-                  @click="peer_local_scripts.deleted[field].add(i-1); peer_local_scripts[field][i-1] = peer.scripts[field][i-1] ? peer.scripts[field][i-1] : { enabled: true, value: ''}">
-            <img alt="Delete" class="h-6" src="/icons/flowbite/trash-bin.svg"/>
-          </button>
+          <delete-button title="Delete this script"
+                         image-classes="h-6 w-6"
+                         @click="peer_local_scripts.deleted[field].add(i-1); peer_local_scripts[field][i-1] = peer.scripts[field][i-1] ? peer.scripts[field][i-1] : { enabled: true, value: ''}"></delete-button>
         </div>
         <div class="inline-block flex-1 relative">
           <input-field v-model="peer_local_scripts[field][i-1]"
@@ -50,11 +48,12 @@ import WireGuardHelper from "@/js/wg-helper.js";
 import FastEqual from "fast-deep-equal";
 import InputField from "@/components/ui/input-field.vue";
 import UndoButton from "@/components/ui/buttons/undo.vue";
+import DeleteButton from "@/components/ui/buttons/delete.vue";
 
 
 export default {
   name: "scripts-island",
-  components: {UndoButton, InputField},
+  components: {DeleteButton, UndoButton, InputField},
   props: {
     peer: {
       type: Object,

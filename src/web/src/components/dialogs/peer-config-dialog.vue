@@ -21,12 +21,10 @@
           Configuration for <strong>{{ peer_conf.name }}</strong>:
         </h3>
         <span class="order-last w-full flex justify-between p-1 px-0 md:px-2 mb-1 mr-2">
-          <button :disabled="peerId === network.this_peer"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
-                  title="Delete this peer"
-                  @click="overlayDialogId = 'confirm-delete'">
-            <img alt="Delete" class="h-10" src="/icons/flowbite/trash-bin.svg"/>
-          </button>
+          <delete-button :disabled="peerId === network.this_peer"
+                         title="Delete this peer"
+                         image-classes="h-10 w-10"
+                         @click="overlayDialogId = 'confirm-delete'"></delete-button>
           <button :class="page === 'view-changes' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
                   :disabled="!(changeDetected || errorDetected)"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
@@ -181,6 +179,7 @@ import ScriptsIsland from "@/components/islands/scripts.vue";
 import PeerDetails from "@/components/islands/peer-details.vue";
 import ConnectionIslands from "@/components/islands/connections.vue";
 import ChangeSum from "@/components/change-sum.vue";
+import DeleteButton from "@/components/ui/buttons/delete.vue";
 import WireGuardHelper from "@/js/wg-helper.js";
 import QRCode from "qrcode";
 
@@ -195,6 +194,7 @@ export default {
     'peer-details-island': PeerDetails,
     'connection-islands': ConnectionIslands,
     'change-sum': ChangeSum,
+    DeleteButton
   },
   props: {
     peerId: {
