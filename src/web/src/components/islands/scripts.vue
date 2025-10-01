@@ -16,6 +16,7 @@
       <div v-for="i in peer_local_scripts[field].length" :key="i" class="flex">
         <div class="inline-block my-auto flex-none pl-2">
           <delete-button title="Delete this script"
+                         :disabled="peer_local_scripts.deleted[field].has(i-1)"
                          image-classes="h-6 w-6"
                          @click="peer_local_scripts.deleted[field].add(i-1); peer_local_scripts[field][i-1] = peer.scripts[field][i-1] ? peer.scripts[field][i-1] : { enabled: true, value: ''}"></delete-button>
         </div>
@@ -147,6 +148,7 @@ export default {
           let changeDetectedField = false;
           is_changed_script_field[field] = [];
           for (let i = 0; i < this.peer_local_scripts[field].length; i++) {
+            if (this.peer_local_scripts.deleted[field].has(i)) continue;
             let msg = "";
             is_changed_script_field[field].push(0);
             [is_changed_script_field[field][i], msg] = this.check_scripts_field_status(field, i);
@@ -160,10 +162,16 @@ export default {
           if (this.peer_local_scripts[field].length !== this.peer.scripts[field].length && changeDetectedField && !errorDetectedField) {
             island_change_sum.changed_fields.scripts[field] = this.peer_local_scripts[field];
           }
-          if (this.peer_local_scripts.deleted[field].size > 0 && !errorDetectedField) {
+          if (this.peer_local_scripts.deleted[field].size > 0) {
             island_change_sum.changed_fields.scripts[field] = JSON.parse(JSON.stringify(this.peer_local_scripts[field]));
-            for (const i of this.peer_local_scripts.deleted[field].values()) {
-              island_change_sum.changed_fields.scripts[field].splice(i, 1);
+
+            let sorted_deleted_indices = Array.from(this.peer_local_scripts.deleted[field]);
+            sorted_deleted_indices.sort((a, b) => a - b);
+            for (const [_i, i] of sorted_deleted_indices.entries()) {
+              island_change_sum.changed_fields.scripts[field].splice(i-_i, 1);
+            }
+            if (FastEqual(island_change_sum.changed_fields.scripts[field], this.peer.scripts[field])) {
+              island_change_sum.changed_fields.scripts[field] = null;
             }
           }
 
