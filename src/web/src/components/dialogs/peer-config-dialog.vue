@@ -34,13 +34,11 @@
                        image-classes="h-10 w-10"
                        title="Edit the configuration for this peer"
                        @click="page = 'edit'"></edit-button>
-          <button :class="page === 'file' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
-                  :disabled="changeDetected || errorDetected"
-                  class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
-                  title="See the configuration file for this peer"
-                  @click="page = 'file'">
-            <img alt="WireGuard Configuration File" class="h-10" src="/icons/flowbite/file-code.svg"/>
-          </button>
+          <conf-button :active="page === 'file'"
+                       :disabled="changeDetected || errorDetected"
+                       image-classes="h-10 w-10"
+                       title="See the configuration file for this peer"
+                       @click="page = 'file'"></conf-button>
           <button :class="overlayDialogId === 'qr' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
                   :disabled="changeDetected || errorDetected"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
@@ -179,10 +177,12 @@ import WireGuardHelper from "@/js/wg-helper.js";
 import QRCode from "qrcode";
 import CompareButton from "@/components/ui/buttons/compare.vue";
 import EditButton from "@/components/ui/buttons/edit.vue";
+import ConfButton from "@/components/ui/buttons/conf.vue";
 
 export default {
   name: "peer-config-dialog",
   components: {
+    ConfButton,
     EditButton,
     CompareButton,
     'custom-dialog': CustomDialog,

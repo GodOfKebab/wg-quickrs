@@ -27,11 +27,9 @@
                        image-classes="h-10 w-10"
                        title="Edit the configuration for this peer"
                        @click="page = 'edit'"></edit-button>
-          <button class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded"
-                  disabled
-                  title="See the configuration file for this peer">
-            <img alt="WireGuard Configuration File" class="h-10" src="/icons/flowbite/file-code.svg"/>
-          </button>
+          <conf-button disabled="true"
+                       image-classes="h-10 w-10"
+                       title="See the configuration file for this peer"></conf-button>
           <button class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded"
                   disabled
                   title="Show QR Code">
@@ -141,10 +139,12 @@ import WireGuardHelper from "@/js/wg-helper.js";
 import DeleteButton from "@/components/ui/buttons/delete.vue";
 import CompareButton from "@/components/ui/buttons/compare.vue";
 import EditButton from "@/components/ui/buttons/edit.vue";
+import ConfButton from "@/components/ui/buttons/conf.vue";
 
 export default {
   name: "peer-config-dialog",
   components: {
+    ConfButton,
     EditButton,
     CompareButton,
     DeleteButton,
