@@ -13,7 +13,7 @@
 </template>
 <script>
 export default {
-  name: "undo-button",
+  name: "delete-button",
   props: {
     disabled: false,
     title: "",
