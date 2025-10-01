@@ -49,7 +49,7 @@
 import WireGuardHelper from "@/js/wg-helper.js";
 import FastEqual from "fast-deep-equal";
 import InputField from "@/components/ui/input-field.vue";
-import UndoButton from "@/components/ui/undo-button.vue";
+import UndoButton from "@/components/ui/buttons/undo.vue";
 
 
 export default {

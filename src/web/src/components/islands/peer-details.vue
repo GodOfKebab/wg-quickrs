@@ -48,7 +48,7 @@
 
 <script>
 import Field from "@/components/ui/field.vue";
-import UndoButton from "@/components/ui/undo-button.vue";
+import UndoButton from "@/components/ui/buttons/undo.vue";
 
 export default {
   name: "peer-details-island",

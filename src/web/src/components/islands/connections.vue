@@ -264,7 +264,7 @@ import FastEqual from "fast-deep-equal";
 import WireGuardHelper from "@/js/wg-helper.js";
 import Checkbox from "@/components/ui/checkbox.vue";
 import Field from "@/components/ui/field.vue";
-import UndoButton from "@/components/ui/undo-button.vue";
+import UndoButton from "@/components/ui/buttons/undo.vue";
 import InputField from "@/components/ui/input-field.vue";
 
 
