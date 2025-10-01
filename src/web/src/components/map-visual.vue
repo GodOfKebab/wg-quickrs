@@ -8,18 +8,24 @@
 import ForceGraph from "force-graph";
 import FastEqual from "fast-deep-equal";
 import WireGuardHelper from "@/js/wg-helper.js";
-
+import ServerSVG from "@/assets/icons/flowbite/server.svg";         // "server" @ https://flowbite.com/icons/
+import DesktopSVG from "@/assets/icons/flowbite/desktop-pc.svg";    // "desktop-pc" @ https://flowbite.com/icons/
+import LaptopSVG from "@/assets/icons/flowbite/laptop-code.svg";    // "laptop-code" @ https://flowbite.com/icons/
+import TabletSVG from "@/assets/icons/flowbite/tablet.svg";         // "tablet" @ https://flowbite.com/icons/
+import PhoneSVG from "@/assets/icons/flowbite/mobile-phone.svg";    // "mobile-phone" @ https://flowbite.com/icons/
+import IoTSVG from "@/assets/icons/flowbite/cloud-arrow-up.svg";    // "cloud-arrow-up" @ https://flowbite.com/icons/
+import OtherSVG from "@/assets/icons/flowbite/question-circle.svg"; // "question-circle" @ https://flowbite.com/icons/
+import LandmarkSVG from "@/assets/icons/flowbite/landmark.svg";     // "landmark" @ https://flowbite.com/icons/
 
 const nodeKindIconMap = {
-  "server": "/icons/flowbite/server.svg",
-  "desktop": "/icons/flowbite/desktop-pc.svg",
-  "laptop": "/icons/flowbite/laptop-code.svg",
-  "tablet": "/icons/flowbite/tablet.svg",
-  "phone": "/icons/flowbite/mobile-phone.svg",
-  "IoT": "/icons/flowbite/cloud-arrow-up.svg",
-  "other": "/icons/flowbite/question-circle.svg",
+  "server": ServerSVG,
+  "desktop": DesktopSVG,
+  "laptop": LaptopSVG,
+  "tablet": TabletSVG,
+  "phone": PhoneSVG,
+  "IoT": IoTSVG,
+  "other": OtherSVG,
 }
-const thisNodeMarker = "/icons/flowbite/landmark.svg";
 
 const tw_gray_50 = 'oklch(98.5% 0.002 247.839)';
 const tw_gray_200 = 'oklch(92.8% 0.006 264.531)';
@@ -148,7 +154,7 @@ export default {
                 ctx.drawImage(cis, node.x - node.size / 2, node.y - node.size / 2, node.size, node.size);
                 if (node.id === this.network.this_peer) {
                   const marker_img = new Image();
-                  marker_img.src = thisNodeMarker;
+                  marker_img.src = LandmarkSVG;
                   const marker = this.getGraphNodeIcon(marker_img, 500);
                   ctx.drawImage(marker, node.x - node.size / 4, node.y - 3 * node.size / 4, node.size / 2, node.size / 2);
                 }
