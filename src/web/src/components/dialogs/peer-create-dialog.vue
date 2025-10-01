@@ -19,12 +19,10 @@
           <delete-button disabled="true"
                          title="Delete this peer"
                          image-classes="h-10 w-10"></delete-button>
-          <button :class="page === 'view-changes' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
-                  class="align-middle bg-gray-100 hover:bg-gray-600 hover:[&>img]:invert-[90%] p-1 px-2 rounded"
-                  title="See the configuration differences for this peer"
-                  @click="page = 'view-changes'">
-            <img alt="Compare Configuration" class="h-10" src="/icons/flowbite/merge-cells.svg"/>
-          </button>
+          <compare-button :active="page === 'view-changes'"
+                          image-classes="h-10 w-10"
+                          title="See the configuration differences for this peer"
+                          @click="page = 'view-changes'"></compare-button>
           <button :class="page === 'edit' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
                   class="align-middle bg-gray-100 hover:bg-gray-600 hover:[&>img]:invert-[90%] p-1 px-2 rounded"
                   title="Edit the configuration for this peer"
@@ -143,10 +141,12 @@ import ConnectionIslands from "@/components/islands/connections.vue";
 import ChangeSum from "@/components/change-sum.vue";
 import WireGuardHelper from "@/js/wg-helper.js";
 import DeleteButton from "@/components/ui/buttons/delete.vue";
+import CompareButton from "@/components/ui/buttons/compare.vue";
 
 export default {
   name: "peer-config-dialog",
   components: {
+    CompareButton,
     DeleteButton,
     PeerKindIconIsland,
     'custom-dialog': CustomDialog,
