@@ -30,13 +30,10 @@
                           image-classes="h-10 w-10"
                           title="See the configuration differences for this peer"
                           @click="page = 'view-changes'"></compare-button>
-          <button
-              :class="page === 'edit' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
-              class="align-middle bg-gray-100 hover:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
-                  title="Edit the configuration for this peer"
-                  @click="page = 'edit'">
-            <img alt="Edit Configuration" class="h-10 invert-30" src="/icons/flowbite/file-pen.svg"/>
-          </button>
+          <edit-button :active="page === 'edit'"
+                       image-classes="h-10 w-10"
+                       title="Edit the configuration for this peer"
+                       @click="page = 'edit'"></edit-button>
           <button :class="page === 'file' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
                   :disabled="changeDetected || errorDetected"
                   class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 hover:enabled:[&>img]:invert-[90%] p-1 px-1 md:px-2 rounded"
@@ -181,10 +178,12 @@ import DeleteButton from "@/components/ui/buttons/delete.vue";
 import WireGuardHelper from "@/js/wg-helper.js";
 import QRCode from "qrcode";
 import CompareButton from "@/components/ui/buttons/compare.vue";
+import EditButton from "@/components/ui/buttons/edit.vue";
 
 export default {
   name: "peer-config-dialog",
   components: {
+    EditButton,
     CompareButton,
     'custom-dialog': CustomDialog,
     'peer-summary-island': PeerSummaryIsland,

@@ -23,12 +23,10 @@
                           image-classes="h-10 w-10"
                           title="See the configuration differences for this peer"
                           @click="page = 'view-changes'"></compare-button>
-          <button :class="page === 'edit' ? ['bg-gray-600', '[&>img]:invert-[90%]'] : ''"
-                  class="align-middle bg-gray-100 hover:bg-gray-600 hover:[&>img]:invert-[90%] p-1 px-2 rounded"
-                  title="Edit the configuration for this peer"
-                  @click="page = 'edit'">
-            <img alt="Edit Configuration" class="h-10" src="/icons/flowbite/file-pen.svg"/>
-          </button>
+          <edit-button :active="page === 'edit'"
+                       image-classes="h-10 w-10"
+                       title="Edit the configuration for this peer"
+                       @click="page = 'edit'"></edit-button>
           <button class="align-middle bg-gray-100 disabled:opacity-40 hover:enabled:bg-gray-600 p-1 px-2 rounded"
                   disabled
                   title="See the configuration file for this peer">
@@ -142,10 +140,12 @@ import ChangeSum from "@/components/change-sum.vue";
 import WireGuardHelper from "@/js/wg-helper.js";
 import DeleteButton from "@/components/ui/buttons/delete.vue";
 import CompareButton from "@/components/ui/buttons/compare.vue";
+import EditButton from "@/components/ui/buttons/edit.vue";
 
 export default {
   name: "peer-config-dialog",
   components: {
+    EditButton,
     CompareButton,
     DeleteButton,
     PeerKindIconIsland,
