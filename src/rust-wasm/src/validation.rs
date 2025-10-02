@@ -1,5 +1,5 @@
 use ipnet::Ipv4Net;
-use regex::Regex;
+use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use crate::types::EnabledValue;

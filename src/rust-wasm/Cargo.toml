@@ -12,8 +12,8 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde-wasm-bindgen = { version = "0.6", optional = true }
 thiserror = "2.0.12"
 ipnet = "2.11.0"
-regex = "1.11.1"
 hostname-validator = "1.1.1"
+regex-lite = "0.1.7"
 
 [features]
 default = []         # Do not enable wasm-bindgen by default
