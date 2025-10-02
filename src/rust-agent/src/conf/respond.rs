@@ -3,8 +3,6 @@ use crate::conf::timestamp;
 use crate::conf;
 use rust_wasm::types::*;
 use rust_wasm::validation::*;
-use rust_wasm::*;
-
 pub(crate) use crate::conf::util::get_config;
 use crate::conf::util::{CONFIG_W_DIGEST, ConfUtilError, ConfigWDigest, get_summary};
 use crate::wireguard::cmd::sync_conf;
@@ -119,14 +117,14 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 
     macro_rules! validate_str {
         ($value:expr, $field_parent:expr, $field:ident) => {
-            let val_res = validation_check_field_str!($field, $value);
+            let val_res = check_field_str(stringify!($field), $value);
             validate_return_400!(val_res, $field_parent, $field);
         };
     }
 
     macro_rules! validate_enabled_value {
         ($value:expr, $field_parent:expr, $field:ident) => {
-            let val_res = validation_check_field_enabled_value!($field, $value);
+            let val_res = check_field_enabled_value(stringify!($field), $value);
             validate_return_400!(val_res, $field_parent, $field);
         };
     }
@@ -135,7 +133,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         ($target:expr, $source:expr, $subtype:ident, $id:expr, $field:ident) => {
             if let Some(value) = $source.$field {
                 validate_str!(
-                    value,
+                    &value,
                     format!("changed_fields.{}.{}", stringify!($subtype), $id),
                     $field
                 );
@@ -148,7 +146,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         ($target:expr, $source:expr, $subtype:ident, $id:expr, $field:ident) => {
             if let Some(value) = $source.$field {
                 validate_enabled_value!(
-                    value,
+                    &value,
                     format!("changed_fields.{}.{}", stringify!($subtype), $id),
                     $field
                 );
@@ -305,32 +303,32 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(added_peers) = change_sum.added_peers {
         for (peer_id, peer_details) in added_peers {
             {
-                validate_str!(peer_details.name, format!("added_peers.{}", peer_id), name);
+                validate_str!(&peer_details.name, format!("added_peers.{}", peer_id), name);
                 validate_str!(
-                    peer_details.address,
+                    &peer_details.address,
                     format!("added_peers.{}", peer_id),
                     address
                 );
                 validate_enabled_value!(
-                    peer_details.endpoint,
+                    &peer_details.endpoint,
                     format!("added_peers.{}", peer_id),
                     endpoint
                 );
-                validate_str!(peer_details.kind, format!("added_peers.{}", peer_id), kind);
+                validate_str!(&peer_details.kind, format!("added_peers.{}", peer_id), kind);
                 validate_enabled_value!(
-                    peer_details.icon,
+                    &peer_details.icon,
                     format!("added_peers.{}", peer_id),
                     icon
                 );
-                validate_enabled_value!(peer_details.dns, format!("added_peers.{}", peer_id), dns);
-                validate_enabled_value!(peer_details.mtu, format!("added_peers.{}", peer_id), mtu);
+                validate_enabled_value!(&peer_details.dns, format!("added_peers.{}", peer_id), dns);
+                validate_enabled_value!(&peer_details.mtu, format!("added_peers.{}", peer_id), mtu);
                 validate_str!(
-                    peer_details.public_key,
+                    &peer_details.public_key,
                     format!("added_peers.{}", peer_id),
                     public_key
                 );
                 validate_str!(
-                    peer_details.private_key,
+                    &peer_details.private_key,
                     format!("added_peers.{}", peer_id),
                     private_key
                 );
@@ -391,22 +389,22 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         for (connection_id, connection_details) in added_connections {
             {
                 validate_str!(
-                    connection_details.pre_shared_key,
+                    &connection_details.pre_shared_key,
                     format!("added_connections.{}", connection_id),
                     pre_shared_key
                 );
                 validate_str!(
-                    connection_details.allowed_ips_a_to_b,
+                    &connection_details.allowed_ips_a_to_b,
                     format!("added_connections.{}", connection_id),
                     allowed_ips_a_to_b
                 );
                 validate_str!(
-                    connection_details.allowed_ips_b_to_a,
+                    &connection_details.allowed_ips_b_to_a,
                     format!("added_connections.{}", connection_id),
                     allowed_ips_b_to_a
                 );
                 validate_enabled_value!(
-                    connection_details.persistent_keepalive,
+                    &connection_details.persistent_keepalive,
                     format!("added_connections.{}", connection_id),
                     persistent_keepalive
                 );

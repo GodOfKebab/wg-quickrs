@@ -1,5 +1,5 @@
 use crate::commands::helpers;
-use crate::commands::validation::check_field_agent;
+use crate::commands::validation::{check_field_enabled_value_agent, check_field_path_agent, check_field_str_agent};
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
 use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER, conf};
@@ -11,7 +11,6 @@ use rust_wasm::types::{
     Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
     DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
-use rust_wasm::validation::FieldValue;
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -206,16 +205,14 @@ fn prompt<T: std::str::FromStr + ToString>(field_name: &str, msg: &str, default:
 
         match input {
             Ok(value) => {
-                let result = check_field_agent(
-                    field_name,
-                    &FieldValue {
-                        str: value.clone(),
-                        enabled_value: EnabledValue {
-                            enabled: true,
-                            value: value.clone(),
-                        },
-                    },
-                );
+                let result = match field_name {
+                    "endpoint" | "icon" | "dns" | "mtu" | "script" | "pre_up" | "post_up" | "pre_down" | "post_down" | "persistent_keepalive" => check_field_enabled_value_agent(field_name, &EnabledValue{
+                        enabled: true,
+                        value: value.clone(),
+                    }),
+                    "path" | "firewall" => check_field_path_agent(field_name, &PathBuf::from(value.clone())),
+                    _ => check_field_str_agent(field_name, &value),
+                };
 
                 if result.status {
                     if let Ok(parsed) = value.parse::<T>() {

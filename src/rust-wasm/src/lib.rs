@@ -23,14 +23,18 @@ pub fn get_connection_id_frontend(peer1: &str, peer2: &str) -> String {
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
-pub fn check_field_frontend(field_name: &str, field_variable_json: &str) -> String {
-    println!(
-        "Checking field: {} with value: {}",
-        field_name, field_variable_json
-    );
-    match serde_json::from_str::<validation::FieldValue>(field_variable_json) {
+pub fn check_field_str_frontend(field_name: &str, field_variable: &str) -> String {
+    let ret = validation::check_field_str(field_name, &field_variable);
+    serde_json::to_string(&ret)
+        .unwrap_or_else(|_| r#"{"status":false,"msg":"Failed to serialize result"}"#.into())
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn check_field_enabled_value_frontend(field_name: &str, field_variable_json: &str) -> String {
+    match serde_json::from_str::<types::EnabledValue>(field_variable_json) {
         Ok(field_variable) => {
-            let ret = validation::check_field(field_name, &field_variable);
+            let ret = validation::check_field_enabled_value(field_name, &field_variable);
             serde_json::to_string(&ret)
                 .unwrap_or_else(|_| r#"{"status":false,"msg":"Failed to serialize result"}"#.into())
         }

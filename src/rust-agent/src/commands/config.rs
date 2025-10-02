@@ -1,10 +1,8 @@
 use crate::commands::helpers;
-use crate::commands::validation::check_field_agent;
+use crate::commands::validation::{check_field_str_agent, check_field_path_agent};
 use crate::conf;
 use argon2::PasswordHash;
 use rust_cli::ResetWebPasswordOptions;
-use rust_wasm::types::EnabledValue;
-use rust_wasm::validation::FieldValue;
 use std::io;
 use std::io::Write;
 use std::path::PathBuf;
@@ -57,24 +55,6 @@ pub(crate) fn reset_web_password(reset_web_password_opts: &ResetWebPasswordOptio
     ExitCode::SUCCESS
 }
 
-fn validate_agent_field(field_name: &str, value: impl ToString) -> Option<ExitCode> {
-    let fv = FieldValue {
-        str: value.to_string(),
-        enabled_value: EnabledValue {
-            enabled: true,
-            value: value.to_string(),
-        },
-    };
-
-    let ret = check_field_agent(field_name, &fv);
-    if !ret.status {
-        log::error!("{}", ret.msg);
-        Some(ExitCode::FAILURE)
-    } else {
-        None
-    }
-}
-
 pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
     // get the wireguard config a file path
     let mut config = match conf::util::get_config() {
@@ -91,9 +71,6 @@ pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
                 if status { "Enabling" } else { "Disabling" },
                 config.agent.web.http.port
             );
-            if status && let Some(code) = validate_agent_field("port", config.agent.web.http.port) {
-                return code;
-            }
             config.agent.web.http.enabled = status;
         }
         "https" => {
@@ -105,18 +82,15 @@ pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
                 config.agent.web.https.tls_key.display()
             );
             if status {
-                if let Some(code) = validate_agent_field("port", config.agent.web.https.port) {
-                    return code;
+                let mut ret  = check_field_path_agent("path", &config.agent.web.https.tls_cert);
+                if !ret.status {
+                    log::error!("{}", ret.msg);
+                    return ExitCode::FAILURE;
                 }
-                if let Some(code) =
-                    validate_agent_field("path", config.agent.web.https.tls_cert.display())
-                {
-                    return code;
-                }
-                if let Some(code) =
-                    validate_agent_field("path", config.agent.web.https.tls_key.display())
-                {
-                    return code;
+                ret  = check_field_path_agent("path", &config.agent.web.https.tls_key);
+                if !ret.status {
+                    log::error!("{}", ret.msg);
+                    return ExitCode::FAILURE;
                 }
             }
             config.agent.web.https.enabled = status;
@@ -143,10 +117,6 @@ pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
                 if status { "Enabling" } else { "Disabling" },
                 config.agent.vpn.port
             );
-
-            if status && let Some(code) = validate_agent_field("port", config.agent.vpn.port) {
-                return code;
-            }
             config.agent.vpn.enabled = status;
         }
         "firewall" => {
@@ -156,11 +126,10 @@ pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
                 config.agent.firewall.utility.display()
             );
 
-            if status
-                && let Some(code) =
-                    validate_agent_field("firewall", config.agent.firewall.utility.display())
-            {
-                return code;
+            let ret  = check_field_path_agent("firewall", &config.agent.firewall.utility);
+            if status && !ret.status {
+                log::error!("{}", ret.msg);
+                return ExitCode::FAILURE;
             }
             config.agent.firewall.enabled = status;
         }
@@ -193,23 +162,19 @@ pub(crate) fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode 
         ("address", AgentFieldValue::Text(addr)) => {
             config.agent.web.address = addr;
             log::info!("Setting agent address to {}", config.agent.web.address);
-            if let Some(code) = validate_agent_field("address", &config.agent.web.address) {
-                return code;
+            let ret  = check_field_str_agent("address", &config.agent.web.address);
+            if !ret.status {
+                log::error!("{}", ret.msg);
+                return ExitCode::FAILURE;
             }
         }
         ("http-port", AgentFieldValue::Port(port)) => {
             config.agent.web.http.port = port;
             log::info!("Setting HTTP port to {}", config.agent.web.http.port);
-            if let Some(code) = validate_agent_field("port", config.agent.web.http.port) {
-                return code;
-            }
         }
         ("https-port", AgentFieldValue::Port(port)) => {
             config.agent.web.https.port = port;
             log::info!("Setting HTTPS port to {}", config.agent.web.https.port);
-            if let Some(code) = validate_agent_field("port", config.agent.web.https.port) {
-                return code;
-            }
         }
         ("https-tls-cert", AgentFieldValue::Path(cert)) => {
             config.agent.web.https.tls_cert = cert;
@@ -217,10 +182,10 @@ pub(crate) fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode 
                 "Setting TLS certificate to {}",
                 config.agent.web.https.tls_cert.display()
             );
-            if let Some(code) =
-                validate_agent_field("path", config.agent.web.https.tls_cert.display())
-            {
-                return code;
+            let ret  = check_field_path_agent("path", &config.agent.web.https.tls_cert);
+            if !ret.status {
+                log::error!("{}", ret.msg);
+                return ExitCode::FAILURE;
             }
         }
         ("https-tls-key", AgentFieldValue::Path(key)) => {
@@ -229,18 +194,15 @@ pub(crate) fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode 
                 "Setting TLS key to {}",
                 config.agent.web.https.tls_key.display()
             );
-            if let Some(code) =
-                validate_agent_field("path", config.agent.web.https.tls_key.display())
-            {
-                return code;
+            let ret  = check_field_path_agent("path", &config.agent.web.https.tls_key);
+            if !ret.status {
+                log::error!("{}", ret.msg);
+                return ExitCode::FAILURE;
             }
         }
         ("vpn-port", AgentFieldValue::Port(port)) => {
             config.agent.vpn.port = port;
             log::info!("Setting VPN port to {}", config.agent.vpn.port);
-            if let Some(code) = validate_agent_field("port", config.agent.vpn.port) {
-                return code;
-            }
         }
         ("firewall-utility", AgentFieldValue::Path(value)) => {
             config.agent.firewall.utility = value;
@@ -248,10 +210,10 @@ pub(crate) fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode 
                 "Setting firewall utility to {}",
                 config.agent.firewall.utility.display()
             );
-            if let Some(code) =
-                validate_agent_field("firewall", config.agent.firewall.utility.display())
-            {
-                return code;
+            let ret  = check_field_path_agent("firewall", &config.agent.firewall.utility);
+            if !ret.status {
+                log::error!("{}", ret.msg);
+                return ExitCode::FAILURE;
             }
         }
         _ => {

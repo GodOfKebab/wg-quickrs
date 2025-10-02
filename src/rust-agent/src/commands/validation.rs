@@ -1,8 +1,9 @@
 use crate::WG_QUICKRS_CONFIG_FOLDER;
-use rust_wasm::validation::{check_field, is_cidr, CheckResult, FieldValue};
-use std::path::PathBuf;
+use rust_wasm::validation::{check_field_enabled_value, check_field_str, is_cidr, CheckResult};
+use std::path::Path;
+use rust_wasm::types::EnabledValue;
 
-pub fn check_field_agent(field_name: &str, field_variable: &FieldValue) -> CheckResult {
+pub fn check_field_str_agent(field_name: &str, field_variable: &str) -> CheckResult {
     let mut ret = CheckResult {
         status: false,
         msg: String::new(),
@@ -10,14 +11,14 @@ pub fn check_field_agent(field_name: &str, field_variable: &FieldValue) -> Check
 
     match field_name {
         "identifier" => {
-            ret.status = !field_variable.str.is_empty();
+            ret.status = !field_variable.is_empty();
             if !ret.status {
                 ret.msg = "identifier cannot be empty".into();
             }
             ret
         }
         "subnet" => {
-            ret.status = is_cidr(&field_variable.str);
+            ret.status = is_cidr(field_variable);
             if !ret.status {
                 ret.msg = "subnet is not in CIDR format".into();
             }
@@ -25,7 +26,7 @@ pub fn check_field_agent(field_name: &str, field_variable: &FieldValue) -> Check
         }
         "port" => {
             ret.status = true;
-            if let Ok(v) = field_variable.enabled_value.value.parse::<i32>() {
+            if let Ok(v) = field_variable.parse::<i32>() {
                 ret.status = v > 0 && v < 65536;
             } else {
                 ret.status = false; // not a number
@@ -35,19 +36,10 @@ pub fn check_field_agent(field_name: &str, field_variable: &FieldValue) -> Check
             }
             ret
         }
-        "path" => {
-            let config_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
-            let tls_file_path = config_folder.join(field_variable.str.clone());
-            ret.status = tls_file_path.exists() && tls_file_path.is_file();
-            if !ret.status {
-                ret.msg = format!("File not found: {}", tls_file_path.display());
-            }
-            ret
-        }
         "gateway" => {
             let mut gateways: Vec<String> = Vec::new();
             for iface in crate::commands::init::get_interfaces() {
-                if iface.name == field_variable.str {
+                if iface.name == field_variable {
                     ret.status = true;
                 }
                 gateways.push(format!("{} ({})", iface.name, iface.ip()));
@@ -55,14 +47,38 @@ pub fn check_field_agent(field_name: &str, field_variable: &FieldValue) -> Check
             if !ret.status {
                 ret.msg = format!(
                     "Gateway not found: {} (possible options: {})",
-                    field_variable.str.clone(),
+                    field_variable,
                     gateways.join(", ")
                 );
             }
             ret
         }
+        _ => check_field_str(field_name, field_variable),
+    }
+}
+
+pub fn check_field_enabled_value_agent(field_name: &str, field_variable: &EnabledValue) -> CheckResult {
+    check_field_enabled_value(field_name, field_variable)
+}
+
+pub fn check_field_path_agent(field_name: &str, field_variable: &Path) -> CheckResult {
+    let mut ret = CheckResult {
+        status: false,
+        msg: String::new(),
+    };
+
+    match field_name {
+        "path" => {
+            let config_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
+            let tls_file_path = config_folder.join(field_variable);
+            ret.status = tls_file_path.exists() && tls_file_path.is_file();
+            if !ret.status {
+                ret.msg = format!("File not found: {}", tls_file_path.display());
+            }
+            ret
+        }
         "firewall" => {
-            let bin_path = PathBuf::from(field_variable.enabled_value.value.clone());
+            let bin_path = field_variable;
             ret.status = bin_path.exists() && bin_path.is_file();
             if !ret.status {
                 ret.msg = format!(
@@ -73,6 +89,10 @@ pub fn check_field_agent(field_name: &str, field_variable: &FieldValue) -> Check
             }
             ret
         }
-        _ => check_field(field_name, field_variable),
+        _ => {
+            ret.status = false;
+            ret.msg = "field doesn't exist".into();
+            ret
+        }
     }
 }
