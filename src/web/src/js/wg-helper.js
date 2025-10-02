@@ -1,6 +1,11 @@
 'use strict';
 
-import {check_field_str_frontend, check_field_enabled_value_frontend, get_connection_id_frontend, get_peer_wg_config_frontend} from '../../pkg/rust_wasm.js';
+import {
+    check_field_enabled_value_frontend,
+    check_field_str_frontend,
+    get_connection_id_frontend,
+    get_peer_wg_config_frontend
+} from '../../pkg/rust_wasm.js';
 
 export default class WireGuardHelper {
 
@@ -26,11 +31,11 @@ export default class WireGuardHelper {
 
     static checkField(fieldName, fieldVariable) {
         if (typeof fieldVariable === 'string')
-            return JSON.parse(check_field_str_frontend(fieldName, fieldVariable));
+            return check_field_str_frontend(fieldName, fieldVariable);
         else if (fieldVariable.enabled !== undefined && fieldVariable.value !== undefined)
-            return JSON.parse(check_field_enabled_value_frontend(fieldName, JSON.stringify(fieldVariable)));
+            return check_field_enabled_value_frontend(fieldName, fieldVariable);
         else
-            return false;
+            return { status: false, message: `Invalid field type for ${fieldName}` };
     }
 
     static getConnectionId(peer1, peer2) {
