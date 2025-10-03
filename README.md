@@ -19,7 +19,7 @@
 Run it on your server, router, or computer and manage your WireGuard VPN from a web interface.
 
 <p align="center">
-<img src="https://yasar.idikut.cc/project-assets/wg-quickrs-homepage.gif" height="500" alt="demo">
+<img src="https://yasar.idikut.cc/project-assets/wg-quickrs-homepage.gif" height="700" alt="demo">
 </p>
 
 Features:
