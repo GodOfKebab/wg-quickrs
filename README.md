@@ -18,7 +18,9 @@
 
 Run it on your server, router, or computer and manage your WireGuard VPN from a web interface.
 
-TODO: add web console visual
+<p align="center">
+<img src="https://yasar.idikut.cc/project-assets/wg-quickrs-homepage.gif" height="500" alt="demo">
+</p>
 
 Features:
 - Interactive graph to configure your P2P network
