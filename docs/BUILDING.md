@@ -1,4 +1,4 @@
-# Developing wg-quickrs
+# Building wg-quickrs
 
 _⚠️ This project is **under active development**.
 Expect breaking changes and incomplete features._
