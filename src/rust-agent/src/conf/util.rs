@@ -112,7 +112,6 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
     let timestamp = timestamp::get_now_timestamp_formatted();
 
     Ok(Summary {
-        agent: config_w_digest.config.agent,
         network: config_w_digest.config.network,
         telemetry,
         digest: config_w_digest.digest,

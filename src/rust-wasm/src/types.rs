@@ -34,21 +34,11 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Summary {
-    pub agent: Agent,
     pub network: Network,
     pub telemetry: Option<Telemetry>,
     pub digest: String,
     pub status: u8,
     pub timestamp: String,
-}
-
-impl From<&Summary> for Config {
-    fn from(config: &Summary) -> Self {
-        Config {
-            agent: config.agent.clone(),
-            network: config.network.clone(),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -60,12 +50,12 @@ pub struct SummaryDigest {
 }
 
 impl From<&Summary> for SummaryDigest {
-    fn from(config: &Summary) -> Self {
+    fn from(summary: &Summary) -> Self {
         SummaryDigest {
-            telemetry: config.telemetry.clone(),
-            digest: config.digest.clone(),
-            status: config.status,
-            timestamp: config.timestamp.clone(),
+            telemetry: summary.telemetry.clone(),
+            digest: summary.digest.clone(),
+            status: summary.status,
+            timestamp: summary.timestamp.clone(),
         }
     }
 }
