@@ -1,4 +1,4 @@
-use crate::WIREGUARD_CONFIG_FILE;
+use crate::{WIREGUARD_CONFIG_FILE};
 use crate::conf::util::get_config;
 use crate::macros::*;
 use once_cell::sync::Lazy;
@@ -17,6 +17,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tempfile::NamedTempFile;
 use thiserror::Error;
 use tokio::signal::unix::{signal, SignalKind};
+use std::os::unix::process::CommandExt; // for before_exec
 
 const TELEMETRY_CAPACITY: usize = 21; // 20 throughput measurements
 const TELEMETRY_INTERVAL: u64 = 1000;
@@ -420,59 +421,66 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
     // sudo wg-quick up INTERFACE
     let readable_command = format!("$ sudo wg-quick up {}", config.network.identifier.clone());
     log::info!("{readable_command}");
-    match Command::new("sudo")
-        .arg("wg-quick")
-        .arg("up")
-        .arg(config.network.identifier.clone())
-        .output()
-    {
-        Ok(output) => {
-            if !output.stdout.is_empty() {
-                log::debug!("{}", String::from_utf8_lossy(&output.stdout));
-            }
-            if !output.stderr.is_empty() {
-                log::warn!("{}", String::from_utf8_lossy(&output.stderr));
-            }
-            if !output.stderr.is_empty() {
-                let mut wg_interface_mut = WG_INTERFACE
-                    .lock()
-                    .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
-
-                match String::from_utf8_lossy(&output.stderr)
-                    .lines()
-                    .find(|line| {
-                        line.contains(&format!(
-                            "[+] Interface for {} is",
-                            config.network.identifier.clone()
-                        ))
-                    })
-                    .map(|line| line.to_string())
-                {
-                    Some(line) => match line.split_whitespace().last() {
-                        Some(word) => {
-                            *wg_interface_mut = word.to_string();
-                        }
-                        None => {
-                            return Err(WireGuardCommandError::InterfaceMissing);
-                        }
-                    },
-                    None => {
-                        *wg_interface_mut = config.network.identifier.clone();
-                    }
+    unsafe {
+        match Command::new("sudo")
+            .arg("wg-quick")
+            .arg("up")
+            .arg(config.network.identifier.clone())
+            .pre_exec(|| {
+                // Create a new session -> child will NOT be in parent’s process group
+                libc::setsid(); // unsafe function
+                Ok(())
+            })
+            .output()
+        {
+            Ok(output) => {
+                if !output.stdout.is_empty() {
+                    log::debug!("{}", String::from_utf8_lossy(&output.stdout));
                 }
-                *WG_STATUS
-                    .lock()
-                    .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
-                    WireGuardStatus::UP;
+                if !output.stderr.is_empty() {
+                    log::warn!("{}", String::from_utf8_lossy(&output.stderr));
+                }
+                if !output.stderr.is_empty() {
+                    let mut wg_interface_mut = WG_INTERFACE
+                        .lock()
+                        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
+
+                    match String::from_utf8_lossy(&output.stderr)
+                        .lines()
+                        .find(|line| {
+                            line.contains(&format!(
+                                "[+] Interface for {} is",
+                                config.network.identifier.clone()
+                            ))
+                        })
+                        .map(|line| line.to_string())
+                    {
+                        Some(line) => match line.split_whitespace().last() {
+                            Some(word) => {
+                                *wg_interface_mut = word.to_string();
+                            }
+                            None => {
+                                return Err(WireGuardCommandError::InterfaceMissing);
+                            }
+                        },
+                        None => {
+                            *wg_interface_mut = config.network.identifier.clone();
+                        }
+                    }
+                    *WG_STATUS
+                        .lock()
+                        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
+                        WireGuardStatus::UP;
+                }
+                if !output.status.success() {
+                    return Err(WireGuardCommandError::CommandExecNotSuccessful(
+                        readable_command,
+                    ));
+                }
+                Ok(())
             }
-            if !output.status.success() {
-                return Err(WireGuardCommandError::CommandExecNotSuccessful(
-                    readable_command,
-                ));
-            }
-            Ok(())
+            Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
         }
-        Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
     }
 }
 
@@ -480,11 +488,10 @@ pub(crate) fn update_conf_file(config: &Config) -> Result<(), WireGuardCommandEr
     // generate .conf content with hidden scripts
     let mut hidden_scripts = None;
     if config.agent.firewall.enabled
-        && let Some(utility) = config.agent.firewall.utility.file_name()
-        && utility.to_string_lossy() == "iptables"
-    {
-        let mut _hidden_scripts = format!(
-            "### START OF HIDDEN SCRIPTS ###
+        && let Some(utility) = config.agent.firewall.utility.file_name() {
+        if utility.to_string_lossy() == "iptables" {
+            let mut _hidden_scripts = format!(
+                "### START OF HIDDEN SCRIPTS ###
 PostUp = {fw_utility} -t nat -A POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
 PostDown = {fw_utility} -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;
 PostUp = {fw_utility} -A INPUT -p udp -m udp --dport {port} -j ACCEPT;
@@ -493,22 +500,43 @@ PostUp = {fw_utility} -A FORWARD -i {interface} -j ACCEPT;
 PostDown = {fw_utility} -D FORWARD -i {interface} -j ACCEPT;
 PostUp = {fw_utility} -A FORWARD -o {interface} -j ACCEPT;
 PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;",
-            fw_utility = config.agent.firewall.utility.to_string_lossy(),
-            subnet = config.network.subnet,
-            gateway = config.agent.vpn.gateway,
-            port = config.agent.vpn.port,
-            interface = config.network.identifier,
-        );
-        #[cfg(not(feature = "docker"))]
-        {
-            _hidden_scripts.push_str(
-                "\nPostUp = sysctl -w net.ipv4.ip_forward=1;\n\
-                PostDown = sysctl -w net.ipv4.ip_forward=0;",
+                fw_utility = config.agent.firewall.utility.to_string_lossy(),
+                subnet = config.network.subnet,
+                gateway = config.agent.vpn.gateway,
+                port = config.agent.vpn.port,
+                interface = config.network.identifier,
             );
+            #[cfg(not(feature = "docker"))]
+            {
+                _hidden_scripts.push_str(
+                    "\nPostUp = sysctl -w net.ipv4.ip_forward=1;\n\
+                PostDown = sysctl -w net.ipv4.ip_forward=0;",
+                );
+            }
+            _hidden_scripts.push_str("\n### END OF HIDDEN SCRIPTS ###\n");
+            hidden_scripts = Some(_hidden_scripts);
+        } else if utility.to_string_lossy() == "pfctl" {
+            // add the following nat rule to pf.conf
+            // check for a line that starts with "nat" and paste the nat_rule after it because pf.conf requires the rules to be in order
+            // TODO: link docs
+            let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}",
+                gateway = config.agent.vpn.gateway,
+                subnet = config.network.subnet);
+            hidden_scripts = Some(format!(
+                "### START OF HIDDEN SCRIPTS ###
+PostUp = awk \"/^nat/ {{print; print \\\"{nat_rule}\\\"; next}}1\" /etc/pf.conf > /etc/pf.conf.new && mv /etc/pf.conf /etc/pf.conf.bak && mv /etc/pf.conf.new /etc/pf.conf;
+PostUp = grep -qxF '{nat_rule}' /etc/pf.conf || echo '*** could NOT configure firewall because there are no existing NAT rules. See docs' >&2;
+PostUp = grep -qxF '{nat_rule}' /etc/pf.conf || exit 1;
+PostDown = awk -v line='{nat_rule}' '$0 != line' /etc/pf.conf > /etc/pf.conf.new && mv /etc/pf.conf /etc/pf.conf.bak && mv /etc/pf.conf.new /etc/pf.conf;
+PostUp = {fw_utility} -f /etc/pf.conf;
+PostUp = {fw_utility} -e || true;
+PostDown = {fw_utility} -d || true;
+PostUp = sysctl -w net.inet.ip.forwarding=1;
+PostDown = sysctl -w net.inet.ip.forwarding=0;
+### END OF HIDDEN SCRIPTS ###\n",
+                fw_utility = config.agent.firewall.utility.to_string_lossy(),
+            ));
         }
-
-        _hidden_scripts.push_str("\n### END OF HIDDEN SCRIPTS ###\n");
-        hidden_scripts = Some(_hidden_scripts);
     }
     let wg_conf = match get_peer_wg_config(
         &config.network,
