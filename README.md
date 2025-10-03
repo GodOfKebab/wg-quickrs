@@ -1,12 +1,31 @@
 # wg-quickrs
 
-![](https://badgen.net/github/release/godofkebab/wg-quickrs/stable)
-![](https://badgen.net/docker/pulls/godofkebab/wg-quickrs)
-![](https://badgen.net/docker/size/godofkebab/wg-quickrs)
+[![License](https://img.shields.io/github/license/godofkebab/wg-quickrs?logo=GitHub&color=brightgreen)](https://github.com/GodOfKebab/wg-quickrs)
+![Static Badge](https://img.shields.io/badge/amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%20-%20grey?label=arch)
+![Static Badge](https://img.shields.io/badge/Debian%20%7C%20MacOS%20%20-%20black?label=platform)
+
+[![Release](https://img.shields.io/github/v/tag/godofkebab/wg-quickrs?logo=github&label=latest%20tag&color=blue)](https://github.com/godofkebab/wg-quickrs/releases/latest)
+[![Docker](https://img.shields.io/docker/image-size/godofkebab/wg-quickrs?logo=docker&color=%232496ED)](https://hub.docker.com/repository/docker/godofkebab/wg-quickrs)
+[![Docker](https://img.shields.io/docker/pulls/godofkebab/wg-quickrs?logo=docker&color=%232496ED)](https://hub.docker.com/repository/docker/godofkebab/wg-quickrs/tags)
+![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Frust-agent%2FCargo.toml&query=package.rust-version&logo=rust&label=rust&color=%23000000)
+![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fweb%2Fpackage.json&query=dependencies.vue&logo=vue.js&label=vue&color=%234FC08D)
 
 ⚠️ This repo is a **work in progress**!
 
-An intuitive and feature-rich WireGuard configuration management tool written mainly in Rust.
+✨ An intuitive multi-peer `wg` / `wg-quick` wrapper written in 🦀 Rust.
+
+⚡ Rust + Vue + WASM + WireGuard = 🧪 one static binary + 📝 one YAML file to rule them all 🪄 (~15MB uncompressed)
+
+Run it on your server, router, or computer and manage your WireGuard VPN from a web interface.
+
+TODO: add web console visual
+
+Features:
+- Interactive graph to configure your P2P network
+- Sliding traffic graph to visualize your host's network traffic
+- Secure API access via HTTPS with support for password login and JWT authentication
+- Automatic firewall/NAT setup (`iptables` for Debian/Linux or `pf` for macOS, both come preinstalled with the OS)
+- If you are not feeling like dealing with VPN/networking on your machine, you can also just use the web console to create `.conf` files/QR codes for your clients.
 
 ---
 
@@ -15,14 +34,11 @@ An intuitive and feature-rich WireGuard configuration management tool written ma
 ### Requirements
 
 - `wg` and `wg-quick`
-- Firewall settings to accept HTTP/HTTPS traffic
+- optional for setting up the firewall: `iptables`(Linux) or `pf`(macOS)
 
 ```bash
 # Install on Debian/Ubuntu
 sudo apt install -y wireguard wireguard-tools
-# Setup firewall on Debian/Ubuntu
-sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
 ```
 
 To get started, you can either use the pre-built binaries (recommended) or use the pre-built Docker image.
