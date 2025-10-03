@@ -1,5 +1,5 @@
 meta {
-  name: network/summary
+  name: /api/network/summary
   type: http
   seq: 4
 }
@@ -12,6 +12,15 @@ get {
 
 params:query {
   only_digest: false
+}
+
+assert {
+  res.status: eq 200
+  res.body: isJson
+}
+
+script:post-response {
+  bru.setVar("thisPeerId", res.body.network.this_peer);
 }
 
 settings {

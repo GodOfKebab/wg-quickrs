@@ -1,5 +1,5 @@
 meta {
-  name: network/lease/id-address
+  name: /api/network/lease/id-address
   type: http
   seq: 5
 }
@@ -8,6 +8,11 @@ get {
   url: {{base-url}}/api/network/lease/id-address
   body: none
   auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body: isJson
 }
 
 settings {

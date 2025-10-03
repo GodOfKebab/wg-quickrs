@@ -1,7 +1,7 @@
 meta {
-  name: network/config
+  name: /api/network/config
   type: http
-  seq: 8
+  seq: 6
 }
 
 patch {
@@ -14,15 +14,17 @@ body:json {
   {
       "changed_fields": {
           "peers": {
-              "e7dd8fce-7bcb-451d-97e8-316d631c7b7e": {
-                  "dns": {
-                      "enabled": true,
-                      "value": "1.1.1.1"
-                  }
+              "{{thisPeerId}}": {
+                  "name": "bruno-test"
               }
           }
       }
   }
+}
+
+assert {
+  res.status: eq 200
+  res.body: isJson
 }
 
 settings {

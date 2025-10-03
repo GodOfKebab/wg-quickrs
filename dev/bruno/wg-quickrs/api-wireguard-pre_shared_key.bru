@@ -1,13 +1,18 @@
 meta {
-  name: wireguard/pre_shared_key
+  name: /api/wireguard/pre_shared_key
   type: http
-  seq: 6
+  seq: 7
 }
 
 get {
   url: {{base-url}}/api/wireguard/pre_shared_key
   body: none
   auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body: isJson
 }
 
 settings {

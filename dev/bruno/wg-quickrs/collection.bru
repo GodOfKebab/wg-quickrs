@@ -9,3 +9,36 @@ auth {
 auth:bearer {
   token: {{token}}
 }
+
+docs {
+  # Bruno Collection for `wg-quickrs`
+  
+  This collection contains a convenient way to check the API endpoints are working correctly when developing.
+  
+  When every endpoint is run sequentially from top-to-bottom ('happy-path'), all should run successfully if the `password` and `base-url` environment variable is set correctly.
+  
+  Some notes about endpoints:
+  - GET /version
+    - not password-protected so it should never fail.
+  - POST /api/token
+    - saves the token to a variable so it can be accessed from other endpoints. So when running the collection, make sure you run this before any other endpoint so you have the correct token
+  - GET /api/network/summary
+    - password-protected
+  - GET /api/network/lease/id-address
+    - password-protected
+  - PATCH /api/network/config
+    - password-protected
+  - GET /api/wireguard/pre_shared_key
+    - password-protected
+  - GET /api/wireguard/public_private_keys
+    - password-protected
+  - POST /api/wireguard/server/status
+    - `status` values correspond to `WireGuardStatus` Enum
+    - 0: invalid
+    - 1: disable
+    - 2: enable
+  
+  
+  
+  
+}
