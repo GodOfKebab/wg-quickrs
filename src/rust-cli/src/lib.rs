@@ -296,7 +296,7 @@ pub enum AgentCommands {
     #[command(about = "Disable running firewall commands for setting up NAT and input rules")]
     DisableFirewall,
     #[command(
-        about = "Set the utility used to configure firewall NAT and input rules (e.g. iptables, ufw, etc.)"
+        about = "Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)"
     )]
     SetFirewallUtility(UtilityArg),
 }

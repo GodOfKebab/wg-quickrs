@@ -64,7 +64,7 @@ fn find_in_path(cmd: &str) -> Option<PathBuf> {
 }
 
 pub fn firewall_utility_options() -> Vec<String> {
-    let candidates = ["iptables", "pfctl", "nft"];
+    let candidates = ["iptables", "pfctl"];
     let mut ret: Vec<String> = Vec::new();
     for prog in candidates {
         if let Some(path) = find_in_path(prog) {
