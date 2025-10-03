@@ -193,13 +193,41 @@ wg-quickrs --help
 
 ---
 
-#### 1.1.5 Configure TLS/HTTPS Certificates
+#### 1.1.5 Cross-compilation
+
+This portion uses `zigbuild` because the default rust toolchain was having trouble cross-compiling the `aws-lc-rs` dependency.
+
+Install `zig` and `zigbuild`.
+
+```sh
+# ARCH options: x86_64, aarch64, arm based on your CURRENT machine you use to build binaries
+# See all options at https://ziglang.org/download/
+curl -L https://ziglang.org/download/0.15.1/zig-{{ ARCH }}-linux-0.15.1.tar.xz | tar -xJ
+mv zig-* /usr/local/zig
+ln -s /usr/local/zig/zig /usr/local/bin/zig
+cargo install cargo-zigbuild
+```
+
+Build the `rust-agent` directory given a target platform.
+Binary will be generated at `target/{{ TARGET }}/release/wg-quickrs`
+
+```sh
+# TARGET options: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, armv7-unknown-linux-musleabihf
+# See all options by running the following
+# rustup target list
+rustup target add {{ TARGET }}
+cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target={{ TARGET }}
+```
+
+---
+
+#### 1.1.6 Configure TLS/HTTPS Certificates
 
 I use the [tls-cert-generator](https://github.com/GodOfKebab/tls-cert-generator) to create TLS certificates locally.
 See the documentation to generate certificates for other domains/servers.
 Following grabs all the hostnames, IPv4+IPv6 interface addresses of the system and generates certificates for them.
 
-[//]: # (install-deps-debian: 1.1.5 Configure TLS/HTTPS Certificates)
+[//]: # (install-deps-debian: 1.1.6 Configure TLS/HTTPS Certificates)
 
 ```sh
 # Install to System:
@@ -215,11 +243,11 @@ sh /etc/wg-quickrs/certs/tls-cert-generator.sh -o /etc/wg-quickrs/certs all
 
 ---
 
-#### 1.1.6 Install WireGuard
+#### 1.1.7 Install WireGuard
 
 Install packages for the `wg` and `wg-quick` dependency.
 
-[//]: # (install-deps-debian: 1.1.6 Install WireGuard)
+[//]: # (install-deps-debian: 1.1.7 Install WireGuard)
 
 ```sh
 sudo apt install -y wireguard wireguard-tools
@@ -227,7 +255,7 @@ sudo apt install -y wireguard wireguard-tools
 
 ---
 
-#### 1.1.7 Initialize and Configure the Agent
+#### 1.1.8 Initialize and Configure the Agent
 
 Run the following and follow the prompts to configure network, agent, and default peer settings when generating new
 peers/connections.
@@ -235,7 +263,7 @@ This generates `/etc/wg-quickrs/conf.yml`, where all the settings/configurations
 If you want to later edit the configuration, you can either use the scripting commands at `wg-quickrs agent <TAB>` or
 manually edit this file and restart your agent.
 
-[//]: # (run-agent-debian: 1.1.7 Initialize and Configure the Agent)
+[//]: # (run-agent-debian: 1.1.8 Initialize and Configure the Agent)
 
 ```sh
 # Install to System:
@@ -246,11 +274,11 @@ wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs init
 
 ---
 
-#### 1.1.8 Run the Agent
+#### 1.1.9 Run the Agent
 
 Run the agent.
 
-[//]: # (run-agent-debian: 1.1.8 Run the Agent)
+[//]: # (run-agent-debian: 1.1.9 Run the Agent)
 
 ```sh
 # Run on System:
@@ -261,7 +289,7 @@ wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs agent run
 
 ---
 
-#### 1.1.9 Setup systemd service (optional)
+#### 1.1.10 Setup systemd service (optional)
 
 Configure `systemd` for easily managing the agent.
 
@@ -274,7 +302,7 @@ Following creates:
 * The systemd service `wg-quickrs` that is enabled and started
   * This service also gives necessary networking-related permissions.
 
-[//]: # (set-up-systemd-debian: 1.1.9 Setup systemd service)
+[//]: # (set-up-systemd-debian: 1.1.10 Setup systemd service)
 
 ```sh
 # setup a new user with weak permissions
