@@ -42,7 +42,7 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
         return HttpResponse::Ok().json(json!(status_body));
     }
 
-    let conf = match conf::respond::get_config() {
+    let conf = match conf::util::get_config() {
         Ok(conf) => conf,
         Err(_) => {
             return HttpResponse::InternalServerError().body("Unable to get config");
