@@ -132,7 +132,7 @@
       <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
         version:
         <strong>
-          <a :href="`https://github.com/GodOfKebab/wg-quickrs/releases/tag/${version.version}`"
+          <a :href="`https://github.com/GodOfKebab/wg-quickrs/releases/tag/v${version.version}`"
              class="hover:underline"
              target="_blank">
             {{ version.version }}

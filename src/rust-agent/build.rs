@@ -71,7 +71,7 @@ fn main() {
 #[macro_export]
 macro_rules! wg_quickrs_version {{
     () => {{
-        "v{wg_quickrs_version}"
+        "{wg_quickrs_version}"
     }};
 }}
 
@@ -85,7 +85,7 @@ macro_rules! build_info {{
 #[macro_export]
 macro_rules! full_version {{
     () => {{
-        "version: v{wg_quickrs_version} | build: {git_info}@{timestamp}"
+        "version: {wg_quickrs_version} | build: {git_info}@{timestamp}"
     }};
 }}
 "#

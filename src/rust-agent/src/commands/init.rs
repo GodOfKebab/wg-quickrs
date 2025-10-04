@@ -1,4 +1,5 @@
 use crate::commands::helpers;
+use crate::macros::*;
 use crate::commands::validation::{check_field_enabled_value_agent, check_field_path_agent, check_field_str_agent};
 use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
@@ -277,7 +278,6 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
 }
 
 /// Macro to handle paired "enable + value" options
-#[macro_export]
 macro_rules! get_init_pair_option {
     (
         $cli_no_prompt:expr,
@@ -1029,6 +1029,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     };
 
     let mut config = Config {
+        version: wg_quickrs_version!().into(),
         agent: Agent {
             web: AgentWeb {
                 address: agent_web_address,

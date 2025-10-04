@@ -28,6 +28,7 @@ impl WireGuardStatus {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Config {
+    pub version: String,
     pub agent: Agent,
     pub network: Network,
 }

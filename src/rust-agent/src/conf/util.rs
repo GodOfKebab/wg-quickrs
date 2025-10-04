@@ -1,4 +1,5 @@
-use crate::WG_QUICKRS_CONFIG_FILE;
+use crate::{WG_QUICKRS_CONFIG_FILE};
+use crate::macros::*;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
 use rust_wasm::types::{Config, Summary, WireGuardStatus};
@@ -10,6 +11,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use thiserror::Error;
+use semver::{Version, VersionReq};
+
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ConfigWDigest {
@@ -68,6 +71,10 @@ pub enum ConfUtilError {
     MutexLockFailed(String),
     #[error("conf::util::error::mutex_set_failed -> failed to set mutex variable")]
     MutexSetFailed(),
+    #[error("conf::util::error::invalid_version -> invalid version semantic version: {0}")]
+    InvalidVersion(semver::Error),
+    #[error("conf::util::error::version_not_supported -> conf.yml version not supported: expected {0}, got {1}")]
+    VersionNotSupported(String, String),
 }
 
 pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
@@ -88,6 +95,12 @@ fn get_config_w_digest() -> Result<ConfigWDigest, ConfUtilError> {
     let config_str =
         fs::read_to_string(file_path).map_err(|e| ConfUtilError::Read(file_path.clone(), e))?;
     let config: Config = serde_yml::from_str(&config_str).map_err(ConfUtilError::Parse)?;
+    let build_version = Version::parse(wg_quickrs_version!()).unwrap();
+    let version_req = VersionReq::parse(format!("={}", build_version.major).as_str()).unwrap();
+    let conf_ver = Version::parse(config.version.as_str()).map_err(ConfUtilError::InvalidVersion)?;
+    if !version_req.matches(&conf_ver) {
+        return Err(ConfUtilError::VersionNotSupported(format!("{}.x.x", build_version.major), config.version));
+    }
     let config_w_digest = ConfigWDigest::from_config_w_str(config.clone(), config_str)?;
     ConfigWDigest::set_or_init(config_w_digest.clone())?;
     log::info!("loaded config file");
@@ -121,6 +134,7 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
 }
 
 pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
+    config.version = wg_quickrs_version!().into();
     config.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&config).map_err(ConfUtilError::Serialization)?;
     let config_w_digest = ConfigWDigest::from_config_w_str(config.clone(), config_str.clone())?;
