@@ -71,14 +71,14 @@ export default class API {
     async get_wireguard_public_private_keys() {
         return this.call({
             method: 'get',
-            path: `/api/wireguard/public_private_keys`,
+            path: `/api/wireguard/public-private-keys`,
         });
     }
 
     async get_wireguard_pre_shared_key() {
         return this.call({
             method: 'get',
-            path: `/api/wireguard/pre_shared_key`,
+            path: `/api/wireguard/pre-shared-key`,
         });
     }
 
