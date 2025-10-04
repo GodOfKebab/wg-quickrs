@@ -2,8 +2,8 @@ use crate::{WIREGUARD_CONFIG_FILE};
 use crate::conf::util::get_config;
 use crate::macros::*;
 use once_cell::sync::Lazy;
-use rust_wasm::helpers::get_peer_wg_config;
-use rust_wasm::types::{Config, Telemetry, TelemetryData, TelemetryDatum, WireGuardStatus};
+use wg_quickrs_wasm::helpers::get_peer_wg_config;
+use wg_quickrs_wasm::types::{Config, Telemetry, TelemetryData, TelemetryDatum, WireGuardStatus};
 use serde_json::{Value, json};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
@@ -253,7 +253,7 @@ fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGua
                     let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
                     let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
                     let connection_id =
-                        rust_wasm::helpers::get_connection_id(&config.network.this_peer, &peer_id);
+                        wg_quickrs_wasm::helpers::get_connection_id(&config.network.this_peer, &peer_id);
 
                     telemetry.insert(
                         connection_id.clone(),

@@ -1,7 +1,7 @@
 use crate::WG_QUICKRS_CONFIG_FOLDER;
-use rust_wasm::validation::{check_field_enabled_value, check_field_str, is_cidr, CheckResult};
+use wg_quickrs_wasm::validation::{check_field_enabled_value, check_field_str, is_cidr, CheckResult};
 use std::path::Path;
-use rust_wasm::types::EnabledValue;
+use wg_quickrs_wasm::types::EnabledValue;
 
 pub fn check_field_str_agent(field_name: &str, field_variable: &str) -> CheckResult {
     let mut ret = CheckResult {

@@ -30,9 +30,9 @@ jobs:
         with:
           node-version: 24
 
-      - name: Build rust-wasm
+      - name: Build wg-quickrs-wasm
         run: |
-          cd src/rust-wasm
+          cd src/wg-quickrs-wasm
           wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
 
       - name: Build web frontend

@@ -2,7 +2,7 @@ use crate::{WG_QUICKRS_CONFIG_FILE};
 use crate::macros::*;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
-use rust_wasm::types::{Config, Summary, WireGuardStatus};
+use wg_quickrs_wasm::types::{Config, Summary, WireGuardStatus};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;

@@ -51,7 +51,7 @@ $SHELL run-md.sh ../docs/BUILDING.md run-agent-docker
 
 The project is split into three parts:
 
-* **`rust-wasm`** – Rust code for the web frontend
+* **`wg-quickrs-wasm`** – Rust code for the web frontend
 * **`web`** – frontend assets
 * **`wg-quickrs`** – backend, frontend server, and scripting tools bundled in `wg-quickrs` binary
 
@@ -68,22 +68,22 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 ---
 
-#### 1.1.2 Build `rust-wasm`
+#### 1.1.2 Build `wg-quickrs-wasm`
 
 Install `wasm-pack` dependency.
 
-[//]: # (install-deps-debian: 1.1.2 Build rust-wasm - Install 'wasm-pack' dependency)
+[//]: # (install-deps-debian: 1.1.2 Build wg-quickrs-wasm - Install 'wasm-pack' dependency)
 
 ```sh
 cargo install wasm-pack
 ```
 
-Build `rust-wasm` directory.
+Build `wg-quickrs-wasm` directory.
 
-[//]: # (build-src-debian: 1.1.2 Build rust-wasm - Build 'rust-wasm' directory.)
+[//]: # (build-src-debian: 1.1.2 Build wg-quickrs-wasm - Build 'wg-quickrs-wasm' directory.)
 
 ```sh
-cd rust-wasm
+cd wg-quickrs-wasm
 wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
 cd ..
 ```

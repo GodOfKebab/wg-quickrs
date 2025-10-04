@@ -48,9 +48,9 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
             return HttpResponse::InternalServerError().body("Unable to get config");
         }
     };
-    let action = if status_body.status == rust_wasm::types::WireGuardStatus::UP.value() {
+    let action = if status_body.status == wg_quickrs_wasm::types::WireGuardStatus::UP.value() {
         enable_tunnel
-    } else if status_body.status == rust_wasm::types::WireGuardStatus::DOWN.value() {
+    } else if status_body.status == wg_quickrs_wasm::types::WireGuardStatus::DOWN.value() {
         disable_tunnel
     } else {
         return HttpResponse::BadRequest().json(json!({

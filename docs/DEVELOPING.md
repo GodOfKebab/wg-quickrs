@@ -9,7 +9,7 @@ Following are the scripts I use in my IDE to do my development.
 Following will build the WASM target once.
 
 ```sh
-# running directory: src/rust-wasm/
+# running directory: src/wg-quickrs-wasm/
 wasm-pack build --target web --out-dir ../web/pkg -- --features wasm
 ```
 

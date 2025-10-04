@@ -1,5 +1,5 @@
 [package]
-name = "rust-wasm"
+name = "wg-quickrs-wasm"
 edition = "2024"
 rust-version = "1.89"
 

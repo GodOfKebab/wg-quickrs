@@ -3,8 +3,8 @@ use crate::conf::util;
 use crate::conf::network;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::sync_conf;
-use rust_wasm::types::*;
-use rust_wasm::validation::*;
+use wg_quickrs_wasm::types::*;
+use wg_quickrs_wasm::validation::*;
 use actix_web::{HttpResponse, web};
 use chrono::Duration;
 use serde_json::json;
@@ -19,7 +19,7 @@ pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody
         }
     };
     let response_data = if query.only_digest {
-        json!(rust_wasm::types::SummaryDigest::from(&summary))
+        json!(wg_quickrs_wasm::types::SummaryDigest::from(&summary))
     } else {
         json!(summary)
     };
@@ -361,7 +361,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                         post_down
                     );
                 }
-                let mut added_peer = rust_wasm::types::Peer::from(&peer_details);
+                let mut added_peer = wg_quickrs_wasm::types::Peer::from(&peer_details);
                 added_peer.created_at = timestamp::get_now_timestamp_formatted();
                 added_peer.updated_at = added_peer.created_at.clone();
                 c.config.network.peers.insert(peer_id.clone(), added_peer);

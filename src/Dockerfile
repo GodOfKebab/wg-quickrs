@@ -1,6 +1,6 @@
-FROM --platform=linux/$BUILDARCH rust:1.89-slim AS rust-wasm-builder
-WORKDIR /app/rust-wasm
-COPY src/rust-wasm /app/rust-wasm
+FROM --platform=linux/$BUILDARCH rust:1.89-slim AS wg-quickrs-wasm-builder
+WORKDIR /app/wg-quickrs-wasm
+COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
 RUN cargo install wasm-pack
 RUN wasm-pack build --target web --out-dir /app/web/pkg -- --features wasm
 
@@ -8,7 +8,7 @@ FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
 WORKDIR /app/web
 COPY src/web .
 RUN npm ci --omit=dev
-COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
+COPY --from=wg-quickrs-wasm-builder /app/web/pkg /app/web/pkg
 RUN npm run build
 
 FROM --platform=linux/$BUILDARCH rust:1.89-slim AS wg-quickrs-builder
@@ -30,7 +30,7 @@ RUN case "$BUILDARCH" in \
     cargo install cargo-zigbuild
 
 COPY src/Cargo.toml /app/Cargo.toml
-COPY src/rust-wasm /app/rust-wasm
+COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
 COPY src/wg-quickrs /app/wg-quickrs
 COPY src/wg-quickrs-cli /app/wg-quickrs-cli
 COPY src/web/package.json /app/web/package.json

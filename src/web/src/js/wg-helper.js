@@ -5,7 +5,7 @@ import {
     check_field_str_frontend,
     get_connection_id_frontend,
     get_peer_wg_config_frontend
-} from '../../pkg/rust_wasm.js';
+} from '../../pkg/wg_quickrs_wasm.js';
 
 export default class WireGuardHelper {
 
