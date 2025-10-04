@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/tag/godofkebab/wg-quickrs?logo=github&label=latest%20tag&color=blue)](https://github.com/godofkebab/wg-quickrs/releases/latest)
 [![Docker](https://img.shields.io/docker/image-size/godofkebab/wg-quickrs?logo=docker&color=%232496ED)](https://hub.docker.com/repository/docker/godofkebab/wg-quickrs)
 [![Docker](https://img.shields.io/docker/pulls/godofkebab/wg-quickrs?logo=docker&color=%232496ED)](https://hub.docker.com/repository/docker/godofkebab/wg-quickrs/tags)
-![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Frust-agent%2FCargo.toml&query=package.rust-version&logo=rust&label=rust&color=%23000000)
+![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fwg-quickrs%2FCargo.toml&query=package.rust-version&logo=rust&label=rust&color=%23000000)
 ![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fweb%2Fpackage.json&query=dependencies.vue&logo=vue.js&label=vue&color=%234FC08D)
 
 ⚠️ This repo is a **work in progress**!
@@ -222,7 +222,7 @@ docker run --rm \
 ```text
 backend: v0.1.0, frontend: v0.0.0, build: unknown#unknown@2025-09-10T03:54:51Z
 2025-09-10T04:34:04.818Z INFO  [wg_quickrs] using the wg-quickrs config file at ".wg-quickrs/conf.yml"
-2025-09-10T04:34:04.818Z INFO  [wg_quickrs::commands::init] Initializing wg-quickrs rust-agent...
+2025-09-10T04:34:04.818Z INFO  [wg_quickrs::commands::init] Initializing wg-quickrs...
 [general network settings 1-2/24]
 	[ 1/24] Using Set VPN network identifier from CLI option '--network-identifier': wg-quickrs-home
 	[ 2/24] Using Set VPN network CIDR subnet from CLI option '--network-subnet': 10.0.34.0/24
@@ -274,7 +274,7 @@ backend: v0.1.0, frontend: v0.0.0, build: unknown#unknown@2025-09-10T03:54:51Z
 	[24/24] Enable PersistentKeepalive for new connections by default is enabled from CLI option '--default-connection-persistent-keepalive-enabled'
 	[24/24] Using 	Set default PersistentKeepalive period in seconds from CLI option '--default-connection-persistent-keepalive-period': 25
 [new peer/connection default settings complete]
-✅ This was all the information required to initialize the rust-agent. Finalizing the configuration...
+✅ This was all the information required to initialize wg-quickrs. Finalizing the configuration...
 2025-09-10T04:34:04.837Z INFO  [wg_quickrs::wireguard::cmd] $ wg genkey
 2025-09-10T04:34:04.837Z INFO  [wg_quickrs::wireguard::cmd] $ wg genkey | wg pubkey
 2025-09-10T04:34:04.839Z INFO  [wg_quickrs::conf::util] updated config file

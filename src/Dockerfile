@@ -11,7 +11,7 @@ RUN npm ci --omit=dev
 COPY --from=rust-wasm-builder /app/web/pkg /app/web/pkg
 RUN npm run build
 
-FROM --platform=linux/$BUILDARCH rust:1.89-slim AS rust-agent-builder
+FROM --platform=linux/$BUILDARCH rust:1.89-slim AS wg-quickrs-builder
 WORKDIR /app
 
 # Install Zig
@@ -31,7 +31,7 @@ RUN case "$BUILDARCH" in \
 
 COPY src/Cargo.toml /app/Cargo.toml
 COPY src/rust-wasm /app/rust-wasm
-COPY src/rust-agent /app/rust-agent
+COPY src/wg-quickrs /app/wg-quickrs
 COPY src/rust-cli /app/rust-cli
 COPY src/web/package.json /app/web/package.json
 COPY .git /app/.git
@@ -69,6 +69,6 @@ fi
 # run the actual app
 exec /app/wg-quickrs --wg-quickrs-config-folder .wg-quickrs "$@"
 EOF
-COPY --from=rust-agent-builder /app/wg-quickrs /app/wg-quickrs
+COPY --from=wg-quickrs-builder /app/wg-quickrs /app/wg-quickrs
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
 #CMD ["tail", "-f", "/dev/null"]

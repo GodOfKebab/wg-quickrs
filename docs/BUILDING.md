@@ -53,7 +53,7 @@ The project is split into three parts:
 
 * **`rust-wasm`** – Rust code for the web frontend
 * **`web`** – frontend assets
-* **`rust-agent`** – backend, frontend server, and scripting tools bundled in `wg-quickrs` binary
+* **`wg-quickrs`** – backend, frontend server, and scripting tools bundled in `wg-quickrs` binary
 
 ---
 
@@ -123,7 +123,7 @@ Install packages for the `aws-lc-sys` dependency.
 sudo apt-get update && sudo apt-get install -y musl-dev cmake clang llvm-dev libclang-dev pkg-config
 ```
 
-Build the `rust-agent` directory.
+Build the `wg-quickrs` directory.
 
 This might take some time on slower machines.
 The build process described here is simpler and slightly different from the ones in `.github/workflows/release.yml` and
@@ -171,9 +171,9 @@ wg-quickrs --help
 # Usage: wg-quickrs [OPTIONS] <COMMAND>
 # 
 # Commands:
-#   init   Initialize the wg-quickrs rust-agent.
+#   init   Initialize the wg-quickrs agent.
 #          Configuration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command
-#   agent  Configure and run the wg-quickrs rust-agent
+#   agent  Configure and run the wg-quickrs agent
 #   help   Print this message or the help of the given subcommand(s)
 # 
 # Options:
@@ -208,7 +208,7 @@ ln -s /usr/local/zig/zig /usr/local/bin/zig
 cargo install cargo-zigbuild
 ```
 
-Build the `rust-agent` directory given a target platform.
+Build the `wg-quickrs` directory given a target platform.
 Binary will be generated at `target/{{ TARGET }}/release/wg-quickrs`
 
 ```sh

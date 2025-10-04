@@ -319,10 +319,10 @@ macro_rules! get_init_pair_option {
 pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     if let Err(ConfUtilError::Read(..)) = conf::util::get_config() {
     } else {
-        log::error!("wg-quickrs rust-agent is already initialized.");
+        log::error!("wg-quickrs wg-quickrs is already initialized.");
         return ExitCode::FAILURE;
     }
-    log::info!("Initializing wg-quickrs rust-agent...");
+    log::info!("Initializing wg-quickrs...");
 
     let mut step_counter = 1;
     let mut cli_field_counter = 0;
@@ -977,7 +977,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     println!("[new peer/connection default settings complete]");
 
     println!(
-        "✅ This was all the information required to initialize the rust-agent. Finalizing the configuration..."
+        "✅ This was all the information required to initialize wg-quickrs. Finalizing the configuration..."
     );
 
     let peer_id = Uuid::new_v4().to_string();

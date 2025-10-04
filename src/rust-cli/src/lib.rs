@@ -28,10 +28,10 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     #[command(
-        about = "Initialize the wg-quickrs rust-agent.\nConfiguration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command"
+        about = "Initialize the wg-quickrs agent.\nConfiguration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command"
     )]
     Init(Box<InitOptions>),
-    #[command(about = "Configure and run the wg-quickrs rust-agent")]
+    #[command(about = "Configure and run the wg-quickrs agent")]
     Agent {
         #[cfg(target_os = "macos")]
         #[arg(long, default_value = "/opt/homebrew/etc/wireguard/")]
@@ -249,7 +249,7 @@ pub struct InitOptions {
 
 #[derive(Subcommand, Debug)]
 pub enum AgentCommands {
-    #[command(about = "Runs the rust-agent")]
+    #[command(about = "Runs the wg-quickrs")]
     Run,
     // setting: address
     #[command(about = "Set agent web server bind IPv4 address")]
