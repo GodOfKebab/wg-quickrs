@@ -5,7 +5,8 @@
 
     <!-- Modal -->
     <div aria-modal="true"
-         class="relative inline-block bg-white rounded-lg overflow-hidden text-left shadow-xl transform transition-all max-w-3xl w-full mx-2"
+         :class="modalClasses"
+         class="relative inline-block bg-white rounded-lg overflow-hidden text-left shadow-xl transform transition-all w-full mx-2"
          role="dialog">
       <div class="bg-white px-4 pt-4 sm:px-6 sm:pt-6">
         <div class="pr-2">
@@ -86,6 +87,10 @@ export default {
       type: String,
       default: '',
     },
+    modalClasses: {
+      type: String,
+      default: 'max-w-4xl',
+    }
   }
 }
 </script>
