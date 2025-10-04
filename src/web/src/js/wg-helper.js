@@ -19,7 +19,7 @@ export default class WireGuardHelper {
 
         const element = document.createElement('a');
         element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(peerConfigFileContents)}`);
-        element.setAttribute('download', `${this.network.identifier}-${peerConfigFileName}.conf`);
+        element.setAttribute('download', `${network.identifier}-${peerConfigFileName}.conf`);
 
         element.style.display = 'none';
         document.body.appendChild(element);

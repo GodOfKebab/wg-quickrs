@@ -275,7 +275,7 @@ export default {
       QRCode.toCanvas(document.getElementById('qr-canvas'), this.peer_wg_conf_file);
     },
     downloadPeerConfig() {
-      WireGuardHelper.downloadPeerConfig(this.network, this.peerId, this.version);
+      WireGuardHelper.downloadPeerConfig(this.network, this.peerId, this.version.full_version);
     }
   },
   computed: {
