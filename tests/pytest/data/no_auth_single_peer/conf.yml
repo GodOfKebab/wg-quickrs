@@ -1,0 +1,78 @@
+agent:
+  web:
+    address: '127.0.0.1'
+    http:
+      enabled: true
+      port: 8080
+    https:
+      enabled: false
+      port: 8443
+      tls_cert: ''
+      tls_key: ''
+    password:
+      enabled: false
+      hash: ''
+  vpn:
+    enabled: false
+    gateway: ''
+    port: 51820
+  firewall:
+    enabled: true
+    utility: /sbin/pfctl
+network:
+  identifier: wg-quickrs-home
+  subnet: '10.0.34.0/24'
+  this_peer: '0ed989c6-6dba-4e3c-8034-08adf4262d9e'
+  peers:
+    '0ed989c6-6dba-4e3c-8034-08adf4262d9e':
+      name: wg-quickrs-host
+      address: '10.0.34.1'
+      endpoint:
+        enabled: true
+        value: '127.0.0.1:51820'
+      kind: server
+      icon:
+        enabled: false
+        value: ''
+      dns:
+        enabled: true
+        value: '1.1.1.1'
+      mtu:
+        enabled: false
+        value: ''
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+      public_key: w6ogfx4XO45YiwHD2DK5gGrxwiU6CfN6C7baBdu1cCo=
+      private_key: yGFmuVZeV1V/Jy0rAx7bOF4Gx4Mt/17VMazM5grvqE4=
+      created_at: '2025-10-04T00:36:44Z'
+      updated_at: '2025-10-04T00:36:44Z'
+  connections: {}
+  defaults:
+    peer:
+      endpoint:
+        enabled: false
+        value: ''
+      kind: laptop
+      icon:
+        enabled: false
+        value: ''
+      dns:
+        enabled: true
+        value: '1.1.1.1'
+      mtu:
+        enabled: false
+        value: ''
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+    connection:
+      persistent_keepalive:
+        enabled: true
+        value: '25'
+  leases: []
+  updated_at: '2025-10-04T00:36:44Z'
