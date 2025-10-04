@@ -1,18 +1,18 @@
+use crate::macros::*;
+use crate::conf::util;
 use crate::conf::network;
 use crate::conf::timestamp;
-use crate::conf;
+use crate::wireguard::cmd::sync_conf;
 use rust_wasm::types::*;
 use rust_wasm::validation::*;
-pub(crate) use crate::conf::util::get_config;
-use crate::conf::util::{CONFIG_W_DIGEST, ConfUtilError, ConfigWDigest, get_summary};
-use crate::wireguard::cmd::sync_conf;
 use actix_web::{HttpResponse, web};
 use chrono::Duration;
 use serde_json::json;
 use uuid::Uuid;
 
+
 pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody>) -> HttpResponse {
-    let summary = match get_summary() {
+    let summary = match util::get_summary() {
         Ok(summary) => summary,
         Err(_) => {
             return HttpResponse::InternalServerError().body("Unable to get config");
@@ -28,7 +28,7 @@ pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody
 
 macro_rules! get_mg_config_w_digest {
     () => {{
-        let mut_opt = CONFIG_W_DIGEST.get();
+        let mut_opt = util::CONFIG_W_DIGEST.get();
         if mut_opt.is_none() {
             return HttpResponse::InternalServerError().json(json!({
                 "status": "internal_server_error",
@@ -50,7 +50,9 @@ macro_rules! get_mg_config_w_digest {
 
 macro_rules! post_mg_config_w_digest {
     ($c:expr) => {
-        let config_str = match serde_yml::to_string(&$c.config).map_err(ConfUtilError::Serialization) {
+        $c.config.version = wg_quickrs_version!().into();
+        $c.config.network.updated_at = timestamp::get_now_timestamp_formatted();
+        let config_str = match serde_yml::to_string(&$c.config).map_err(util::ConfUtilError::Serialization) {
             Ok(s) => s,
             Err(_) => {
                 return HttpResponse::InternalServerError().json(json!({
@@ -59,7 +61,7 @@ macro_rules! post_mg_config_w_digest {
                 }));
             }
         };
-        $c.digest = match ConfigWDigest::from_config_w_str($c.config.clone(), config_str.clone()) {
+        $c.digest = match util::ConfigWDigest::from_config_w_str($c.config.clone(), config_str.clone()) {
             Ok(c_w_d) => c_w_d.digest,
             Err(_) => {
                 return HttpResponse::InternalServerError().json(json!({
@@ -68,7 +70,7 @@ macro_rules! post_mg_config_w_digest {
                 }));
             }
         };
-        match conf::util::write_config(config_str) {
+        match util::write_config(config_str) {
             Ok(_) => {}
             Err(_) => {
                 return HttpResponse::InternalServerError().json(json!({
@@ -80,7 +82,6 @@ macro_rules! post_mg_config_w_digest {
         log::info!("updated config file");
     };
 }
-
 
 pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     let body_raw = String::from_utf8_lossy(&body);
@@ -433,8 +434,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
             "message": "nothing to update"
         }));
     }
-
-    c.config.network.updated_at = timestamp::get_now_timestamp_formatted();
     post_mg_config_w_digest!(c);
 
     if c.config.agent.vpn.enabled {
@@ -482,7 +481,6 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     };
     log::info!("leased address {} until {}", body.address, body.valid_until);
     c.config.network.leases.push(body.clone());
-    c.config.network.updated_at = timestamp::get_now_timestamp_formatted();
     post_mg_config_w_digest!(c);
 
     HttpResponse::Ok().json(json!(body))
