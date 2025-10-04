@@ -3,10 +3,10 @@
   <div v-if="other_static_peer_ids.length +  other_roaming_peer_ids.length > 0">
     <!-- selection box -->
     <div :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peers_box]]"
-         class="my-2 py-2 pl-1 pr-3 shadow-md border rounded relative">
+         class="my-2 pt-2 pl-1 pr-3 shadow-md border rounded relative">
 
       <!-- static neighbors -->
-      <div v-if="other_static_peer_ids.length > 0" class="mb-5">
+      <div v-if="other_static_peer_ids.length > 0" class="mb-2">
         <div class="flex mx-2">
           <span class="text-gray-800 flex items-center">
             <strong class="text-xl mt-[1px]">Attached static peers:</strong>
