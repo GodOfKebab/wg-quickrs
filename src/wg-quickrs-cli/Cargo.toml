@@ -1,5 +1,5 @@
 [package]
-name = "rust-cli"
+name = "wg-quickrs-cli"
 edition = "2024"
 rust-version = "1.89"
 

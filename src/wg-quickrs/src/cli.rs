@@ -1,6 +1,6 @@
 use crate::macros::full_version;
 use clap::{CommandFactory, FromArgMatches};
-use rust_cli::Cli;
+use wg_quickrs_cli::Cli;
 
 // Create a new Cli instance with the version set from the full_version!() macro
 pub(crate) fn parse() -> Cli {
@@ -11,4 +11,4 @@ pub(crate) fn parse() -> Cli {
     Cli::from_arg_matches(&matches).expect("Failed to parse command line arguments")
 }
 
-// All CLI definitions are now imported from rust-cli crate
+// All CLI definitions are now imported from wg-quickrs-cli crate

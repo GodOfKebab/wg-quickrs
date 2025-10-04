@@ -32,7 +32,7 @@ RUN case "$BUILDARCH" in \
 COPY src/Cargo.toml /app/Cargo.toml
 COPY src/rust-wasm /app/rust-wasm
 COPY src/wg-quickrs /app/wg-quickrs
-COPY src/rust-cli /app/rust-cli
+COPY src/wg-quickrs-cli /app/wg-quickrs-cli
 COPY src/web/package.json /app/web/package.json
 COPY .git /app/.git
 

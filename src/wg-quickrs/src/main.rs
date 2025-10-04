@@ -1,7 +1,7 @@
 use crate::commands::config::AgentFieldValue;
 use log::LevelFilter;
 use once_cell::sync::OnceCell;
-use rust_cli::AgentCommands;
+use wg_quickrs_cli::AgentCommands;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -64,8 +64,8 @@ async fn main() -> ExitCode {
     );
 
     match &args.command {
-        rust_cli::Commands::Init(init_opts) => commands::init::initialize_agent(init_opts),
-        rust_cli::Commands::Agent {
+        wg_quickrs_cli::Commands::Init(init_opts) => commands::init::initialize_agent(init_opts),
+        wg_quickrs_cli::Commands::Agent {
             wireguard_config_folder,
             commands,
         } => match commands {

@@ -3,7 +3,7 @@
 use chrono::SecondsFormat;
 use clap::{CommandFactory, Parser};
 use clap_complete::generate_to;
-use rust_cli::{Cli, InitOptions};
+use wg_quickrs_cli::{Cli, InitOptions};
 use std::fs;
 use std::path::Path;
 use std::process::Command;

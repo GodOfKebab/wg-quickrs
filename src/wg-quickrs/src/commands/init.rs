@@ -7,7 +7,7 @@ use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER, conf};
 use dialoguer;
 use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
-use rust_cli::InitOptions;
+use wg_quickrs_cli::InitOptions;
 use rust_wasm::types::{
     Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
     DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,

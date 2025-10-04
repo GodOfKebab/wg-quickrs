@@ -2,7 +2,7 @@ use crate::commands::helpers;
 use crate::commands::validation::{check_field_str_agent, check_field_path_agent};
 use crate::conf;
 use argon2::PasswordHash;
-use rust_cli::ResetWebPasswordOptions;
+use wg_quickrs_cli::ResetWebPasswordOptions;
 use std::io;
 use std::io::Write;
 use std::path::PathBuf;
