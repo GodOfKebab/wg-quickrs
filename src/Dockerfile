@@ -2,11 +2,11 @@ FROM --platform=linux/$BUILDARCH rust:1.89-slim AS wg-quickrs-wasm-builder
 WORKDIR /app/wg-quickrs-wasm
 COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
 RUN cargo install wasm-pack
-RUN wasm-pack build --target web --out-dir /app/web/pkg -- --features wasm
+RUN wasm-pack build --target wg-quickrs-web --out-dir /app/wg-quickrs-web/pkg -- --features wasm
 
 FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
 WORKDIR /app/web
-COPY src/web .
+COPY src/wg-quickrs-web .
 RUN npm ci --omit=dev
 COPY --from=wg-quickrs-wasm-builder /app/web/pkg /app/web/pkg
 RUN npm run build
@@ -33,7 +33,6 @@ COPY src/Cargo.toml /app/Cargo.toml
 COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
 COPY src/wg-quickrs /app/wg-quickrs
 COPY src/wg-quickrs-cli /app/wg-quickrs-cli
-COPY src/web/package.json /app/web/package.json
 COPY .git /app/.git
 
 # Setup target arch
@@ -46,7 +45,7 @@ RUN case "$TARGETARCH" in \
     esac && \
     rustup target add $(cat RUST_TARGET)
 
-# Copy web folder right before build for build optimization
+# Copy wg-quickrs-web folder right before build for build optimization
 COPY --from=node-builder /app/web/dist /app/web/dist
 RUN cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) --features docker && \
     cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/wg-quickrs

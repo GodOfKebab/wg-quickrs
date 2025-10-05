@@ -84,7 +84,7 @@ Build `wg-quickrs-wasm` directory.
 
 ```sh
 cd wg-quickrs-wasm
-wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
+wasm-pack build --target wg-quickrs-web --out-dir ../wg-quickrs-web/pkg -- --features wasm --color=always
 cd ..
 ```
 
@@ -105,7 +105,7 @@ Build `web` directory.
 [//]: # (build-src-debian: 1.1.3 Build the web frontend - Build 'web' directory.)
 
 ```sh
-cd web
+cd wg-quickrs-web
 npm install
 npm run build
 cd ..

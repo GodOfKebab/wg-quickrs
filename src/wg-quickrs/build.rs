@@ -157,6 +157,5 @@ pub const INIT_HELPS: &[&str] = &{helps:?};
         // println!("cargo:warning=Generated {} completion script at: {:?}", shell, _completion_file_path);
     }
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=../web/package.json");
     println!("cargo:rerun-if-changed=Cargo.toml");
 }

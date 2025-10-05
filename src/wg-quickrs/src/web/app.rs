@@ -3,7 +3,7 @@ use mime_guess::from_path;
 use rust_embed::Embed;
 
 #[derive(Embed)]
-#[folder = "../web/dist"]
+#[folder = "../wg-quickrs-web/dist"]
 struct Asset;
 
 fn handle_embedded_file(path: &str) -> HttpResponse {

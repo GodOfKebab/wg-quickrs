@@ -10,7 +10,7 @@ Following will build the WASM target once.
 
 ```sh
 # running directory: src/wg-quickrs-wasm/
-wasm-pack build --target web --out-dir ../web/pkg -- --features wasm
+wasm-pack build --target wg-quickrs-web --out-dir ../wg-quickrs-web/pkg -- --features wasm
 ```
 
 ## 2. Vue/Frontend
@@ -18,7 +18,7 @@ wasm-pack build --target web --out-dir ../web/pkg -- --features wasm
 Following will listen to the files and if I change them, automagically reload the web page.
 
 ```sh
-# running directory: src/web/
+# running directory: src/wg-quickrs-web/
 npm run dev
 ```
 
@@ -38,7 +38,7 @@ So be sure to init your agent such that `http` is enabled and served at address 
 # initialize by running
 # cargo run --profile dev -- --wg-quickrs-config-folder ../.wg-quickrs init
 # running directory: src/
-cargo watch -i web -x "run -- --wg-quickrs-config-folder ../.wg-quickrs agent run"
+cargo watch -i wg-quickrs-web -x "run -- --wg-quickrs-config-folder ../.wg-quickrs agent run"
 ```
 
 To test release profile.
