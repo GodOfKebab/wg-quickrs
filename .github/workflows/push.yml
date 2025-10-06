@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build-frontend:
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     steps:
       # Prepare environment
       - name: Checkout code
@@ -42,7 +42,7 @@ jobs:
 
   build-binary:
     needs: build-frontend
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     env:
       target: x86_64-unknown-linux-musl
     steps:
@@ -82,7 +82,7 @@ jobs:
 
   run-tests:
     needs: build-binary
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
