@@ -1,0 +1,105 @@
+name: Build and Test
+
+on: [push]
+
+jobs:
+  build-frontend:
+    runs-on: debian-latest
+    steps:
+      # Prepare environment
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Build wg-quickrs-wasm
+      - name: Build wg-quickrs-wasm
+        run: |
+          cd src/wg-quickrs-wasm
+          wasm-pack build --target web --out-dir ../wg-quickrs-web/pkg -- --features wasm --color=always
+
+      # Build wg-quickrs-web
+      - name: Build web frontend
+        run: |
+          cd src/wg-quickrs-web
+          npm ci --omit=dev
+          npm run build
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-frontend
+          path: src/wg-quickrs-web/dist
+
+  build-binary:
+    needs: build-frontend
+    runs-on: debian-latest
+    env:
+      target: x86_64-unknown-linux-musl
+    steps:
+      # Prepare environment
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-frontend
+          path: src/wg-quickrs-web/dist
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      # Build wg-quickrs
+      - name: Build binary
+        run: |
+          cd src
+          sudo apt-get update && sudo apt-get install -y musl-dev cmake clang llvm-dev libclang-dev pkg-config
+          cargo install cargo-zigbuild
+          rustup target add ${{ env.target }}
+          cargo clean
+          cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target=${{ env.target }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wg-quickrs
+          path: src/target/${{ env.target }}/release/wg-quickrs
+
+  run-tests:
+    needs: build-binary
+    runs-on: debian-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Download binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wg-quickrs
+          path: src/target/release/wg-quickrs
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          pip-install: -r tests/pytest/requirements.txt
+
+      - name: Run tests
+        run: |
+          cd tests/pytest
+          pytest
