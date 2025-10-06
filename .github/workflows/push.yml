@@ -5,8 +5,10 @@ on: [push]
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
+    env:
+      target: x86_64-unknown-linux-musl
     steps:
-      # Prepare environment
+      # 1. Frontend: Prepare environment
       - name: Checkout code
         uses: actions/checkout@v5
 
@@ -21,50 +23,26 @@ jobs:
         with:
           node-version: 24
 
-      # Build wg-quickrs-wasm
+      # 1. Frontend: Build wg-quickrs-wasm
       - name: Build wg-quickrs-wasm
         run: |
           cd src/wg-quickrs-wasm
           wasm-pack build --target web --out-dir ../wg-quickrs-web/pkg -- --features wasm --color=always
 
-      # Build wg-quickrs-web
+      # 1. Frontend: Build wg-quickrs-web
       - name: Build web frontend
         run: |
           cd src/wg-quickrs-web
           npm ci --omit=dev
           npm run build
 
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-frontend
-          path: src/wg-quickrs-web/dist
-
-  build-binary:
-    needs: build-frontend
-    runs-on: ubuntu-latest
-    env:
-      target: x86_64-unknown-linux-musl
-    steps:
-      # Prepare environment
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: web-frontend
-          path: src/wg-quickrs-web/dist
-
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-
+      # 2. Binary: Prepare environment
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
           version: 0.15.1
 
-      # Build wg-quickrs
+      # 2. Binary: Build wg-quickrs
       - name: Build binary
         run: |
           cd src
@@ -74,25 +52,7 @@ jobs:
           cargo clean
           cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target=${{ env.target }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: wg-quickrs
-          path: src/target/${{ env.target }}/release/wg-quickrs
-
-  run-tests:
-    needs: build-binary
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Download binary artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wg-quickrs
-          path: src/target/release/wg-quickrs
-
+      # 3. Testing: Prepare environment
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -102,7 +62,10 @@ jobs:
         run: |
           pip install -r tests/pytest/requirements.txt
 
+      # 3. Testing: Test wg-quickrs
       - name: Run tests
         run: |
           cd tests/pytest
+          mkdir -p src/target/release/
+          cp src/target/${{ env.target }}/release/wg-quickrs src/target/release/wg-quickrs
           python -m pytest
