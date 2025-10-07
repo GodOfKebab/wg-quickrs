@@ -91,7 +91,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: wg-quickrs
-          path: src/target/release/wg-quickrs
+          path: src/target/release
 
       - name: Set up Python
         uses: actions/setup-python@v6
