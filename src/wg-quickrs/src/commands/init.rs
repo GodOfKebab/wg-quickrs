@@ -94,6 +94,7 @@ fn find_cert_server(web_address: String) -> (Option<String>, Option<String>) {
                 servers_folder
                     .join(&web_address)
                     .join("cert.pem")
+                    .strip_prefix(config_folder).unwrap()
                     .to_string_lossy()
                     .into(),
             ),
@@ -101,6 +102,7 @@ fn find_cert_server(web_address: String) -> (Option<String>, Option<String>) {
                 servers_folder
                     .join(&web_address)
                     .join("key.pem")
+                    .strip_prefix(config_folder).unwrap()
                     .to_string_lossy()
                     .into(),
             ),
@@ -357,7 +359,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     cli_field_counter += 1;
 
     println!("[general network settings complete]");
-    println!("[agent settings 3-19/28]");
+    println!("[agent settings 3-8/28]");
 
     let iface_opt = primary_ip_interface();
     let iface_name = iface_opt.as_ref().map(|iface| iface.name.clone());
@@ -378,7 +380,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     cli_field_counter += 1;
 
     // [4/28] --agent-web-http-enabled & --agent-web-http-port
-    let (agent_web_http_enabled, agent_web_http_port) = get_init_pair_option!(
+    let (agent_web_http_enabled, mut agent_web_http_port) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "port",
@@ -391,11 +393,15 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         true,
         Some(80)
     );
+    // if disabled, use a default port of 80
+    if !agent_web_http_enabled {
+        agent_web_http_port = 80;
+    }
     step_counter += 1;
     cli_field_counter += 2;
 
     // [5/28] --agent-web-https-enabled & --agent-web-https-port
-    let (agent_web_https_enabled, agent_web_https_port) = get_init_pair_option!(
+    let (agent_web_https_enabled, mut agent_web_https_port) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "port",
@@ -408,6 +414,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         true,
         Some(443)
     );
+    // if disabled, use a default port of 443
+    if !agent_web_https_enabled {
+        agent_web_https_port = 443;
+    }
     cli_field_counter += 2;
 
     let (option_cert, option_key) = find_cert_server(agent_web_address.clone());
@@ -506,7 +516,7 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     cli_field_counter += 1;
 
     // [7/28] --agent-vpn-enabled & --agent-vpn-port
-    let (agent_vpn_enabled, agent_vpn_port) = get_init_pair_option!(
+    let (agent_vpn_enabled, mut agent_vpn_port) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
         "port",
@@ -519,6 +529,10 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         true,
         Some(51820)
     );
+    // if disabled, use a default port of 51820
+    if !agent_vpn_enabled {
+        agent_vpn_port = 51820;
+    }
     cli_field_counter += 2;
 
     // [7/28] --agent-vpn-gateway
@@ -554,6 +568,9 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
     step_counter += 1;
     cli_field_counter += 2;
+
+    println!("[agent settings complete]");
+    println!("[peer settings 9-19/28]");
 
     // [9/28] --agent-peer-name
     let agent_peer_name = get_init_enabled_value_option(
@@ -778,8 +795,8 @@ pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         })
     }
 
-    println!("[agent settings complete]");
-    println!("[new peer/connection default settings 20-28/28]"); // TODO: use numbers instead of 20-28/28
+    println!("[peer settings complete]");
+    println!("[new peer/connection default settings 20-28/28]");
 
     // [20/28] --default-peer-kind
     let default_peer_kind = get_init_enabled_value_option(
