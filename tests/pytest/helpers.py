@@ -30,3 +30,16 @@ def make_get_request_with_retries(url, max_retries=3, delay_seconds=1):
         raise Exception(f"Unable to connect to wg-quickrs agent at {url}")
     return response
 
+
+def make_post_request_with_retries(url, json=None, verify=None, max_retries=3, delay_seconds=1):
+    response = None
+    for i in range(max_retries):
+        try:
+            response = requests.post(url, json=json, verify=verify)
+        except (requests.exceptions.ConnectionError, ConnectionRefusedError) as e:
+            print(e)
+            time.sleep(delay_seconds)
+    if response is None:
+        raise Exception(f"Unable to connect to wg-quickrs agent at {url}")
+    return response
+

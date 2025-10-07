@@ -1,0 +1,79 @@
+version: '0.1.0'
+agent:
+  web:
+    address: '127.0.0.1'
+    http:
+      enabled: true
+      port: 8080
+    https:
+      enabled: true
+      port: 8443
+      tls_cert: certs/servers/127.0.0.1/cert.pem
+      tls_key: certs/servers/127.0.0.1/key.pem
+    password:
+      enabled: true
+      hash: $argon2id$v=19$m=19456,t=2,p=1$ctvAgEg6dGM$QK8VivrJ2rrJTz1QUk/6R+pieUUlVq/GXYRyWGd2TaU
+  vpn:
+    enabled: false
+    gateway: ''
+    port: 51820
+  firewall:
+    enabled: false
+    utility: ''
+network:
+  identifier: wg-quickrs-home
+  subnet: '10.0.34.0/24'
+  this_peer: '60773796-e738-4e63-8a18-3518aa367f66'
+  peers:
+    '60773796-e738-4e63-8a18-3518aa367f66':
+      name: wg-quickrs-host
+      address: '10.0.34.1'
+      endpoint:
+        enabled: true
+        value: '127.0.0.1:51820'
+      kind: server
+      icon:
+        enabled: false
+        value: ''
+      dns:
+        enabled: true
+        value: '1.1.1.1'
+      mtu:
+        enabled: false
+        value: ''
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+      public_key: qo0VUZMyDrSn92RrsjlljR75JMW08QKx6vmzM7ELywI=
+      private_key: '6I+HtlQ4A67iiB0zx+aDBJ1EwsSQne0YSET4B5gsJ08='
+      created_at: '2025-10-07T13:33:01Z'
+      updated_at: '2025-10-07T13:33:01Z'
+  connections: {}
+  defaults:
+    peer:
+      endpoint:
+        enabled: false
+        value: ''
+      kind: laptop
+      icon:
+        enabled: false
+        value: ''
+      dns:
+        enabled: true
+        value: '1.1.1.1'
+      mtu:
+        enabled: false
+        value: ''
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+    connection:
+      persistent_keepalive:
+        enabled: true
+        value: '25'
+  leases: []
+  updated_at: '2025-10-07T13:33:01Z'

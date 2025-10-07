@@ -15,12 +15,13 @@ def setup_wg_quickrs_folder(request):
             ...
     """
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
-    wg_quickrs_config_folder.mkdir(exist_ok=True)
+    shutil.rmtree(wg_quickrs_config_folder)
 
     def _setup(which_conf: str):
-        shutil.copy(
-            pytest_folder / f"data/{which_conf}/conf.yml",
-            wg_quickrs_config_file
+        shutil.copytree(
+            pytest_folder / f"data/{which_conf}",
+            wg_quickrs_config_folder,
+            dirs_exist_ok=True
         )
         return pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file
 
