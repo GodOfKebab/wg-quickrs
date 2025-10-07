@@ -46,45 +46,4 @@ export default class WireGuardHelper {
         return {a: connectionId.split('*')[0], b: connectionId.split('*')[1]};
     }
 
-    static getNextAvailableAddress(network) {
-        const takenAddresses = Object.values(network.peers).map(p => p.address);
-        const [ip, cidr] = network.subnet.split('/');
-        const startIPv4 = WireGuardHelper.IPv4ToBinary(ip) & WireGuardHelper.cidrToBinary(cidr);
-        for (let i = 0; i < 2 ** (32 - parseInt(cidr, 10)); i++) {
-            const possibleIPv4 = WireGuardHelper.binaryToIPv4(startIPv4 + i);
-            if (!possibleIPv4.endsWith('.0')
-                && !possibleIPv4.endsWith('.255')
-                && !takenAddresses.includes(possibleIPv4)) {
-                return possibleIPv4;
-            }
-        }
-        return null;
-    }
-
-    static cidrToBinary(cidr) {
-        let binary = 0xFFFFFFFF;
-        for (let i = 0; i < 32 - cidr; i++) {
-            binary -= 1 << i;
-        }
-        return binary;
-    }
-
-    static IPv4ToBinary(ipv4) {
-        let binary = 0;
-        for (const ipv4Element of ipv4.split('.')) {
-            binary <<= 8;
-            binary += parseInt(ipv4Element, 10);
-        }
-        return binary;
-    }
-
-    static binaryToIPv4(binary) {
-        const ipv4List = [];
-        for (let i = 0; i < 4; i++) {
-            ipv4List.push(`${binary & 0xFF}`);
-            binary >>= 8;
-        }
-        return ipv4List.reverse().join('.');
-    }
-
 }
