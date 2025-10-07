@@ -104,7 +104,6 @@ jobs:
 
       - name: Run tests
         run: |
-          cd tests/pytest
-          ls -R src/target/release
           chmod +x src/target/release/wg-quickrs
+          cd tests/pytest
           python -m pytest
