@@ -1,5 +1,6 @@
 from tests.pytest.helpers import get_paths, get_wg_quickrs_command
 from subprocess import Popen
+import os
 import shutil
 import pytest
 import yaml
@@ -15,7 +16,7 @@ def setup_wg_quickrs_folder(request):
             ...
     """
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
-    shutil.rmtree(wg_quickrs_config_folder)
+    shutil.rmtree(wg_quickrs_config_folder, ignore_errors=True)
 
     def _setup(which_conf: str):
         shutil.copytree(
@@ -47,6 +48,10 @@ def setup_wg_quickrs_agent(request, setup_wg_quickrs_folder):
         # prefer https over http
         if conf['agent']['web']['https']['enabled']:
             base_url = f"https://{conf['agent']['web']['address']}:{conf['agent']['web']['https']['port']}"
+            # TLS cert generation
+            os.mkdir(wg_quickrs_config_folder / "certs")
+            tls_cert_generator = Popen(f"wget -qO- https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh | sh -s -- -f -o {wg_quickrs_config_folder / 'certs'} --country 'XX' --state 'XX' --locality 'XX' --org 'XX' --ou 'XX' --cn 'tls-cert-generator@XX' {conf['agent']['web']['address']}", shell=True)
+            tls_cert_generator.wait()
         elif conf['agent']['web']['http']['enabled']:
             base_url = f"http://{conf['agent']['web']['address']}:{conf['agent']['web']['http']['port']}"
         else:
