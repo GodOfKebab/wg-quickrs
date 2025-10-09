@@ -5,17 +5,14 @@ meta {
 }
 
 post {
-  url: {{base-url}}/api/token?client_id=bruno
+  url: {{base-url}}/api/token
   body: json
   auth: none
 }
 
-params:query {
-  client_id: bruno
-}
-
 body:json {
   {
+    "client_id": "bruno",
     "password": "{{password}}"
   }
 }

@@ -87,15 +87,11 @@ async fn post_wireguard_server_status(req: HttpRequest, body: web::Bytes) -> imp
     wireguard::respond::post_wireguard_server_status(body)
 }
 
-#[derive(Deserialize)]
-struct LoginRequest {
-    client_id: String,
-}
 #[post("/api/token")]
-async fn post_token(query: web::Query<LoginRequest>, body: web::Bytes) -> impl Responder {
-    let client_id = &query.client_id;
+async fn post_token(body: web::Bytes) -> impl Responder {
     #[derive(Serialize, Deserialize)]
     struct LoginBody {
+        client_id: String,
         password: String,
     }
     let body_raw = String::from_utf8_lossy(&body);
@@ -107,6 +103,7 @@ async fn post_token(query: web::Query<LoginRequest>, body: web::Bytes) -> impl R
             }));
         }
     };
+    let client_id = &status_body.client_id;
     let password = &status_body.password;
 
     // check password-based auth

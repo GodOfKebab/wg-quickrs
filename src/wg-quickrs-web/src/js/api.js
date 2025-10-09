@@ -41,9 +41,9 @@ export default class API {
     }
 
     async update_api_token(password) {
-        const token_res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}/api/token?client_id=web`, {
+        const token_res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}/api/token`, {
             method: "post",
-            body: JSON.stringify({password}),
+            body: JSON.stringify({client_id: 'web', password}),
         });
         const token = await token_res.text();
         if (token_res.status === 200) {
