@@ -98,6 +98,14 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install Bruno CLI
+        run: npm install -g @usebruno/cli
+
       - name: Install Python dependencies
         run: |
           pip install -r tests/pytest/requirements.txt
