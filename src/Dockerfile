@@ -44,12 +44,13 @@ RUN case "$TARGETARCH" in \
         arm) echo 'armv7-unknown-linux-musleabihf' > RUST_TARGET ;; \
         *) echo "Unsupported architecture $TARGETARCH" >&2; exit 1 ;; \
     esac && \
-    rustup target add $(cat RUST_TARGET)
+    rustup target add $(cat RUST_TARGET) && \
+    cargo fetch --locked --target=$(cat RUST_TARGET)
 
 # Copy wg-quickrs-web folder right before build for build optimization
 COPY --from=node-builder /app/wg-quickrs-web/dist /app/wg-quickrs-web/dist
 RUN cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) --features docker && \
-    cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/wg-quickrs
+    mkdir /app/bin/ && cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/bin/wg-quickrs
 
 FROM alpine:3.22 AS runner
 WORKDIR /app
@@ -69,6 +70,6 @@ fi
 # run the actual app
 exec /app/wg-quickrs --wg-quickrs-config-folder .wg-quickrs "$@"
 EOF
-COPY --from=wg-quickrs-builder /app/wg-quickrs /app/wg-quickrs
+COPY --from=wg-quickrs-builder /app/bin/wg-quickrs /app/wg-quickrs
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
 #CMD ["tail", "-f", "/dev/null"]
