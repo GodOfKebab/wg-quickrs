@@ -1,8 +1,16 @@
 FROM --platform=linux/$BUILDARCH rust:1.89-slim AS wg-quickrs-wasm-builder
-WORKDIR /app/wg-quickrs-wasm
-COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
+WORKDIR /app
+
 RUN cargo install wasm-pack
-RUN wasm-pack build --target web --out-dir /app/pkg -- --features wasm
+
+COPY src/Cargo.toml /app/Cargo.toml
+COPY src/Cargo.lock /app/Cargo.lock
+COPY src/wg-quickrs /app/wg-quickrs
+COPY src/wg-quickrs-cli /app/wg-quickrs-cli
+COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
+RUN cargo fetch --locked
+
+RUN wasm-pack build wg-quickrs-wasm --target web --out-dir /app/pkg -- --locked --offline --features wasm
 
 FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
 WORKDIR /app/wg-quickrs-web
@@ -31,9 +39,9 @@ RUN case "$BUILDARCH" in \
 
 COPY src/Cargo.lock /app/Cargo.lock
 COPY src/Cargo.toml /app/Cargo.toml
-COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
 COPY src/wg-quickrs /app/wg-quickrs
 COPY src/wg-quickrs-cli /app/wg-quickrs-cli
+COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
 COPY .git /app/.git
 
 # Setup target arch
@@ -49,7 +57,7 @@ RUN case "$TARGETARCH" in \
 
 # Copy wg-quickrs-web folder right before build for build optimization
 COPY --from=node-builder /app/wg-quickrs-web/dist /app/wg-quickrs-web/dist
-RUN cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) --features docker && \
+RUN cargo zigbuild --locked --offline --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) --features docker && \
     mkdir /app/bin/ && cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/bin/wg-quickrs
 
 FROM alpine:3.22 AS runner
