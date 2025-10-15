@@ -259,9 +259,9 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
         None => match cli_no_prompt {
             Some(true) => {
                 if condition {
-                    Default::default()
+                    panic!("Error: CLI option '{}' is not set", cli_option)
                 } else {
-                    panic!("Error: CLI option '{}' is not set", description)
+                    Default::default()
                 }
             }
             _ => {
