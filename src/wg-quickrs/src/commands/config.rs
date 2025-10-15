@@ -8,7 +8,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-pub(crate) fn reset_web_password(reset_web_password_opts: &ResetWebPasswordOptions) -> ExitCode {
+pub fn reset_web_password(reset_web_password_opts: &ResetWebPasswordOptions) -> ExitCode {
     // get the wireguard config a file path
     let mut config = match conf::util::get_config() {
         Ok(config) => config,
@@ -55,7 +55,7 @@ pub(crate) fn reset_web_password(reset_web_password_opts: &ResetWebPasswordOptio
     ExitCode::SUCCESS
 }
 
-pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
+pub fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
     // get the wireguard config a file path
     let mut config = match conf::util::get_config() {
         Ok(config) => config,
@@ -143,13 +143,13 @@ pub(crate) fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-pub(crate) enum AgentFieldValue {
+pub enum AgentFieldValue {
     Text(String),
     Port(u16),
     Path(PathBuf),
 }
 
-pub(crate) fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode {
+pub fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode {
     // get the wireguard config a file path
     let mut config = match conf::util::get_config() {
         Ok(config) => config,

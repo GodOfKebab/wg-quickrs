@@ -1,9 +1,9 @@
 use crate::commands::helpers;
 use crate::macros::*;
 use crate::commands::validation::{check_field_enabled_value_agent, check_field_path_agent, check_field_str_agent};
-use crate::conf::util::ConfUtilError;
 use crate::wireguard::cmd::get_public_private_keys;
-use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER, conf};
+use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
+use crate::conf;
 use dialoguer;
 use get_if_addrs::{Interface, get_if_addrs};
 use ipnetwork::IpNetwork;
@@ -318,8 +318,8 @@ macro_rules! get_init_pair_option {
     }};
 }
 
-pub(crate) fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
-    if let Err(ConfUtilError::Read(..)) = conf::util::get_config() {
+pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
+    if let Err(conf::util::ConfUtilError::Read(..)) = conf::util::get_config() {
     } else {
         log::error!("wg-quickrs wg-quickrs is already initialized.");
         return ExitCode::FAILURE;

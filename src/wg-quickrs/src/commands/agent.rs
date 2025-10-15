@@ -4,7 +4,7 @@ use std::path::Path;
 use std::process::ExitCode;
 use tokio::try_join;
 
-pub(crate) async fn run_agent(wireguard_config_folder: &Path) -> ExitCode {
+pub async fn run_agent(wireguard_config_folder: &Path) -> ExitCode {
     // get the wireguard config file path
     let config = match conf::util::get_config() {
         Ok(config) => config,

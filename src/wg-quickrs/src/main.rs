@@ -1,10 +1,10 @@
 use crate::commands::config::AgentFieldValue;
 use log::LevelFilter;
-use once_cell::sync::OnceCell;
 use wg_quickrs_cli::AgentCommands;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
+use wg_quickrs::{WG_QUICKRS_CONFIG_FOLDER, WIREGUARD_CONFIG_FILE, WG_QUICKRS_CONFIG_FILE};
 
 mod cli;
 mod commands;
@@ -13,9 +13,6 @@ mod macros;
 mod web;
 mod wireguard;
 
-pub static WG_QUICKRS_CONFIG_FOLDER: OnceCell<PathBuf> = OnceCell::new();
-pub static WG_QUICKRS_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
-pub static WIREGUARD_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
 fn expand_tilde(path: PathBuf) -> PathBuf {
     if let Some(s) = path.to_str()

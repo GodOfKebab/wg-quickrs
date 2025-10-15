@@ -1,16 +1,11 @@
-use std::net::Ipv4Addr;
-
 /// Convert IPv4 string to u32
-fn ipv4_to_u32(ip: &str) -> u32 {
-    ip.parse::<Ipv4Addr>()
-        .unwrap()
-        .octets()
-        .iter()
-        .fold(0, |acc, &b| (acc << 8) + b as u32)
+pub fn ipv4_str_to_u32(ip: String) -> Option<u32> {
+    let ipv4 = ip.parse::<std::net::Ipv4Addr>().ok()?;
+    Some(u32::from(ipv4))
 }
 
 /// Convert CIDR (e.g. "24") to subnet mask as u32
-fn cidr_to_u32(cidr: u8) -> u32 {
+pub fn cidr_to_u32(cidr: u8) -> u32 {
     if cidr == 0 {
         0
     } else {
@@ -19,23 +14,25 @@ fn cidr_to_u32(cidr: u8) -> u32 {
 }
 
 /// Convert u32 to IPv4 string
-fn u32_to_ipv4(ip: u32) -> String {
-    Ipv4Addr::from(ip).to_string()
+pub fn u32_to_ipv4_str(ip: u32) -> String {
+    std::net::Ipv4Addr::from(ip).to_string()
 }
 
-/// Get next available IPv4 address in subnet not ending with .0 or .255 and not in `taken`
-pub(crate) fn get_next_available_address(subnet: &str, taken: &[String]) -> Option<String> {
+/// Get the next available IPv4 address in subnet not ending with .0 or .255 and not in `taken`
+pub fn get_next_available_address(subnet: &str, taken: &[String]) -> Option<String> {
     let (base_ip_str, cidr_str) = subnet.split_once('/')?;
     let cidr: u8 = cidr_str.parse().ok()?;
-    let base_ip = ipv4_to_u32(base_ip_str);
+    let base_ip: u32 = ipv4_str_to_u32(base_ip_str.into())?;
     let subnet_mask = cidr_to_u32(cidr);
-    let start_ip = base_ip & subnet_mask;
-    let num_hosts = 1u32 << (32 - cidr);
 
-    for i in 0..num_hosts {
-        let candidate_ip = start_ip + i;
-        let ip_str = u32_to_ipv4(candidate_ip);
-        if !ip_str.ends_with(".0") && !ip_str.ends_with(".255") && !taken.contains(&ip_str) {
+    // Calculate network start and broadcast addresses
+    let network = base_ip & subnet_mask;
+    let broadcast = network | (!subnet_mask);
+
+    // Iterate through usable hosts (network+1 … broadcast-1)
+    for candidate in (network + 1)..broadcast {
+        let ip_str = u32_to_ipv4_str(candidate);
+        if !taken.contains(&ip_str) {
             return Some(ip_str);
         }
     }
