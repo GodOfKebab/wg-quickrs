@@ -42,6 +42,12 @@ jobs:
         with:
           version: 0.15.1
 
+      # Run unit tests
+      - name: Run unit tests
+        run: |
+          cd src
+          cargo test --locked --offline
+
       # Build wg-quickrs
       - name: Build wg-quickrs binary
         run: |
