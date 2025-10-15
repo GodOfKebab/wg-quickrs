@@ -21,7 +21,7 @@ jobs:
         run: |
           cd src/
           cargo fetch --locked
-          wasm-pack wg-quickrs-wasm build --target web --out-dir ../wg-quickrs-web/pkg -- --locked --offline --features wasm
+          wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --locked --offline --features wasm
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
