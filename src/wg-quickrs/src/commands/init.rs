@@ -478,9 +478,9 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         _ => match init_opts.no_prompt {
             Some(true) => {
                 if agent_web_password_enabled {
-                    "".into()
-                } else {
                     panic!("Error: {} option is not set", INIT_FLAGS[cli_field_counter])
+                } else {
+                    "".into()
                 }
             }
             _ => {

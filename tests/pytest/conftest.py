@@ -19,11 +19,14 @@ def setup_wg_quickrs_folder(request):
     shutil.rmtree(wg_quickrs_config_folder, ignore_errors=True)
 
     def _setup(which_conf: str):
-        shutil.copytree(
-            pytest_folder / f"data/{which_conf}",
-            wg_quickrs_config_folder,
-            dirs_exist_ok=True
-        )
+        if which_conf is None:
+            os.makedirs(wg_quickrs_config_folder, exist_ok=True)
+        else:
+            shutil.copytree(
+                pytest_folder / f"data/{which_conf}",
+                wg_quickrs_config_folder,
+                dirs_exist_ok=True
+            )
         return pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file
 
     return _setup
