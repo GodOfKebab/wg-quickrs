@@ -2530,6 +2530,7 @@ dependencies = [
 name = "wg-quickrs-wasm"
 version = "0.0.0"
 dependencies = [
+ "base64",
  "hostname-validator",
  "ipnet",
  "regex-lite",

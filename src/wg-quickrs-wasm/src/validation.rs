@@ -2,7 +2,10 @@ use ipnet::Ipv4Net;
 use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddrV4};
+use base64::Engine;
 use crate::types::EnabledValue;
+use base64::engine::general_purpose::STANDARD;
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CheckResult {
@@ -26,12 +29,14 @@ pub fn is_cidr(s: &str) -> bool {
 }
 
 // Helper: FQDN + port
-fn is_fqdn_with_port(s: &str) -> bool {
+pub fn is_fqdn_with_port(s: &str) -> bool {
     // Split on the last colon to separate the hostname and port
     match s.rsplit_once(':') {
         Some((hostname, port_str)) => {
-            // port 0-65535 is valid: comparison is useless due to type limits
             if port_str.parse::<u16>().is_err() {
+                return false;
+            }
+            if hostname.chars().all(|c| c.is_ascii_digit() || c == '.') {
                 return false;
             }
             // Validate hostname with validate-hostname crate
@@ -76,32 +81,17 @@ pub fn check_field_str(field_name: &str, field_variable: &str) -> CheckResult {
             }
         }
 
-        // TODO: implement me
         "kind" => {
             ret.status = true;
         }
 
-        // TODO: implement me
-        "public_key" => {
-            ret.status = !field_variable.is_empty();
+        "public_key" | "private_key" | "pre_shared_key" => {
+            ret.status = match STANDARD.decode(field_variable) {
+                Ok(bytes) => bytes.len() == 32,
+                Err(_) => false
+            };
             if !ret.status {
-                ret.msg = "public_key cannot be empty".into();
-            }
-        }
-
-        // TODO: implement me
-        "private_key" => {
-            ret.status = !field_variable.is_empty();
-            if !ret.status {
-                ret.msg = "private_key cannot be empty".into();
-            }
-        }
-
-        // TODO: implement me
-        "pre_shared_key" => {
-            ret.status = !field_variable.is_empty();
-            if !ret.status {
-                ret.msg = "pre_shared_key cannot be empty".into();
+                ret.msg = format!("{field_name} is not base64 encoded with 32 bytes (got {bytes_len})", bytes_len = field_variable.len());
             }
         }
 
@@ -142,7 +132,6 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
             }
         }
 
-        // TODO: implement me
         "icon" => {
             ret.status = true;
         }
@@ -164,10 +153,8 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
         "mtu" => {
             ret.status = true;
             if field_variable.enabled {
-                if let Ok(v) = field_variable.value.parse::<i32>() {
-                    ret.status = v > 0 && v < 65536;
-                } else {
-                    ret.status = false; // not a number
+                if field_variable.value.parse::<u16>().is_err() {
+                    ret.status = false;
                 }
             }
             if !ret.status {
@@ -191,10 +178,8 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
         "persistent_keepalive" => {
             ret.status = true;
             if field_variable.enabled {
-                if let Ok(v) = field_variable.value.parse::<i32>() {
-                    ret.status = v > 0 && v < 65536;
-                } else {
-                    ret.status = false; // not a number
+                if field_variable.value.parse::<u16>().is_err() {
+                    ret.status = false;
                 }
             }
             if !ret.status {
