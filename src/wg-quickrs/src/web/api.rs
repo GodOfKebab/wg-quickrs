@@ -93,6 +93,17 @@ async fn post_wireguard_server_status(req: HttpRequest, body: web::Bytes) -> imp
 
 #[post("/api/token")]
 async fn post_token(body: web::Bytes) -> impl Responder {
+    // check password-based auth
+    let config = match conf::util::get_config() {
+        Ok(config) => config,
+        Err(_) => {
+            return HttpResponse::InternalServerError().body("Unable to get config");
+        }
+    };
+    if !config.agent.web.password.enabled {
+        return HttpResponse::NoContent().body("Token authentication not enabled");
+    }
+
     #[derive(Serialize, Deserialize)]
     struct LoginBody {
         client_id: String,
@@ -111,21 +122,9 @@ async fn post_token(body: web::Bytes) -> impl Responder {
     let password = &status_body.password;
 
     // check password-based auth
-    let config = match conf::util::get_config() {
-        Ok(config) => config,
-        Err(_) => {
-            return HttpResponse::InternalServerError().body("Unable to get config");
-        }
-    };
-    if config.agent.web.password.enabled {
-        let parsed_hash =
-            PasswordHash::new(&config.agent.web.password.hash).expect("Invalid hash format");
-        if Argon2::default()
-            .verify_password(password.as_bytes(), &parsed_hash)
-            .is_err()
-        {
-            return HttpResponse::Unauthorized().body("Invalid credentials");
-        }
+    let parsed_hash = PasswordHash::new(&config.agent.web.password.hash).expect("Invalid hash format");
+    if Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_err() {
+        return HttpResponse::Unauthorized().body("Invalid credentials");
     }
 
     let expiration = match SystemTime::now().duration_since(UNIX_EPOCH) {
@@ -145,6 +144,17 @@ async fn post_token(body: web::Bytes) -> impl Responder {
 }
 
 fn enforce_auth(req: HttpRequest) -> Result<(), HttpResponse> {
+    // check password-based auth
+    let config = match conf::util::get_config() {
+        Ok(config) => config,
+        Err(_) => {
+            return Err(HttpResponse::InternalServerError().body("Unable to get config"));
+        }
+    };
+    if !config.agent.web.password.enabled {
+        return Ok(());
+    }
+
     if let Some(auth_header) = req.headers().get("Authorization")
         && let Ok(auth_str) = auth_header.to_str()
         && let Some(token) = auth_str.strip_prefix("Bearer ")
