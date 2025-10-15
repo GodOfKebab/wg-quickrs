@@ -14,9 +14,9 @@ def get_paths():
 def get_wg_quickrs_command():
     pytest_folder, wg_quickrs_config_folder, _ = get_paths()
     return [
-        pytest_folder.parent.parent.resolve() / "src/target/release/wg-quickrs",
+        str(pytest_folder.parent.parent.resolve() / "src/target/release/wg-quickrs"),
         '--wg-quickrs-config-folder',
-        wg_quickrs_config_folder
+        str(wg_quickrs_config_folder)
     ]
 
 

@@ -8,8 +8,7 @@ import subprocess
 def test_init_no_prompt_simple_http(setup_wg_quickrs_folder):
     setup_wg_quickrs_folder(None)
 
-    base_cmd = get_wg_quickrs_command()
-    command = f"{base_cmd[0]} {base_cmd[1]} {base_cmd[2]} init --no-prompt true \\"
+    command = " ".join(get_wg_quickrs_command()) + " init --no-prompt true \\"
     command += \
     """
     --network-identifier wg-quickrs-home \\
