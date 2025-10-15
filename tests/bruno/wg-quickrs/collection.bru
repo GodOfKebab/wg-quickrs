@@ -18,19 +18,19 @@ docs {
   When every endpoint is run sequentially from top-to-bottom ('happy-path'), all should run successfully if the `password` and `base-url` environment variable is set correctly.
   
   Some notes about endpoints:
-  - GET /version
-    - not password-protected so it should never fail.
   - POST /api/token
     - saves the token to a variable so it can be accessed from other endpoints. So when running the collection, make sure you run this before any other endpoint so you have the correct token
+  - GET /version
+    - password-protected
+  - GET /api/wireguard/public-private-keys
+    - password-protected
+  - GET /api/wireguard/pre-shared-key
+    - password-protected
   - GET /api/network/summary
     - password-protected
   - GET /api/network/lease/id-address
     - password-protected
   - PATCH /api/network/config
-    - password-protected
-  - GET /api/wireguard/pre-shared-key
-    - password-protected
-  - GET /api/wireguard/public-private-keys
     - password-protected
   - POST /api/wireguard/server/status
     - `status` values correspond to `WireGuardStatus` Enum
