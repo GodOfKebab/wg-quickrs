@@ -1,4 +1,4 @@
-from tests.pytest.helpers import get_paths, get_wg_quickrs_command
+from tests.pytest.helpers import get_paths, get_wg_quickrs_command, wait_for_port
 from subprocess import Popen
 import os
 import shutil
@@ -48,17 +48,26 @@ def setup_wg_quickrs_agent(request, setup_wg_quickrs_folder):
         # prefer https over http
         if conf['agent']['web']['https']['enabled']:
             base_url = f"https://{conf['agent']['web']['address']}:{conf['agent']['web']['https']['port']}"
+            host_port = (conf['agent']['web']['address'], conf['agent']['web']['https']['port'])
             # TLS cert generation
             os.mkdir(wg_quickrs_config_folder / "certs")
             tls_cert_generator = Popen(f"wget -qO- https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh | sh -s -- -f -o {wg_quickrs_config_folder / 'certs'} --country 'XX' --state 'XX' --locality 'XX' --org 'XX' --ou 'XX' --cn 'tls-cert-generator@XX' {conf['agent']['web']['address']}", shell=True)
             tls_cert_generator.wait()
         elif conf['agent']['web']['http']['enabled']:
             base_url = f"http://{conf['agent']['web']['address']}:{conf['agent']['web']['http']['port']}"
+            host_port = (conf['agent']['web']['address'], conf['agent']['web']['http']['port'])
         else:
             base_url = None
+            host_port = None
 
         # Start agent
         agent = Popen(get_wg_quickrs_command() + ['agent', 'run'])
+
+        # Wait for it to start listening
+        if host_port:
+            if not wait_for_port(host_port, timeout=10):
+                agent.terminate()
+                raise RuntimeError("Agent failed to start within timeout")
 
         # terminate agent when the test is over
         def fin():
