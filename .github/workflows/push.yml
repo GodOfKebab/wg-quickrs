@@ -5,6 +5,8 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      target: x86_64-unknown-linux-musl
     steps:
       # Prepare environment
       - name: Checkout code
