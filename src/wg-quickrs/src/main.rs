@@ -78,7 +78,7 @@ async fn main() -> ExitCode {
             // wg-quickrs agent disable-web-http
             AgentCommands::DisableWebHttp => commands::config::toggle_agent_fields("http", false),
             // wg-quickrs agent set-http-web-port
-            AgentCommands::SetHttpWebPort(v) => {
+            AgentCommands::SetWebHttpPort(v) => {
                 commands::config::set_agent_fields("http-port", AgentFieldValue::Port(v.port))
             }
             // wg-quickrs agent enable-web-https

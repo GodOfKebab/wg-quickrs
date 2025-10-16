@@ -260,7 +260,7 @@ pub enum AgentCommands {
     #[command(about = "Disable HTTP on web server")]
     DisableWebHttp,
     #[command(about = "Set web server HTTP port")]
-    SetHttpWebPort(PortArg),
+    SetWebHttpPort(PortArg),
     // settings: https
     #[command(about = "Enable HTTPS on web server")]
     EnableWebHttps,
