@@ -1,5 +1,3 @@
-import time
-
 from tests.pytest.conftest import setup_wg_quickrs_folder
 from tests.pytest.helpers import get_wg_quickrs_command
 import subprocess

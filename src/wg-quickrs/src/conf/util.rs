@@ -135,7 +135,6 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
 
 pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
     config.version = wg_quickrs_version!().into();
-    config.network.updated_at = timestamp::get_now_timestamp_formatted();
     let config_str = serde_yml::to_string(&config).map_err(ConfUtilError::Serialization)?;
     let config_w_digest = ConfigWDigest::from_config_w_str(config.clone(), config_str.clone())?;
     ConfigWDigest::set_or_init(config_w_digest.clone())?;

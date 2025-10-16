@@ -25,10 +25,8 @@ def test_agent_set_web_address(setup_wg_quickrs_folder):
         new_conf = yaml.safe_load(stream)
 
     assert new_conf['agent']['web']['address'] == '192.168.10.10'
-    assert new_conf['network']['updated_at'] != old_conf['network']['updated_at']
 
     new_conf['agent']['web']['address'] = old_conf['agent']['web']['address']
-    new_conf['network']['updated_at'] = old_conf['network']['updated_at']
     assert DeepDiff(new_conf, old_conf, ignore_order=True) == dict()
 
 
