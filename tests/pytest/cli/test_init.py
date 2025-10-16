@@ -100,12 +100,11 @@ def test_init_no_prompt_simple(setup_wg_quickrs_folder):
         ("agent_web_password", "--agent-web-password-enabled true", False),
         ("agent_web_password", "--agent-web-password-enabled true --agent-web-password test-pwd", True),
         ("agent_vpn", "--agent-vpn-enabled true", False),
-        ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port 51820", False),
-        ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port 51820 --agent-vpn-gateway not-a-gateway", False),
-        # skip the successful vpn setting test case because the gateway names will differ in different machines
+        ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port 51820", True),
+        ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port not-a-port", False),
         ("agent_firewall", "--agent-firewall-enabled true", False),
-        ("agent_firewall", "--agent-firewall-enabled true --agent-firewall-utility not-a-utility", False),
-        # skip the successful firewall setting test case because the utility names will differ in different machines
+        ("agent_firewall", "--agent-firewall-enabled true --agent-firewall-utility not-a-utility -agent-firewall-gateway not-a-gateway", False),
+        # skip the successful firewall setting test case because the gateway and utility names will differ in different machines
         ("agent_peer_vpn_endpoint", "192.168.1.1:51820", True),
         ("agent_peer_vpn_endpoint", "not-an-endpoint", False),
         ("agent_peer_icon", "--agent-peer-icon-enabled true", False),

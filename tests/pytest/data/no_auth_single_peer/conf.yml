@@ -17,8 +17,8 @@ agent:
     enabled: false
     port: 51820
   firewall:
-    enabled: true
-    utility: /sbin/pfctl
+    enabled: false
+    utility: ''
     gateway: ''
 network:
   identifier: wg-quickrs-home
