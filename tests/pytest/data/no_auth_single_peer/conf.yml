@@ -15,11 +15,11 @@ agent:
       hash: ''
   vpn:
     enabled: false
-    gateway: ''
     port: 51820
   firewall:
     enabled: true
     utility: /sbin/pfctl
+    gateway: ''
 network:
   identifier: wg-quickrs-home
   subnet: '10.0.34.0/24'

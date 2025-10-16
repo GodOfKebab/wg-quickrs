@@ -15,11 +15,11 @@ agent:
       hash: $argon2id$v=19$m=19456,t=2,p=1$ctvAgEg6dGM$QK8VivrJ2rrJTz1QUk/6R+pieUUlVq/GXYRyWGd2TaU
   vpn:
     enabled: false
-    gateway: ''
     port: 51820
   firewall:
     enabled: false
     utility: ''
+    gateway: ''
 network:
   identifier: wg-quickrs-home
   subnet: '10.0.34.0/24'

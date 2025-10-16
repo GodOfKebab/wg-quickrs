@@ -115,7 +115,6 @@ pub struct Password {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentVpn {
     pub enabled: bool,
-    pub gateway: String,
     pub port: u16,
 }
 
@@ -123,6 +122,7 @@ pub struct AgentVpn {
 pub struct AgentFirewall {
     pub enabled: bool,
     pub utility: PathBuf,
+    pub gateway: String,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

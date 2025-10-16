@@ -97,10 +97,6 @@ pub struct InitOptions {
     )]
     pub agent_vpn_port: Option<u16>,
 
-    #[arg(long, default_value = None, long_help = "Set gateway (outbound interface) for VPN packet forwarding", value_name = "eth0"
-    )]
-    pub agent_vpn_gateway: Option<String>,
-
     #[arg(long, default_value = None, long_help = "Enable running firewall commands for setting up NAT and input rules"
     )]
     pub agent_firewall_enabled: Option<bool>,
@@ -108,6 +104,10 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Set the utility used to configure firewall NAT and input rules", value_name = "iptables"
     )]
     pub agent_firewall_utility: Option<PathBuf>,
+
+    #[arg(long, default_value = None, long_help = "Set gateway (outbound interface) for VPN packet forwarding", value_name = "eth0"
+    )]
+    pub agent_firewall_gateway: Option<String>,
 
     #[arg(long, default_value = None, long_help = "Set agent peer name", value_name = "wg-quickrs-host"
     )]

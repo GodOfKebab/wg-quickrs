@@ -545,21 +545,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     if !agent_vpn_enabled {
         agent_vpn_port = 51820;
     }
-    cli_field_counter += 2;
-
-    // [7/28] --agent-vpn-gateway
-    let agent_vpn_gateway = get_init_enabled_value_option(
-        init_opts.no_prompt,
-        step_counter,
-        "gateway",
-        init_opts.agent_vpn_gateway.clone(),
-        INIT_FLAGS[cli_field_counter],
-        format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
-        agent_vpn_enabled,
-        iface_name,
-    );
     step_counter += 1;
-    cli_field_counter += 1;
+    cli_field_counter += 2;
 
     // [8/28] --agent-firewall-enabled & --agent-firewall-utility
     let (agent_firewall_enabled, agent_firewall_utility) = get_init_pair_option!(
@@ -578,8 +565,21 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         true,
         find_firewall_utility()
     );
-    step_counter += 1;
     cli_field_counter += 2;
+
+    // [8/28] --agent-firewall-gateway
+    let agent_firewall_gateway = get_init_enabled_value_option(
+        init_opts.no_prompt,
+        step_counter,
+        "gateway",
+        init_opts.agent_firewall_gateway.clone(),
+        INIT_FLAGS[cli_field_counter],
+        format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+        agent_firewall_enabled,
+        iface_name,
+    );
+    step_counter += 1;
+    cli_field_counter += 1;
 
     println!("[agent settings complete]");
     println!("[peer settings 9-19/28]");
@@ -600,7 +600,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
 
     // update the address in the recommended endpoint
     for interface in get_interfaces() {
-        if agent_vpn_gateway.clone() == interface.name.clone() {
+        if agent_firewall_gateway.clone() == interface.name.clone() {
             iface_ip = Some(interface.ip().to_string());
         }
     }
@@ -1078,12 +1078,12 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
             },
             vpn: AgentVpn {
                 enabled: agent_vpn_enabled,
-                gateway: agent_vpn_gateway,
                 port: agent_vpn_port,
             },
             firewall: AgentFirewall {
                 enabled: agent_firewall_enabled,
                 utility: agent_firewall_utility.into(),
+                gateway: agent_firewall_gateway,
             },
         },
         network: Network {

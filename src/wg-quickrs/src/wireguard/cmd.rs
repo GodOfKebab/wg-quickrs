@@ -501,7 +501,7 @@ PostUp = {fw_utility} -A FORWARD -o {interface} -j ACCEPT;
 PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;",
                 fw_utility = config.agent.firewall.utility.to_string_lossy(),
                 subnet = config.network.subnet,
-                gateway = config.agent.vpn.gateway,
+                gateway = config.agent.firewall.gateway,
                 port = config.agent.vpn.port,
                 interface = config.network.identifier,
             );
@@ -519,7 +519,7 @@ PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;",
             // check for a line that starts with "nat" and paste the nat_rule after it because pf.conf requires the rules to be in order
             // TODO: link docs
             let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}",
-                gateway = config.agent.vpn.gateway,
+                gateway = config.agent.firewall.gateway,
                 subnet = config.network.subnet);
             hidden_scripts = Some(format!(
                 "### START OF HIDDEN SCRIPTS ###
