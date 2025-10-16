@@ -249,6 +249,19 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
     let step_str = step_str(step);
     match cli_value {
         Some(v) => {
+            let result = match field_name {
+                "endpoint" | "icon" | "dns" | "mtu" | "script" | "pre_up" | "post_up" | "pre_down" | "post_down" | "persistent_keepalive" => check_field_enabled_value_agent(field_name, &EnabledValue{
+                    enabled: true,
+                    value: v.to_string(),
+                }),
+                "path" | "firewall" => check_field_path_agent(field_name, &PathBuf::from(v.to_string())),
+                _ => check_field_str_agent(field_name, &v.to_string()),
+            };
+
+            if !result.status {
+                panic!("Error: CLI option '{}={}' is invalid: {}", cli_option, v.to_string(), result.msg)
+            }
+
             println!(
                 "{} Using {} from CLI option '{}': {}",
                 step_str, description, cli_option, v
