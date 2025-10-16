@@ -27,8 +27,24 @@ impl WireGuardStatus {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct Config {
+pub struct ConfigFile {
     pub version: String,
+    pub agent: Agent,
+    pub network: Network,
+}
+
+impl From<&ConfigFile> for Config {
+    fn from(file_config: &ConfigFile) -> Self {
+        Config {
+            agent: file_config.agent.clone(),
+            network: file_config.network.clone(),
+        }
+    }
+}
+
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct Config {
     pub agent: Agent,
     pub network: Network,
 }

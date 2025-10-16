@@ -28,7 +28,7 @@ pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody
 
 macro_rules! get_mg_config_w_digest {
     () => {{
-        let mut_opt = util::CONFIG_W_DIGEST.get();
+        let mut_opt = util::CONFIG_W_NETWORK_DIGEST.get();
         if mut_opt.is_none() {
             return HttpResponse::InternalServerError().json(json!({
                 "status": "internal_server_error",
@@ -50,9 +50,22 @@ macro_rules! get_mg_config_w_digest {
 
 macro_rules! post_mg_config_w_digest {
     ($c:expr) => {
-        $c.config.version = wg_quickrs_version!().into();
-        $c.config.network.updated_at = timestamp::get_now_timestamp_formatted();
-        let config_str = match serde_yml::to_string(&$c.config).map_err(util::ConfUtilError::Serialization) {
+        let file_config = ConfigFile{
+            version: wg_quickrs_version!().into(),
+            agent: $c.agent.clone(),
+            network: $c.network_w_digest.network.clone(),
+        };
+        $c.network_w_digest.network.updated_at = timestamp::get_now_timestamp_formatted();
+        $c.network_w_digest = match util::NetworkWDigest::from_network($c.network_w_digest.network.clone()) {
+            Ok(network_digest) => network_digest,
+            Err(_) => {
+                return HttpResponse::InternalServerError().json(json!({
+                    "status": "internal_server_error",
+                    "message": "can't handle request: unable to compute config digest"
+                }));
+            }
+        };
+        let file_config_str = match serde_yml::to_string(&file_config).map_err(util::ConfUtilError::Serialization) {
             Ok(s) => s,
             Err(_) => {
                 return HttpResponse::InternalServerError().json(json!({
@@ -61,16 +74,7 @@ macro_rules! post_mg_config_w_digest {
                 }));
             }
         };
-        $c.digest = match util::ConfigWDigest::from_config_w_str($c.config.clone(), config_str.clone()) {
-            Ok(c_w_d) => c_w_d.digest,
-            Err(_) => {
-                return HttpResponse::InternalServerError().json(json!({
-                    "status": "internal_server_error",
-                    "message": "can't handle request: unable to compute config digest"
-                }));
-            }
-        };
-        match util::write_config(config_str) {
+        match util::write_config(file_config_str) {
             Ok(_) => {}
             Err(_) => {
                 return HttpResponse::InternalServerError().json(json!({
@@ -185,13 +189,13 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     }
 
     let mut c = get_mg_config_w_digest!();
-    let this_peer = c.config.network.this_peer.clone();
+    let this_peer = c.network_w_digest.network.this_peer.clone();
     let mut changed_config = false;
 
     if let Some(changed_fields) = change_sum.changed_fields {
         if let Some(changed_fields_peers) = changed_fields.peers {
             for (peer_id, peer_details) in changed_fields_peers {
-                if let Some(peer_config) = c.config.network.peers.get_mut(&peer_id) {
+                if let Some(peer_config) = c.network_w_digest.network.peers.get_mut(&peer_id) {
                     if peer_id == this_peer && peer_details.endpoint.is_some() {
                         log::info!("A client tried to change the host's endpoint! (forbidden)");
                         return HttpResponse::Forbidden().json(json!({
@@ -258,7 +262,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         if let Some(changed_fields_connections) = changed_fields.connections {
             for (connection_id, connection_details) in changed_fields_connections {
                 if let Some(connection_config) =
-                    c.config.network.connections.get_mut(&connection_id)
+                    c.network_w_digest.network.connections.get_mut(&connection_id)
                 {
                     update_bool!(connection_config, connection_details, enabled);
                     validate_then_update_str!(
@@ -364,9 +368,9 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                 let mut added_peer = wg_quickrs_wasm::types::Peer::from(&peer_details);
                 added_peer.created_at = timestamp::get_now_timestamp_formatted();
                 added_peer.updated_at = added_peer.created_at.clone();
-                c.config.network.peers.insert(peer_id.clone(), added_peer);
+                c.network_w_digest.network.peers.insert(peer_id.clone(), added_peer);
                 // remove the new peer id/address from the lease
-                c.config
+                c.network_w_digest
                     .network
                     .leases
                     .retain(|lease| lease.peer_id != peer_id);
@@ -379,7 +383,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(removed_peers) = change_sum.removed_peers {
         for peer_id in removed_peers {
             {
-                c.config.network.peers.remove(peer_id.as_str());
+                c.network_w_digest.network.peers.remove(peer_id.as_str());
                 changed_config = true;
             }
         }
@@ -409,7 +413,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     format!("added_connections.{}", connection_id),
                     persistent_keepalive
                 );
-                c.config
+                c.network_w_digest
                     .network
                     .connections
                     .insert(connection_id.clone(), connection_details);
@@ -422,7 +426,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(removed_connections) = change_sum.removed_connections {
         for connection_id in removed_connections {
             {
-                c.config.network.connections.remove(connection_id.as_str());
+                c.network_w_digest.network.connections.remove(connection_id.as_str());
                 changed_config = true;
             }
         }
@@ -436,8 +440,8 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     }
     post_mg_config_w_digest!(c);
 
-    if c.config.agent.vpn.enabled {
-        match sync_conf(&c.config) {
+    if c.agent.vpn.enabled {
+        match sync_conf(&c.clone().to_config()) {
             Ok(_) => {}
             Err(e) => {
                 log::error!("{e}");
@@ -456,17 +460,17 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     let mut c = get_mg_config_w_digest!();
 
     let mut reserved_addresses = Vec::<String>::new();
-    for peer in c.config.network.peers.values() {
+    for peer in c.network_w_digest.network.peers.values() {
         reserved_addresses.push(peer.address.clone());
     }
-    c.config.network.leases.retain(|lease| {
+    c.network_w_digest.network.leases.retain(|lease| {
         timestamp::get_duration_since_formatted(lease.valid_until.clone()) < Duration::zero()
     });
-    for lease in c.config.network.leases.clone() {
+    for lease in c.network_w_digest.network.leases.clone() {
         reserved_addresses.push(lease.address.clone());
     }
     let next_address =
-        match network::get_next_available_address(&c.config.network.subnet, &reserved_addresses) {
+        match network::get_next_available_address(&c.network_w_digest.network.subnet, &reserved_addresses) {
             Some(next_address) => next_address,
             None => {
                 return HttpResponse::InternalServerError()
@@ -480,7 +484,7 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
         valid_until: timestamp::get_future_timestamp_formatted(Duration::minutes(10)),
     };
     log::info!("leased address {} until {}", body.address, body.valid_until);
-    c.config.network.leases.push(body.clone());
+    c.network_w_digest.network.leases.push(body.clone());
     post_mg_config_w_digest!(c);
 
     HttpResponse::Ok().json(json!(body))

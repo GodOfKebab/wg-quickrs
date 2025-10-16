@@ -1,5 +1,4 @@
-use crate::{WIREGUARD_CONFIG_FILE};
-use crate::conf::util::get_config;
+use crate::{conf, WIREGUARD_CONFIG_FILE};
 use crate::macros::*;
 use once_cell::sync::Lazy;
 use wg_quickrs_wasm::helpers::get_peer_wg_config;
@@ -153,7 +152,7 @@ fn run_loop() {
         return;
     }
 
-    let config = match get_config() {
+    let config = match conf::util::get_config() {
         Ok(config) => config,
         Err(e) => {
             log::error!("{e}");

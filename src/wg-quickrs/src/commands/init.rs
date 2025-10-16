@@ -1,5 +1,4 @@
 use crate::commands::helpers;
-use crate::macros::*;
 use crate::commands::validation::{check_field_enabled_value_agent, check_field_path_agent, check_field_str_agent};
 use crate::wireguard::cmd::get_public_private_keys;
 use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
@@ -1046,7 +1045,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     };
 
     let mut config = Config {
-        version: wg_quickrs_version!().into(),
         agent: Agent {
             web: AgentWeb {
                 address: agent_web_address,
