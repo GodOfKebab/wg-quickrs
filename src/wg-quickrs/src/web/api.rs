@@ -26,7 +26,7 @@ static JWT_SECRETS: Lazy<(EncodingKey, DecodingKey)> = Lazy::new(|| {
     )
 });
 
-#[get("/version")]
+#[get("/api/version")]
 async fn get_version(req: HttpRequest) -> impl Responder {
     if let Err(e) = enforce_auth(req) {
         return e;

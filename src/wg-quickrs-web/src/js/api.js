@@ -57,7 +57,7 @@ export default class API {
     async get_version() {
         return this.call({
             method: 'get',
-            path: `/version`,
+            path: `/api/version`,
         });
     }
 
