@@ -60,6 +60,7 @@ def run_and_check_success(cmd, field, field_val, success):
         # since the tls cert generation is not tested here, we skip the successful https test case
         ("set-vpn-port", ('agent', 'vpn', 'port'), 51821, True),
         ("set-vpn-port", ('agent', 'vpn', 'port'), "not-a-port", False),
+        # skip the successful firewall setting test case because the gateway and utility names will differ in different machines
     ],
 )
 def test_agent_set_simple(setup_wg_quickrs_folder, command, path, value, success):
@@ -92,18 +93,27 @@ def test_agent_reset_web_password(setup_wg_quickrs_folder):
         run_and_check_success([command, "--password", str(value)], path, value, success)
 
 
-def test_agent_toggle(setup_wg_quickrs_agent):
-    setup_wg_quickrs_agent("test_pwd_single_peer")
+def test_agent_toggle_simple(setup_wg_quickrs_folder):
+    setup_wg_quickrs_folder("no_auth_single_peer")
     for command, path, value, success in [
         ("disable-web-http", ('agent', 'web', 'http', 'enabled'), False, True),
         ("enable-web-http", ('agent', 'web', 'http', 'enabled'), True, True),
+        ("enable-vpn", ('agent', 'vpn', 'enabled'), True, True),
+        ("disable-vpn", ('agent', 'vpn', 'enabled'), False, True),
+        ("enable-firewall", ('agent', 'firewall', 'enabled'), False, False),
+        ("enable-web-password", ('agent', 'web', 'password', 'enabled'), True, False),
+    ]:
+        run_and_check_success([command], path, value, success)
+
+
+def test_agent_toggle_w_pwd(setup_wg_quickrs_agent):
+    setup_wg_quickrs_agent("test_pwd_single_peer")
+    for command, path, value, success in [
         ("disable-web-https", ('agent', 'web', 'https', 'enabled'), False, True),
         ("enable-web-https", ('agent', 'web', 'https', 'enabled'), True, True),
         ("disable-web-https", ('agent', 'web', 'https', 'enabled'), False, True),
         ("disable-web-password", ('agent', 'web', 'password', 'enabled'), False, True),
         ("enable-web-password", ('agent', 'web', 'password', 'enabled'), True, True),
-        ("enable-vpn", ('agent', 'vpn', 'enabled'), True, True),
-        ("disable-vpn", ('agent', 'vpn', 'enabled'), False, True),
     ]:
         run_and_check_success([command], path, value, success)
 
@@ -115,3 +125,4 @@ def test_agent_toggle(setup_wg_quickrs_agent):
         ("enable-web-https", ('agent', 'web', 'https', 'enabled'), True, False),
     ]:
         run_and_check_success([command], path, value, success)
+
