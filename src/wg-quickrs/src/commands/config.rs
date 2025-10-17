@@ -126,9 +126,14 @@ pub fn toggle_agent_fields(field: &str, status: bool) -> ExitCode {
                 config.agent.firewall.utility.display()
             );
 
-            let ret  = check_field_path_agent("firewall", &config.agent.firewall.utility);
-            if status && !ret.status {
-                log::error!("{}", ret.msg);
+            let ret_utility  = check_field_path_agent("firewall-utility", &config.agent.firewall.utility);
+            if status && !ret_utility.status {
+                log::error!("{}", ret_utility.msg);
+                return ExitCode::FAILURE;
+            }
+            let ret_gateway  = check_field_str_agent("firewall-gateway", &config.agent.firewall.gateway);
+            if status && !ret_gateway.status {
+                log::error!("{}", ret_gateway.msg);
                 return ExitCode::FAILURE;
             }
             config.agent.firewall.enabled = status;
@@ -178,10 +183,7 @@ pub fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode {
         }
         ("https-tls-cert", AgentFieldValue::Path(cert)) => {
             config.agent.web.https.tls_cert = cert;
-            log::info!(
-                "Setting TLS certificate to {}",
-                config.agent.web.https.tls_cert.display()
-            );
+            log::info!("Setting TLS certificate to {}", config.agent.web.https.tls_cert.display());
             let ret  = check_field_path_agent("path", &config.agent.web.https.tls_cert);
             if !ret.status {
                 log::error!("{}", ret.msg);
@@ -190,10 +192,7 @@ pub fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode {
         }
         ("https-tls-key", AgentFieldValue::Path(key)) => {
             config.agent.web.https.tls_key = key;
-            log::info!(
-                "Setting TLS key to {}",
-                config.agent.web.https.tls_key.display()
-            );
+            log::info!("Setting TLS key to {}", config.agent.web.https.tls_key.display());
             let ret  = check_field_path_agent("path", &config.agent.web.https.tls_key);
             if !ret.status {
                 log::error!("{}", ret.msg);
@@ -206,11 +205,17 @@ pub fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode {
         }
         ("firewall-utility", AgentFieldValue::Path(value)) => {
             config.agent.firewall.utility = value;
-            log::info!(
-                "Setting firewall utility to {}",
-                config.agent.firewall.utility.display()
-            );
-            let ret  = check_field_path_agent("firewall", &config.agent.firewall.utility);
+            log::info!("Setting firewall utility to {}", config.agent.firewall.utility.display());
+            let ret  = check_field_path_agent("firewall-utility", &config.agent.firewall.utility);
+            if !ret.status {
+                log::error!("{}", ret.msg);
+                return ExitCode::FAILURE;
+            }
+        }
+        ("firewall-gateway", AgentFieldValue::Text(value)) => {
+            config.agent.firewall.gateway = value;
+            log::info!("Setting firewall gateway to {}",config.agent.firewall.gateway);
+            let ret  = check_field_str_agent("firewall-gateway", &config.agent.firewall.gateway);
             if !ret.status {
                 log::error!("{}", ret.msg);
                 return ExitCode::FAILURE;

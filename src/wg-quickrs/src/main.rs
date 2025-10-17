@@ -129,10 +129,16 @@ async fn main() -> ExitCode {
             }
             // wg-quickrs agent set-firewall-utility
             AgentCommands::SetFirewallUtility(v) => {
-                // commands::config::reset_web_password(v)
                 commands::config::set_agent_fields(
                     "firewall-utility",
                     AgentFieldValue::Path(v.utility.clone()),
+                )
+            }
+            // wg-quickrs agent set-firewall-gateway
+            AgentCommands::SetFirewallGateway(v) => {
+                commands::config::set_agent_fields(
+                    "firewall-gateway",
+                    AgentFieldValue::Text(v.interface.clone()),
                 )
             }
         },

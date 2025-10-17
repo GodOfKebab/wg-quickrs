@@ -31,7 +31,7 @@ pub fn check_field_str_agent(field_name: &str, field_variable: &str) -> CheckRes
             }
             ret
         }
-        "gateway" => {
+        "firewall-gateway" => {
             let mut gateways: Vec<String> = Vec::new();
             for iface in crate::commands::init::get_interfaces() {
                 if iface.name == field_variable {
@@ -72,7 +72,7 @@ pub fn check_field_path_agent(field_name: &str, field_variable: &Path) -> CheckR
             }
             ret
         }
-        "firewall" => {
+        "firewall-utility" => {
             let bin_path = field_variable;
             ret.status = bin_path.exists() && bin_path.is_file();
             if !ret.status {

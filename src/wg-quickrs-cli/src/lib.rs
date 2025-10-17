@@ -299,6 +299,10 @@ pub enum AgentCommands {
         about = "Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)"
     )]
     SetFirewallUtility(UtilityArg),
+    #[command(
+        about = "Set the gateway used to configure firewall NAT and input rules (e.g. en0, eth0, etc.)"
+    )]
+    SetFirewallGateway(InterfaceArg),
 }
 
 #[derive(Debug, Args)]
@@ -323,6 +327,12 @@ pub struct PathArg {
 pub struct UtilityArg {
     #[arg(help = "Utility binary path or name")]
     pub utility: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct InterfaceArg {
+    #[arg(help = "Internet interface name")]
+    pub interface: String,
 }
 
 #[derive(Args, Debug)]

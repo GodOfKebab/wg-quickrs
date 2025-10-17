@@ -212,7 +212,7 @@ fn prompt<T: std::str::FromStr + ToString>(field_name: &str, msg: &str, default:
                         enabled: true,
                         value: value.clone(),
                     }),
-                    "path" | "firewall" => check_field_path_agent(field_name, &PathBuf::from(value.clone())),
+                    "path" | "firewall-utility" => check_field_path_agent(field_name, &PathBuf::from(value.clone())),
                     _ => check_field_str_agent(field_name, &value),
                 };
 
@@ -254,7 +254,7 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
                     enabled: true,
                     value: v.to_string(),
                 }),
-                "path" | "firewall" => check_field_path_agent(field_name, &PathBuf::from(v.to_string())),
+                "path" | "firewall-utility" => check_field_path_agent(field_name, &PathBuf::from(v.to_string())),
                 _ => check_field_str_agent(field_name, &v.to_string()),
             };
 
@@ -552,7 +552,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let (agent_firewall_enabled, agent_firewall_utility) = get_init_pair_option!(
         init_opts.no_prompt,
         step_counter,
-        "firewall",
+        "firewall-utility",
         init_opts.agent_firewall_enabled,
         init_opts
             .agent_firewall_utility
@@ -571,7 +571,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_firewall_gateway = get_init_enabled_value_option(
         init_opts.no_prompt,
         step_counter,
-        "gateway",
+        "firewall-gateway",
         init_opts.agent_firewall_gateway.clone(),
         INIT_FLAGS[cli_field_counter],
         format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
