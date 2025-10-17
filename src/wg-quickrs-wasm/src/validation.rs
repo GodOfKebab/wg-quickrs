@@ -152,11 +152,10 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
 
         "mtu" => {
             ret.status = true;
-            if field_variable.enabled {
-                if field_variable.value.parse::<u16>().is_err() {
+            if field_variable.enabled
+                && field_variable.value.parse::<u16>().is_err() {
                     ret.status = false;
                 }
-            }
             if !ret.status {
                 ret.msg = "MTU is invalid".into();
             }
@@ -177,11 +176,10 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
 
         "persistent_keepalive" => {
             ret.status = true;
-            if field_variable.enabled {
-                if field_variable.value.parse::<u16>().is_err() {
+            if field_variable.enabled
+                && field_variable.value.parse::<u16>().is_err() {
                     ret.status = false;
                 }
-            }
             if !ret.status {
                 ret.msg = "Persistent Keepalive is invalid".into();
             }

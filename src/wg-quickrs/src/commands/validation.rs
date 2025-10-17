@@ -25,7 +25,7 @@ pub fn check_field_str_agent(field_name: &str, field_variable: &str) -> CheckRes
             ret
         }
         "port" => {
-            ret.status = !field_variable.parse::<u16>().is_err();
+            ret.status = field_variable.parse::<u16>().is_ok();
             if !ret.status {
                 ret.msg = "Port is invalid".into();
             }
