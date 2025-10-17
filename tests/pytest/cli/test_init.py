@@ -1,5 +1,10 @@
 from tests.pytest.conftest import setup_wg_quickrs_folder
-from tests.pytest.helpers import get_wg_quickrs_command, get_paths
+from tests.pytest.helpers import (
+    get_wg_quickrs_command, 
+    get_paths,
+    get_available_firewall_utilities,
+    get_available_network_interfaces
+)
 import subprocess
 import pytest
 import os
@@ -103,8 +108,7 @@ def test_init_no_prompt_simple(setup_wg_quickrs_folder):
         ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port 51820", True),
         ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port not-a-port", False),
         ("agent_firewall", "--agent-firewall-enabled true", False),
-        ("agent_firewall", "--agent-firewall-enabled true --agent-firewall-utility not-a-utility -agent-firewall-gateway not-a-gateway", False),
-        # skip the successful firewall setting test case because the gateway and utility names will differ in different machines
+        ("agent_firewall", "--agent-firewall-enabled true --agent-firewall-utility not-a-utility --agent-firewall-gateway not-a-gateway", False),
         ("agent_peer_vpn_endpoint", "192.168.1.1:51820", True),
         ("agent_peer_vpn_endpoint", "not-an-endpoint", False),
         ("agent_peer_icon", "--agent-peer-icon-enabled true", False),
@@ -170,3 +174,28 @@ def test_init_no_prompt_https(setup_wg_quickrs_agent):
             os.remove(wg_quickrs_config_file)
         assert (ret == 0) == success
 
+
+def test_init_no_prompt_firewall(setup_wg_quickrs_folder):
+    """Test firewall initialization with various configurations"""
+    utilities = get_available_firewall_utilities()
+    interfaces = get_available_network_interfaces()
+    
+    if not utilities or not interfaces:
+        pytest.skip("No firewall utilities or network interfaces available on this system")
+    
+    utility = utilities[0]
+    gateway = interfaces[0]
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    
+    for opt_val, success in [
+        (f"--agent-firewall-enabled true --agent-firewall-utility not-a-utility --agent-firewall-gateway {gateway}", False),
+        (f"--agent-firewall-enabled true --agent-firewall-utility {utility} --agent-firewall-gateway not-a-gateway", False),
+        (f"--agent-firewall-enabled true --agent-firewall-gateway {gateway}", False),
+        (f"--agent-firewall-enabled true --agent-firewall-utility {utility}", False),
+        (f"--agent-firewall-enabled true --agent-firewall-utility {utility} --agent-firewall-gateway {gateway}", True),
+    ]:
+        setup_wg_quickrs_folder(None)
+        ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=opt_val))
+        assert (ret == 0) == success
+        if os.path.exists(wg_quickrs_config_file):
+            os.remove(wg_quickrs_config_file)
