@@ -7,6 +7,8 @@ use thiserror::Error;
 pub enum WireGuardLibError {
     #[error("types::error::peer_not_found -> peer {0} is not found")]
     PeerNotFound(String),
+    #[error("types::error::key_decode_failed -> {0}")]
+    KeyDecodeFailed(String),
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -147,7 +149,6 @@ pub struct Peer {
     pub dns: EnabledValue,
     pub mtu: EnabledValue,
     pub scripts: Scripts,
-    pub public_key: String,
     pub private_key: String,
     pub created_at: String,
     pub updated_at: String,
@@ -241,7 +242,6 @@ pub struct OptionalPeer {
     pub dns: Option<EnabledValue>,
     pub mtu: Option<EnabledValue>,
     pub scripts: Option<OptionalScripts>,
-    pub public_key: Option<String>,
     pub private_key: Option<String>,
 }
 
@@ -270,7 +270,6 @@ pub struct AddedPeer {
     pub dns: EnabledValue,
     pub mtu: EnabledValue,
     pub scripts: Scripts,
-    pub public_key: String,
     pub private_key: String,
 }
 
@@ -285,7 +284,6 @@ impl From<&AddedPeer> for Peer {
             dns: added_peer.dns.clone(),
             mtu: added_peer.mtu.clone(),
             scripts: added_peer.scripts.clone(),
-            public_key: added_peer.public_key.clone(),
             private_key: added_peer.private_key.clone(),
             created_at: "".to_string(),
             updated_at: "".to_string(),

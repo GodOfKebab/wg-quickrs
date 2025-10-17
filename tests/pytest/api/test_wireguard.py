@@ -13,12 +13,12 @@ def is_valid_wg_key(s: str) -> bool:
 
 def test_public_private_keys(setup_wg_quickrs_agent):
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
-    response = requests.get(f"{base_url}/api/wireguard/public-private-keys")
+    response = requests.get(f"{base_url}/api/wireguard/private-key")
 
     assert response.status_code == 200
     data = response.json()
-    assert "public_key" in data and "private_key" in data
-    assert is_valid_wg_key(data["public_key"]) and is_valid_wg_key(data["private_key"])
+    assert "private_key" in data
+    assert is_valid_wg_key(data["private_key"])
 
 
 def test_preshared_keys(setup_wg_quickrs_agent):

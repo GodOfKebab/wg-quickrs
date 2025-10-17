@@ -4,8 +4,8 @@ use crate::wireguard::cmd::{disable_tunnel, enable_tunnel, WG_STATUS};
 use actix_web::{web, HttpResponse};
 use serde_json::json;
 
-pub(crate) fn get_wireguard_public_private_keys() -> HttpResponse {
-    match cmd::get_public_private_keys() {
+pub(crate) fn get_wireguard_private_key() -> HttpResponse {
+    match cmd::get_private_key() {
         Ok(keys) => HttpResponse::Ok().json(keys),
         Err(e) => {
             log::error!("{e}");

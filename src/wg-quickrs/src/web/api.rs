@@ -51,12 +51,12 @@ async fn get_network_summary(req: HttpRequest, query: web::Query<SummaryBody>) -
     conf::respond::get_network_summary(query)
 }
 
-#[get("/api/wireguard/public-private-keys")]
-async fn get_wireguard_public_private_keys(req: HttpRequest) -> impl Responder {
+#[get("/api/wireguard/private-key")]
+async fn get_wireguard_private_key(req: HttpRequest) -> impl Responder {
     if let Err(e) = enforce_auth(req) {
         return e;
     }
-    wireguard::respond::get_wireguard_public_private_keys()
+    wireguard::respond::get_wireguard_private_key()
 }
 
 #[get("/api/wireguard/pre-shared-key")]

@@ -9,7 +9,7 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Command};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -246,7 +246,7 @@ fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGua
                 let public_key = parts[0];
 
                 for (peer_id, peer_details) in config.network.peers.clone() {
-                    if peer_details.public_key != public_key {
+                    if wg_quickrs_wasm::helpers::wg_public_key_from_private(&peer_details.private_key).ok().as_deref() != Some(public_key) {
                         continue;
                     }
                     let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
@@ -585,7 +585,7 @@ PostDown = sysctl -w net.inet.ip.forwarding=0;
     Ok(())
 }
 
-pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> {
+pub(crate) fn get_private_key() -> Result<Value, WireGuardCommandError> {
     #[allow(unused_assignments)]
     let mut private_key = "".parse().unwrap();
 
@@ -612,52 +612,7 @@ pub(crate) fn get_public_private_keys() -> Result<Value, WireGuardCommandError> 
         }
     };
 
-    // wg genkey | wg pubkey
-    let readable_command = "$ wg genkey | wg pubkey".to_string();
-    log::info!("{readable_command}");
-    match Command::new("wg")
-        .arg("pubkey")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-    {
-        Ok(mut child) => {
-            if let Some(stdin) = child.stdin.as_mut() {
-                match stdin.write_all(private_key.as_bytes()) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        return Err(WireGuardCommandError::CommandExecError(readable_command, e));
-                    }
-                }
-            } else {
-                return Err(WireGuardCommandError::CommandExecError(
-                    readable_command,
-                    std::io::Error::other("not able to create a pipe"),
-                ));
-            }
-            match child.wait_with_output() {
-                Ok(output) => {
-                    if !output.stdout.is_empty() {
-                        log::debug!("{}", String::from_utf8_lossy(&output.stdout));
-                    }
-                    if !output.stderr.is_empty() {
-                        log::warn!("{}", String::from_utf8_lossy(&output.stderr));
-                    }
-                    if !output.status.success() {
-                        return Err(WireGuardCommandError::CommandExecNotSuccessful(
-                            readable_command,
-                        ));
-                    }
-                    Ok(json!({
-                        "private_key": private_key,
-                        "public_key": String::from_utf8_lossy(&output.stdout).trim().to_string(),
-                    }))
-                }
-                Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
-            }
-        }
-        Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
-    }
+    Ok(json!({"private_key": private_key}))
 }
 
 pub(crate) fn get_pre_shared_key() -> Result<Value, WireGuardCommandError> {

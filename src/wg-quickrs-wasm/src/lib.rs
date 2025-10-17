@@ -33,3 +33,9 @@ pub fn check_field_enabled_value_frontend(field_name: &str, field_variable_js: J
     let field_variable: types::EnabledValue = serde_wasm_bindgen::from_value(field_variable_js).unwrap();
     Ok(serde_wasm_bindgen::to_value(&validation::check_field_enabled_value(field_name, &field_variable))?)
 }
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn get_wg_public_key_frontend(base64_priv: &str) -> String {
+    helpers::wg_public_key_from_private(base64_priv).unwrap()
+}

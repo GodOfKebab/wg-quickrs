@@ -69,8 +69,7 @@
                           class="my-2 mr-2"
                           @updated-change-sum="onUpdatedScriptsIslandChangeSum"></scripts-island>
 
-          <peer-details-island v-if="default_peer_conf.private_key !== undefined
-                                     && default_peer_conf.public_key !== undefined"
+          <peer-details-island v-if="default_peer_conf.private_key !== undefined"
                                :api="api"
                                :peer="default_peer_conf"
                                class="my-2 mr-2"
@@ -209,8 +208,7 @@ export default {
       this.peer_id_address_valid_until = response.valid_until;
     });
 
-    this.api.get_wireguard_public_private_keys().then(response => {
-      this.default_peer_conf.public_key = response.public_key;
+    this.api.get_wireguard_private_key().then(response => {
       this.default_peer_conf.private_key = response.private_key;
     });
   },

@@ -235,7 +235,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                         peer_id,
                         mtu
                     );
-                    validate_then_update_str!(peer_config, peer_details, peer, peer_id, public_key);
                     validate_then_update_str!(
                         peer_config,
                         peer_details,
@@ -327,11 +326,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                 );
                 validate_enabled_value!(&peer_details.dns, format!("added_peers.{}", peer_id), dns);
                 validate_enabled_value!(&peer_details.mtu, format!("added_peers.{}", peer_id), mtu);
-                validate_str!(
-                    &peer_details.public_key,
-                    format!("added_peers.{}", peer_id),
-                    public_key
-                );
                 validate_str!(
                     &peer_details.private_key,
                     format!("added_peers.{}", peer_id),

@@ -1,6 +1,6 @@
 use crate::commands::helpers;
 use crate::commands::validation::{check_field_enabled_value_agent, check_field_path_agent, check_field_str_agent};
-use crate::wireguard::cmd::get_public_private_keys;
+use crate::wireguard::cmd::get_private_key;
 use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
 use crate::conf;
 use dialoguer;
@@ -259,7 +259,7 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
             };
 
             if !result.status {
-                panic!("Error: CLI option '{}={}' is invalid: {}", cli_option, v.to_string(), result.msg)
+                panic!("Error: CLI option '{}={}' is invalid: {}", cli_option, v, result.msg)
             }
 
             println!(
@@ -1010,7 +1010,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
 
     let peer_id = Uuid::new_v4().to_string();
-    let pub_priv_key = get_public_private_keys().unwrap();
+    let priv_key = get_private_key().unwrap();
     let now = conf::timestamp::get_now_timestamp_formatted();
 
     let peer = Peer {
@@ -1025,14 +1025,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
             enabled: agent_peer_icon_enabled,
             value: agent_peer_icon_src,
         },
-        public_key: pub_priv_key
-            .get("public_key")
-            .unwrap()
-            .to_string()
-            .trim_matches('"')
-            .parse()
-            .unwrap(),
-        private_key: pub_priv_key
+        private_key: priv_key
             .get("private_key")
             .unwrap()
             .to_string()

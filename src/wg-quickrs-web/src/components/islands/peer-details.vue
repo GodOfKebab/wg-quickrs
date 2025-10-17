@@ -1,28 +1,28 @@
 <template>
 
   <div :class="[this.are_keys_updated ? 'bg-green-100' : 'bg-green-50']"
-      class="my-2 p-2 px-3 shadow-md border rounded relative">
+      class="my-2 pt-1 pb-2 px-3 shadow-md border rounded relative">
     <div class="overflow-x-auto text-lg whitespace-nowrap">
-      <div class="mb-1 flex items-center">
+      <div class="mt-1 flex items-center">
         <field class="inline-block" field="PublicKey  :"></field>
         <refresh-button title="Refresh Public/Private Keys" @click="refreshPeerEditKeys()"></refresh-button>
-        <span class="text-gray-800">{{ peer_local.public_key }}</span>
+        <span class="text-gray-800">{{ peer_local_public_key }}</span>
       </div>
-      <div class="mb-1 flex items-center">
+      <div class="mt-1 flex items-center">
         <field class="inline-block" field="PrivateKey:"></field>
         <refresh-button title="Refresh Public/Private Keys" @click="refreshPeerEditKeys()"></refresh-button>
-        <span class="text-gray-800">{{ peer_local.private_key }}</span>
+        <span class="text-gray-800">{{ peer_local_private_key }}</span>
       </div>
-      <div class="mb-1">
+      <div v-show="peer.created_at" class="mt-1">
         <field class="inline-block" field="CreatedAt  :"></field>
         <div class="text-gray-800 ml-2 inline-block">
-          {{ new Date(peer_local.created_at).toString() }}
+          {{ new Date(peer.created_at).toString() }}
         </div>
       </div>
-      <div>
+      <div v-show="peer.updated_at" class="mt-1">
         <field class="inline-block" field="UpdatedAt  :"></field>
         <div class="text-gray-800 ml-2 inline-block">
-          {{ new Date(peer_local.updated_at).toString() }}
+          {{ new Date(peer.updated_at).toString() }}
         </div>
       </div>
     </div>
@@ -32,7 +32,7 @@
                  :disabled="!are_keys_updated"
                  alignment-classes="right-[6px] top-[6px]"
                  image-classes="h-7"
-                 @click="peer_local.public_key = peer.public_key; peer_local.private_key = peer.private_key;">
+                 @click="peer_local_private_key = peer.private_key;">
     </undo-button>
   </div>
 
@@ -42,6 +42,7 @@
 import Field from "@/components/ui/field.vue";
 import UndoButton from "@/components/ui/buttons/undo.vue";
 import RefreshButton from "@/components/ui/buttons/refresh.vue";
+import WireGuardHelper from "@/js/wg-helper.js";
 
 export default {
   name: "peer-details-island",
@@ -58,18 +59,17 @@ export default {
   },
   data() {
     return {
-      peer_local: {},
+      peer_local_private_key: {},
     };
   },
   created() {
-    this.peer_local = JSON.parse(JSON.stringify(this.peer));
+    this.peer_local_private_key = this.peer.private_key;
   },
   emits: ['updated-change-sum'],
   methods: {
     async refreshPeerEditKeys() {
-      await this.api.get_wireguard_public_private_keys().then(response => {
-        this.peer_local.public_key = response.public_key;
-        this.peer_local.private_key = response.private_key;
+      await this.api.get_wireguard_private_key().then(response => {
+        this.peer_local_private_key = response.private_key;
         this.$emit("updated-change-sum", {
               changed_fields: response,
               errors: {},
@@ -80,8 +80,11 @@ export default {
   },
   computed: {
     are_keys_updated() {
-      return this.peer_local.public_key !== this.peer.public_key || this.peer_local.private_key !== this.peer.private_key;
+      return this.peer_local_private_key !== this.peer.private_key;
     },
+    peer_local_public_key() {
+      return WireGuardHelper.get_wg_public_key(this.peer_local_private_key);
+    }
   },
 }
 </script>

@@ -1,5 +1,8 @@
 use crate::types;
 use crate::types::WireGuardLibError;
+use base64::{engine::general_purpose, Engine as _};
+use x25519_dalek::{PublicKey, StaticSecret};
+
 
 pub fn get_peer_wg_config(
     network: &types::Network,
@@ -103,7 +106,7 @@ pub fn get_peer_wg_config(
         )
         .unwrap();
         writeln!(wg_conf, "[Peer]").unwrap();
-        writeln!(wg_conf, "PublicKey = {}", other_peer_details.public_key).unwrap();
+        writeln!(wg_conf, "PublicKey = {}", wg_public_key_from_private(&other_peer_details.private_key)?).unwrap();
         writeln!(
             wg_conf,
             "PresharedKey = {}",
@@ -128,10 +131,27 @@ pub fn get_peer_wg_config(
     Ok(wg_conf)
 }
 
+
 pub fn get_connection_id(peer1: &str, peer2: &str) -> String {
     if peer1 > peer2 {
         format!("{peer1}*{peer2}")
     } else {
         format!("{peer2}*{peer1}")
     }
+}
+
+
+/// Compute a WireGuard public key from a base64-encoded private key.
+pub fn wg_public_key_from_private(base64_priv: &str) -> Result<String, WireGuardLibError> {
+    // Decode base64-encoded private key (32 bytes)
+    let priv_bytes: [u8; 32] = general_purpose::STANDARD
+        .decode(base64_priv.trim())
+        .map_err(|e| WireGuardLibError::KeyDecodeFailed(e.to_string()))?
+        .as_slice()
+        .try_into()
+        .map_err(|_| WireGuardLibError::KeyDecodeFailed("key != 32 bytes".to_string()))?;
+
+    let secret = StaticSecret::from(priv_bytes);
+    let public = PublicKey::from(&secret);
+    Ok(general_purpose::STANDARD.encode(public.as_bytes()))
 }
