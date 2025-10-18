@@ -162,7 +162,7 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
             if field_variable.enabled {
                     if field_variable.value.parse::<u16>().is_err() {
                         ret.status = false;
-                    } else if let Some(mtu_val) = field_variable.value.parse::<u16>().ok() {
+                    } else if let Ok(mtu_val) = field_variable.value.parse::<u16>() {
                         ret.status = 0 < mtu_val && mtu_val < 10000;
                     }
                 }
