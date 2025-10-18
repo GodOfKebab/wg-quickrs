@@ -1082,7 +1082,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
                 map
             },
             connections: HashMap::new(),
-            leases: vec![],
+            leases: HashMap::new(),
             updated_at: now,
             defaults: Defaults {
                 peer: DefaultPeer {

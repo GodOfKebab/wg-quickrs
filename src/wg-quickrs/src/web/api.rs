@@ -59,7 +59,7 @@ async fn patch_network_config(req: HttpRequest, body: web::Bytes) -> impl Respon
     conf::respond::patch_network_config(body)
 }
 
-#[get("/api/network/lease/id-address")]
+#[get("/api/network/lease/address")]
 async fn get_network_lease_id_address(req: HttpRequest) -> impl Responder {
     if let Err(e) = enforce_auth(req) {
         return e;

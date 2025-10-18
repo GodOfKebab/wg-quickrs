@@ -307,6 +307,13 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(added_peers) = change_sum.added_peers {
         for (peer_id, peer_details) in added_peers {
             {
+                if let Some(value) = c.network_w_digest.network.leases.get(&peer_details.address)
+                    && value.peer_id != peer_id{
+                    return HttpResponse::Forbidden().json(json!({
+                        "status": "forbidden",
+                        "message": format!("address '{}' is reserved for another peer_id", peer_details.address)
+                    }));
+                }
                 validate_str!(&peer_details.name, format!("added_peers.{}", peer_id), name);
                 validate_str!(
                     &peer_details.address,
@@ -367,7 +374,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                 c.network_w_digest
                     .network
                     .leases
-                    .retain(|lease| lease.peer_id != peer_id);
+                    .retain(|address, _|  *address != peer_details.address);
                 changed_config = true;
             }
         }
@@ -457,11 +464,11 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     for peer in c.network_w_digest.network.peers.values() {
         reserved_addresses.push(peer.address.clone());
     }
-    c.network_w_digest.network.leases.retain(|lease| {
-        timestamp::get_duration_since_formatted(lease.valid_until.clone()) < Duration::zero()
+    c.network_w_digest.network.leases.retain(|_, lease_data| {
+        timestamp::get_duration_since_formatted(lease_data.valid_until.clone()) < Duration::zero()
     });
-    for lease in c.network_w_digest.network.leases.clone() {
-        reserved_addresses.push(lease.address.clone());
+    for lease in c.network_w_digest.network.leases.keys() {
+        reserved_addresses.push(lease.clone());
     }
     let next_address =
         match network::get_next_available_address(&c.network_w_digest.network.subnet, &reserved_addresses) {
@@ -472,14 +479,18 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
             }
         };
 
-    let body = Lease {
-        address: next_address,
-        peer_id: String::from(Uuid::new_v4()),
-        valid_until: timestamp::get_future_timestamp_formatted(Duration::minutes(10)),
-    };
-    log::info!("leased address {} until {}", body.address, body.valid_until);
-    c.network_w_digest.network.leases.push(body.clone());
+    let lease_peer_id = String::from(Uuid::new_v4());
+    let lease_valid_until = timestamp::get_future_timestamp_formatted(Duration::minutes(10));
+    log::info!("leased address {} for {} until {}", next_address.clone(), lease_peer_id, lease_valid_until);
+    c.network_w_digest.network.leases.insert(next_address.clone(), LeaseData {
+        peer_id: lease_peer_id.clone(),
+        valid_until: lease_valid_until.clone(),
+    });
     post_mg_config_w_digest!(c);
 
-    HttpResponse::Ok().json(json!(body))
+    HttpResponse::Ok().json(json!({
+        "address": next_address,
+        "peer_id": lease_peer_id,
+        "valid_until": lease_valid_until
+    }))
 }

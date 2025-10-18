@@ -80,7 +80,7 @@ export default class API {
     async get_network_lease_id_address() {
         return this.call({
             method: 'get',
-            path: `/api/network/lease/id-address`,
+            path: `/api/network/lease/address`,
         });
     }
 
