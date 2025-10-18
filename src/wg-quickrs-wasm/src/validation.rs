@@ -53,18 +53,6 @@ pub fn check_field_str(field_name: &str, field_variable: &str) -> CheckResult {
     };
 
     match field_name {
-        // UUID v4 check
-        "peerId" => {
-            let re_uuid = Regex::new(
-                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-            )
-                .unwrap();
-            ret.status = re_uuid.is_match(field_variable);
-            if !ret.status {
-                ret.msg = "peerId needs to follow uuid4 standards".into();
-            }
-        }
-
         "name" => {
             ret.status = !field_variable.is_empty();
             if !ret.status {

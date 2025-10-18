@@ -2,6 +2,7 @@ use crate::WG_QUICKRS_CONFIG_FOLDER;
 use wg_quickrs_wasm::validation::{check_field_enabled_value, check_field_str, is_cidr, CheckResult};
 use std::path::Path;
 use wg_quickrs_wasm::types::EnabledValue;
+use uuid::Uuid;
 
 pub fn check_field_str_agent(field_name: &str, field_variable: &str) -> CheckResult {
     let mut ret = CheckResult {
@@ -10,6 +11,13 @@ pub fn check_field_str_agent(field_name: &str, field_variable: &str) -> CheckRes
     };
 
     match field_name {
+        "peer_id" => {
+            ret.status = Uuid::parse_str(field_variable).is_ok();
+            if !ret.status {
+                ret.msg = "peer_id needs to follow uuid4 standards".into();
+            }
+            ret
+        }
         "identifier" => {
             ret.status = !field_variable.is_empty();
             if !ret.status {

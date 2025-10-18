@@ -24,6 +24,15 @@ macro_rules! err_contains {
 // check_field_str
 // ------------------------
 #[test]
+fn test_check_peer_id() {
+    ok!(check_field_str_agent("peer_id", "550e8400-e29b-41d4-a716-446655440000"));
+    err_contains!(
+        check_field_str_agent("peer_id", "not-a-uuid"),
+        "peer_id needs to follow uuid4 standards"
+    );
+}
+
+#[test]
 fn test_check_identifier() {
     ok!(check_field_str_agent("identifier", "wg-quickrs-test"));
     err_contains!(check_field_str_agent("identifier", ""), "identifier cannot be empty");

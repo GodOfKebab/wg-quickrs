@@ -9,7 +9,7 @@ use actix_web::{HttpResponse, web};
 use chrono::Duration;
 use serde_json::json;
 use uuid::Uuid;
-
+use crate::commands::validation::check_field_str_agent;
 
 pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody>) -> HttpResponse {
     let summary = match util::get_summary() {
@@ -307,7 +307,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(added_peers) = change_sum.added_peers {
         for (peer_id, peer_details) in added_peers {
             {
-                let res = check_field_str("peerId", peer_id.as_str());
+                let res = check_field_str_agent("peer_id", peer_id.as_str());
                 if !res.status {
                     return HttpResponse::BadRequest().json(json!({
                         "status": "bad_request",
@@ -401,6 +401,23 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(added_connections) = change_sum.added_connections {
         for (connection_id, connection_details) in added_connections {
             {
+                match connection_id.rsplit_once('*') {
+                    Some((peer_a_id, peer_b_id)) => {
+                        if !c.network_w_digest.network.peers.contains_key(peer_a_id) || !c.network_w_digest.network.peers.contains_key(peer_b_id) {
+                            return HttpResponse::BadRequest().json(json!({
+                                "status": "bad_request",
+                                "message": format!("added_connections.{}: 'peer_id' doesn't exist", connection_id)
+                            }));
+                        }
+                    }
+                    None => {
+                        return HttpResponse::BadRequest().json(json!({
+                            "status": "bad_request",
+                            "message": format!("added_connections.{}: not a valid connection_id", connection_id)
+                        }));
+                    },
+                }
+
                 validate_str!(
                     &connection_details.pre_shared_key,
                     format!("added_connections.{}", connection_id),

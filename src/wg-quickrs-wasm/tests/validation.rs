@@ -36,15 +36,6 @@ fn test_is_fqdn_with_port() {
 // check_field_str
 // ------------------------
 #[test]
-fn test_check_peer_id() {
-    ok!(check_field_str("peerId", "550e8400-e29b-41d4-a716-446655440000"));
-    err_contains!(
-        check_field_str("peerId", "not-a-uuid"),
-        "peerId needs to follow uuid4 standards"
-    );
-}
-
-#[test]
 fn test_check_name() {
     ok!(check_field_str("name", "test-name"));
     err_contains!(check_field_str("name", ""), "name cannot be empty");

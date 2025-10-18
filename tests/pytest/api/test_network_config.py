@@ -143,6 +143,33 @@ def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
     assert response.status_code == 200
 
 
+def test_add_bad_connection(setup_wg_quickrs_agent):
+    """Test adding a bad connection."""
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+
+    bad_connection_id = "non-a-connection-id"
+    bad_setup_change_sum = {
+        "added_connections": {
+            bad_connection_id: get_test_connection_data()
+        }
+    }
+    setup_response = requests.patch(f"{base_url}/api/network/config", json=bad_setup_change_sum)
+    assert setup_response.status_code == 400
+    assert "not a valid connection_id" in setup_response.json()["message"]
+
+    peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
+    peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
+    fake_connection_id = f"{peer1_id}*{peer2_id}"
+    fake_setup_change_sum = {
+        "added_connections": {
+            fake_connection_id: get_test_connection_data()
+        }
+    }
+    setup_response = requests.patch(f"{base_url}/api/network/config", json=fake_setup_change_sum)
+    assert setup_response.status_code == 400
+    assert "'peer_id' doesn't exist" in setup_response.json()["message"]
+
+
 def test_invalid_json(setup_wg_quickrs_agent):
     """Test sending invalid JSON."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
@@ -309,7 +336,7 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
     # Setup: Create a test connection
     peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
     peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
-    connection_id = f"{peer1_id}-{peer2_id}"
+    connection_id = f"{peer1_id}*{peer2_id}"
 
     peer_data = get_test_peer_data()
     connection_data = get_test_connection_data()
@@ -454,7 +481,7 @@ def test_add_connection_variants(setup_wg_quickrs_agent, connection_data_variant
     # Setup: Create test peers
     peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
     peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
-    connection_id = f"{peer1_id}-{peer2_id}"
+    connection_id = f"{peer1_id}*{peer2_id}"
 
     peer_data = get_test_peer_data()
     connection_data = get_test_connection_data()
