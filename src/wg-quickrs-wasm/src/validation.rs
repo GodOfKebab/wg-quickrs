@@ -134,6 +134,13 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
 
         "icon" => {
             ret.status = true;
+            if field_variable.enabled {
+                ret.status = !field_variable.value.is_empty();
+            }
+            if !ret.status {
+                ret.msg = "icon cannot be empty".into();
+            }
+
         }
 
         "dns" => {
