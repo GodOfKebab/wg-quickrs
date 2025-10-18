@@ -104,7 +104,7 @@ def test_patch_peer_not_found(setup_wg_quickrs_agent):
 
 
 def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
-    """Test adding a new peer."""
+    """Test adding a new peer with a leased address."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
 
     response = requests.get(f"{base_url}/api/network/lease/address")
@@ -114,13 +114,23 @@ def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
     reserved_peer_id = response.json()["peer_id"]
     peer_data["address"] = response.json()["address"]
 
-    fake_peer_id = "a1c11ade-dd1a-4f5a-a6f9-3b6c6d10f416"
+    fake_peer_id = "not-a-uuid"
     change_sum_w_fake_peer_id = {
         "added_peers": {
             fake_peer_id: peer_data
         }
     }
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum_w_fake_peer_id)
+    assert response.status_code == 400
+    assert "uuid" in response.json()["message"]
+
+    another_peer_id = "a1c11ade-dd1a-4f5a-a6f9-3b6c6d10f416"
+    change_sum_w_another_peer_id = {
+        "added_peers": {
+            another_peer_id: peer_data
+        }
+    }
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum_w_another_peer_id)
     assert response.status_code == 403
     assert "reserved for another" in response.json()["message"]
 
@@ -296,9 +306,9 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
     """Parameterized test for all connection field changes."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
 
-    # Setup: Create test connection
-    peer1_id = "test-peer-1"
-    peer2_id = "test-peer-2"
+    # Setup: Create a test connection
+    peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
+    peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
     connection_id = f"{peer1_id}-{peer2_id}"
 
     peer_data = get_test_peer_data()
@@ -387,13 +397,13 @@ def test_add_peer_variants(setup_wg_quickrs_agent, peer_data_variant, expected_s
     """Parameterized test for adding peers with different configurations."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
 
-    peer_id = f"test-peer-{hash(str(peer_data_variant)) % 10000}"
+    peer_id = f"71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
     peer_data = get_test_peer_data()
 
     # Update peer data with variant
     peer_data.update(peer_data_variant)
     # Ensure unique address
-    peer_data["address"] = f"10.0.34.{100 + (hash(peer_id) % 50)}"
+    peer_data["address"] = f"10.0.34.101"
 
     change_sum = {
         "added_peers": {
@@ -442,8 +452,8 @@ def test_add_connection_variants(setup_wg_quickrs_agent, connection_data_variant
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
 
     # Setup: Create test peers
-    peer1_id = f"peer-1-{hash(str(connection_data_variant)) % 1000}"
-    peer2_id = f"peer-2-{hash(str(connection_data_variant)) % 1000}"
+    peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
+    peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
     connection_id = f"{peer1_id}-{peer2_id}"
 
     peer_data = get_test_peer_data()
@@ -454,8 +464,8 @@ def test_add_connection_variants(setup_wg_quickrs_agent, connection_data_variant
 
     setup_change_sum = {
         "added_peers": {
-            peer1_id: {**peer_data, "address": f"10.0.34.{160 + (hash(peer1_id) % 30)}"},
-            peer2_id: {**peer_data, "address": f"10.0.34.{190 + (hash(peer2_id) % 30)}"}
+            peer1_id: {**peer_data, "address": f"10.0.34.160"},
+            peer2_id: {**peer_data, "address": f"10.0.34.190"}
         },
         "added_connections": {
             connection_id: connection_data

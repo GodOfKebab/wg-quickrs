@@ -307,6 +307,13 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(added_peers) = change_sum.added_peers {
         for (peer_id, peer_details) in added_peers {
             {
+                let res = check_field_str("peerId", peer_id.as_str());
+                if !res.status {
+                    return HttpResponse::BadRequest().json(json!({
+                        "status": "bad_request",
+                        "message": format!("added_peers.{}: {}", peer_id, res.msg)
+                    }));
+                }
                 if let Some(value) = c.network_w_digest.network.leases.get(&peer_details.address)
                     && value.peer_id != peer_id{
                     return HttpResponse::Forbidden().json(json!({
