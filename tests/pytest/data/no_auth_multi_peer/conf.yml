@@ -1,0 +1,142 @@
+version: '0.1.0'
+agent:
+  web:
+    address: '127.0.0.1'
+    http:
+      enabled: true
+      port: 8080
+    https:
+      enabled: false
+      port: 8443
+      tls_cert: ''
+      tls_key: ''
+    password:
+      enabled: false
+      hash: ''
+  vpn:
+    enabled: false
+    port: 51820
+  firewall:
+    enabled: false
+    utility: ''
+    gateway: ''
+network:
+  identifier: wg-quickrs-home
+  subnet: '10.0.34.0/24'
+  this_peer: '0ed989c6-6dba-4e3c-8034-08adf4262d9e'
+  peers:
+    '0ed989c6-6dba-4e3c-8034-08adf4262d9e':
+      name: wg-quickrs-host
+      address: '10.0.34.1'
+      endpoint:
+        enabled: true
+        value: '127.0.0.1:51820'
+      kind: server
+      icon:
+        enabled: false
+        value: ''
+      dns:
+        enabled: true
+        value: '1.1.1.1'
+      mtu:
+        enabled: false
+        value: ''
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+      private_key: yGFmuVZeV1V/Jy0rAx7bOF4Gx4Mt/17VMazM5grvqE4=
+      created_at: '2025-10-04T00:36:44Z'
+      updated_at: '2025-10-04T00:36:44Z'
+    '9541bbb0-a3c0-4b83-8637-96820cae7983':
+      name: other-peer2
+      address: '10.0.34.3'
+      endpoint:
+        enabled: false
+        value: ''
+      kind: laptop
+      icon:
+        enabled: false
+        value: ''
+      dns:
+        enabled: true
+        value: '1.1.1.1'
+      mtu:
+        enabled: false
+        value: ''
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+      private_key: bbO/WDWaw403eQ+QcTHu65iU1BUoYvgz64Q12Q4rNjU=
+      created_at: '2025-10-18T16:09:52Z'
+      updated_at: '2025-10-18T16:09:52Z'
+    '6e9a8440-f884-4b54-bfe7-b982f15e40fd':
+      name: other-peer1
+      address: '10.0.34.2'
+      endpoint:
+        enabled: false
+        value: ''
+      kind: laptop
+      icon:
+        enabled: false
+        value: ''
+      dns:
+        enabled: true
+        value: '1.1.1.1'
+      mtu:
+        enabled: false
+        value: ''
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+      private_key: OAyPtHt0qTWYaAfqDWdYrQQ7OrE/BCUdgCNpLaHPb74=
+      created_at: '2025-10-18T16:09:04Z'
+      updated_at: '2025-10-18T16:09:04Z'
+  connections:
+    '9541bbb0-a3c0-4b83-8637-96820cae7983*0ed989c6-6dba-4e3c-8034-08adf4262d9e':
+      enabled: true
+      pre_shared_key: '4L1CmDfDP1eo9AjYJF6pX2g4RGjjfKeuQeeTz6eZyNU='
+      allowed_ips_a_to_b: '0.0.0.0/0'
+      allowed_ips_b_to_a: '10.0.34.3/32'
+      persistent_keepalive:
+        enabled: true
+        value: '25'
+    '6e9a8440-f884-4b54-bfe7-b982f15e40fd*0ed989c6-6dba-4e3c-8034-08adf4262d9e':
+      enabled: true
+      pre_shared_key: '8cQ1g8N6We4ZRxYG5Kz0O13i0mhgOG6F+jSkWWo9LVI='
+      allowed_ips_a_to_b: '0.0.0.0/0'
+      allowed_ips_b_to_a: '10.0.34.2/32'
+      persistent_keepalive:
+        enabled: true
+        value: '25'
+  defaults:
+    peer:
+      endpoint:
+        enabled: false
+        value: ''
+      kind: laptop
+      icon:
+        enabled: false
+        value: ''
+      dns:
+        enabled: true
+        value: '1.1.1.1'
+      mtu:
+        enabled: false
+        value: ''
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+    connection:
+      persistent_keepalive:
+        enabled: true
+        value: '25'
+  leases: {}
+  updated_at: '2025-10-18T16:09:43Z'

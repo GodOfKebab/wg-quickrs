@@ -1,6 +1,7 @@
 from tests.pytest.conftest import setup_wg_quickrs_agent
-from tests.pytest.helpers import get_this_peer_id, get_test_peer_data, get_test_connection_data
+from tests.pytest.helpers import get_this_peer_id, get_test_peer_data, get_test_connection_data, get_paths
 import requests
+import yaml
 
 
 def test_patch_forbidden_endpoint_change(setup_wg_quickrs_agent):
@@ -158,4 +159,54 @@ def test_connection_not_found(setup_wg_quickrs_agent):
     data = response.json()
     assert data["status"] == "not_found"
     assert "does not exist" in data["message"]
+
+
+def test_remove_peer(setup_wg_quickrs_agent):
+    """Test deleting an auto-created connection."""
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    this_peer = "0ed989c6-6dba-4e3c-8034-08adf4262d9e"
+    other_peer1 = "6e9a8440-f884-4b54-bfe7-b982f15e40fd"
+    other_peer2 = "9541bbb0-a3c0-4b83-8637-96820cae7983"
+    other_peer1_this_peer_connection_id = f"{other_peer1}*{this_peer}"
+
+    # Test: Remove a peer
+    removed_peers_change_sum = {
+        "removed_peers": [other_peer1]
+    }
+    response = requests.patch(f"{base_url}/api/network/config", json=removed_peers_change_sum)
+    assert response.status_code == 200
+
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+
+    assert other_peer1 not in new_conf["network"]["peers"]
+    assert this_peer in new_conf["network"]["peers"] and other_peer2 in new_conf["network"]["peers"]
+    assert other_peer1_this_peer_connection_id not in new_conf["network"]["connections"]
+
+
+def test_remove_connection(setup_wg_quickrs_agent):
+    """Test deleting an auto-created connection."""
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    this_peer = "0ed989c6-6dba-4e3c-8034-08adf4262d9e"
+    other_peer1 = "6e9a8440-f884-4b54-bfe7-b982f15e40fd"
+    other_peer2 = "9541bbb0-a3c0-4b83-8637-96820cae7983"
+    other_peer1_this_peer_connection_id = f"{other_peer1}*{this_peer}"
+
+    # Test: Remove a peer
+    removed_connections_change_sum = {
+        "removed_connections": [other_peer1_this_peer_connection_id]
+    }
+    response = requests.patch(f"{base_url}/api/network/config", json=removed_connections_change_sum)
+    assert response.status_code == 200
+
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+
+    assert this_peer in new_conf["network"]["peers"] and other_peer1 in new_conf["network"]["peers"] and other_peer2 in new_conf["network"]["peers"]
+    assert other_peer1_this_peer_connection_id not in new_conf["network"]["connections"]
+
 
