@@ -45,8 +45,8 @@ impl ConfigWNetworkDigest {
         Ok(ConfigWNetworkDigest { agent: config.agent, network_w_digest })
     }
 
-    pub(crate) fn to_config(self) -> Config {
-        Config{ agent: self.agent, network: self.network_w_digest.network }
+    pub(crate) fn to_config(&self) -> Config {
+        Config{ agent: self.agent.clone(), network: self.network_w_digest.network.clone() }
     }
 
     fn set_or_init(config_w_network_digest: ConfigWNetworkDigest) -> Result<(), ConfUtilError> {
