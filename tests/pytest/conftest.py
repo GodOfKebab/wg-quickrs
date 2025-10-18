@@ -27,6 +27,15 @@ def setup_wg_quickrs_folder(request):
                 wg_quickrs_config_folder,
                 dirs_exist_ok=True
             )
+            # Load config to extract agent address
+            with open(wg_quickrs_config_file) as stream:
+                conf = yaml.safe_load(stream)
+            # TLS cert generation
+            if conf['agent']['web']['https']['enabled']:
+                os.mkdir(wg_quickrs_config_folder / "certs")
+                tls_cert_generator = Popen(f"wget -qO- https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh | sh -s -- -f -o {wg_quickrs_config_folder / 'certs'} --country 'XX' --state 'XX' --locality 'XX' --org 'XX' --ou 'XX' --cn 'tls-cert-generator@XX' {conf['agent']['web']['address']}", shell=True)
+                tls_cert_generator.wait()
+
         return pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file
 
     return _setup
@@ -52,10 +61,6 @@ def setup_wg_quickrs_agent(request, setup_wg_quickrs_folder):
         if conf['agent']['web']['https']['enabled']:
             base_url = f"https://{conf['agent']['web']['address']}:{conf['agent']['web']['https']['port']}"
             host_port = (conf['agent']['web']['address'], conf['agent']['web']['https']['port'])
-            # TLS cert generation
-            os.mkdir(wg_quickrs_config_folder / "certs")
-            tls_cert_generator = Popen(f"wget -qO- https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh | sh -s -- -f -o {wg_quickrs_config_folder / 'certs'} --country 'XX' --state 'XX' --locality 'XX' --org 'XX' --ou 'XX' --cn 'tls-cert-generator@XX' {conf['agent']['web']['address']}", shell=True)
-            tls_cert_generator.wait()
         elif conf['agent']['web']['http']['enabled']:
             base_url = f"http://{conf['agent']['web']['address']}:{conf['agent']['web']['http']['port']}"
             host_port = (conf['agent']['web']['address'], conf['agent']['web']['http']['port'])

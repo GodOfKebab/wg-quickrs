@@ -160,8 +160,8 @@ def test_init_no_prompt(setup_wg_quickrs_folder, opt_key, opt_val, success):
     assert (init_no_prompt(generate_init_no_prompt_opts(**{opt_key: opt_val})) == 0) == success
 
 
-def test_init_no_prompt_https(setup_wg_quickrs_agent):
-    setup_wg_quickrs_agent("test_pwd_single_peer")
+def test_init_no_prompt_https(setup_wg_quickrs_folder):
+    setup_wg_quickrs_folder("test_pwd_single_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
     os.remove(wg_quickrs_config_file)
 

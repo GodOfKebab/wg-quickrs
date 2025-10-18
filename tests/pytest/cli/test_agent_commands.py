@@ -65,8 +65,8 @@ def test_agent_set_simple(setup_wg_quickrs_folder, command, path, value, success
     run_and_check_success([command, str(value)], path, value, success)
 
 
-def test_agent_set_https_cert_key(setup_wg_quickrs_agent):
-    setup_wg_quickrs_agent("test_pwd_single_peer")
+def test_agent_set_https_cert_key(setup_wg_quickrs_folder):
+    setup_wg_quickrs_folder("test_pwd_single_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
     os.makedirs(wg_quickrs_config_folder / 'certs/servers/localhost')
     shutil.copyfile(wg_quickrs_config_folder / 'certs/servers/127.0.0.1/cert.pem', wg_quickrs_config_folder / 'certs/servers/localhost/cert.pem')
@@ -139,8 +139,8 @@ def test_agent_firewall_commands(setup_wg_quickrs_folder):
         run_and_check_success([command], path, value, success)
 
 
-def test_agent_toggle_w_pwd(setup_wg_quickrs_agent):
-    setup_wg_quickrs_agent("test_pwd_single_peer")
+def test_agent_toggle_w_pwd(setup_wg_quickrs_folder):
+    setup_wg_quickrs_folder("test_pwd_single_peer")
     for command, path, value, success in [
         ("disable-web-https", ('agent', 'web', 'https', 'enabled'), False, True),
         ("enable-web-https", ('agent', 'web', 'https', 'enabled'), True, True),
