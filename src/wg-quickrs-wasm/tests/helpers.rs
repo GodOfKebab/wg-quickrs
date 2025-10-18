@@ -32,7 +32,7 @@ fn test_wireguard_vectors() {
     ];
 
     for vec in vectors {
-        let derived = wg_public_key_from_private(vec.priv_b64)
+        let derived = wg_public_key_from_private_key(vec.priv_b64)
             .expect("Failed to derive public key");
         assert_eq!(
             derived, vec.expected_pub_b64,

@@ -51,22 +51,6 @@ async fn get_network_summary(req: HttpRequest, query: web::Query<SummaryBody>) -
     conf::respond::get_network_summary(query)
 }
 
-#[get("/api/wireguard/private-key")]
-async fn get_wireguard_private_key(req: HttpRequest) -> impl Responder {
-    if let Err(e) = enforce_auth(req) {
-        return e;
-    }
-    wireguard::respond::get_wireguard_private_key()
-}
-
-#[get("/api/wireguard/pre-shared-key")]
-async fn get_wireguard_pre_shared_key(req: HttpRequest) -> impl Responder {
-    if let Err(e) = enforce_auth(req) {
-        return e;
-    }
-    wireguard::respond::get_wireguard_pre_shared_key()
-}
-
 #[patch("/api/network/config")]
 async fn patch_network_config(req: HttpRequest, body: web::Bytes) -> impl Responder {
     if let Err(e) = enforce_auth(req) {

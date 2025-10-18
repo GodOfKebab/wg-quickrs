@@ -46,7 +46,6 @@ network:
         post_up: []
         pre_down: []
         post_down: []
-      public_key: w6ogfx4XO45YiwHD2DK5gGrxwiU6CfN6C7baBdu1cCo=
       private_key: yGFmuVZeV1V/Jy0rAx7bOF4Gx4Mt/17VMazM5grvqE4=
       created_at: '2025-10-04T00:36:44Z'
       updated_at: '2025-10-04T00:36:44Z'

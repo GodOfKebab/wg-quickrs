@@ -1,28 +1,8 @@
 use crate::conf;
-use crate::wireguard::cmd;
 use crate::wireguard::cmd::{disable_tunnel, enable_tunnel, WG_STATUS};
 use actix_web::{web, HttpResponse};
 use serde_json::json;
 
-pub(crate) fn get_wireguard_private_key() -> HttpResponse {
-    match cmd::get_private_key() {
-        Ok(keys) => HttpResponse::Ok().json(keys),
-        Err(e) => {
-            log::error!("{e}");
-            HttpResponse::InternalServerError().into()
-        }
-    }
-}
-
-pub(crate) fn get_wireguard_pre_shared_key() -> HttpResponse {
-    match cmd::get_pre_shared_key() {
-        Ok(key) => HttpResponse::Ok().json(key),
-        Err(e) => {
-            log::error!("{e}");
-            HttpResponse::InternalServerError().into()
-        }
-    }
-}
 
 pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
     #[derive(serde::Serialize, serde::Deserialize)]

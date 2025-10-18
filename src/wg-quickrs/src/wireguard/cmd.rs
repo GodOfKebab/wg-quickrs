@@ -3,7 +3,6 @@ use crate::macros::*;
 use once_cell::sync::Lazy;
 use wg_quickrs_wasm::helpers::get_peer_wg_config;
 use wg_quickrs_wasm::types::{Config, Telemetry, TelemetryData, TelemetryDatum, WireGuardStatus};
-use serde_json::{Value, json};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::fs::File;
@@ -246,7 +245,7 @@ fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGua
                 let public_key = parts[0];
 
                 for (peer_id, peer_details) in config.network.peers.clone() {
-                    if wg_quickrs_wasm::helpers::wg_public_key_from_private(&peer_details.private_key).ok().as_deref() != Some(public_key) {
+                    if wg_quickrs_wasm::helpers::wg_public_key_from_private_key(&peer_details.private_key).ok().as_deref() != Some(public_key) {
                         continue;
                     }
                     let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
@@ -585,57 +584,3 @@ PostDown = sysctl -w net.inet.ip.forwarding=0;
     Ok(())
 }
 
-pub(crate) fn get_private_key() -> Result<Value, WireGuardCommandError> {
-    #[allow(unused_assignments)]
-    let mut private_key = "".parse().unwrap();
-
-    // wg genkey
-    let readable_command = "$ wg genkey".to_string();
-    log::info!("{readable_command}");
-    match Command::new("wg").arg("genkey").output() {
-        Ok(output) => {
-            if !output.stdout.is_empty() {
-                log::debug!("{}", String::from_utf8_lossy(&output.stdout));
-            }
-            if !output.stderr.is_empty() {
-                log::warn!("{}", String::from_utf8_lossy(&output.stderr));
-            }
-            if !output.status.success() {
-                return Err(WireGuardCommandError::CommandExecNotSuccessful(
-                    readable_command,
-                ));
-            }
-            private_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        }
-        Err(e) => {
-            return Err(WireGuardCommandError::CommandExecError(readable_command, e));
-        }
-    };
-
-    Ok(json!({"private_key": private_key}))
-}
-
-pub(crate) fn get_pre_shared_key() -> Result<Value, WireGuardCommandError> {
-    // wg genpsk
-    let readable_command = "$ wg genpsk".to_string();
-    log::info!("{readable_command}");
-    match Command::new("wg").arg("genpsk").output() {
-        Ok(output) => {
-            if !output.stdout.is_empty() {
-                log::debug!("{}", String::from_utf8_lossy(&output.stdout));
-            }
-            if !output.stderr.is_empty() {
-                log::warn!("{}", String::from_utf8_lossy(&output.stderr));
-            }
-            if !output.status.success() {
-                return Err(WireGuardCommandError::CommandExecNotSuccessful(
-                    readable_command,
-                ));
-            }
-            Ok(
-                json!({"pre_shared_key": String::from_utf8_lossy(&output.stdout).trim().to_string()}),
-            )
-        }
-        Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
-    }
-}

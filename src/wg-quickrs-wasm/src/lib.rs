@@ -36,6 +36,12 @@ pub fn check_field_enabled_value_frontend(field_name: &str, field_variable_js: J
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
-pub fn get_wg_public_key_frontend(base64_priv: &str) -> String {
-    helpers::wg_public_key_from_private(base64_priv).unwrap()
+pub fn wg_public_key_from_private_key_frontend(base64_priv: &str) -> String {
+    helpers::wg_public_key_from_private_key(base64_priv).unwrap()
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn wg_generate_key_frontend() -> String {
+    helpers::wg_generate_key()
 }

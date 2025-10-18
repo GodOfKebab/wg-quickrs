@@ -208,9 +208,7 @@ export default {
       this.peer_id_address_valid_until = response.valid_until;
     });
 
-    this.api.get_wireguard_private_key().then(response => {
-      this.default_peer_conf.private_key = response.private_key;
-    });
+    this.default_peer_conf.private_key = WireGuardHelper.wg_generate_key();
   },
   methods: {
     onUpdatedPeerSummaryIslandChangeSum(data) {

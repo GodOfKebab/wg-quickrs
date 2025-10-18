@@ -68,14 +68,14 @@ export default {
   emits: ['updated-change-sum'],
   methods: {
     async refreshPeerEditKeys() {
-      await this.api.get_wireguard_private_key().then(response => {
-        this.peer_local_private_key = response.private_key;
-        this.$emit("updated-change-sum", {
-              changed_fields: response,
-              errors: {},
+      this.peer_local_private_key = WireGuardHelper.wg_generate_key();
+      this.$emit("updated-change-sum", {
+            changed_fields: {
+              private_key: this.peer_local_private_key,
             },
-        );
-      });
+            errors: {},
+          },
+      );
     }
   },
   computed: {
@@ -83,7 +83,7 @@ export default {
       return this.peer_local_private_key !== this.peer.private_key;
     },
     peer_local_public_key() {
-      return WireGuardHelper.get_wg_public_key(this.peer_local_private_key);
+      return WireGuardHelper.wg_public_key_from_private_key(this.peer_local_private_key);
     }
   },
 }

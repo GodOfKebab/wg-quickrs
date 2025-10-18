@@ -69,20 +69,6 @@ export default class API {
         });
     }
 
-    async get_wireguard_private_key() {
-        return this.call({
-            method: 'get',
-            path: `/api/wireguard/private-key`,
-        });
-    }
-
-    async get_wireguard_pre_shared_key() {
-        return this.call({
-            method: 'get',
-            path: `/api/wireguard/pre-shared-key`,
-        });
-    }
-
     async patch_network_config(change_sum) {
         return this.call({
             method: 'patch',

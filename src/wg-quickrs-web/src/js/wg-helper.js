@@ -5,7 +5,8 @@ import {
     check_field_str_frontend,
     get_connection_id_frontend,
     get_peer_wg_config_frontend,
-    get_wg_public_key_frontend
+    wg_public_key_from_private_key_frontend,
+    wg_generate_key_frontend
 } from '../../pkg/wg_quickrs_wasm.js';
 
 export default class WireGuardHelper {
@@ -47,8 +48,12 @@ export default class WireGuardHelper {
         return {a: connectionId.split('*')[0], b: connectionId.split('*')[1]};
     }
 
-    static get_wg_public_key(private_key) {
-        return get_wg_public_key_frontend(private_key);
+    static wg_public_key_from_private_key(private_key) {
+        return wg_public_key_from_private_key_frontend(private_key);
+    }
+
+    static wg_generate_key() {
+        return wg_generate_key_frontend();
     }
 
 }

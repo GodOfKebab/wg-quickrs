@@ -1,6 +1,5 @@
 use crate::commands::helpers;
 use crate::commands::validation::{check_field_enabled_value_agent, check_field_path_agent, check_field_str_agent};
-use crate::wireguard::cmd::get_private_key;
 use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
 use crate::conf;
 use dialoguer;
@@ -11,6 +10,7 @@ use wg_quickrs_wasm::types::{
     Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
     DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
+use wg_quickrs_wasm::helpers::wg_generate_key;
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -1010,7 +1010,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
 
     let peer_id = Uuid::new_v4().to_string();
-    let priv_key = get_private_key().unwrap();
     let now = conf::timestamp::get_now_timestamp_formatted();
 
     let peer = Peer {
@@ -1025,13 +1024,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
             enabled: agent_peer_icon_enabled,
             value: agent_peer_icon_src,
         },
-        private_key: priv_key
-            .get("private_key")
-            .unwrap()
-            .to_string()
-            .trim_matches('"')
-            .parse()
-            .unwrap(),
+        private_key: wg_generate_key(),
         created_at: now.clone(),
         updated_at: now.clone(),
         dns: EnabledValue {

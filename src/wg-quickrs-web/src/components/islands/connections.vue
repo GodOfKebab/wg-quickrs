@@ -360,7 +360,7 @@ export default {
       const connection_id = this._WireGuardHelper_getConnectionId(peer_id);
       const default_allowed_ips = this.peerId === this.network.this_peer || peer_id === this.network.this_peer ? '0.0.0.0/0' : this.network.subnet;
 
-      this.connections_local.pre_shared_key[peer_id] = (await this.api.get_wireguard_pre_shared_key()).pre_shared_key;
+      this.connections_local.pre_shared_key[peer_id] = WireGuardHelper.wg_generate_key();
       this.connections_local.persistent_keepalive[peer_id] = JSON.parse(JSON.stringify(this.network.defaults.connection.persistent_keepalive));
       if (this.network.peers[this.peerId].endpoint.enabled === this.network.peers[peer_id].endpoint.enabled) {
         this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
@@ -428,9 +428,7 @@ export default {
       this.connections_local.allowed_ips_b_to_a[otherPeerId] = this.network.connections[connection_id].allowed_ips_b_to_a;
     },
     async refreshPreSharedKey(otherPeerId) {
-      await this.api.get_wireguard_pre_shared_key().then(response => {
-        this.connections_local.pre_shared_key[otherPeerId] = response.pre_shared_key;
-      });
+      this.connections_local.pre_shared_key[otherPeerId] = WireGuardHelper.wg_generate_key();
     }
   },
   emits: ['updated-change-sum'],

@@ -70,8 +70,6 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             .service(api::post_token)
             .service(api::get_network_summary)
             .service(api::get_network_lease_id_address)
-            .service(api::get_wireguard_pre_shared_key)
-            .service(api::get_wireguard_private_key)
             .service(api::get_version)
             .service(api::patch_network_config)
             .service(api::post_wireguard_server_status)
