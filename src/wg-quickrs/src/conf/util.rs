@@ -2,6 +2,7 @@ use crate::{WG_QUICKRS_CONFIG_FILE};
 use crate::macros::*;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
+use crate::commands::validation::validate_config_file;
 use wg_quickrs_wasm::types::{Config, Agent, Network, Summary, WireGuardStatus};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -119,6 +120,8 @@ pub enum ConfUtilError {
     InvalidVersion(semver::Error),
     #[error("conf::util::error::version_not_supported -> conf.yml version not supported: expected {0}, got {1}")]
     VersionNotSupported(String, String),
+    #[error("conf::util::error::validation -> {0} validation failed: {1}")]
+    Validation(PathBuf, String),
 }
 
 pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
@@ -145,6 +148,8 @@ fn get_config_w_digest() -> Result<ConfigWNetworkDigest, ConfUtilError> {
     if !version_req.matches(&conf_ver) {
         return Err(ConfUtilError::VersionNotSupported(format!("{}.x.x", build_version.major), config_file.version));
     }
+    // Validate config_file fields
+    validate_config_file(&config_file)?;
 
     let config_w_digest = ConfigWNetworkDigest::from_config(Config::from(&config_file))?;
     ConfigWNetworkDigest::set_or_init(config_w_digest.clone())?;
