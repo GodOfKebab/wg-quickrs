@@ -160,11 +160,10 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
 
         "script" | "pre_up" | "post_up" | "pre_down" | "post_down" => {
             ret.status = true;
-            if field_variable.enabled {
-                if !field_variable.value.ends_with(';') {
+            if field_variable.enabled
+                && !field_variable.value.ends_with(';') {
                     ret.status = false;
                 }
-            }
             if !ret.status {
                 ret.msg = "script needs to end with a semicolon".into();
             }
