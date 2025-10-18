@@ -152,12 +152,15 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
 
         "mtu" => {
             ret.status = true;
-            if field_variable.enabled
-                && field_variable.value.parse::<u16>().is_err() {
-                    ret.status = false;
+            if field_variable.enabled {
+                    if field_variable.value.parse::<u16>().is_err() {
+                        ret.status = false;
+                    } else if let Some(mtu_val) = field_variable.value.parse::<u16>().ok() {
+                        ret.status = 0 < mtu_val && mtu_val < 10000;
+                    }
                 }
             if !ret.status {
-                ret.msg = "MTU is invalid".into();
+                ret.msg = "MTU is invalid (1-9999)".into();
             }
         }
 

@@ -151,6 +151,10 @@ fn test_mtu() {
         "MTU is invalid"
     );
     err_contains!(
+        check_field_enabled_value("mtu", &ev(true, "10000")),
+        "MTU is invalid"
+    );
+    err_contains!(
         check_field_enabled_value("mtu", &ev(true, "70000")),
         "MTU is invalid"
     );
