@@ -2,7 +2,7 @@ use crate::{WG_QUICKRS_CONFIG_FILE};
 use crate::macros::*;
 use crate::conf::timestamp;
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
-use wg_quickrs_wasm::types::{Config, Agent, Network, Summary, WireGuardStatus, ConfigFile};
+use wg_quickrs_wasm::types::{Config, Agent, Network, Summary, WireGuardStatus};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -12,6 +12,34 @@ use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use thiserror::Error;
 use semver::{Version, VersionReq};
+
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct ConfigFile {
+    pub version: String,
+    pub agent: Agent,
+    pub network: Network,
+}
+
+impl From<&ConfigFile> for Config {
+    fn from(file_config: &ConfigFile) -> Self {
+        Config {
+            agent: file_config.agent.clone(),
+            network: file_config.network.clone(),
+        }
+    }
+}
+
+
+impl From<&Config> for ConfigFile {
+    fn from(config: &Config) -> Self {
+        ConfigFile {
+            version: wg_quickrs_version!().into(),
+            agent: config.agent.clone(),
+            network: config.network.clone(),
+        }
+    }
+}
 
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -117,7 +145,7 @@ fn get_config_w_digest() -> Result<ConfigWNetworkDigest, ConfUtilError> {
     if !version_req.matches(&conf_ver) {
         return Err(ConfUtilError::VersionNotSupported(format!("{}.x.x", build_version.major), config_file.version));
     }
-    
+
     let config_w_digest = ConfigWNetworkDigest::from_config(Config::from(&config_file))?;
     ConfigWNetworkDigest::set_or_init(config_w_digest.clone())?;
     log::info!("loaded config file");
@@ -154,11 +182,7 @@ pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
     let config_w_digest = ConfigWNetworkDigest::from_config(config.clone())?;
     ConfigWNetworkDigest::set_or_init(config_w_digest.clone())?;
 
-    let config_file = ConfigFile {
-        version: wg_quickrs_version!().into(),
-        agent: config.agent.clone(),
-        network: config.network.clone(),
-    };
+    let config_file = ConfigFile::from(&config.clone());
     let config_file_str = serde_yml::to_string(&config_file).map_err(ConfUtilError::Serialization)?;
     write_config(config_file_str)
 }

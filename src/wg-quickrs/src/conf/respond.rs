@@ -1,4 +1,3 @@
-use crate::macros::*;
 use crate::conf::util;
 use crate::conf::network;
 use crate::conf::timestamp;
@@ -50,11 +49,7 @@ macro_rules! get_mg_config_w_digest {
 
 macro_rules! post_mg_config_w_digest {
     ($c:expr) => {
-        let file_config = ConfigFile{
-            version: wg_quickrs_version!().into(),
-            agent: $c.agent.clone(),
-            network: $c.network_w_digest.network.clone(),
-        };
+        let config_file = util::ConfigFile::from(&$c.to_config());
         $c.network_w_digest.network.updated_at = timestamp::get_now_timestamp_formatted();
         $c.network_w_digest = match util::NetworkWDigest::from_network($c.network_w_digest.network.clone()) {
             Ok(network_digest) => network_digest,
@@ -65,7 +60,7 @@ macro_rules! post_mg_config_w_digest {
                 }));
             }
         };
-        let file_config_str = match serde_yml::to_string(&file_config).map_err(util::ConfUtilError::Serialization) {
+        let config_file_str = match serde_yml::to_string(&config_file).map_err(util::ConfUtilError::Serialization) {
             Ok(s) => s,
             Err(_) => {
                 return HttpResponse::InternalServerError().json(json!({
@@ -74,7 +69,7 @@ macro_rules! post_mg_config_w_digest {
                 }));
             }
         };
-        match util::write_config(file_config_str) {
+        match util::write_config(config_file_str) {
             Ok(_) => {}
             Err(_) => {
                 return HttpResponse::InternalServerError().json(json!({
