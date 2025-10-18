@@ -2582,7 +2582,6 @@ dependencies = [
  "hostname-validator",
  "ipnet",
  "rand",
- "regex-lite",
  "serde",
  "serde-wasm-bindgen",
  "thiserror 2.0.17",

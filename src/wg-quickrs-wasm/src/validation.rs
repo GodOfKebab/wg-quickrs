@@ -1,5 +1,4 @@
 use ipnet::Ipv4Net;
-use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use base64::Engine;
@@ -162,8 +161,7 @@ pub fn check_field_enabled_value(field_name: &str, field_variable: &EnabledValue
         "script" | "pre_up" | "post_up" | "pre_down" | "post_down" => {
             ret.status = true;
             if field_variable.enabled {
-                let re = Regex::new(r"^.*;\s*$").unwrap();
-                if !re.is_match(&field_variable.value) {
+                if !field_variable.value.ends_with(';') {
                     ret.status = false;
                 }
             }
