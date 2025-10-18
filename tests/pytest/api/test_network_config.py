@@ -7,6 +7,10 @@ import yaml
 def test_patch_forbidden_endpoint_change(setup_wg_quickrs_agent):
     """Test that changing host peer's endpoint is forbidden."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
+
     this_peer_id = get_this_peer_id(base_url)
 
     change_sum = {
@@ -28,10 +32,17 @@ def test_patch_forbidden_endpoint_change(setup_wg_quickrs_agent):
     assert data["status"] == "forbidden"
     assert "can't change the host's endpoint" in data["message"]
 
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
+
 
 def test_patch_peer_not_found(setup_wg_quickrs_agent):
     """Test changing a peer that doesn't exist."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     change_sum = {
         "changed_fields": {
@@ -49,6 +60,10 @@ def test_patch_peer_not_found(setup_wg_quickrs_agent):
     assert data["status"] == "not_found"
     assert "does not exist" in data["message"]
 
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
+
 
 def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
     """Test adding a new peer with a leased address."""
@@ -56,6 +71,12 @@ def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
 
     response = requests.get(f"{base_url}/api/network/lease/address")
     assert response.status_code == 200
+
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
+
+    assert response.json()["address"] in old_conf["network"]["leases"]
 
     peer_data = get_test_peer_data()
     reserved_peer_id = response.json()["peer_id"]
@@ -71,6 +92,10 @@ def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
     assert response.status_code == 400
     assert "uuid" in response.json()["message"]
 
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
+
     another_peer_id = "a1c11ade-dd1a-4f5a-a6f9-3b6c6d10f416"
     change_sum_w_another_peer_id = {
         "added_peers": {
@@ -81,6 +106,10 @@ def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
     assert response.status_code == 403
     assert "reserved for another" in response.json()["message"]
 
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
+
     correct_change_sum = {
         "added_peers": {
             reserved_peer_id: peer_data
@@ -89,10 +118,17 @@ def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
     response = requests.patch(f"{base_url}/api/network/config", json=correct_change_sum)
     assert response.status_code == 200
 
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert reserved_peer_id in new_conf["network"]["peers"]
+
 
 def test_add_bad_connection(setup_wg_quickrs_agent):
     """Test adding a bad connection."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     bad_connection_id = "non-a-connection-id"
     bad_setup_change_sum = {
@@ -103,6 +139,10 @@ def test_add_bad_connection(setup_wg_quickrs_agent):
     setup_response = requests.patch(f"{base_url}/api/network/config", json=bad_setup_change_sum)
     assert setup_response.status_code == 400
     assert "not a valid connection_id" in setup_response.json()["message"]
+
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
 
     peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
     peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
@@ -116,20 +156,34 @@ def test_add_bad_connection(setup_wg_quickrs_agent):
     assert setup_response.status_code == 400
     assert "'peer_id' doesn't exist" in setup_response.json()["message"]
 
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
+
 
 def test_invalid_json(setup_wg_quickrs_agent):
     """Test sending invalid JSON."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     response = requests.patch(f"{base_url}/api/network/config", data="invalid json")
     assert response.status_code == 400
     data = response.json()
     assert "Invalid JSON" in data["error"]
 
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
+
 
 def test_empty_change_sum(setup_wg_quickrs_agent):
     """Test sending empty change sum (nothing to update)."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     empty_change_sum = {}
 
@@ -139,10 +193,17 @@ def test_empty_change_sum(setup_wg_quickrs_agent):
     assert data["status"] == "bad_request"
     assert "nothing to update" in data["message"]
 
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
+
 
 def test_connection_not_found(setup_wg_quickrs_agent):
     """Test modifying a connection that doesn't exist."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     change_sum = {
         "changed_fields": {
@@ -159,6 +220,10 @@ def test_connection_not_found(setup_wg_quickrs_agent):
     data = response.json()
     assert data["status"] == "not_found"
     assert "does not exist" in data["message"]
+
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+    assert old_conf == new_conf
 
 
 def test_remove_peer(setup_wg_quickrs_agent):
