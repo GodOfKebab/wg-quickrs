@@ -49,7 +49,7 @@ fn test_check_subnet() {
 #[test]
 fn test_port() {
     ok!(check_field_str_agent("port", "1500"));
-    err_contains!(check_field_str_agent("port", "-1"), "Port is invalid");
-    err_contains!(check_field_str_agent("port", "70000"), "Port is invalid");
-    err_contains!(check_field_str_agent("port", "notnum"), "Port is invalid");
+    err_contains!(check_field_str_agent("port", "-1"), "port is invalid");
+    err_contains!(check_field_str_agent("port", "70000"), "port is invalid");
+    err_contains!(check_field_str_agent("port", "notnum"), "port is invalid");
 }
