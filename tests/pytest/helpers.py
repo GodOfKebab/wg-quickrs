@@ -158,3 +158,11 @@ def get_this_peer_id(base_url: str) -> str:
     response = requests.get(f"{base_url}/api/network/summary?only_digest=false")
     assert response.status_code == 200
     return response.json()["network"]["this_peer"]
+
+def deep_get(d, keys):
+    for k in keys:
+        if isinstance(d, dict) and k in d:
+            d = d[k]
+        else:
+            return None
+    return d

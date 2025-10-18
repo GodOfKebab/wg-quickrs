@@ -6,21 +6,14 @@ from tests.pytest.helpers import (
     get_wg_quickrs_command,
     get_paths,
     get_available_firewall_utilities,
-    get_available_network_interfaces
+    get_available_network_interfaces,
+    deep_get
 )
 import yaml
 import subprocess
 from deepdiff import DeepDiff
 import pytest
 
-
-def deep_get(d, keys):
-    for k in keys:
-        if isinstance(d, dict) and k in d:
-            d = d[k]
-        else:
-            return None
-    return d
 
 
 def run_and_check_success(cmd, field, field_val, success):

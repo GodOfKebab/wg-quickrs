@@ -1,7 +1,9 @@
 from tests.pytest.conftest import setup_wg_quickrs_agent
-from tests.pytest.helpers import get_this_peer_id, get_test_peer_data, get_test_connection_data
+from tests.pytest.helpers import get_this_peer_id, get_test_peer_data, get_test_connection_data, deep_get, get_paths
+from deepdiff import DeepDiff
 import pytest
 import requests
+import yaml
 
 
 @pytest.mark.parametrize(
@@ -13,12 +15,10 @@ import requests
         ("address", "10.0.34.50", 200, "peer address change"),
         ("address", "", 400, "empty peer address validation"),
         ("address", "invalid-ip", 400, "invalid peer address format"),
-        ("kind", "server", 200, "peer kind change to server"),
+        ("kind", "laptop", 200, "peer kind change to laptop"),
 
         # EnabledValue fields - Icon
-        ({"icon": {"enabled": True, "value": "laptop-icon"}}, None, 200, "peer icon enabled with laptop"),
-        ({"icon": {"enabled": True, "value": "server-icon"}}, None, 200, "peer icon enabled with server"),
-        ({"icon": {"enabled": True, "value": "mobile-icon"}}, None, 200, "peer icon enabled with mobile"),
+        ({"icon": {"enabled": True, "value": "data:image/png;base64,..."}}, None, 200, "peer icon enabled with a fake-base64 icon"),
         ({"icon": {"enabled": False, "value": ""}}, None, 200, "peer icon disabled"),
 
         # EnabledValue fields - DNS
@@ -67,7 +67,11 @@ import requests
 def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_value, expected_status, test_description):
     """Comprehensive parameterized test for all peer field changes."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
     this_peer_id = get_this_peer_id(base_url)
+
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     # Handle different parameter formats
     if isinstance(field_name, dict):
@@ -86,6 +90,22 @@ def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_valu
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == expected_status
 
+    # yaml validation
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+
+    if response.status_code == 200:
+        if isinstance(field_name, str):
+            assert new_conf['network']['peers'][this_peer_id][field_name] == field_value
+        else:
+            for field_name_key, field_name_value in field_name.items():
+                if field_name_key == 'scripts':
+                    for script_type, script_value in field_name_value.items():
+                        assert new_conf['network']['peers'][this_peer_id][field_name_key][script_type] == script_value
+                else:
+                    assert new_conf['network']['peers'][this_peer_id][field_name_key] == field_name_value
+    else:
+        assert old_conf == new_conf
 
 @pytest.mark.parametrize(
     "field_name,field_value,expected_status,test_description",
@@ -117,46 +137,53 @@ def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_valu
         ("persistent_keepalive", {"enabled": True, "value": "60"}, 200, "persistent keepalive 60 seconds"),
         ("persistent_keepalive", {"enabled": False, "value": ""}, 200, "persistent keepalive disabled"),
         ("persistent_keepalive", {"enabled": True, "value": ""}, 400, "persistent keepalive validation error"),
+
+        # Multiple fields combination
+        ({"pre_shared_key": "iF9xlxiI3W/p9LSZ5QhT/4Rk6IHi8v5NzA/UTUdPOVI=", "allowed_ips_a_to_b": "0.0.0.0/0"}, None, 200, "multiple peer fields"),
     ],
 )
 def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, field_value, expected_status, test_description):
     """Parameterized test for all connection field changes."""
-    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     # Setup: Create a test connection
-    peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
-    peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
-    connection_id = f"{peer1_id}*{peer2_id}"
+    this_peer = "0ed989c6-6dba-4e3c-8034-08adf4262d9e"
+    other_peer1 = "6e9a8440-f884-4b54-bfe7-b982f15e40fd"
+    other_peer1_this_peer_connection_id = f"{other_peer1}*{this_peer}"
 
-    peer_data = get_test_peer_data()
-    connection_data = get_test_connection_data()
-
-    setup_change_sum = {
-        "added_peers": {
-            peer1_id: {**peer_data, "address": "10.0.34.150"},
-            peer2_id: {**peer_data, "address": "10.0.34.151"}
-        },
-        "added_connections": {
-            connection_id: connection_data
-        }
-    }
-
-    setup_response = requests.patch(f"{base_url}/api/network/config", json=setup_change_sum)
-    assert setup_response.status_code == 200
-
-    # Test the field change
-    changed_fields = {field_name: field_value}
+    # Handle different parameter formats
+    if isinstance(field_name, dict):
+        changed_fields = field_name
+    else:
+        changed_fields = {field_name: field_value}
 
     change_sum = {
         "changed_fields": {
             "connections": {
-                connection_id: changed_fields
+                other_peer1_this_peer_connection_id: changed_fields
             }
         }
     }
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == expected_status
+
+    # yaml validation
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+
+    if response.status_code == 200:
+        if isinstance(field_name, str):
+            assert new_conf['network']['connections'][other_peer1_this_peer_connection_id][field_name] == field_value
+        else:
+            for field_name_key, field_name_value in field_name.items():
+                assert new_conf['network']['connections'][other_peer1_this_peer_connection_id][field_name_key] == field_name_value
+    else:
+        assert old_conf == new_conf
 
 
 @pytest.mark.parametrize(
@@ -206,6 +233,10 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
 def test_add_peer_variants(setup_wg_quickrs_agent, peer_data_variant, expected_status, test_description):
     """Parameterized test for adding peers with different configurations."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     peer_id = f"71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
     peer_data = get_test_peer_data()
@@ -223,6 +254,16 @@ def test_add_peer_variants(setup_wg_quickrs_agent, peer_data_variant, expected_s
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == expected_status
+
+    # yaml validation
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+
+    if response.status_code == 200:
+        for field_name_key, field_name_value in peer_data.items():
+            assert new_conf['network']['peers'][peer_id][field_name_key] == field_name_value
+    else:
+        assert old_conf == new_conf
 
 
 @pytest.mark.parametrize(
@@ -254,6 +295,10 @@ def test_add_peer_variants(setup_wg_quickrs_agent, peer_data_variant, expected_s
 def test_add_connection_variants(setup_wg_quickrs_agent, connection_data_variant, expected_status, test_description):
     """Parameterized test for adding connections with different configurations."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.safe_load(stream)
 
     # Setup: Create test peers
     peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
@@ -278,4 +323,14 @@ def test_add_connection_variants(setup_wg_quickrs_agent, connection_data_variant
 
     response = requests.patch(f"{base_url}/api/network/config", json=setup_change_sum)
     assert response.status_code == expected_status
+
+    # yaml validation
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.safe_load(stream)
+
+    if response.status_code == 200:
+        for field_name_key, field_name_value in connection_data.items():
+            assert new_conf['network']['connections'][connection_id][field_name_key] == field_name_value
+    else:
+        assert old_conf == new_conf
 
