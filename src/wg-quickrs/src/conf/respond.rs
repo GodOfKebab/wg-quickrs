@@ -392,6 +392,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         for peer_id in removed_peers {
             {
                 c.network_w_digest.network.peers.remove(peer_id.as_str());
+                // automatically remove connections
+                for connection_id in c.network_w_digest.network.connections.clone().keys().filter(|&x| x.contains(peer_id.as_str())) {
+                    c.network_w_digest.network.connections.remove(connection_id.as_str());
+                }
                 changed_config = true;
             }
         }
