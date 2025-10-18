@@ -1,9 +1,11 @@
+from typing import Dict, Any
 import time
 import pathlib
 import socket
 import os
 import subprocess
 import platform
+import requests
 
 
 def get_paths():
@@ -103,3 +105,56 @@ def get_available_network_interfaces():
         print(f"Error getting interfaces: {e}")
     
     return interfaces
+
+
+def get_test_peer_data() -> Dict[str, Any]:
+    """Get test peer data for adding peers."""
+    return {
+        "name": "test-peer",
+        "address": "10.0.34.100",
+        "endpoint": {
+            "enabled": True,
+            "value": "192.168.1.100:51820"
+        },
+        "kind": "laptop",
+        "icon": {
+            "enabled": False,
+            "value": ""
+        },
+        "dns": {
+            "enabled": True,
+            "value": "1.1.1.1"
+        },
+        "mtu": {
+            "enabled": False,
+            "value": ""
+        },
+        "scripts": {
+            "pre_up": [],
+            "post_up": [],
+            "pre_down": [],
+            "post_down": []
+        },
+        "private_key": "cL+YuwGKNS8bNnPUVdnGDp7jF5BZs1vp1UxK2Xv+JX0="
+    }
+
+
+def get_test_connection_data() -> Dict[str, Any]:
+    """Get test connection data for adding connections."""
+    return {
+        "enabled": True,
+        "pre_shared_key": "QjF2m3eEcOuBjVqE1K5yB6z9Tf1Hk8qW2aXvNc5uE0o=",
+        "allowed_ips_a_to_b": "0.0.0.0/0",
+        "allowed_ips_b_to_a": "10.0.34.0/24",
+        "persistent_keepalive": {
+            "enabled": True,
+            "value": "25"
+        }
+    }
+
+
+def get_this_peer_id(base_url: str) -> str:
+    """Helper to get this peer ID from summary."""
+    response = requests.get(f"{base_url}/api/network/summary?only_digest=false")
+    assert response.status_code == 200
+    return response.json()["network"]["this_peer"]
