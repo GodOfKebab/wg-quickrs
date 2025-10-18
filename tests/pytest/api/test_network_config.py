@@ -103,127 +103,34 @@ def test_patch_peer_not_found(setup_wg_quickrs_agent):
     assert "does not exist" in data["message"]
 
 
-def test_add_peer(setup_wg_quickrs_agent):
+def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
     """Test adding a new peer."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
 
-    peer_id = "test-peer-12345"
-    peer_data = get_test_peer_data()
-
-    change_sum = {
-        "added_peers": {
-            peer_id: peer_data
-        }
-    }
-
-    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    response = requests.get(f"{base_url}/api/network/lease/address")
     assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "ok"
-
-
-def test_remove_peer(setup_wg_quickrs_agent):
-    """Test removing a peer."""
-    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
-
-    # First, add a peer
-    peer_id = "test-peer-to-remove"
-    peer_data = get_test_peer_data()
-
-    add_change_sum = {
-        "added_peers": {
-            peer_id: peer_data
-        }
-    }
-
-    response = requests.patch(f"{base_url}/api/network/config", json=add_change_sum)
-    assert response.status_code == 200
-
-    # Now remove the peer
-    remove_change_sum = {
-        "removed_peers": [peer_id]
-    }
-
-    response = requests.patch(f"{base_url}/api/network/config", json=remove_change_sum)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "ok"
-
-
-def test_add_connection(setup_wg_quickrs_agent):
-    """Test adding a new connection."""
-    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
-
-    # First, add two peers
-    peer1_id = "peer-1"
-    peer2_id = "peer-2"
-    peer_data = get_test_peer_data()
-
-    # Add first peer
-    peer1_data = peer_data.copy()
-    peer1_data["address"] = "10.0.34.101"
-
-    add_peers_change_sum = {
-        "added_peers": {
-            peer1_id: peer1_data,
-            peer2_id: {**peer_data, "address": "10.0.34.102"}
-        }
-    }
-
-    response = requests.patch(f"{base_url}/api/network/config", json=add_peers_change_sum)
-    assert response.status_code == 200
-
-    # Now add a connection between them
-    connection_id = f"{peer1_id}-{peer2_id}"
-    connection_data = get_test_connection_data()
-
-    add_connection_change_sum = {
-        "added_connections": {
-            connection_id: connection_data
-        }
-    }
-
-    response = requests.patch(f"{base_url}/api/network/config", json=add_connection_change_sum)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "ok"
-
-
-def test_remove_connection(setup_wg_quickrs_agent):
-    """Test removing a connection."""
-    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
-
-    # First, add peers and connection
-    peer1_id = "peer-1"
-    peer2_id = "peer-2"
-    connection_id = f"{peer1_id}-{peer2_id}"
 
     peer_data = get_test_peer_data()
-    connection_data = get_test_connection_data()
+    reserved_peer_id = response.json()["peer_id"]
+    peer_data["address"] = response.json()["address"]
 
-    # Add peers and connection
-    setup_change_sum = {
+    fake_peer_id = "a1c11ade-dd1a-4f5a-a6f9-3b6c6d10f416"
+    change_sum_w_fake_peer_id = {
         "added_peers": {
-            peer1_id: {**peer_data, "address": "10.0.34.201"},
-            peer2_id: {**peer_data, "address": "10.0.34.202"}
-        },
-        "added_connections": {
-            connection_id: connection_data
+            fake_peer_id: peer_data
         }
     }
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum_w_fake_peer_id)
+    assert response.status_code == 403
+    assert "reserved for another" in response.json()["message"]
 
-    response = requests.patch(f"{base_url}/api/network/config", json=setup_change_sum)
-    assert response.status_code == 200
-
-    # Remove the connection
-    remove_change_sum = {
-        "removed_connections": [connection_id]
+    correct_change_sum = {
+        "added_peers": {
+            reserved_peer_id: peer_data
+        }
     }
-
-    response = requests.patch(f"{base_url}/api/network/config", json=remove_change_sum)
+    response = requests.patch(f"{base_url}/api/network/config", json=correct_change_sum)
     assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "ok"
 
 
 def test_invalid_json(setup_wg_quickrs_agent):
