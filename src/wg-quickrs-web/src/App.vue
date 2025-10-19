@@ -373,7 +373,7 @@ export default {
     },
     toggleWireGuardNetworking() {
       const curr = this.wireguardStatus === this.ServerStatusEnum.up;
-      this.api.post_wireguard_server_status({status: curr ? this.ServerStatusEnum.down : this.ServerStatusEnum.up})
+      this.api.post_wireguard_status({status: curr ? this.ServerStatusEnum.down : this.ServerStatusEnum.up})
           .then(() => {
             this.refresh();
           }).catch(err => {

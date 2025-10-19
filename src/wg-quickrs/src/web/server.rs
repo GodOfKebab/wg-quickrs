@@ -72,7 +72,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             .service(api::get_network_lease_id_address)
             .service(api::get_version)
             .service(api::patch_network_config)
-            .service(api::post_wireguard_server_status)
+            .service(api::post_wireguard_status)
             .service(app::web_ui_dist);
 
         #[cfg(debug_assertions)]

@@ -74,17 +74,17 @@ def test_api_patch_protected(setup_wg_quickrs_agent):
 
 
 def test_api_post_protected(setup_wg_quickrs_agent):
-    """Test POST /api/wireguard/server/status. (auth required)"""
+    """Test POST /api/wireguard/status. (auth required)"""
     base_url = setup_wg_quickrs_agent("test_pwd_single_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
 
     # expect failure without a token
-    response = requests.post(f"{base_url}/api/wireguard/server/status",
+    response = requests.post(f"{base_url}/api/wireguard/status",
                               verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
     assert response.status_code == 401
 
     # expect success with token
-    response = requests.post(f"{base_url}/api/wireguard/server/status",
+    response = requests.post(f"{base_url}/api/wireguard/status",
                               headers={ "Authorization": f"Bearer {get_token(base_url)}" },
                               verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
     assert response.status_code == 400  # bad request expected since the body is empty

@@ -84,10 +84,10 @@ export default class API {
         });
     }
 
-    async post_wireguard_server_status(body) {
+    async post_wireguard_status(body) {
         return this.call({
             method: 'post',
-            path: '/api/wireguard/server/status',
+            path: '/api/wireguard/status',
             headers: {"Content-Type": "application/json"},
             body: body
         });

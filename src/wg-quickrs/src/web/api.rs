@@ -67,8 +67,8 @@ async fn get_network_lease_id_address(req: HttpRequest) -> impl Responder {
     conf::respond::get_network_lease_id_address()
 }
 
-#[post("/api/wireguard/server/status")]
-async fn post_wireguard_server_status(req: HttpRequest, body: web::Bytes) -> impl Responder {
+#[post("/api/wireguard/status")]
+async fn post_wireguard_status(req: HttpRequest, body: web::Bytes) -> impl Responder {
     if let Err(e) = enforce_auth(req) {
         return e;
     }

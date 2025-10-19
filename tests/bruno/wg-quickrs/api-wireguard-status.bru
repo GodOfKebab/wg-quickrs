@@ -1,11 +1,11 @@
 meta {
-  name: /api/wireguard/server/status
+  name: /api/wireguard/status
   type: http
   seq: 9
 }
 
 post {
-  url: {{base-url}}/api/wireguard/server/status
+  url: {{base-url}}/api/wireguard/status
   body: json
   auth: inherit
 }
@@ -23,4 +23,5 @@ assert {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }
