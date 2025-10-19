@@ -97,4 +97,5 @@ jobs:
         run: |
           chmod +x src/target/release/wg-quickrs
           cd tests/pytest
+          sudo chmod -R 777 /etc/wireguard
           python -m pytest
