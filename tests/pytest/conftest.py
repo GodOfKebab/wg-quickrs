@@ -6,6 +6,23 @@ import pytest
 import yaml
 
 
+def setup_certs_folder(address):
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    os.makedirs(pytest_folder / ".certs", exist_ok=True)
+
+    address_cert_path = pytest_folder / f".certs/{address}"
+    if not os.path.exists(address_cert_path):
+        os.mkdir(address_cert_path)
+        tls_cert_generator = Popen(f"wget -qO- https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh | sh -s -- -f -o {address_cert_path} --country 'XX' --state 'XX' --locality 'XX' --org 'XX' --ou 'XX' --cn 'tls-cert-generator@XX' {address}", shell=True)
+        tls_cert_generator.wait()
+
+    shutil.copytree(
+        address_cert_path,
+        wg_quickrs_config_folder / "certs",
+        dirs_exist_ok=True
+    )
+
+
 @pytest.fixture(scope="function")
 def setup_wg_quickrs_folder(request):
     """
@@ -32,9 +49,7 @@ def setup_wg_quickrs_folder(request):
                 conf = yaml.safe_load(stream)
             # TLS cert generation
             if conf['agent']['web']['https']['enabled']:
-                os.mkdir(wg_quickrs_config_folder / "certs")
-                tls_cert_generator = Popen(f"wget -qO- https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh | sh -s -- -f -o {wg_quickrs_config_folder / 'certs'} --country 'XX' --state 'XX' --locality 'XX' --org 'XX' --ou 'XX' --cn 'tls-cert-generator@XX' {conf['agent']['web']['address']}", shell=True)
-                tls_cert_generator.wait()
+                setup_certs_folder(conf['agent']['web']['address'])
 
         return pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file
 
