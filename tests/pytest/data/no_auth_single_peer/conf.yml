@@ -4,10 +4,10 @@ agent:
     address: '127.0.0.1'
     http:
       enabled: true
-      port: 8080
+      port: 9080
     https:
       enabled: false
-      port: 8443
+      port: 9443
       tls_cert: ''
       tls_key: ''
     password:
@@ -15,7 +15,7 @@ agent:
       hash: ''
   vpn:
     enabled: false
-    port: 51820
+    port: 51829
   firewall:
     enabled: false
     utility: ''
