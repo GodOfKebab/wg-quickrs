@@ -179,7 +179,7 @@ def test_invalid_json(setup_wg_quickrs_agent):
 
 
 def test_empty_change_sum(setup_wg_quickrs_agent):
-    """Test sending empty change sum (nothing to update)."""
+    """Test sending an empty change sum (nothing to update)."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
     with open(wg_quickrs_config_file) as stream:
@@ -227,7 +227,7 @@ def test_connection_not_found(setup_wg_quickrs_agent):
 
 
 def test_remove_peer(setup_wg_quickrs_agent):
-    """Test deleting an auto-created connection."""
+    """Test deleting a peer."""
     base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
 
@@ -252,7 +252,7 @@ def test_remove_peer(setup_wg_quickrs_agent):
 
 
 def test_remove_connection(setup_wg_quickrs_agent):
-    """Test deleting an auto-created connection."""
+    """Test deleting a connection."""
     base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
 

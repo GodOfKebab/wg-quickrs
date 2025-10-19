@@ -4,12 +4,14 @@ import time
 
 
 def test_wireguard_status_bad(setup_wg_quickrs_agent):
+    """Test setting wireguard status to an unknown value."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
     response = requests.post(f"{base_url}/api/wireguard/status", json={"status": 0})  # unknown status
     assert response.status_code == 400
 
 
 def test_wireguard_status_up_down(setup_wg_quickrs_agent):
+    """Test setting wireguard status up then down."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
     response = requests.post(f"{base_url}/api/wireguard/status", json={"status": 2})  # up status
     assert response.status_code == 200

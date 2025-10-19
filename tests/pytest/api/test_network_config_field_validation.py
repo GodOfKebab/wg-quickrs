@@ -65,7 +65,7 @@ import yaml
     ],
 )
 def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_value, expected_status, test_description):
-    """Comprehensive parameterized test for all peer field changes."""
+    """Parameterized test for all peer field changes."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
     this_peer_id = get_this_peer_id(base_url)
