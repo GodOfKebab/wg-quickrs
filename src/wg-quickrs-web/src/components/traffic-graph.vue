@@ -123,9 +123,11 @@ export default {
   watch: {
     telemetry: {
       handler() {
-        if (Object.keys(this.telemetry.data).length < 2) {
-          this.tx_avg = "? b/s";
-          this.rx_avg = "? b/s";
+        if (this.telemetry === null) {
+          this.resetText();
+          return;
+        } else if (Object.keys(this.telemetry.data).length < 2) {
+          this.resetText();
           return;
         }
         const txs = [];
@@ -196,6 +198,13 @@ export default {
     }
   },
   methods: {
+    resetText() {
+      this.tx_avg = "? b/s";
+      this.rx_avg = "? b/s";
+      this.tx_peak = "? b/s";
+      this.rx_peak = "? b/s";
+      this.telem_span = "?";
+    },
     resetMove(ratio, newGraphMax) {
       if (this.intervalId) {
         clearInterval(this.intervalId);

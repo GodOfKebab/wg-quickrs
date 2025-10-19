@@ -259,7 +259,7 @@ export default {
       },
       dialogId: '',
       network: {},
-      telemetry: {},
+      telemetry: null,
       digest: '',
       version: null,
       last_fetch: {
@@ -302,16 +302,14 @@ export default {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.wireguardStatus = summary.status;
           need_to_update_network = this.digest !== summary.digest;
-          if (summary.telemetry) {
-            this.telemetry = summary.telemetry;
-          }
+          this.telemetry = summary.telemetry;
 
           this.last_fetch.rfc3339 = summary.timestamp;
           const last_fetch_date = (new Date(Date.parse(this.last_fetch.rfc3339)))
           this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
           this.last_fetch.since = 0;
         }).catch(err => {
-          this.telemetry = {data: []};
+          this.telemetry = null;
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
             this.webServerStatus = this.ServerStatusEnum.down;
@@ -326,9 +324,7 @@ export default {
         await this.api.get_network_summary('?only_digest=false').then(summary => {
           this.webServerStatus = this.ServerStatusEnum.up;
           this.digest = summary.digest;
-          if (summary.telemetry) {
-            this.telemetry = summary.telemetry;
-          }
+          this.telemetry = summary.telemetry;
           this.network = summary.network;
           this.network.static_peer_ids = [];
           this.network.roaming_peer_ids = [];
@@ -346,7 +342,7 @@ export default {
           this.last_fetch.readable = `${last_fetch_date} [${dayjs(last_fetch_date).fromNow()}]`;
           this.last_fetch.since = 0;
         }).catch(err => {
-          this.telemetry = {data: []};
+          this.telemetry = null;
           this.wireguardStatus = this.ServerStatusEnum.unknown;
           if (err.toString() === 'TypeError: Load failed') {
             this.webServerStatus = this.ServerStatusEnum.down;

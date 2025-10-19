@@ -294,6 +294,7 @@ export default {
     telemetry: {
       handler() {
         if (this.graph === null) return;
+        if (this.telemetry === null) return;
         if (this.telemetry.data.length < 2) return;
         let last_data = this.telemetry.data[this.telemetry.data.length - 1];
         let previous_data = this.telemetry.data[this.telemetry.data.length - 2];
