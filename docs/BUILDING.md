@@ -83,9 +83,7 @@ Build `wg-quickrs-wasm` directory.
 [//]: # (build-src-debian: 1.1.2 Build wg-quickrs-wasm - Build 'wg-quickrs-wasm' directory.)
 
 ```sh
-cd wg-quickrs-wasm
-wasm-pack build --target wg-quickrs-web --out-dir ../wg-quickrs-web/pkg -- --features wasm --color=always
-cd ..
+wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --features wasm --color=always
 ```
 
 ---
@@ -106,7 +104,7 @@ Build `web` directory.
 
 ```sh
 cd wg-quickrs-web
-npm install
+npm ci --omit=dev
 npm run build
 cd ..
 ```
@@ -202,7 +200,8 @@ Install `zig` and `zigbuild`.
 ```sh
 # ARCH options: x86_64, aarch64, arm based on your CURRENT machine you use to build binaries
 # See all options at https://ziglang.org/download/
-curl -L https://ziglang.org/download/0.15.1/zig-{{ ARCH }}-linux-0.15.1.tar.xz | tar -xJ
+export ZIG_ARCH=x86_64
+curl -L "https://ziglang.org/download/0.15.1/zig-$ZIG_ARCH-linux-0.15.1.tar.xz" | tar -xJ
 mv zig-* /usr/local/zig
 ln -s /usr/local/zig/zig /usr/local/bin/zig
 cargo install cargo-zigbuild
@@ -215,8 +214,9 @@ Binary will be generated at `target/{{ TARGET }}/release/wg-quickrs`
 # TARGET options: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, armv7-unknown-linux-musleabihf
 # See all options by running the following
 # rustup target list
-rustup target add {{ TARGET }}
-cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target={{ TARGET }}
+export RUST_TARGET=x86_64-unknown-linux-musl
+rustup target add "$RUST_TARGET"
+cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target="$RUST_TARGET"
 ```
 
 ---
@@ -259,7 +259,7 @@ sudo apt install -y wireguard wireguard-tools
 
 Run the following and follow the prompts to configure network, agent, and default peer settings when generating new
 peers/connections.
-This generates `/etc/wg-quickrs/conf.yml`, where all the settings/configurations are stored.
+Without any flags, `init` command generates `/etc/wg-quickrs/conf.yml` in Linux (or `/opt/homebrew/etc/wg-quickrs/conf.yml` in macOS), where all the settings/configurations are stored.
 If you want to later edit the configuration, you can either use the scripting commands at `wg-quickrs agent <TAB>` or
 manually edit this file and restart your agent.
 
@@ -267,9 +267,9 @@ manually edit this file and restart your agent.
 
 ```sh
 # Install to System:
-wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs init
+wg-quickrs init
 # Install to User:
-# wg-quickrs init
+# wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs init
 ```
 
 ---
@@ -282,9 +282,9 @@ Run the agent.
 
 ```sh
 # Run on System:
-wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs agent run
+wg-quickrs agent run
 # Run on User:
-# wg-quickrs agent run
+# wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs agent run
 ```
 
 ---
@@ -330,7 +330,7 @@ User=wg-quickrs-user
 Group=wg-quickrs-group
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
 
-ExecStart=/usr/local/bin/wg-quickrs --wg-quickrs-config-folder /etc/wg-quickrs agent run
+ExecStart=/usr/local/bin/wg-quickrs agent run
 Restart=always
 RestartSec=5
 
