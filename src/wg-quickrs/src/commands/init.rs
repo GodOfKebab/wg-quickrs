@@ -10,6 +10,7 @@ use wg_quickrs_wasm::types::{
     Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
     DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
+use wg_quickrs_wasm::timestamp::get_now_timestamp_formatted;
 use wg_quickrs_wasm::helpers::wg_generate_key;
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
@@ -1010,7 +1011,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
 
     let peer_id = Uuid::new_v4().to_string();
-    let now = conf::timestamp::get_now_timestamp_formatted();
+    let now = get_now_timestamp_formatted();
 
     let peer = Peer {
         name: agent_peer_name,

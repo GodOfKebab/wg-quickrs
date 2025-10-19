@@ -1,9 +1,9 @@
 use crate::{WG_QUICKRS_CONFIG_FILE};
 use crate::macros::*;
-use crate::conf::timestamp;
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
 use crate::commands::validation::validate_config_file;
 use wg_quickrs_wasm::types::{Config, Agent, Network, Summary, WireGuardStatus};
+use wg_quickrs_wasm::timestamp::get_now_timestamp_formatted;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -172,14 +172,13 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
     } else {
         None
     };
-    let timestamp = timestamp::get_now_timestamp_formatted();
 
     Ok(Summary {
         network: config_w_digest.network_w_digest.network,
         telemetry,
         digest: config_w_digest.network_w_digest.digest,
         status: status.value(),
-        timestamp,
+        timestamp: get_now_timestamp_formatted(),
     })
 }
 
