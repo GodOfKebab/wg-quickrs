@@ -49,11 +49,11 @@ $SHELL run-md.sh ../docs/BUILDING.md run-agent-docker
 * Node.js/npm (for the web frontend)
 * `iptables` (for setting NAT/port input allows for the agent)
 
-The project is split into three parts:
+The project is mainly split into three parts:
 
-* **`wg-quickrs-wasm`** – Rust code for the web frontend
-* **`web`** – frontend assets
 * **`wg-quickrs`** – backend, frontend server, and scripting tools bundled in `wg-quickrs` binary
+* **`wg-quickrs-web`** – frontend assets
+* **`wg-quickrs-wasm`** – rust code shared between `wg-quickrs` (imported as a library) and `wg-quickrs-web` (using WASM)
 
 ---
 
