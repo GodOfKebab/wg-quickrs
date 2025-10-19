@@ -80,10 +80,6 @@ pub(crate) async fn run_vpn_server(
     config: &Config,
     wireguard_config_folder: &Path,
 ) -> std::io::Result<()> {
-    if !config.agent.vpn.enabled {
-        log::warn!("VPN server is disabled.");
-        return Ok(());
-    }
     WIREGUARD_CONFIG_FILE
         .set(wireguard_config_folder.join(format!("{}.conf", config.network.identifier)))
         .expect("Failed to set WIREGUARD_CONFIG_FILE");
@@ -98,17 +94,19 @@ pub(crate) async fn run_vpn_server(
             log::error!("Failed to update the wireguard config file: {e}");
         });
 
-        log::info!("At startup, disable then enable and ignore any error when disabling");
+        log::info!("Always disable wireguard first on startup");
         let _ = disable_tunnel(config);
-        enable_tunnel(config).unwrap_or_else(|e| {
-            log::error!("Failed to enable the wireguard tunnel: {e}");
-        });
-
-        log::info!(
-            "Started the wireguard tunnel at {}:{}",
-            config.agent.web.address,
-            config.agent.vpn.port
-        );
+        match WG_STATUS.lock() {
+            Ok(mut w) => { *w = WireGuardStatus::DOWN }
+            Err(e) => log::error!("Failed to acquire lock when forcing internal wireguard status tracker to down: {e}")
+        }
+        if !config.agent.vpn.enabled {
+            log::warn!("VPN server is disabled.");
+        } else {
+            enable_tunnel(config).unwrap_or_else(|e| {
+                log::error!("Failed to enable the wireguard tunnel: {e}");
+            });
+        }
 
         let mut signal_terminate = signal(SignalKind::terminate()).unwrap();
         let mut signal_interrupt = signal(SignalKind::interrupt()).unwrap();
@@ -475,6 +473,11 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
                         readable_command,
                     ));
                 }
+                log::info!(
+                    "Started the wireguard tunnel at {}:{}",
+                    config.agent.web.address,
+                    config.agent.vpn.port
+                );
                 Ok(())
             }
             Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
