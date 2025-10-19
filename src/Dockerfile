@@ -1,4 +1,4 @@
-FROM --platform=linux/$BUILDARCH rust:1.89-slim AS wg-quickrs-wasm-builder
+FROM --platform=linux/$BUILDARCH rust:1.90-slim AS wg-quickrs-wasm-builder
 WORKDIR /app
 
 RUN cargo install wasm-pack
@@ -19,7 +19,7 @@ RUN npm ci --omit=dev
 COPY --from=wg-quickrs-wasm-builder /app/pkg /app/wg-quickrs-web/pkg
 RUN npm run build
 
-FROM --platform=linux/$BUILDARCH rust:1.89-slim AS wg-quickrs-builder
+FROM --platform=linux/$BUILDARCH rust:1.90-slim AS wg-quickrs-builder
 WORKDIR /app
 
 # Install Zig
