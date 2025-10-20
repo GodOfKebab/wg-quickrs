@@ -519,14 +519,13 @@ PostDown = {fw_utility} -D FORWARD -o {interface} -j ACCEPT;",
         } else if utility.to_string_lossy() == "pfctl" {
             // add the following nat rule to pf.conf
             // check for a line that starts with "nat" and paste the nat_rule after it because pf.conf requires the rules to be in order
-            // TODO: link docs
             let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}",
                 gateway = config.agent.firewall.gateway,
                 subnet = config.network.subnet);
             hidden_scripts = Some(format!(
                 "### START OF HIDDEN SCRIPTS ###
 PostUp = awk \"/^nat/ {{print; print \\\"{nat_rule}\\\"; next}}1\" /etc/pf.conf > /etc/pf.conf.new && mv /etc/pf.conf /etc/pf.conf.bak && mv /etc/pf.conf.new /etc/pf.conf;
-PostUp = grep -qxF '{nat_rule}' /etc/pf.conf || echo '*** could NOT configure firewall because there are no existing NAT rules. See docs' >&2;
+PostUp = grep -qxF '{nat_rule}' /etc/pf.conf || echo '*** could NOT configure firewall because there are no existing NAT rules. See notes at docs/MACOS-FIREWALL.md ' >&2;
 PostUp = grep -qxF '{nat_rule}' /etc/pf.conf || exit 1;
 PostDown = awk -v line='{nat_rule}' '$0 != line' /etc/pf.conf > /etc/pf.conf.new && mv /etc/pf.conf /etc/pf.conf.bak && mv /etc/pf.conf.new /etc/pf.conf;
 PostUp = {fw_utility} -f /etc/pf.conf;
