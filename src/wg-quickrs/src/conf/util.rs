@@ -12,7 +12,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use thiserror::Error;
-use semver::{Version, VersionReq};
+use semver::Version;
 
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -143,10 +143,12 @@ fn get_config_w_digest() -> Result<ConfigWNetworkDigest, ConfUtilError> {
         fs::read_to_string(file_path).map_err(|e| ConfUtilError::Read(file_path.clone(), e))?;
     let config_file: ConfigFile = serde_yml::from_str(&config_str).map_err(ConfUtilError::Parse)?;
     let build_version = Version::parse(wg_quickrs_version!()).unwrap();
-    let version_req = VersionReq::parse(format!("={}", build_version.major).as_str()).unwrap();
     let conf_ver = Version::parse(config_file.version.as_str()).map_err(ConfUtilError::InvalidVersion)?;
-    if !version_req.matches(&conf_ver) {
-        return Err(ConfUtilError::VersionNotSupported(format!("{}.x.x", build_version.major), config_file.version));
+    if build_version.major != conf_ver.major {
+        return Err(ConfUtilError::VersionNotSupported(
+            format!("{}.x.x", build_version.major),
+            config_file.version
+        ));
     }
     // Validate config_file fields
     validate_config_file(&config_file)?;
