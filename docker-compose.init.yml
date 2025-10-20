@@ -11,11 +11,10 @@ services:
       ORGANIZATION: "XXX"
       ORGANIZATIONAL_UNIT: "XXX"
       ROOT_CN: "tls-cert-generator@XXX"
-    command: [ "TODO_YOUR_SERVER_TODO" ] # <-- update with your public IP/domain
+    command: [ "YOUR-SERVER" ] # <-- update with your public IP/domain
 
-  # <-- update TODO_YOUR_SERVER_TODO with the above server
-  # <-- update TODO_YOUR_PASSWORD_TODO with your password
-  # <-- update TODO_YOUR_PUBLIC_IP_TODO with the address (ip/domain) that would be in your wg endpoint
+  # <-- update YOUR-SERVER with the address (ip/domain) that would be in your wg endpoint
+  # <-- update YOUR_PASSWORD with your password
   wg-quickrs-init:
     container_name: wg-quickrs-init-cnt
     build:
@@ -33,19 +32,21 @@ services:
       --agent-web-http-port        80
       --agent-web-https-enabled    true
       --agent-web-https-port       443
-      --agent-web-https-tls-cert   certs/servers/TODO_YOUR_SERVER_TODO/cert.pem
-      --agent-web-https-tls-key    certs/servers/TODO_YOUR_SERVER_TODO/key.pem
+      --agent-web-https-tls-cert   certs/servers/YOUR-SERVER/cert.pem
+      --agent-web-https-tls-key    certs/servers/YOUR-SERVER/key.pem
       --agent-web-password-enabled true
-      --agent-web-password         TODO_YOUR_PASSWORD_TODO
+      --agent-web-password         YOUR_PASSWORD
       --agent-vpn-enabled          true
       --agent-vpn-port             51820
-      --agent-vpn-gateway          eth0
       --agent-firewall-enabled     true
       --agent-firewall-utility     /usr/sbin/iptables
+      --agent-firewall-gateway     eth0
       
       --agent-peer-name                     wg-quickrs-host
-      --agent-peer-vpn-endpoint             TODO_YOUR_PUBLIC_IP_TODO:51820
       --agent-peer-vpn-internal-address     10.0.34.1
+      --agent-peer-vpn-endpoint             YOUR-SERVER:51820
+      --agent-peer-kind                     server
+      --agent-peer-icon-enabled             false
       --agent-peer-dns-enabled              true
       --agent-peer-dns-server               1.1.1.1
       --agent-peer-mtu-enabled              false
@@ -54,6 +55,8 @@ services:
       --agent-peer-script-pre-down-enabled  false
       --agent-peer-script-post-down-enabled false
 
+      --default-peer-kind                               laptop
+      --default-peer-icon-enabled                       false
       --default-peer-dns-enabled                        true
       --default-peer-dns-server                         1.1.1.1
       --default-peer-mtu-enabled                        false
