@@ -169,7 +169,7 @@ def test_init_no_prompt(setup_wg_quickrs_folder, opt_key, opt_val, success):
         ({"network_subnet": "192.168.1.0/24", "agent_peer_vpn_internal_address": "192.168.1.1"}, True),
     ],
 )
-def test_init_no_prompt(setup_wg_quickrs_folder, opts, success):
+def test_init_no_prompt_multi_field(setup_wg_quickrs_folder, opts, success):
     setup_wg_quickrs_folder(None)
     assert (init_no_prompt(generate_init_no_prompt_opts(**opts)) == 0) == success
 
