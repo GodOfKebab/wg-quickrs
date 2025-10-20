@@ -8,9 +8,7 @@ COPY src/Cargo.lock /app/Cargo.lock
 COPY src/wg-quickrs /app/wg-quickrs
 COPY src/wg-quickrs-cli /app/wg-quickrs-cli
 COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
-RUN cargo fetch --locked
-
-RUN wasm-pack build wg-quickrs-wasm --target web --out-dir /app/pkg -- --locked --offline --features wasm
+RUN wasm-pack build wg-quickrs-wasm --target web --out-dir /app/pkg -- --locked --features wasm
 
 FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
 WORKDIR /app/wg-quickrs-web
@@ -52,12 +50,11 @@ RUN case "$TARGETARCH" in \
         arm) echo 'armv7-unknown-linux-musleabihf' > RUST_TARGET ;; \
         *) echo "Unsupported architecture $TARGETARCH" >&2; exit 1 ;; \
     esac && \
-    rustup target add $(cat RUST_TARGET) && \
-    cargo fetch --locked --target=$(cat RUST_TARGET)
+    rustup target add $(cat RUST_TARGET)
 
 # Copy wg-quickrs-web folder right before build for build optimization
 COPY --from=node-builder /app/wg-quickrs-web/dist /app/wg-quickrs-web/dist
-RUN cargo zigbuild --locked --offline --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) --features docker && \
+RUN cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) --features docker && \
     mkdir /app/bin/ && cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/bin/wg-quickrs
 
 FROM alpine:3.22 AS runner
