@@ -71,7 +71,7 @@ setup_certs=${setup_certs:-y}
 if [ "$setup_certs" = "y" ] || [ "$setup_certs" = "Y" ]; then
   echo "⏳ Setting up TLS certs/keys at $INSTALL_DIR/certs..."
   mkdir -p "$INSTALL_DIR/certs"
-  wget -q https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh -O "$INSTALL_DIR/certs/tls-cert-generator.sh"
+  wget -q https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.0/tls-cert-generator.sh -O "$INSTALL_DIR/certs/tls-cert-generator.sh"
   sh "$INSTALL_DIR/certs/tls-cert-generator.sh" -f -o "$INSTALL_DIR/certs" all
   echo "    ✅ Generated TLS certs/keys"
   echo "    ℹ️ If you want to generate cert/key for other servers, run the following with YOUR_SERVER1, YOUR_SERVER2, etc. filled in"

@@ -232,11 +232,11 @@ Following grabs all the hostnames, IPv4+IPv6 interface addresses of the system a
 ```sh
 # Install to System:
 sudo mkdir -p /etc/wg-quickrs/certs
-wget https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh -O /etc/wg-quickrs/certs/tls-cert-generator.sh
+wget https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.0/tls-cert-generator.sh -O /etc/wg-quickrs/certs/tls-cert-generator.sh
 sh /etc/wg-quickrs/certs/tls-cert-generator.sh -o /etc/wg-quickrs/certs all
 
 # Install to User:
-# wget https://raw.githubusercontent.com/GodOfKebab/tls-cert-generator/refs/heads/main/tls-cert-generator.sh -O tls-cert-generator.sh
+# wget https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.0/tls-cert-generator.sh -O tls-cert-generator.sh
 # mkdir -p $HOME/.wg-quickrs/certs && sh tls-cert-generator.sh -o $HOME/.wg-quickrs/certs all
 
 ```
