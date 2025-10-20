@@ -1,5 +1,5 @@
 use crate::{WG_QUICKRS_CONFIG_FOLDER, WG_QUICKRS_CONFIG_FILE};
-use wg_quickrs_wasm::validation::{check_field_enabled_value, check_field_str, is_cidr, CheckResult};
+use wg_quickrs_wasm::validation::{check_field_enabled_value, check_field_str, check_internal_address, is_cidr, CheckResult};
 use std::path::Path;
 use chrono::DateTime;
 use wg_quickrs_wasm::types::EnabledValue;
@@ -153,7 +153,7 @@ pub fn check_field_path_agent(field_name: &str, field_variable: &Path) -> CheckR
 
 pub fn validate_config_file(config_file: &ConfigFile) -> Result<(), ConfUtilError> {
     // Validate Agent fields
-    validate_field!(check_field_str("address", &config_file.agent.web.address), "agent.web.address");
+    validate_field!(check_field_str("generic-address", &config_file.agent.web.address), "agent.web.address");
     if config_file.agent.web.https.enabled {
         validate_field!(check_field_path_agent("path", &config_file.agent.web.https.tls_cert), "agent.web.https.tls_cert");
         validate_field!(check_field_path_agent("path", &config_file.agent.web.https.tls_key), "agent.web.https.tls_key");
@@ -172,10 +172,13 @@ pub fn validate_config_file(config_file: &ConfigFile) -> Result<(), ConfUtilErro
     // Validate peers
     for (peer_id, peer) in &config_file.network.peers {
         let peer_path = format!("network.peers.{}", peer_id);
+
+        let mut temp_network = config_file.network.clone();
+        temp_network.peers.remove(peer_id);
         
         validate_field!(check_field_str_agent("peer_id", peer_id), peer_path);
         validate_field!(check_field_str("name", &peer.name), format!("{}.name", peer_path));
-        validate_field!(check_field_str("address", &peer.address), format!("{}.address", peer_path));
+        validate_field!(check_internal_address(&peer.address, &temp_network), format!("{}.address", peer_path));
         validate_field!(check_field_enabled_value("endpoint", &peer.endpoint), format!("{}.endpoint", peer_path));
         validate_field!(check_field_str("kind", &peer.kind), format!("{}.kind", peer_path));
         validate_field!(check_field_enabled_value("icon", &peer.icon), format!("{}.icon", peer_path));
@@ -244,7 +247,10 @@ pub fn validate_config_file(config_file: &ConfigFile) -> Result<(), ConfUtilErro
     // validate leases
     for (address, lease) in &config_file.network.leases {
         let leases_path = format!("network.leases.{}", address);
-        validate_field!(check_field_str("address", address), leases_path);
+        let mut temp_network = config_file.network.clone();
+        temp_network.leases.remove(address);
+
+        validate_field!(check_internal_address(address, &temp_network), leases_path);
         validate_field!(check_field_str_agent("peer_id", &lease.peer_id), format!("{}.peer_id", leases_path));
         validate_field!(check_field_str_agent("timestamp", &lease.valid_until), format!("{}.valid_until", leases_path));
     }

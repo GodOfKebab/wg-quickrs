@@ -91,7 +91,8 @@ def test_init_no_prompt_simple(setup_wg_quickrs_folder):
 @pytest.mark.parametrize(
     "opt_key, opt_val, success",
     [
-        ("network_subnet", "192.168.1.0/24", True),
+        ("network_subnet", "10.0.0.0/16", True),
+        ("network_subnet", "192.168.1.0/24", False),  # incorrect subnet/internal-address combination
         ("network_subnet", "not-a-subnet", False),
         ("agent_web_address", "192.168.1.1", True),
         ("agent_web_address", "not-an-address", False),
@@ -113,7 +114,8 @@ def test_init_no_prompt_simple(setup_wg_quickrs_folder):
         ("agent_peer_vpn_endpoint", "not-an-endpoint", False),
         ("agent_peer_icon", "--agent-peer-icon-enabled true", False),
         ("agent_peer_icon", "--agent-peer-icon-enabled true --agent-peer-icon-src example-src", True),
-        ("agent_peer_vpn_internal_address", "192.168.1.1", True),
+        ("agent_peer_vpn_internal_address", "10.0.34.100", True),
+        ("agent_peer_vpn_internal_address", "192.168.1.1", False),  # incorrect subnet/internal-address combination
         ("agent_peer_vpn_internal_address", "not-an-address", False),
         ("agent_peer_dns", "--agent-peer-dns-enabled true", False),
         ("agent_peer_dns", "--agent-peer-dns-enabled true --agent-peer-dns-server 1.1.1.1", True),
@@ -158,6 +160,18 @@ def test_init_no_prompt_simple(setup_wg_quickrs_folder):
 def test_init_no_prompt(setup_wg_quickrs_folder, opt_key, opt_val, success):
     setup_wg_quickrs_folder(None)
     assert (init_no_prompt(generate_init_no_prompt_opts(**{opt_key: opt_val})) == 0) == success
+
+
+@pytest.mark.parametrize(
+    "opts, success",
+    [
+        # correct subnet/internal-address combination
+        ({"network_subnet": "192.168.1.0/24", "agent_peer_vpn_internal_address": "192.168.1.1"}, True),
+    ],
+)
+def test_init_no_prompt(setup_wg_quickrs_folder, opts, success):
+    setup_wg_quickrs_folder(None)
+    assert (init_no_prompt(generate_init_no_prompt_opts(**opts)) == 0) == success
 
 
 def test_init_no_prompt_https(setup_wg_quickrs_folder):

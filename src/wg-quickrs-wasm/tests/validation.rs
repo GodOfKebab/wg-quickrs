@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+use chrono::Duration;
 use wg_quickrs_wasm::validation::*;
-use wg_quickrs_wasm::types::EnabledValue;
+use wg_quickrs_wasm::types::*;
+use wg_quickrs_wasm::timestamp;
 
 
 /// Helper macro for passing tests
@@ -41,23 +44,160 @@ fn test_check_name() {
     err_contains!(check_field_str("name", ""), "name cannot be empty");
 }
 
+fn generate_peer(name: &str, address: &str) -> Peer {
+    Peer {
+        name: name.to_string(),
+        address: address.to_string(),
+        endpoint: Default::default(),
+        kind: "".to_string(),
+        icon: Default::default(),
+        dns: Default::default(),
+        mtu: Default::default(),
+        scripts: Default::default(),
+        private_key: "".to_string(),
+        created_at: "".to_string(),
+        updated_at: "".to_string(),
+    }
+}
+
+fn generate_network(peers: HashMap<String, Peer>, subnet: &str, leases: HashMap<String, LeaseData>) -> Network {
+    Network {
+        identifier: "".to_string(),
+        subnet: subnet.to_string(),
+        this_peer: "".to_string(),
+        peers,
+        connections: Default::default(),
+        defaults: Default::default(),
+        leases,
+        updated_at: "".to_string(),
+    }
+}
+
 #[test]
-fn test_check_address() {
-    ok!(check_field_str("address", "10.0.0.1"));
-    err_contains!(check_field_str("address", "not-ip"), "address is not IPv4");
+fn test_check_internal_address() {
+    // Invalid IPv4 address
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", HashMap::new());
+    err_contains!(
+        check_internal_address("not-an-ip", &network),
+        "address is not IPv4"
+    );
+    err_contains!(
+        check_internal_address("999.999.999.999", &network),
+        "address is not IPv4"
+    );
+    err_contains!(
+        check_internal_address("10.0.0", &network),
+        "address is not IPv4"
+    );
+
+    // Invalid CIDR subnet format in network
+    let network = generate_network(HashMap::new(), "not-cidr", HashMap::new());
+    err_contains!(
+        check_internal_address("10.0.0.5", &network),
+        "network subnet is not in CIDR format"
+    );
+    let network = generate_network(HashMap::new(), "10.0.0.0", HashMap::new());
+    err_contains!(
+        check_internal_address("10.0.0.5", &network),
+        "network subnet is not in CIDR format"
+    );
+    let network = generate_network(HashMap::new(), "10.0.0.0/33", HashMap::new());
+    err_contains!(
+        check_internal_address("10.0.0.5", &network),
+        "network subnet is not in CIDR format"
+    );
+
+    // Address not in subnet
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", HashMap::new());
+    err_contains!(
+        check_internal_address("192.168.1.10", &network),
+        "address is not in the network subnet"
+    );
+    err_contains!(
+        check_internal_address("10.0.1.5", &network),
+        "address is not in the network subnet"
+    );
+
+    // Address taken by a peer
+    let peers = vec![generate_peer("Alice", "10.0.0.5")]
+        .into_iter()
+        .enumerate()
+        .map(|(i, peer)| (i.to_string(), peer))
+        .collect();
+    let network = generate_network(peers, "10.0.0.0/24", HashMap::new());
+    err_contains!(
+        check_internal_address("10.0.0.5", &network),
+        "address is already taken by Alice(0)"
+    );
+
+    // Address reserved with a valid lease (future timestamp)
+    let mut leases = HashMap::new();
+    let future_time = timestamp::get_future_timestamp_formatted(Duration::minutes(10));
+    leases.insert("10.0.0.10".into(), LeaseData {
+        peer_id: "".to_string(),
+        valid_until: future_time,
+    });
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", leases);
+    err_contains!(
+        check_internal_address("10.0.0.10", &network),
+        "address is reserved for another peer"
+    );
+
+    // Address with expired lease (past timestamp) - should succeed
+    let mut leases = HashMap::new();
+    let past_time = timestamp::get_future_timestamp_formatted(Duration::minutes(-10));
+    leases.insert("10.0.0.10".into(), LeaseData {
+        peer_id: "".to_string(),
+        valid_until: past_time,
+    });
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", leases);
+    ok!(check_internal_address("10.0.0.10", &network));
+
+    // Address with invalid timestamp format in the lease
+    let mut leases = HashMap::new();
+    leases.insert("10.0.0.10".into(), LeaseData {
+        peer_id: "".to_string(),
+        valid_until: "invalid-timestamp".to_string(),
+    });
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", leases);
+    err_contains!(
+        check_internal_address("10.0.0.10", &network),
+        "failed to parse lease validity period"
+    );
+
+    // Valid address (success case)
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", HashMap::new());
+    ok!(check_internal_address("10.0.0.20", &network));
+
+    // Edge case: Valid address with peers and expired leases, but not conflicting
+    let peers = vec![generate_peer("Bob", "10.0.0.5")]
+        .into_iter()
+        .enumerate()
+        .map(|(i, peer)| (i.to_string(), peer))
+        .collect();
+    let mut leases = HashMap::new();
+    let past_time = timestamp::get_future_timestamp_formatted(Duration::minutes(-10));
+    leases.insert("10.0.0.10".into(), LeaseData {
+        peer_id: "".to_string(),
+        valid_until: past_time,
+    });
+    let network = generate_network(peers, "10.0.0.0/24", leases);
+    ok!(check_internal_address("10.0.0.30", &network));
+
+    // Edge case: Network boundaries
+    // Edge case: Network and broadcast addresses should fail
+    err_contains!(
+        check_internal_address("10.0.0.0", &network),
+        "address is the network address and cannot be assigned"
+    );
+    err_contains!(
+        check_internal_address("10.0.0.255", &network),
+        "address is the broadcast address and cannot be assigned"
+    );
 }
 
 #[test]
 fn test_check_public_private_pre_shared_keys() {
-    ok!(check_field_str("public_key", "Cex1GKPMNCdt1sE+FSy09rxzubKJsqnu/i2odlSsHSc="));
-    err_contains!(
-        check_field_str("public_key", "abc"),
-        "public_key is not base64 encoded with 32 bytes"
-    );
-    err_contains!(
-        check_field_str("public_key", ""),
-        "public_key is not base64 encoded with 32 bytes"
-    );
     ok!(check_field_str("private_key", "qBZArZg+2vEvD5tS8T7m0H0/xvd1PKdoBHXWIrQ1DEE="));
     err_contains!(
         check_field_str("private_key", "def"),

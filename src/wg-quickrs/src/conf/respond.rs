@@ -1,14 +1,15 @@
 use crate::conf::util;
 use crate::conf::network;
-use crate::conf::timestamp;
 use crate::wireguard::cmd::sync_conf;
 use wg_quickrs_wasm::types::*;
 use wg_quickrs_wasm::validation::*;
+use wg_quickrs_wasm::timestamp::*;
 use actix_web::{HttpResponse, web};
 use chrono::Duration;
 use serde_json::json;
 use uuid::Uuid;
 use crate::commands::validation::check_field_str_agent;
+use crate::conf::helpers::{get_allocated_addresses, remove_expired_leases};
 
 pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody>) -> HttpResponse {
     let summary = match util::get_summary() {
@@ -50,7 +51,7 @@ macro_rules! get_mg_config_w_digest {
 macro_rules! post_mg_config_w_digest {
     ($c:expr) => {
         let config_file = util::ConfigFile::from(&$c.to_config());
-        $c.network_w_digest.network.updated_at = timestamp::get_now_timestamp_formatted();
+        $c.network_w_digest.network.updated_at = get_now_timestamp_formatted();
         $c.network_w_digest = match util::NetworkWDigest::from_network($c.network_w_digest.network.clone()) {
             Ok(network_digest) => network_digest,
             Err(_) => {
@@ -122,6 +123,14 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
         };
     }
 
+    macro_rules! validate_address_further {
+        ($address:expr, $field_parent:expr, $network:expr) => {
+            let val_res = check_internal_address($address, $network);
+            validate_return_400!(val_res, $field_parent, address);
+
+        };
+    }
+
     macro_rules! validate_enabled_value {
         ($value:expr, $field_parent:expr, $field:ident) => {
             let val_res = check_field_enabled_value(stringify!($field), $value);
@@ -187,9 +196,12 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     let this_peer = c.network_w_digest.network.this_peer.clone();
     let mut changed_config = false;
 
+    remove_expired_leases(&mut c.network_w_digest.network);
+
     if let Some(changed_fields) = change_sum.changed_fields {
         if let Some(changed_fields_peers) = changed_fields.peers {
             for (peer_id, peer_details) in changed_fields_peers {
+                let network_copy = c.network_w_digest.network.clone();
                 if let Some(peer_config) = c.network_w_digest.network.peers.get_mut(&peer_id) {
                     if peer_id == this_peer && peer_details.endpoint.is_some() {
                         log::info!("A client tried to change the host's endpoint! (forbidden)");
@@ -200,7 +212,15 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     }
 
                     validate_then_update_str!(peer_config, peer_details, peer, peer_id, name);
-                    validate_then_update_str!(peer_config, peer_details, peer, peer_id, address);
+                    // validate address separately to enforce subnet and duplication check
+                    if let Some(value) = peer_details.address {
+                        validate_address_further!(
+                            &value,
+                            format!("changed_fields.peer.{}", peer_id),
+                            &network_copy
+                        );
+                        peer_config.address = value;
+                    }
                     validate_then_update_enabled_value!(
                         peer_config,
                         peer_details,
@@ -316,11 +336,18 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                         "message": format!("address '{}' is reserved for another peer_id", peer_details.address)
                     }));
                 }
+                // ensure the address is taken off the lease list so check_internal_address succeeds (this won't be posted if it fails early)
+                c.network_w_digest
+                    .network
+                    .leases
+                    .retain(|address, _|  *address != peer_details.address);
+
                 validate_str!(&peer_details.name, format!("added_peers.{}", peer_id), name);
-                validate_str!(
+                // validate address separately to enforce subnet and duplication check
+                validate_address_further!(
                     &peer_details.address,
                     format!("added_peers.{}", peer_id),
-                    address
+                    &c.network_w_digest.network
                 );
                 validate_enabled_value!(
                     &peer_details.endpoint,
@@ -369,14 +396,9 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     );
                 }
                 let mut added_peer = wg_quickrs_wasm::types::Peer::from(&peer_details);
-                added_peer.created_at = timestamp::get_now_timestamp_formatted();
+                added_peer.created_at = get_now_timestamp_formatted();
                 added_peer.updated_at = added_peer.created_at.clone();
                 c.network_w_digest.network.peers.insert(peer_id.clone(), added_peer);
-                // remove the new peer id/address from the lease
-                c.network_w_digest
-                    .network
-                    .leases
-                    .retain(|address, _|  *address != peer_details.address);
                 changed_config = true;
             }
         }
@@ -483,18 +505,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 pub(crate) fn get_network_lease_id_address() -> HttpResponse {
     let mut c = get_mg_config_w_digest!();
 
-    let mut reserved_addresses = Vec::<String>::new();
-    for peer in c.network_w_digest.network.peers.values() {
-        reserved_addresses.push(peer.address.clone());
-    }
-    c.network_w_digest.network.leases.retain(|_, lease_data| {
-        timestamp::get_duration_since_formatted(lease_data.valid_until.clone()) < Duration::zero()
-    });
-    for lease in c.network_w_digest.network.leases.keys() {
-        reserved_addresses.push(lease.clone());
-    }
+    remove_expired_leases(&mut c.network_w_digest.network);
+    let allocated_addresses = get_allocated_addresses(&c.network_w_digest.network);
     let next_address =
-        match network::get_next_available_address(&c.network_w_digest.network.subnet, &reserved_addresses) {
+        match network::get_next_available_address(&c.network_w_digest.network.subnet, &allocated_addresses) {
             Some(next_address) => next_address,
             None => {
                 return HttpResponse::InternalServerError()
@@ -503,7 +517,7 @@ pub(crate) fn get_network_lease_id_address() -> HttpResponse {
         };
 
     let lease_peer_id = String::from(Uuid::new_v4());
-    let lease_valid_until = timestamp::get_future_timestamp_formatted(Duration::minutes(10));
+    let lease_valid_until = get_future_timestamp_formatted(Duration::minutes(10));
     log::info!("leased address {} for {} until {}", next_address.clone(), lease_peer_id, lease_valid_until);
     c.network_w_digest.network.leases.insert(next_address.clone(), LeaseData {
         peer_id: lease_peer_id.clone(),

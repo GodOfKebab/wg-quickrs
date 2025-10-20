@@ -2,9 +2,10 @@ use ipnet::Ipv4Net;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use base64::Engine;
-use crate::types::EnabledValue;
+use crate::types::{EnabledValue, Network};
 use base64::engine::general_purpose::STANDARD;
-
+use chrono::Duration;
+use crate::timestamp;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CheckResult {
@@ -45,6 +46,37 @@ pub fn is_fqdn_with_port(s: &str) -> bool {
     }
 }
 
+pub fn check_internal_address(address: &str, network: &Network) -> CheckResult {
+    let Ok(address_ipv4) = address.parse::<Ipv4Addr>() else {
+        return CheckResult { status: false, msg: "address is not IPv4".into() };
+    };
+    let Ok(subnet_ipv4) = network.subnet.parse::<Ipv4Net>() else {
+        return CheckResult { status: false, msg: "can't check address because network subnet is not in CIDR format".into() };
+    };
+    if !subnet_ipv4.contains(&address_ipv4) {
+        return CheckResult { status: false, msg: "address is not in the network subnet".into() };
+    }
+    if address_ipv4 == subnet_ipv4.network() {
+        return CheckResult { status: false, msg: "address is the network address and cannot be assigned".into() };
+    }
+    if address_ipv4 == subnet_ipv4.broadcast() {
+        return CheckResult { status: false, msg: "address is the broadcast address and cannot be assigned".into() };
+    }
+    if let Some((peer_id, peer)) = network.peers.iter().find(|(_, peer)| peer.address == address) {
+        return CheckResult { status: false, msg: format!("address is already taken by {}({})", peer.name, peer_id) };
+    }
+    if let Some(lease_data) = network.leases.get(address) {
+        match timestamp::get_duration_since_formatted(&lease_data.valid_until) {
+            None => return CheckResult { status: false, msg: "failed to parse lease validity period".into() },
+            Some(duration) if duration < Duration::zero() => {
+                return CheckResult { status: false, msg: "address is reserved for another peer".into() }
+            }
+            _ => {}
+        }
+    }
+    CheckResult { status: true, msg: "".into() }
+}
+
 pub fn check_field_str(field_name: &str, field_variable: &str) -> CheckResult {
     let mut ret = CheckResult {
         status: false,
@@ -59,9 +91,7 @@ pub fn check_field_str(field_name: &str, field_variable: &str) -> CheckResult {
             }
         }
 
-        // TODO: check subnet
-        // TODO: check to see if a duplicate exists
-        "address" => {
+        "generic-address" => {
             ret.status = is_ipv4(field_variable);
             if !ret.status {
                 ret.msg = "address is not IPv4".into();
@@ -72,7 +102,7 @@ pub fn check_field_str(field_name: &str, field_variable: &str) -> CheckResult {
             ret.status = true;
         }
 
-        "public_key" | "private_key" | "pre_shared_key" => {
+        "private_key" | "pre_shared_key" => {
             ret.status = match STANDARD.decode(field_variable) {
                 Ok(bytes) => bytes.len() == 32,
                 Err(_) => false

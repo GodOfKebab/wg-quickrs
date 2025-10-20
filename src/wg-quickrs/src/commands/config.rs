@@ -167,7 +167,7 @@ pub fn set_agent_fields(field: &str, value: AgentFieldValue) -> ExitCode {
         ("address", AgentFieldValue::Text(addr)) => {
             config.agent.web.address = addr;
             log::info!("Setting agent address to {}", config.agent.web.address);
-            let ret  = check_field_str_agent("address", &config.agent.web.address);
+            let ret  = check_field_str_agent("generic-address", &config.agent.web.address);
             if !ret.status {
                 log::error!("{}", ret.msg);
                 return ExitCode::FAILURE;

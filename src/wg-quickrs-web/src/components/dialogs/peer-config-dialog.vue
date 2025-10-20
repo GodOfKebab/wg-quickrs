@@ -61,6 +61,7 @@
 
           <peer-summary-island :is-host="peerId === network.this_peer"
                                :peer="peer_conf"
+                               :network="network"
                                class="my-2 mr-2"
                                @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"></peer-summary-island>
 

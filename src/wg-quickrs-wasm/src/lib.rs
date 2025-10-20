@@ -1,6 +1,7 @@
 pub mod helpers;
 pub mod types;
 pub mod validation;
+pub mod timestamp;
 
 // Only include these when compiling to wasm32
 #[cfg(target_arch = "wasm32")]
@@ -19,6 +20,13 @@ pub fn get_peer_wg_config_frontend(network_js: JsValue, peer_id: String, version
 #[wasm_bindgen]
 pub fn get_connection_id_frontend(peer1: &str, peer2: &str) -> String {
     helpers::get_connection_id(peer1, peer2)
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn check_internal_address(address: &str, network_js: JsValue) -> Result<JsValue, JsValue> {
+    let network: types::Network = serde_wasm_bindgen::from_value(network_js).unwrap();
+    Ok(serde_wasm_bindgen::to_value(&validation::check_internal_address(address, &network))?)
 }
 
 #[cfg(target_arch = "wasm32")]

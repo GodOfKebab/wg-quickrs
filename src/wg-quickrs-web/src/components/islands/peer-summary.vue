@@ -37,6 +37,10 @@ export default {
   name: "peer-summary",
   components: {InputField, StringField: InputField},
   props: {
+    network: {
+      type: Object,
+      default: {},
+    },
     peer: {
       type: Object,
       default: {},
@@ -75,7 +79,20 @@ export default {
   emits: ['updated-change-sum'],
   methods: {
     check_field_status(field_name) {
-      const ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name]);
+      let ret = null;
+      if (field_name === 'address') {
+        let network = JSON.parse(JSON.stringify(this.network));
+        const peerIdToRemove = Object.keys(network.peers).find(
+            id => network.peers[id].address === this.peer.address
+        );
+        if (peerIdToRemove) {
+          delete network.peers[peerIdToRemove];
+        }
+        delete network.leases[this.peer.address];
+        ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name], network);
+      } else {
+        ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name]);
+      }
       if (!ret.status) return [-1, ret.msg];
       if (FastEqual(this.peer_local[field_name], this.peer[field_name])) return [0, ''];
       return [1, ''];

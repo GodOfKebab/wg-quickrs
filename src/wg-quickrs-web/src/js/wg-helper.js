@@ -2,6 +2,7 @@
 
 import {
     check_field_enabled_value_frontend,
+    check_internal_address,
     check_field_str_frontend,
     get_connection_id_frontend,
     get_peer_wg_config_frontend,
@@ -31,9 +32,12 @@ export default class WireGuardHelper {
         document.body.removeChild(element);
     }
 
-    static checkField(fieldName, fieldVariable) {
+    static checkField(fieldName, fieldVariable, network=null) {
         if (typeof fieldVariable === 'string')
-            return check_field_str_frontend(fieldName, fieldVariable);
+            if (fieldName === 'address')
+                return check_internal_address(fieldVariable, network)
+            else
+                return check_field_str_frontend(fieldName, fieldVariable);
         else if (fieldVariable.enabled !== undefined && fieldVariable.value !== undefined)
             return check_field_enabled_value_frontend(fieldName, fieldVariable);
         else

@@ -18,6 +18,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::{env, fs};
 use uuid::Uuid;
+use wg_quickrs_wasm::validation::check_internal_address;
 
 include!(concat!(env!("OUT_DIR"), "/init_options_generated.rs"));
 
@@ -193,7 +194,7 @@ fn get_init_bool_option(
 }
 
 /// Helper to prompt a value with optional default and checks
-fn prompt<T: std::str::FromStr + ToString>(field_name: &str, msg: &str, default: Option<T>) -> T {
+fn prompt<T: std::str::FromStr + ToString>(field_name: &str, msg: &str, default: Option<T>, network: Option<Network>) -> T {
     loop {
         let input = if let Some(d) = &default {
             dialoguer::Input::new()
@@ -214,6 +215,7 @@ fn prompt<T: std::str::FromStr + ToString>(field_name: &str, msg: &str, default:
                         value: value.clone(),
                     }),
                     "path" | "firewall-utility" => check_field_path_agent(field_name, &PathBuf::from(value.clone())),
+                    "internal-address" => check_internal_address(&value.to_string(), &network.clone().unwrap()),
                     _ => check_field_str_agent(field_name, &value),
                 };
 
@@ -246,6 +248,7 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
     description: &str,
     condition: bool,
     default_value: Option<T>,
+    network: Option<Network>,
 ) -> T {
     let step_str = step_str(step);
     match cli_value {
@@ -256,6 +259,7 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
                     value: v.to_string(),
                 }),
                 "path" | "firewall-utility" => check_field_path_agent(field_name, &PathBuf::from(v.to_string())),
+                "internal-address" => check_internal_address(&v.to_string(), &network.unwrap()),
                 _ => check_field_str_agent(field_name, &v.to_string()),
             };
 
@@ -283,6 +287,7 @@ fn get_init_enabled_value_option<T: std::str::FromStr + std::fmt::Display + Clon
                         field_name,
                         &format!("{} {} (CLI option '{}')", step_str, description, cli_option),
                         default_value,
+                        network
                     )
                 } else {
                     Default::default()
@@ -325,6 +330,7 @@ macro_rules! get_init_pair_option {
             $description_value,
             enabled,
             $default_value,
+            None
         );
 
         (enabled, value)
@@ -353,6 +359,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[cli_field_counter],
         true,
         Some("wg-quickrs-home".into()),
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -367,6 +374,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[cli_field_counter],
         true,
         Some("10.0.34.0/24".into()),
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -382,12 +390,13 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_web_address = get_init_enabled_value_option(
         init_opts.no_prompt,
         step_counter,
-        "address",
+        "generic-address",
         init_opts.agent_web_address.clone(),
         INIT_FLAGS[cli_field_counter],
         INIT_HELPS[cli_field_counter],
         true,
         iface_ip.clone(),
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -448,6 +457,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
         agent_web_https_enabled,
         option_cert,
+        None
     );
     cli_field_counter += 1;
 
@@ -464,6 +474,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
         agent_web_https_enabled,
         option_key,
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -578,6 +589,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
         agent_firewall_enabled,
         iface_name,
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -595,6 +607,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[cli_field_counter],
         true,
         Some("wg-quickrs-host".into()),
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -610,12 +623,22 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     let agent_peer_vpn_internal_address = get_init_enabled_value_option(
         init_opts.no_prompt,
         step_counter,
-        "address",
+        "internal-address",
         init_opts.agent_peer_vpn_internal_address.clone(),
         INIT_FLAGS[cli_field_counter],
         INIT_HELPS[cli_field_counter],
         true,
         Some(first_ip(&network_subnet)),
+        Some(Network {
+            identifier: "".to_string(),
+            subnet: network_subnet.clone(),
+            this_peer: "".to_string(),
+            peers: Default::default(),
+            connections: Default::default(),
+            defaults: Default::default(),
+            leases: Default::default(),
+            updated_at: "".to_string(),
+        })
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -631,6 +654,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[cli_field_counter],
         true,
         format!("{}:51820", iface_ip.unwrap()).into(),
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -645,6 +669,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[cli_field_counter],
         true,
         Some("server".into()),
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;
@@ -821,6 +846,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
         INIT_HELPS[cli_field_counter],
         true,
         Some("laptop".into()),
+        None
     );
     step_counter += 1;
     cli_field_counter += 1;

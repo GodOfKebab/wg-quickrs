@@ -143,6 +143,15 @@ pub struct EnabledValue {
     pub value: String,
 }
 
+impl Default for EnabledValue {
+    fn default() -> Self {
+        EnabledValue {
+            enabled: false,
+            value: String::new(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Scripts {
     pub pre_up: Vec<EnabledValue>,
@@ -150,6 +159,18 @@ pub struct Scripts {
     pub pre_down: Vec<EnabledValue>,
     pub post_down: Vec<EnabledValue>,
 }
+
+impl Default for Scripts {
+    fn default() -> Self {
+        Scripts {
+            pre_up: vec![],
+            post_up: vec![],
+            pre_down: vec![],
+            post_down: vec![],
+        }
+    }
+}
+
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Connection {
@@ -166,6 +187,15 @@ pub struct Defaults {
     pub connection: DefaultConnection,
 }
 
+impl Default for Defaults {
+    fn default() -> Self {
+        Defaults {
+            peer: Default::default(),
+            connection: Default::default(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct DefaultPeer {
     pub endpoint: EnabledValue,
@@ -176,9 +206,31 @@ pub struct DefaultPeer {
     pub scripts: Scripts,
 }
 
+impl Default for DefaultPeer {
+    fn default() -> Self {
+        DefaultPeer {
+            endpoint: Default::default(),
+            kind: "".to_string(),
+            icon: Default::default(),
+            dns: Default::default(),
+            mtu: Default::default(),
+            scripts: Default::default(),
+        }
+    }
+}
+
+
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct DefaultConnection {
     pub persistent_keepalive: EnabledValue,
+}
+
+impl Default for DefaultConnection {
+    fn default() -> Self {
+        DefaultConnection {
+            persistent_keepalive: Default::default(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

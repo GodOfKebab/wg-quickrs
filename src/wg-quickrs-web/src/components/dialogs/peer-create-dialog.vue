@@ -48,6 +48,7 @@
                                      && default_peer_conf.endpoint !== undefined"
                                :is-new-peer="true"
                                :peer="default_peer_conf"
+                               :network="network"
                                class="my-2 mr-2"
                                @updated-change-sum="onUpdatedPeerSummaryIslandChangeSum"></peer-summary-island>
 
