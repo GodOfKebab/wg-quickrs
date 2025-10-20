@@ -251,6 +251,7 @@ fn ev(enabled: bool, val: &str) -> EnabledValue {
 fn test_endpoint_ipv4_or_fqdn() {
     ok!(check_field_enabled_value("endpoint", &ev(false, ""))); // disabled = ok
     ok!(check_field_enabled_value("endpoint", &ev(true, "10.0.0.1:51820")));
+    ok!(check_field_enabled_value("endpoint", &ev(true, "YOUR-SERVER:51820")));
     ok!(check_field_enabled_value("endpoint", &ev(true, "example.com:51820")));
     err_contains!(
         check_field_enabled_value("endpoint", &ev(true, "notvalid")),
