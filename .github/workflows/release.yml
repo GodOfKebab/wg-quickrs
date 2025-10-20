@@ -16,6 +16,7 @@ jobs:
   build-frontend:
     runs-on: ubuntu-latest
     steps:
+      # Prepare environment
       - name: Checkout code
         uses: actions/checkout@v5
 
@@ -25,20 +26,22 @@ jobs:
       - name: Install wasm-pack
         run: cargo install wasm-pack
 
+      # Build wg-quickrs-wasm
+      - name: Build wg-quickrs-wasm
+        run: |
+          cd src/
+          wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --locked --features wasm
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: Build wg-quickrs-wasm
+      # Build wg-quickrs-web
+      - name: Build wg-quickrs-web
         run: |
-          cd src/wg-quickrs-wasm
-          wasm-pack build --target web --out-dir ../web/pkg -- --features wasm --color=always
-
-      - name: Build web frontend
-        run: |
-          cd src/web
-          npm install
+          cd src/wg-quickrs-web
+          npm ci --omit=dev
           npm run build
 
       - name: Upload frontend artifact
@@ -107,9 +110,9 @@ jobs:
             cargo install cargo-zigbuild
             rustup target add ${{ matrix.target }}
             cargo clean
-            cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target=${{ matrix.target }}
+            cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=${{ matrix.target }}
           else
-            cargo build --release --package wg-quickrs --bin wg-quickrs --target ${{ matrix.target }}
+            cargo build --locked --release --package wg-quickrs --bin wg-quickrs --target ${{ matrix.target }}
           fi
 
       - name: Package binary + completions

@@ -22,8 +22,7 @@ jobs:
       - name: Build wg-quickrs-wasm
         run: |
           cd src/
-          cargo fetch --locked
-          wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --locked --offline --features wasm
+          wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --locked --features wasm
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,7 +45,7 @@ jobs:
       - name: Run unit tests
         run: |
           cd src
-          cargo test --locked --offline
+          cargo test --locked
 
       # Build wg-quickrs
       - name: Build wg-quickrs binary
@@ -56,7 +55,7 @@ jobs:
           cargo install cargo-zigbuild
           rustup target add ${{ env.target }}
           cargo clean
-          cargo zigbuild --locked --offline --release --package wg-quickrs --bin wg-quickrs --target=${{ env.target }}
+          cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=${{ env.target }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
