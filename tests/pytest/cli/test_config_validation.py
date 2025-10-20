@@ -83,10 +83,10 @@ def create_invalid_config_file(wg_quickrs_config_file, field_path, invalid_value
         ("network.defaults.peer.mtu", {"enabled": True, "value": "invalid"}, "MTU is invalid"),
         ("network.defaults.connection.persistent_keepalive", {"enabled": True, "value": "invalid"}, "Persistent Keepalive is invalid"),
 
-        # Leases field validation
-        ("network.leases", {"invalid-ip": {"peer_id": "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "valid_until": "2025-12-31T23:59:59Z"}}, "address is not IPv4"),
-        ("network.leases", {"10.0.34.100": {"peer_id": "not-a-uuid", "valid_until": "2025-12-31T23:59:59Z"}}, "peer_id needs to follow uuid4 standards"),
-        ("network.leases", {"10.0.34.100": {"peer_id": "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "valid_until": "invalid-timestamp"}}, "invalid timestamp"),
+        # reservations field validation
+        ("network.reservations", {"invalid-ip": {"peer_id": "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "valid_until": "2025-12-31T23:59:59Z"}}, "address is not IPv4"),
+        ("network.reservations", {"10.0.34.100": {"peer_id": "not-a-uuid", "valid_until": "2025-12-31T23:59:59Z"}}, "peer_id needs to follow uuid4 standards"),
+        ("network.reservations", {"10.0.34.100": {"peer_id": "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "valid_until": "invalid-timestamp"}}, "invalid timestamp"),
     ]
 )
 def test_config_validation_failures(setup_wg_quickrs_folder, field_path, invalid_value, expected_error_contains):

@@ -244,15 +244,15 @@ pub fn validate_config_file(config_file: &ConfigFile) -> Result<(), ConfUtilErro
     // Validate default scripts using macro
     validate_scripts!(config_file.network.defaults.peer.scripts, "network.defaults.peer");
 
-    // validate leases
-    for (address, lease) in &config_file.network.leases {
-        let leases_path = format!("network.leases.{}", address);
+    // validate reservations
+    for (address, reservation) in &config_file.network.reservations {
+        let reservations_path = format!("network.reservations.{}", address);
         let mut temp_network = config_file.network.clone();
-        temp_network.leases.remove(address);
+        temp_network.reservations.remove(address);
 
-        validate_field!(check_internal_address(address, &temp_network), leases_path);
-        validate_field!(check_field_str_agent("peer_id", &lease.peer_id), format!("{}.peer_id", leases_path));
-        validate_field!(check_field_str_agent("timestamp", &lease.valid_until), format!("{}.valid_until", leases_path));
+        validate_field!(check_internal_address(address, &temp_network), reservations_path);
+        validate_field!(check_field_str_agent("peer_id", &reservation.peer_id), format!("{}.peer_id", reservations_path));
+        validate_field!(check_field_str_agent("timestamp", &reservation.valid_until), format!("{}.valid_until", reservations_path));
     }
 
     Ok(())

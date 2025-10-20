@@ -203,7 +203,7 @@ export default {
     this.default_peer_conf = JSON.parse(JSON.stringify(this.network.defaults.peer));
 
     this.default_peer_conf.name = ""
-    this.api.get_network_lease_id_address().then(response => {
+    this.api.post_network_reserve_address().then(response => {
       this.peerId = response.peer_id;
       this.default_peer_conf.address = response.address;
       this.peer_id_address_valid_until = response.valid_until;

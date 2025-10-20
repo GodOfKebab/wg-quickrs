@@ -118,7 +118,7 @@ pub struct Network {
     pub peers: HashMap<String, Peer>,
     pub connections: HashMap<String, Connection>,
     pub defaults: Defaults,
-    pub leases: HashMap<String, LeaseData>,
+    pub reservations: HashMap<String, ReservationData>,
     pub updated_at: String,
 }
 
@@ -234,7 +234,7 @@ impl Default for DefaultConnection {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct LeaseData {
+pub struct ReservationData {
     pub peer_id: String,
     pub valid_until: String,
 }

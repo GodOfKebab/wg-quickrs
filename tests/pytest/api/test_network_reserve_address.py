@@ -5,35 +5,35 @@ import yaml
 
 
 
-def test_get_network_lease_id_address_incremental_no_repeats(setup_wg_quickrs_agent):
-    """Test that leases are given out incrementally with no repeating addresses."""
+def test_network_reserve_address_incremental_no_repeats(setup_wg_quickrs_agent):
+    """Test that reservations are given out incrementally with no repeating addresses."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
 
-    # Request leases for 10.0.34.2-254
+    # Request reservations for 10.0.34.2-254
     for i in range(253):
-        response = requests.get(f"{base_url}/api/network/lease/address")
+        response = requests.post(f"{base_url}/api/network/reserve/address")
         assert response.status_code == 200
         
         data = response.json()
         assert data["address"] == f"10.0.34.{i+2}"
 
     # The next one should fail
-    response = requests.get(f"{base_url}/api/network/lease/address")
+    response = requests.post(f"{base_url}/api/network/reserve/address")
     assert response.status_code == 500
 
 
-def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
-    """Test adding a new peer with a leased address."""
+def test_add_peer_with_reserved_address(setup_wg_quickrs_agent):
+    """Test adding a new peer with a reserved address."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
 
-    response = requests.get(f"{base_url}/api/network/lease/address")
+    response = requests.post(f"{base_url}/api/network/reserve/address")
     assert response.status_code == 200
 
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
     with open(wg_quickrs_config_file) as stream:
         old_conf = yaml.safe_load(stream)
 
-    assert response.json()["address"] in old_conf["network"]["leases"]
+    assert response.json()["address"] in old_conf["network"]["reservations"]
 
     peer_data = get_test_peer_data()
     reserved_peer_id = response.json()["peer_id"]
@@ -79,17 +79,17 @@ def test_add_peer_with_leased_address(setup_wg_quickrs_agent):
         new_conf = yaml.safe_load(stream)
     assert reserved_peer_id in new_conf["network"]["peers"]
 
-def test_change_peer_address_with_conflicting_leased_address(setup_wg_quickrs_agent):
+def test_change_peer_address_with_conflicting_reserved_address(setup_wg_quickrs_agent):
     base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
 
-    response = requests.get(f"{base_url}/api/network/lease/address")
+    response = requests.post(f"{base_url}/api/network/reserve/address")
     assert response.status_code == 200
 
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
     with open(wg_quickrs_config_file) as stream:
         old_conf = yaml.safe_load(stream)
 
-    assert response.json()["address"] in old_conf["network"]["leases"]
+    assert response.json()["address"] in old_conf["network"]["reservations"]
 
     other_peer_id = "6e9a8440-f884-4b54-bfe7-b982f15e40fd"
 

@@ -74,5 +74,5 @@ network:
       persistent_keepalive:
         enabled: true
         value: '25'
-  leases: {}
+  reservations: {}
   updated_at: '2025-10-07T13:33:01Z'

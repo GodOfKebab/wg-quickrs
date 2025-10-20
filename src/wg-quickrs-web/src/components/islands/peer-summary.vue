@@ -88,7 +88,7 @@ export default {
         if (peerIdToRemove) {
           delete network.peers[peerIdToRemove];
         }
-        delete network.leases[this.peer.address];
+        delete network.reservations[this.peer.address];
         ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name], network);
       } else {
         ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name]);

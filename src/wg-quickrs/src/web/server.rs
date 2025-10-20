@@ -69,7 +69,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             .service(app::web_ui_index)
             .service(api::post_token)
             .service(api::get_network_summary)
-            .service(api::get_network_lease_id_address)
+            .service(api::post_network_reserve_address)
             .service(api::get_version)
             .service(api::patch_network_config)
             .service(api::post_wireguard_status)

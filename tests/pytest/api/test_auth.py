@@ -37,7 +37,6 @@ def test_api_token(setup_wg_quickrs_agent):
     [
         "version",
         "network/summary?only_digest=false",
-        "network/lease/address",
     ])
 def test_api_get_protected(setup_wg_quickrs_agent, path):
     """Test GET /api/<path>. (auth required)"""
@@ -73,21 +72,27 @@ def test_api_patch_protected(setup_wg_quickrs_agent):
     assert response.status_code == 400  # bad request expected since the body is empty
 
 
-def test_api_post_protected(setup_wg_quickrs_agent):
+@pytest.mark.parametrize(
+    "path,expected_status",
+    [
+        ("wireguard/status", 400),  # bad request expected since the body is empty
+        ("network/reserve/address", 200),
+    ])
+def test_api_post_protected(setup_wg_quickrs_agent, path, expected_status):
     """Test POST /api/wireguard/status. (auth required)"""
     base_url = setup_wg_quickrs_agent("test_pwd_single_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
 
     # expect failure without a token
-    response = requests.post(f"{base_url}/api/wireguard/status",
+    response = requests.post(f"{base_url}/api/{path}",
                               verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
     assert response.status_code == 401
 
     # expect success with token
-    response = requests.post(f"{base_url}/api/wireguard/status",
+    response = requests.post(f"{base_url}/api/{path}",
                               headers={ "Authorization": f"Bearer {get_token(base_url)}" },
                               verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
-    assert response.status_code == 400  # bad request expected since the body is empty
+    assert response.status_code == expected_status
 
 def test_get_index_html(setup_wg_quickrs_agent):
     """Test GET /index.html. (no auth required)"""

@@ -636,7 +636,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
             peers: Default::default(),
             connections: Default::default(),
             defaults: Default::default(),
-            leases: Default::default(),
+            reservations: Default::default(),
             updated_at: "".to_string(),
         })
     );
@@ -1109,7 +1109,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
                 map
             },
             connections: HashMap::new(),
-            leases: HashMap::new(),
+            reservations: HashMap::new(),
             updated_at: now,
             defaults: Defaults {
                 peer: DefaultPeer {

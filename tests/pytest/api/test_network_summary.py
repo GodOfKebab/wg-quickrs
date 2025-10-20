@@ -23,7 +23,7 @@ def test_get_summary_full(setup_wg_quickrs_agent):
     assert "peers" in network
     assert "connections" in network
     assert "defaults" in network
-    assert "leases" in network
+    assert "reservations" in network
     assert "updated_at" in network
 
 

@@ -65,9 +65,9 @@ pub fn check_internal_address(address: &str, network: &Network) -> CheckResult {
     if let Some((peer_id, peer)) = network.peers.iter().find(|(_, peer)| peer.address == address) {
         return CheckResult { status: false, msg: format!("address is already taken by {}({})", peer.name, peer_id) };
     }
-    if let Some(lease_data) = network.leases.get(address) {
-        match timestamp::get_duration_since_formatted(&lease_data.valid_until) {
-            None => return CheckResult { status: false, msg: "failed to parse lease validity period".into() },
+    if let Some(reservation_data) = network.reservations.get(address) {
+        match timestamp::get_duration_since_formatted(&reservation_data.valid_until) {
+            None => return CheckResult { status: false, msg: "failed to parse reservation validity period".into() },
             Some(duration) if duration < Duration::zero() => {
                 return CheckResult { status: false, msg: "address is reserved for another peer".into() }
             }

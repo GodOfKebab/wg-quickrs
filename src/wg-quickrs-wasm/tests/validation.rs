@@ -60,7 +60,7 @@ fn generate_peer(name: &str, address: &str) -> Peer {
     }
 }
 
-fn generate_network(peers: HashMap<String, Peer>, subnet: &str, leases: HashMap<String, LeaseData>) -> Network {
+fn generate_network(peers: HashMap<String, Peer>, subnet: &str, reservations: HashMap<String, ReservationData>) -> Network {
     Network {
         identifier: "".to_string(),
         subnet: subnet.to_string(),
@@ -68,7 +68,7 @@ fn generate_network(peers: HashMap<String, Peer>, subnet: &str, leases: HashMap<
         peers,
         connections: Default::default(),
         defaults: Default::default(),
-        leases,
+        reservations,
         updated_at: "".to_string(),
     }
 }
@@ -130,58 +130,58 @@ fn test_check_internal_address() {
         "address is already taken by Alice(0)"
     );
 
-    // Address reserved with a valid lease (future timestamp)
-    let mut leases = HashMap::new();
+    // Address reserved with a valid reservation (future timestamp)
+    let mut reservations = HashMap::new();
     let future_time = timestamp::get_future_timestamp_formatted(Duration::minutes(10));
-    leases.insert("10.0.0.10".into(), LeaseData {
+    reservations.insert("10.0.0.10".into(), ReservationData {
         peer_id: "".to_string(),
         valid_until: future_time,
     });
-    let network = generate_network(HashMap::new(), "10.0.0.0/24", leases);
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", reservations);
     err_contains!(
         check_internal_address("10.0.0.10", &network),
         "address is reserved for another peer"
     );
 
-    // Address with expired lease (past timestamp) - should succeed
-    let mut leases = HashMap::new();
+    // Address with expired reservation (past timestamp) - should succeed
+    let mut reservations = HashMap::new();
     let past_time = timestamp::get_future_timestamp_formatted(Duration::minutes(-10));
-    leases.insert("10.0.0.10".into(), LeaseData {
+    reservations.insert("10.0.0.10".into(), ReservationData {
         peer_id: "".to_string(),
         valid_until: past_time,
     });
-    let network = generate_network(HashMap::new(), "10.0.0.0/24", leases);
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", reservations);
     ok!(check_internal_address("10.0.0.10", &network));
 
-    // Address with invalid timestamp format in the lease
-    let mut leases = HashMap::new();
-    leases.insert("10.0.0.10".into(), LeaseData {
+    // Address with invalid timestamp format in the reservation
+    let mut reservations = HashMap::new();
+    reservations.insert("10.0.0.10".into(), ReservationData {
         peer_id: "".to_string(),
         valid_until: "invalid-timestamp".to_string(),
     });
-    let network = generate_network(HashMap::new(), "10.0.0.0/24", leases);
+    let network = generate_network(HashMap::new(), "10.0.0.0/24", reservations);
     err_contains!(
         check_internal_address("10.0.0.10", &network),
-        "failed to parse lease validity period"
+        "failed to parse reservation validity period"
     );
 
     // Valid address (success case)
     let network = generate_network(HashMap::new(), "10.0.0.0/24", HashMap::new());
     ok!(check_internal_address("10.0.0.20", &network));
 
-    // Edge case: Valid address with peers and expired leases, but not conflicting
+    // Edge case: Valid address with peers and expired reservations, but not conflicting
     let peers = vec![generate_peer("Bob", "10.0.0.5")]
         .into_iter()
         .enumerate()
         .map(|(i, peer)| (i.to_string(), peer))
         .collect();
-    let mut leases = HashMap::new();
+    let mut reservations = HashMap::new();
     let past_time = timestamp::get_future_timestamp_formatted(Duration::minutes(-10));
-    leases.insert("10.0.0.10".into(), LeaseData {
+    reservations.insert("10.0.0.10".into(), ReservationData {
         peer_id: "".to_string(),
         valid_until: past_time,
     });
-    let network = generate_network(peers, "10.0.0.0/24", leases);
+    let network = generate_network(peers, "10.0.0.0/24", reservations);
     ok!(check_internal_address("10.0.0.30", &network));
 
     // Edge case: Network boundaries

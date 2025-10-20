@@ -77,10 +77,10 @@ export default class API {
         });
     }
 
-    async get_network_lease_id_address() {
+    async post_network_reserve_address() {
         return this.call({
-            method: 'get',
-            path: `/api/network/lease/address`,
+            method: 'post',
+            path: `/api/network/reserve/address`,
         });
     }
 
