@@ -11,7 +11,7 @@ services:
       ORGANIZATION: "XXX"
       ORGANIZATIONAL_UNIT: "XXX"
       ROOT_CN: "tls-cert-generator@XXX"
-    command: [ "127.0.0.1", "localhost", "TODO_YOUR_SERVER_TODO" ] # <-- update with your public IP/domain
+    command: [ "TODO_YOUR_SERVER_TODO" ] # <-- update with your public IP/domain
 
   # <-- update TODO_YOUR_SERVER_TODO with the above server
   # <-- update TODO_YOUR_PASSWORD_TODO with your password
@@ -49,27 +49,17 @@ services:
       --agent-peer-dns-enabled              true
       --agent-peer-dns-server               1.1.1.1
       --agent-peer-mtu-enabled              false
-      --agent-peer-mtu-value                ""
       --agent-peer-script-pre-up-enabled    false
-      --agent-peer-script-pre-up-line       ""
       --agent-peer-script-post-up-enabled   false
-      --agent-peer-script-post-up-line      ""
       --agent-peer-script-pre-down-enabled  false
-      --agent-peer-script-pre-down-line     ""
       --agent-peer-script-post-down-enabled false
-      --agent-peer-script-post-down-line    ""
 
       --default-peer-dns-enabled                        true
       --default-peer-dns-server                         1.1.1.1
       --default-peer-mtu-enabled                        false
-      --default-peer-mtu-value                          ""
       --default-peer-script-pre-up-enabled              false
-      --default-peer-script-pre-up-line                 ""
       --default-peer-script-post-up-enabled             false
-      --default-peer-script-post-up-line                ""
       --default-peer-script-pre-down-enabled            false
-      --default-peer-script-pre-down-line               ""
       --default-peer-script-post-down-enabled           false
-      --default-peer-script-post-down-line              ""
       --default-connection-persistent-keepalive-enabled true
       --default-connection-persistent-keepalive-period  25
