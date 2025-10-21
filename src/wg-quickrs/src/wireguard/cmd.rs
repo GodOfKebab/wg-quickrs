@@ -286,30 +286,20 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
         }
     };
 
-    // wg-quick strip WG_INTERFACE
-    let mut readable_command = format!("$ wg-quick strip {}", config.network.identifier.clone());
-    log::info!("{readable_command}");
-    let stripped_output = match Command::new("wg-quick")
-        .arg("strip")
-        .arg(config.network.identifier.clone())
-        .output()
-    {
-        Ok(output) => {
-            if !output.stdout.is_empty() {
-                log::debug!("{}", String::from_utf8_lossy(&output.stdout));
-            }
-            if !output.stderr.is_empty() {
-                log::warn!("{}", String::from_utf8_lossy(&output.stderr));
-            }
-            if !output.status.success() {
-                return Err(WireGuardCommandError::CommandExecNotSuccessful(
-                    readable_command,
-                ));
-            }
-            output
-        }
+    let wg_interface_mut = WG_INTERFACE
+        .lock()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
+
+    let wg_conf_stripped = match get_peer_wg_config(
+        &config.network,
+        config.network.this_peer.clone(),
+        full_version!(),
+        true,
+        None,
+    ) {
+        Ok(n) => n,
         Err(e) => {
-            return Err(WireGuardCommandError::CommandExecError(readable_command, e));
+            return Err(WireGuardCommandError::Other(e.to_string()));
         }
     };
 
@@ -320,7 +310,8 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
             return Err(WireGuardCommandError::Other(e.to_string()));
         }
     };
-    match temp.write_all(&stripped_output.stdout) {
+
+    match temp.write_all((&wg_conf_stripped).as_ref()) {
         Ok(_) => {}
         Err(e) => {
             return Err(WireGuardCommandError::FileWriteError(
@@ -329,17 +320,12 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
             ));
         }
     };
-    let temp_path = temp.path().to_owned(); // Save path before drop
+    let temp_path = temp.path().to_owned(); // Save path before dropping
 
-    let wg_interface_mut = WG_INTERFACE
-        .lock()
-        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
-
-    // wg syncconf WG_INTERFACE <(wg-quick strip WG_INTERFACE)
-    readable_command = format!(
-        "$ wg syncconf {} <(wg-quick strip {})",
+    // wg syncconf WG_INTERFACE <(WG_CONF_STRIPPED)
+    let readable_command = format!(
+        "$ wg syncconf {} <(WG_CONF_STRIPPED)",
         &*wg_interface_mut,
-        config.network.identifier.clone()
     );
     log::info!("{readable_command}");
     match Command::new("sudo")
@@ -542,6 +528,7 @@ PostDown = sysctl -w net.inet.ip.forwarding=0;
         &config.network,
         config.network.this_peer.clone(),
         full_version!(),
+        false,
         hidden_scripts,
     ) {
         Ok(n) => n,

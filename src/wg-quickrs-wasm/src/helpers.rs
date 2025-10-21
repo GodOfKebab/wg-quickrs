@@ -9,6 +9,7 @@ pub fn get_peer_wg_config(
     network: &types::Network,
     peer_id: String,
     version: &str,
+    stripped: bool,
     peer_hidden_scripts: Option<String>,
 ) -> Result<String, WireGuardLibError> {
     let this_peer = match network.peers.get(&peer_id) {
@@ -35,41 +36,45 @@ pub fn get_peer_wg_config(
     writeln!(wg_conf, "# Peer: {} ({})", this_peer.name, peer_id).unwrap();
     writeln!(wg_conf, "[Interface]").unwrap();
     writeln!(wg_conf, "PrivateKey = {}", this_peer.private_key).unwrap();
-    writeln!(wg_conf, "Address = {}/24", this_peer.address).unwrap();
+    if !stripped {
+        writeln!(wg_conf, "Address = {}/24", this_peer.address).unwrap();
+    }
 
     if this_peer.endpoint.enabled
         && let Some((_host, port)) = this_peer.endpoint.value.rsplit_once(':')
     {
         writeln!(wg_conf, "ListenPort = {port}").unwrap();
     }
-    if this_peer.dns.enabled {
-        writeln!(wg_conf, "DNS = {}", this_peer.dns.value).unwrap();
-    }
-    if this_peer.mtu.enabled {
-        writeln!(wg_conf, "MTU = {}", this_peer.mtu.value).unwrap();
-    }
-    let script_fields = &this_peer.scripts;
-    if let Some(hidden_scripts) = peer_hidden_scripts {
-        writeln!(wg_conf, "{}", hidden_scripts).unwrap();
-    }
-    for script_field in &script_fields.pre_up {
-        if script_field.enabled {
-            writeln!(wg_conf, "PreUp = {}", script_field.value).unwrap();
+    if !stripped {
+        if this_peer.dns.enabled {
+            writeln!(wg_conf, "DNS = {}", this_peer.dns.value).unwrap();
         }
-    }
-    for script_field in &script_fields.post_up {
-        if script_field.enabled {
-            writeln!(wg_conf, "PostUp = {}", script_field.value).unwrap();
+        if this_peer.mtu.enabled {
+            writeln!(wg_conf, "MTU = {}", this_peer.mtu.value).unwrap();
         }
-    }
-    for script_field in &script_fields.pre_down {
-        if script_field.enabled {
-            writeln!(wg_conf, "PreDown = {}", script_field.value).unwrap();
+        let script_fields = &this_peer.scripts;
+        if let Some(hidden_scripts) = peer_hidden_scripts {
+            writeln!(wg_conf, "{}", hidden_scripts).unwrap();
         }
-    }
-    for script_field in &script_fields.post_down {
-        if script_field.enabled {
-            writeln!(wg_conf, "PostDown = {}", script_field.value).unwrap();
+        for script_field in &script_fields.pre_up {
+            if script_field.enabled {
+                writeln!(wg_conf, "PreUp = {}", script_field.value).unwrap();
+            }
+        }
+        for script_field in &script_fields.post_up {
+            if script_field.enabled {
+                writeln!(wg_conf, "PostUp = {}", script_field.value).unwrap();
+            }
+        }
+        for script_field in &script_fields.pre_down {
+            if script_field.enabled {
+                writeln!(wg_conf, "PreDown = {}", script_field.value).unwrap();
+            }
+        }
+        for script_field in &script_fields.post_down {
+            if script_field.enabled {
+                writeln!(wg_conf, "PostDown = {}", script_field.value).unwrap();
+            }
         }
     }
     writeln!(wg_conf).unwrap();

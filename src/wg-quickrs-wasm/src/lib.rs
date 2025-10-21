@@ -13,7 +13,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn get_peer_wg_config_frontend(network_js: JsValue, peer_id: String, version: &str) -> String {
     let network: types::Network = serde_wasm_bindgen::from_value(network_js).unwrap();
-    helpers::get_peer_wg_config(&network, peer_id, version, None).unwrap()
+    helpers::get_peer_wg_config(&network, peer_id, version, false, None).unwrap()
 }
 
 #[cfg(target_arch = "wasm32")]
