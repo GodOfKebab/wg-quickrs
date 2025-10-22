@@ -126,13 +126,14 @@ impl TunnelManager {
                 name_file
             );
 
-            self.cmd(&["bash", "-c", &script])?;
+            self.cmd(&["sh", "-c", &script])?;
             let iface = fs::read_to_string(&name_file)?.trim().to_string();
             self.real_interface = Some(iface);
         }
 
         #[cfg(target_os = "linux")]
         {
+            log::info!("ip link add dev {} type wireguard", interface);
             let result = Command::new("ip")
                 .args(&["link", "add", "dev", interface, "type", "wireguard"])
                 .output()?;
@@ -737,11 +738,68 @@ impl TunnelManager {
         let this_peer = self.config.network.peers.get(&self.config.network.this_peer)
             .ok_or_else(|| TunnelError::InvalidConfig("This peer not found".to_string()))?;
 
+        let fw_utility = &self.config.agent.firewall.utility.to_string_lossy();
+        let subnet = &self.config.network.subnet;
+        let gateway = &self.config.agent.firewall.gateway;
+        let port = &self.config.agent.vpn.port;
+        let interface = &self.config.network.identifier;
+
+        let mut cmd: Vec<EnabledValue> = Vec::new();
         let hooks = match hook_type {
             HookType::PreUp => &this_peer.scripts.pre_up,
-            HookType::PostUp => &this_peer.scripts.post_up,
+            HookType::PostUp => {
+                if self.config.agent.firewall.enabled {
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: format!("{fw_utility} -t nat -I POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;")
+                    });
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: format!("{fw_utility} -I INPUT -p udp -m udp --dport {port} -j ACCEPT;")
+                    });
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: format!("{fw_utility} -I FORWARD -i {interface} -j ACCEPT;")
+                    });
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: format!("{fw_utility} -I FORWARD -o {interface} -j ACCEPT;")
+                    });
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: "sysctl -w net.ipv4.ip_forward=1;".to_string()
+                    });
+                }
+                cmd.extend(this_peer.scripts.post_up.clone());
+                &cmd
+            },
             HookType::PreDown => &this_peer.scripts.pre_down,
-            HookType::PostDown => &this_peer.scripts.post_down,
+            HookType::PostDown => {
+                if self.config.agent.firewall.enabled {
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: format!("{fw_utility} -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;")
+                    });
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: format!("{fw_utility} -D INPUT -p udp -m udp --dport {port} -j ACCEPT;")
+                    });
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: format!("{fw_utility} -D FORWARD -i {interface} -j ACCEPT;")
+                    });
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: format!("{fw_utility} -D FORWARD -o {interface} -j ACCEPT;")
+                    });
+                    cmd.push(EnabledValue{
+                        enabled: true,
+                        value: "sysctl -w net.ipv4.ip_forward=0;".to_string()
+                    });
+                }
+                cmd.extend(this_peer.scripts.post_down.clone());
+                &cmd
+            },
         };
 
         for hook in hooks {
@@ -749,19 +807,10 @@ impl TunnelManager {
                 continue;
             }
 
-            let real_iface = self.real_interface.as_ref()
-                .map(|s| s.as_str())
-                .unwrap_or(self.interface_name());
-
-            let script = hook.value
-                .replace("%i", real_iface)
-                .replace("%I", self.interface_name());
-
-            eprintln!("[#] {}", script);
-
-            let output = Command::new("bash")
+            eprintln!("[#] {}", hook.value);
+            let output = Command::new("sh")
                 .arg("-c")
-                .arg(&script)
+                .arg(&hook.value)
                 .output()?;
 
             if !output.status.success() {
