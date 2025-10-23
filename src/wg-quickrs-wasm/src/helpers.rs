@@ -7,12 +7,12 @@ use rand::RngCore;
 
 pub fn get_peer_wg_config(
     network: &types::Network,
-    peer_id: String,
+    peer_id: &str,
     version: &str,
     stripped: bool,
     peer_hidden_scripts: Option<String>,
 ) -> Result<String, WireGuardLibError> {
-    let this_peer = match network.peers.get(&peer_id) {
+    let this_peer = match network.peers.get(peer_id) {
         Some(n) => n,
         None => {
             return Err(WireGuardLibError::PeerNotFound(format!(
