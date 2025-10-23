@@ -4,8 +4,6 @@ use once_cell::sync::Lazy;
 use wg_quickrs_wasm::helpers::get_peer_wg_config;
 use wg_quickrs_wasm::types::{Config, Telemetry, TelemetryData, TelemetryDatum, WireGuardStatus};
 use std::collections::{HashMap, VecDeque};
-use std::fs;
-use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -53,10 +51,6 @@ pub enum WireGuardCommandError {
     CommandExecError(String, std::io::Error),
     #[error("wireguard::cmd::error::command_exec_not_successful -> command for {0} completed unsuccessfully")]
     CommandExecNotSuccessful(String),
-    #[error("wireguard::cmd::error::folder_creation_error -> failed to create folder at {0} failed: {1}")]
-    FolderCreationError(PathBuf, std::io::Error),
-    #[error("wireguard::cmd::error::file_creation_error -> failed to create file at {0} failed: {1}")]
-    FileCreationError(PathBuf, std::io::Error),
     #[error("wireguard::cmd::error::file_write_error -> failed to write file at {0} failed: {1}")]
     FileWriteError(PathBuf, std::io::Error),
     #[error("wireguard::cmd::error::interface_sync_failed -> failed to sync wireguard interface: {0}")]
@@ -113,7 +107,6 @@ pub(crate) async fn run_vpn_server(
             _ = signal_interrupt.recv() => log::info!("Received SIGINT"),
         }
 
-        log::info!("Stopping the wireguard tunnel...");
         let _ = disable_tunnel(config);
         Ok(())
     })
@@ -276,7 +269,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
 
     let wg_conf_stripped = match get_peer_wg_config(
         &config.network,
-        config.network.this_peer.clone(),
+        &config.network.this_peer,
         full_version!(),
         true,
         None,

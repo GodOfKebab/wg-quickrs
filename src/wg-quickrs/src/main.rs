@@ -4,7 +4,7 @@ use wg_quickrs_cli::AgentCommands;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use wg_quickrs::{WG_QUICKRS_CONFIG_FOLDER, WIREGUARD_CONFIG_FILE, WG_QUICKRS_CONFIG_FILE};
+use wg_quickrs::{WG_QUICKRS_CONFIG_FOLDER, WG_QUICKRS_CONFIG_FILE};
 
 mod cli;
 mod commands;
