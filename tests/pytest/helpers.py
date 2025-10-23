@@ -15,13 +15,16 @@ def get_paths():
     return pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file
 
 
-def get_wg_quickrs_command():
+def get_wg_quickrs_command(use_sudo=False):
     pytest_folder, wg_quickrs_config_folder, _ = get_paths()
-    return [
+    command = [
         str(pytest_folder.parent.parent.resolve() / "src/target/release/wg-quickrs"),
         '--wg-quickrs-config-folder',
         str(wg_quickrs_config_folder)
     ]
+    if use_sudo:
+        command = ["sudo"] + command
+    return command
 
 
 def wait_for_port(host_port, timeout=10.0):

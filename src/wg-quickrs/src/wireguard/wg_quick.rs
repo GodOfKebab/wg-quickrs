@@ -260,54 +260,103 @@ impl TunnelManager {
         let hooks = match hook_type {
             HookType::PreUp => &this_peer.scripts.pre_up,
             HookType::PostUp => {
-                if self.config.agent.firewall.enabled && self.config.agent.firewall.utility.to_string_lossy().contains("iptables") {
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: format!("{fw_utility} -t nat -I POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;")
-                    });
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: format!("{fw_utility} -I INPUT -p udp -m udp --dport {port} -j ACCEPT;")
-                    });
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: format!("{fw_utility} -I FORWARD -i {interface} -j ACCEPT;")
-                    });
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: format!("{fw_utility} -I FORWARD -o {interface} -j ACCEPT;")
-                    });
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: "sysctl -w net.ipv4.ip_forward=1;".to_string()
-                    });
+                if self.config.agent.firewall.enabled && let Some(utility) = self.config.agent.firewall.utility.file_name() {
+                    if utility == "iptables" {
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -t nat -I POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -I INPUT -p udp -m udp --dport {port} -j ACCEPT;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -I FORWARD -i {interface} -j ACCEPT;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -I FORWARD -o {interface} -j ACCEPT;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: "sysctl -w net.ipv4.ip_forward=1;".to_string()
+                        });
+                    } else if utility == "pfctl" {
+                        let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}",
+                                               gateway = self.config.agent.firewall.gateway,
+                                               subnet = self.config.network.subnet);
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("awk \"/^nat/ {{print; print \\\"{nat_rule}\\\"; next}}1\" /etc/pf.conf > /etc/pf.conf.new && mv /etc/pf.conf /etc/pf.conf.bak && mv /etc/pf.conf.new /etc/pf.conf;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("grep -qxF '{nat_rule}' /etc/pf.conf || echo '*** could NOT configure firewall because there are no existing NAT rules. See notes at docs/MACOS-FIREWALL.md ' >&2;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("grep -qxF '{nat_rule}' /etc/pf.conf || exit 1;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -f /etc/pf.conf;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -e || true;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: "sysctl -w net.inet.ip.forwarding=1;".to_string()
+                        });
+                    }
                 }
                 cmds.extend(this_peer.scripts.post_up.clone());
                 &cmds
             },
             HookType::PreDown => &this_peer.scripts.pre_down,
             HookType::PostDown => {
-                if self.config.agent.firewall.enabled && self.config.agent.firewall.utility.to_string_lossy().contains("iptables") {
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: format!("{fw_utility} -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;")
-                    });
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: format!("{fw_utility} -D INPUT -p udp -m udp --dport {port} -j ACCEPT;")
-                    });
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: format!("{fw_utility} -D FORWARD -i {interface} -j ACCEPT;")
-                    });
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: format!("{fw_utility} -D FORWARD -o {interface} -j ACCEPT;")
-                    });
-                    cmds.push(EnabledValue{
-                        enabled: true,
-                        value: "sysctl -w net.ipv4.ip_forward=0;".to_string()
-                    });
+                if self.config.agent.firewall.enabled && let Some(utility) = self.config.agent.firewall.utility.file_name() {
+                    if utility == "iptables" {
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -D INPUT -p udp -m udp --dport {port} -j ACCEPT;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -D FORWARD -i {interface} -j ACCEPT;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -D FORWARD -o {interface} -j ACCEPT;")
+                        });
+                        #[cfg(not(feature = "docker"))]
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: "sysctl -w net.ipv4.ip_forward=0;".to_string()
+                        });
+                    } else if utility == "pfctl" {
+                        let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}",
+                                               gateway = self.config.agent.firewall.gateway,
+                                               subnet = self.config.network.subnet);
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("awk -v line='{nat_rule}' '$0 != line' /etc/pf.conf > /etc/pf.conf.new && mv /etc/pf.conf /etc/pf.conf.bak && mv /etc/pf.conf.new /etc/pf.conf;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: format!("{fw_utility} -d || true;")
+                        });
+                        cmds.push(EnabledValue{
+                            enabled: true,
+                            value: "sysctl -w net.ipv4.ip_forwarding=0;".to_string()
+                        });
+                    }
                 }
                 cmds.extend(this_peer.scripts.post_down.clone());
                 &cmds
@@ -319,12 +368,12 @@ impl TunnelManager {
                 continue;
             }
 
-            eprintln!("[#] {}", hook.value);
+            log::info!("[+] {}", hook.value);
             let output = cmd(&["sh", "-c", &hook.value])?;
 
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                eprintln!("Warning: Hook failed: {}", stderr);
+                log::warn!("Warning: Hook failed: {}", stderr);
             }
         }
 

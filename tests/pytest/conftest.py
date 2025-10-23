@@ -65,7 +65,7 @@ def setup_wg_quickrs_agent(request, setup_wg_quickrs_folder):
             base_url = setup_wg_quickrs_agent("no_auth_single_peer")
             ...
     """
-    def _setup(which_conf: str):
+    def _setup(which_conf: str, use_sudo=False):
         pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = setup_wg_quickrs_folder(which_conf)
 
         # Load config to extract agent address
@@ -84,7 +84,7 @@ def setup_wg_quickrs_agent(request, setup_wg_quickrs_folder):
             host_port = None
 
         # Start agent
-        agent = Popen(get_wg_quickrs_command() + ['agent', 'run'])
+        agent = Popen(get_wg_quickrs_command(use_sudo) + ['agent', 'run'])
 
         # Wait for it to start listening
         if host_port:
