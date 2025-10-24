@@ -1,9 +1,9 @@
-#![cfg(target_os = "linux")]
+// #![cfg(target_os = "linux")]
 use std::io::Write;
 use std::process::Command;
 use wg_quickrs_wasm::types::EnabledValue;
 use crate::wireguard::wg_quick;
-use crate::wireguard::wg_quick::{TunnelError, TunnelResult};
+use crate::wireguard::wg_quick::{DnsManager, TunnelError, TunnelResult};
 
 pub fn interface_exists(interface: &str) -> TunnelResult<Option<String>> {
     let output = wg_quick::cmd(&["ip", "link", "show", "dev", interface])?;
@@ -84,7 +84,7 @@ fn calculate_mtu(iface: &str) -> TunnelResult<u16> {
     Ok((min_mtu.saturating_sub(80)) as u16)
 }
 
-pub fn set_dns(dns_servers: Vec<&str>, interface: &str) -> TunnelResult<()> {
+pub fn set_dns(dns_servers: &Vec<String>, interface: &str, _dns_manager: &mut DnsManager) -> TunnelResult<()> {
     let mut dns_config = String::new();
     for server in dns_servers {
         dns_config.push_str(&format!("nameserver {}\n", server));
@@ -104,21 +104,27 @@ pub fn set_dns(dns_servers: Vec<&str>, interface: &str) -> TunnelResult<()> {
     Ok(())
 }
 
-pub fn del_dns(interface: &str) -> TunnelResult<()> {
+pub fn del_dns(interface: &str, _dns_manager: &mut DnsManager) -> TunnelResult<()> {
     let _ = wg_quick::cmd(&["resolvconf", "-d", interface, "-f"])?;
 
     Ok(())
 }
 
-pub fn add_route(iface: &str, interface_name: &str, ip: &str, is_default: bool, is_ipv6: bool) -> TunnelResult<()> {
+pub fn add_route(iface: &str, interface_name: &str, cidr: &str, _endpoint_router: &mut wg_quick::EndpointRouter) -> TunnelResult<()> {
+    let is_default = cidr.ends_with("/0");
+    let is_ipv6 = cidr.contains(':');
     let proto = if is_ipv6 { "-6" } else { "-4" };
 
     if is_default {
-        add_default_route(iface, interface_name, &ip, proto)?;
+        add_default_route(iface, interface_name, &cidr, proto)?;
     } else {
-        wg_quick::cmd(&["ip", proto, "route", "add", &ip, "dev", iface])?;
+        wg_quick::cmd(&["ip", proto, "route", "add", &cidr, "dev", iface])?;
     }
 
+    Ok(())
+}
+
+pub fn set_endpoint_direct_route(_iface: &str, _endpoint_router: &mut wg_quick::EndpointRouter) -> TunnelResult<()> {
     Ok(())
 }
 

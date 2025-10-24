@@ -2466,6 +2466,7 @@ dependencies = [
  "mime_guess",
  "once_cell",
  "rand",
+ "regex",
  "rust-embed",
  "rustls",
  "semver",

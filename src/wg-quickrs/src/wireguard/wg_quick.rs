@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::process::{Command, Output};
 use std::fs;
 use std::io::Write;
@@ -27,21 +28,72 @@ pub enum TunnelError {
     #[error("Key error: {0}")]
     KeyError(#[from] wg_quickrs_wasm::types::WireGuardLibError),
     #[cfg(target_os = "macos")]
-    #[error("Unable to parse MTU")]
-    MtuError(),
-    #[cfg(target_os = "macos")]
-    #[error("Unable to parse IPv4 gateway")]
-    IPv4GatewayError(),
-    #[cfg(target_os = "macos")]
-    #[error("Unable to parse IPv6 gateway")]
-    IPv6GatewayError(),
+    #[error("Unable to find default gateway")]
+    DefaultGatewayNotFound(),
 }
 
 pub type TunnelResult<T> = Result<T, TunnelError>;
 
+#[allow(dead_code)]
+pub struct EndpointRouter {
+    pub(crate) endpoints: Vec<String>,
+    pub(crate) gateway4: Option<String>,
+    pub(crate) gateway6: Option<String>,
+    pub(crate) auto_route4: bool,
+    pub(crate) auto_route6: bool,
+}
+
+impl Clone for EndpointRouter {
+    fn clone(&self) -> Self {
+        Self {
+            endpoints: self.endpoints.clone(),
+            gateway4: self.gateway4.clone(),
+            gateway6: self.gateway6.clone(),
+            auto_route4: self.auto_route4,
+            auto_route6: self.auto_route6,
+        }
+    }
+}
+impl Default for EndpointRouter {
+    fn default() -> Self {
+        EndpointRouter {
+            endpoints: Vec::new(),
+            gateway4: None,
+            gateway6: None,
+            auto_route4: false,
+            auto_route6: false,
+        }
+    }
+}
+
+pub struct DnsManager {
+    pub(crate) service_dns: HashMap<String, String>,
+    pub(crate) service_dns_search: HashMap<String, String>,
+}
+
+impl Clone for DnsManager {
+    fn clone(&self) -> Self {
+        Self {
+            service_dns: self.service_dns.clone(),
+            service_dns_search: self.service_dns_search.clone(),
+        }
+    }
+}
+
+impl Default for DnsManager {
+    fn default() -> Self {
+        DnsManager {
+            service_dns: Default::default(),
+            service_dns_search: Default::default(),
+        }
+    }
+}
+
 pub struct TunnelManager {
     config: Config,
     real_interface: Option<String>,
+    endpoint_router: EndpointRouter,
+    dns_manager: DnsManager
 }
 
 impl TunnelManager {
@@ -49,6 +101,8 @@ impl TunnelManager {
         Self {
             config,
             real_interface: None,
+            endpoint_router: Default::default(),
+            dns_manager: Default::default()
         }
     }
 
@@ -61,14 +115,14 @@ impl TunnelManager {
             return Err(TunnelError::InterfaceExists(self.interface_name().to_string()));
         }
 
-        self.execute_hooks(HookType::PreUp)?;
         self.add_interface()?;
+        self.execute_hooks(HookType::PreUp)?;
         self.set_config()?;
         self.add_addresses()?;
         self.set_mtu_and_up()?;
         self.add_routes()?;
+        self.set_endpoint_direct_route()?;
         self.set_dns()?;
-
         #[cfg(target_os = "macos")]
         {
             let iface = self.real_interface.as_ref().unwrap();
@@ -76,9 +130,8 @@ impl TunnelManager {
             let this_peer = self.config.network.peers.get(&self.config.network.this_peer)
                 .ok_or_else(|| TunnelError::InvalidConfig("This peer not found".to_string()))?;
 
-            wg_quick_platform::start_monitor_daemon(iface, interface, &this_peer.dns, &this_peer.mtu)?;
+            wg_quick_platform::start_monitor_daemon(iface, interface, &this_peer.dns, &this_peer.mtu, &self.endpoint_router, &self.dns_manager)?;
         }
-
         self.execute_hooks(HookType::PostUp)?;
 
         Ok(self.real_interface.clone().unwrap_or_else(|| self.interface_name().to_string()))
@@ -160,7 +213,7 @@ impl TunnelManager {
         Ok(())
     }
 
-    fn set_dns(&self) -> TunnelResult<()> {
+    pub fn set_dns(&mut self) -> TunnelResult<()> {
         let this_peer = self.config.network.peers.get(&self.config.network.this_peer)
             .ok_or_else(|| TunnelError::InvalidConfig("This peer not found".to_string()))?;
 
@@ -168,27 +221,30 @@ impl TunnelManager {
             return Ok(());
         }
 
-        let dns_servers: Vec<&str> = this_peer.dns.value.split(',').map(|s| s.trim()).collect();
-
-        wg_quick_platform::set_dns(dns_servers, self.interface_name())
+        let dns_servers = this_peer.dns.value.split(',').map(|s| s.trim().to_string()).collect();
+        let interface_name = self.interface_name().to_string();
+        wg_quick_platform::set_dns(&dns_servers, &interface_name, &mut self.dns_manager)
     }
 
-    fn del_dns(&self) -> TunnelResult<()> {
-        wg_quick_platform::del_dns(self.interface_name())
+    fn del_dns(&mut self) -> TunnelResult<()> {
+        let interface_name = self.interface_name().to_string();
+        wg_quick_platform::del_dns(&interface_name, &mut self.dns_manager)
     }
 
-    fn add_routes(&self) -> TunnelResult<()> {
+    fn add_routes(&mut self) -> TunnelResult<()> {
         let iface = self.real_interface.as_ref().unwrap();
         let allowed_ips = get_allowed_ips(iface)?;
 
-        for ip in allowed_ips {
-            let is_default = ip.ends_with("/0");
-            let is_ipv6 = ip.contains(':');
-
-            wg_quick_platform::add_route(iface, &self.config.network.identifier, &ip, is_default, is_ipv6)?;
+        for cidr in allowed_ips {
+            wg_quick_platform::add_route(iface, &self.config.network.identifier, &cidr, &mut self.endpoint_router)?;
         }
 
         Ok(())
+    }
+
+    fn set_endpoint_direct_route(&mut self) -> TunnelResult<()> {
+        let iface = self.real_interface.as_ref().unwrap();
+        wg_quick_platform::set_endpoint_direct_route(iface, &mut self.endpoint_router)
     }
 
     fn del_routes(&self) -> TunnelResult<()> {
@@ -386,35 +442,29 @@ pub fn extract_ip_from_endpoint(endpoint: &str) -> Option<String> {
 }
 
 pub fn get_allowed_ips(iface: &str) -> TunnelResult<Vec<String>> {
-    let output = cmd(&["wg", "show", iface, "allowed-ips"]);
-
-    if !output.is_ok() {
-        log::warn!("Failed to get allowed IPs, assuming no routes");
-        return Ok(Vec::new());
-    }
-
-    let output = output?;
-    let output_str = String::from_utf8_lossy(&*output.stdout);
-    let mut ips = Vec::new();
-
-    for line in output_str.lines() {
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() > 1 {
-            for ip in &parts[1..] {
-                if ip.contains('/') {
-                    ips.push(ip.to_string());
-                }
-            }
+    let output = match cmd(&["wg", "show", iface, "allowed-ips"]) {
+        Ok(output) => output,
+        Err(e) => {
+            log::warn!("Failed to get allowed IPs: {}, defaulting to an empty list of allowed IPs", e);
+            return Ok(Vec::new());
         }
-    }
+    };
 
-    ips.sort_by(|a, b| {
+    // Parse and collect valid CIDR entries
+    let mut cidrs: Vec<String> = String::from_utf8_lossy(&*output.stdout)
+        .split_whitespace()
+        .filter(|s| wg_quickrs_wasm::validation::is_cidr(s))
+        .map(String::from)
+        .collect();
+
+    // Sort by prefix length (descending)
+    cidrs.sort_by(|a, b| {
         let prefix_a = a.split('/').nth(1).and_then(|p| p.parse::<u8>().ok()).unwrap_or(0);
         let prefix_b = b.split('/').nth(1).and_then(|p| p.parse::<u8>().ok()).unwrap_or(0);
         prefix_b.cmp(&prefix_a)
     });
 
-    Ok(ips)
+    Ok(cidrs)
 }
 
 pub fn get_endpoints(iface: &str) -> Vec<String> {
