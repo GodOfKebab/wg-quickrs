@@ -5,6 +5,15 @@ use wg_quickrs_wasm::types::EnabledValue;
 use crate::wireguard::wg_quick;
 use crate::wireguard::wg_quick::{TunnelError, TunnelResult};
 
+pub fn interface_exists(interface: &str) -> TunnelResult<Option<String>> {
+    let output = wg_quick::cmd(&["ip", "link", "show", "dev", interface])?;
+
+    if output.status.success() {
+        return Ok(Some(interface.to_string()));
+    }
+    Ok(None)
+}
+
 pub fn add_interface(interface: &str) -> TunnelResult<String> {
     let result = wg_quick::cmd(&["ip", "link", "add", "dev", interface, "type", "wireguard"])?;
 

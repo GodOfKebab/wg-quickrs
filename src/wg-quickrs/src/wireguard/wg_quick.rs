@@ -108,31 +108,13 @@ impl TunnelManager {
     fn interface_exists(&mut self) -> TunnelResult<bool> {
         let interface = self.interface_name();
 
-        #[cfg(target_os = "macos")]
-        {
-            let name_file = format!("/var/run/wireguard/{}.name", interface);
-            if !std::path::PathBuf::from(&name_file).exists() {
-                return Ok(false);
-            }
-
-            let iface = fs::read_to_string(&name_file)?.trim().to_string();
-            let sock_file = format!("/var/run/wireguard/{}.sock", iface);
-
-            if std::path::PathBuf::from(&sock_file).exists() {
+        match wg_quick_platform::interface_exists(interface) {
+            Ok(Some(iface)) => {
                 self.real_interface = Some(iface);
-                return Ok(true);
+                Ok(true)
             }
-            Ok(false)
-        }
-
-        #[cfg(target_os = "linux")]
-        {
-            let output = cmd(&["ip", "link", "show", "dev", interface])?;
-
-            if output.status.success() {
-                self.real_interface = Some(interface.to_string());
-            }
-            Ok(output.status.success())
+            Ok(None) => Ok(false),
+            Err(e) => Err(e),
         }
     }
 

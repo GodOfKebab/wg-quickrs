@@ -8,6 +8,22 @@ use wg_quickrs_wasm::types::EnabledValue;
 use crate::wireguard::wg_quick;
 use crate::wireguard::wg_quick::{TunnelError, TunnelResult};
 
+
+pub fn interface_exists(interface: &str) -> TunnelResult<Option<String>> {
+    let name_file = format!("/var/run/wireguard/{}.name", interface);
+    if !std::path::PathBuf::from(&name_file).exists() {
+        return Ok(None);
+    }
+
+    let iface = fs::read_to_string(&name_file)?.trim().to_string();
+    let sock_file = format!("/var/run/wireguard/{}.sock", iface);
+
+    if std::path::PathBuf::from(&sock_file).exists() {
+        return Ok(Some(iface));
+    }
+    Ok(None)
+}
+
 pub fn add_interface(interface: &str) -> TunnelResult<String> {
     fs::create_dir_all("/var/run/wireguard/")?;
 
