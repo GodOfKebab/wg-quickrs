@@ -41,6 +41,7 @@ pub struct EndpointRouter {
     pub(crate) gateway6: Option<String>,
     pub(crate) auto_route4: bool,
     pub(crate) auto_route6: bool,
+    pub(crate) have_set_firewall: bool,
 }
 
 impl Clone for EndpointRouter {
@@ -51,6 +52,7 @@ impl Clone for EndpointRouter {
             gateway6: self.gateway6.clone(),
             auto_route4: self.auto_route4,
             auto_route6: self.auto_route6,
+            have_set_firewall: self.have_set_firewall,
         }
     }
 }
@@ -62,11 +64,13 @@ impl Default for EndpointRouter {
             gateway6: None,
             auto_route4: false,
             auto_route6: false,
+            have_set_firewall: false,
         }
     }
 }
 
 pub struct DnsManager {
+    pub(crate) set_dns: bool,
     pub(crate) service_dns: HashMap<String, String>,
     pub(crate) service_dns_search: HashMap<String, String>,
 }
@@ -74,6 +78,7 @@ pub struct DnsManager {
 impl Clone for DnsManager {
     fn clone(&self) -> Self {
         Self {
+            set_dns: self.set_dns.clone(),
             service_dns: self.service_dns.clone(),
             service_dns_search: self.service_dns_search.clone(),
         }
@@ -83,6 +88,7 @@ impl Clone for DnsManager {
 impl Default for DnsManager {
     fn default() -> Self {
         DnsManager {
+            set_dns: false,
             service_dns: Default::default(),
             service_dns_search: Default::default(),
         }
@@ -121,7 +127,12 @@ impl TunnelManager {
         self.add_addresses()?;
         self.set_mtu_and_up()?;
         self.add_routes()?;
-        self.set_endpoint_direct_route()?;
+        #[cfg(target_os = "macos")]
+        {
+            log::info!("[#] Setting endpoint direct route to WireGuard interface: {}", self.interface_name());
+            let iface = self.real_interface.as_ref().unwrap();
+            wg_quick_platform::set_endpoint_direct_route(iface, &mut self.endpoint_router)?;
+        }
         self.set_dns()?;
         #[cfg(target_os = "macos")]
         {
@@ -151,9 +162,9 @@ impl TunnelManager {
         }
 
         let _ = self.execute_hooks(HookType::PreDown);
+        let _ = self.del_interface();
         let _ = self.del_routes();
         let _ = self.del_dns();
-        let _ = self.del_interface();
         let _ = self.execute_hooks(HookType::PostDown);
         Ok(())
     }
@@ -163,6 +174,7 @@ impl TunnelManager {
 
         match wg_quick_platform::interface_exists(interface) {
             Ok(Some(iface)) => {
+                log::info!("[#] Interface for {} is {}", interface, iface);
                 self.real_interface = Some(iface);
                 Ok(true)
             }
@@ -172,12 +184,14 @@ impl TunnelManager {
     }
 
     fn add_interface(&mut self) -> TunnelResult<()> {
+        log::info!("[#] Adding WireGuard interface: {}", self.interface_name());
         let interface = self.interface_name();
         self.real_interface = Some(wg_quick_platform::add_interface(interface)?);
         Ok(())
     }
 
     fn del_interface(&mut self) -> TunnelResult<()> {
+        log::info!("[#] Deleting WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().ok_or_else(|| {
             TunnelError::InterfaceNotFound("No interface to delete".to_string())
         })?;
@@ -188,6 +202,7 @@ impl TunnelManager {
     }
 
     fn add_addresses(&self) -> TunnelResult<()> {
+        log::info!("[#] Adding addresses to WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().unwrap();
 
         let this_peer = self.config.network.peers.get(&self.config.network.this_peer)
@@ -196,13 +211,15 @@ impl TunnelManager {
         let addresses: Vec<&str> = this_peer.address.split(',').map(|s| s.trim()).collect();
 
         for addr in addresses {
-            let is_ipv6 = addr.contains(':');
-            wg_quick_platform::add_address(iface, addr, is_ipv6)?;
+            let addr_w_subnet = format!("{}/{}", addr, self.config.network.subnet.as_str().split('/').nth(1).unwrap());
+            let is_ipv6 = addr_w_subnet.contains(':');
+            wg_quick_platform::add_address(iface, &addr_w_subnet, is_ipv6)?;
         }
         Ok(())
     }
 
     fn set_mtu_and_up(&self) -> TunnelResult<()> {
+        log::info!("[#] Setting MTU and bringing up WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().unwrap();
 
         let this_peer = self.config.network.peers.get(&self.config.network.this_peer)
@@ -214,6 +231,7 @@ impl TunnelManager {
     }
 
     pub fn set_dns(&mut self) -> TunnelResult<()> {
+        log::info!("[#] Setting DNS for WireGuard interface: {}", self.interface_name());
         let this_peer = self.config.network.peers.get(&self.config.network.this_peer)
             .ok_or_else(|| TunnelError::InvalidConfig("This peer not found".to_string()))?;
 
@@ -227,11 +245,13 @@ impl TunnelManager {
     }
 
     fn del_dns(&mut self) -> TunnelResult<()> {
+        log::info!("[#] Deleting DNS for WireGuard interface: {}", self.interface_name());
         let interface_name = self.interface_name().to_string();
         wg_quick_platform::del_dns(&interface_name, &mut self.dns_manager)
     }
 
     fn add_routes(&mut self) -> TunnelResult<()> {
+        log::info!("[#] Adding routes to WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().unwrap();
         let allowed_ips = get_allowed_ips(iface)?;
 
@@ -242,12 +262,8 @@ impl TunnelManager {
         Ok(())
     }
 
-    fn set_endpoint_direct_route(&mut self) -> TunnelResult<()> {
-        let iface = self.real_interface.as_ref().unwrap();
-        wg_quick_platform::set_endpoint_direct_route(iface, &mut self.endpoint_router)
-    }
-
     fn del_routes(&self) -> TunnelResult<()> {
+        log::info!("[#] Deleting routes from WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().ok_or_else(|| {
             TunnelError::InterfaceNotFound("No interface for route deletion".to_string())
         })?;
@@ -256,6 +272,7 @@ impl TunnelManager {
     }
 
     fn set_config(&self) -> TunnelResult<()> {
+        log::info!("[#] Setting WireGuard interface configuration: {}", self.interface_name());
         let iface = self.real_interface.as_ref().unwrap();
         let wg_config = wg_quickrs_wasm::helpers::get_peer_wg_config(&self.config.network, &self.config.network.this_peer, full_version!(), true, None)?;
 
@@ -285,6 +302,7 @@ impl TunnelManager {
     }
 
     fn execute_hooks(&self, hook_type: HookType) -> TunnelResult<()> {
+        log::info!("[#] Executing {:?} hooks", hook_type);
         let this_peer = self.config.network.peers.get(&self.config.network.this_peer)
             .ok_or_else(|| TunnelError::InvalidConfig("This peer not found".to_string()))?;
 
@@ -392,7 +410,7 @@ impl TunnelManager {
                         });
                         cmds.push(EnabledValue{
                             enabled: true,
-                            value: "sysctl -w net.ipv4.ip_forwarding=0;".to_string()
+                            value: "sysctl -w net.inet.ip.forwarding=0;".to_string()
                         });
                     }
                 }
@@ -406,7 +424,6 @@ impl TunnelManager {
                 continue;
             }
 
-            log::info!("[+] {}", hook.value);
             let output = cmd(&["sh", "-c", &hook.value])?;
 
             if !output.status.success() {

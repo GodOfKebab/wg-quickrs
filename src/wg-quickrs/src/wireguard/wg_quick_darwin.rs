@@ -1,5 +1,4 @@
 #![cfg(target_os = "macos")]
-
 use std::collections::HashMap;
 use std::fs;
 use std::os::unix::fs::FileTypeExt;
@@ -88,7 +87,7 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
         log::info!("[+] wireguard-go exit");
     });
 
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_millis(500)); // TODO: replace with a better solution
 
     let iface = fs::read_to_string(&name_file)?.trim().to_string();
     Ok(iface)
@@ -124,7 +123,7 @@ pub fn set_mtu_and_up(iface: &str, mtu: &EnabledValue) -> TunnelResult<()> {
 
 pub fn set_mtu(iface: &str, mtu: &EnabledValue) -> TunnelResult<()> {
     let mtu_val = if mtu.enabled {
-        mtu.value.to_string()
+        mtu.value.parse::<u16>().unwrap()
     } else {
         // Find default interface
         let netstat_output = wg_quick::cmd(&["netstat", "-nr", "-f", "inet"])?;
@@ -136,32 +135,25 @@ pub fn set_mtu(iface: &str, mtu: &EnabledValue) -> TunnelResult<()> {
             .and_then(|line| line.split_whitespace().nth(5));
 
         // Get MTU from default interface
-        let mut mtu = 1500u16; // fallback
+        let mut mtu_sys = 1500u16; // fallback
         if let Some(default_if) = default_if {
             if let Some(detected_mtu) = get_interface_mtu(default_if)? {
-                mtu = detected_mtu;
+                mtu_sys = detected_mtu;
             }
         }
 
         // Subtract WireGuard overhead
-        mtu = mtu.saturating_sub(80);
-        mtu.to_string()
+        mtu_sys = mtu_sys.saturating_sub(80);
+        mtu_sys
     };
 
     // Only set if different from current
     if let Some(current_mtu) = get_interface_mtu(iface)? {
-        match mtu.value.parse::<u16>() {
-            Ok(mtu) => {
-                if mtu == current_mtu {
-                    return Ok(());
-                }
-            }
-            Err(_) => {
-                log::warn!("[!] Failed to parse MTU: {}", mtu.value);
-            }
+        if mtu_val == current_mtu {
+            return Ok(());
         }
     }
-    wg_quick::cmd(&["ifconfig", iface, "mtu", &mtu_val])?;
+    wg_quick::cmd(&["ifconfig", iface, "mtu", &mtu_val.to_string()])?;
 
     Ok(())
 }
