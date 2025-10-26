@@ -357,54 +357,21 @@ impl TunnelManager {
             HookType::PostUp => {
                 if config.agent.firewall.enabled && let Some(utility) = config.agent.firewall.utility.file_name() {
                     if utility == "iptables" {
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -t nat -I POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -I INPUT -p udp -m udp --dport {port} -j ACCEPT;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -I FORWARD -i {interface} -j ACCEPT;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -I FORWARD -o {interface} -j ACCEPT;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: "sysctl -w net.ipv4.ip_forward=1;".to_string()
-                        });
+                        let _ = cmd(&[fw_utility, "-t", "nat", "-I", "POSTROUTING", "-s", subnet, "-o", gateway, "-j", "MASQUERADE"]);
+                        let _ = cmd(&[fw_utility, "-I", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
+                        let _ = cmd(&[fw_utility, "-I", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
+                        let _ = cmd(&[fw_utility, "-I", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
+                        #[cfg(not(feature = "docker"))]
+                        let _ = cmd(&["sysctl", "-w", "net.ipv4.ip_forward=1"]);
                     } else if utility == "pfctl" {
-                        let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}",
-                                               gateway = config.agent.firewall.gateway,
-                                               subnet = config.network.subnet);
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("awk \"/^nat/ {{print; print \\\"{nat_rule}\\\"; next}}1\" /etc/pf.conf > /etc/pf.conf.new && mv /etc/pf.conf /etc/pf.conf.bak && mv /etc/pf.conf.new /etc/pf.conf;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("grep -qxF '{nat_rule}' /etc/pf.conf || echo '*** could NOT configure firewall because there are no existing NAT rules. See notes at docs/MACOS-FIREWALL.md ' >&2;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("grep -qxF '{nat_rule}' /etc/pf.conf || exit 1;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -f /etc/pf.conf;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -e || true;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: "sysctl -w net.inet.ip.forwarding=1;".to_string()
-                        });
+                        match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet, true) {
+                            Ok(()) => {
+                                let _ = cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
+                                let _ = cmd(&[fw_utility, "-e"]);
+                                let _ = cmd(&["sysctl", "-w", "net.inet.ip.forwarding=1"]);
+                            },
+                            Err(e) => log::warn!("Warning: Failed to modify pf.conf: {}", e),
+                        }
                     }
                 }
                 cmds.extend(this_peer.scripts.post_up.clone());
@@ -414,43 +381,21 @@ impl TunnelManager {
             HookType::PostDown => {
                 if config.agent.firewall.enabled && let Some(utility) = config.agent.firewall.utility.file_name() {
                     if utility == "iptables" {
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -t nat -D POSTROUTING -s {subnet} -o {gateway} -j MASQUERADE;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -D INPUT -p udp -m udp --dport {port} -j ACCEPT;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -D FORWARD -i {interface} -j ACCEPT;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -D FORWARD -o {interface} -j ACCEPT;")
-                        });
+                        let _ = cmd(&[fw_utility, "-t", "nat", "-D", "POSTROUTING", "-s", subnet, "-o", gateway, "-j", "MASQUERADE"]);
+                        let _ = cmd(&[fw_utility, "-D", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
+                        let _ = cmd(&[fw_utility, "-D", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
+                        let _ = cmd(&[fw_utility, "-D", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
                         #[cfg(not(feature = "docker"))]
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: "sysctl -w net.ipv4.ip_forward=0;".to_string()
-                        });
+                        let _ = cmd(&["sysctl", "-w", "net.ipv4.ip_forward=0"]);
                     } else if utility == "pfctl" {
-                        let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}",
-                                               gateway = config.agent.firewall.gateway,
-                                               subnet = config.network.subnet);
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("awk -v line='{nat_rule}' '$0 != line' /etc/pf.conf > /etc/pf.conf.new && mv /etc/pf.conf /etc/pf.conf.bak && mv /etc/pf.conf.new /etc/pf.conf;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: format!("{fw_utility} -d || true;")
-                        });
-                        cmds.push(EnabledValue{
-                            enabled: true,
-                            value: "sysctl -w net.inet.ip.forwarding=0;".to_string()
-                        });
+                        match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet, false) {
+                            Ok(_) => {}
+                            Err(e) => log::warn!("Warning: Failed to modify pf.conf: {}", e),
+                        };
+                        let _ = cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
+                        let _ = cmd(&[fw_utility, "-d"]);
+                        #[cfg(not(feature = "docker"))]
+                        let _ = cmd(&["sysctl", "-w", "net.inet.ip.forwarding=0"]);
                     }
                 }
                 cmds.extend(this_peer.scripts.post_down.clone());
@@ -558,13 +503,89 @@ pub fn cmd(args: &[&str]) -> TunnelResult<Output> {
         .args(&args[1..])
         .output()?;
     if !output.stderr.is_empty() {
-        log::warn!("[!] {}", String::from_utf8_lossy(&output.stderr));
+        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
     }
 
     if !output.status.success() {
-        log::info!("[!] {}", String::from_utf8_lossy(&output.stdout));
+        println!("{}", String::from_utf8_lossy(&output.stdout));
         return Err(TunnelError::CommandFailed(String::from_utf8_lossy(&output.stderr).to_string()));
     }
 
     Ok(output)
+}
+
+fn mod_pf_conf(gateway: &str, subnet: &str, add: bool) -> TunnelResult<()> {
+    let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}  # added by wg-quickrs");
+
+    let pf_conf_path = "/etc/pf.conf";
+    let pf_conf_new = "/etc/pf.conf.new";
+    let pf_conf_bak = "/etc/pf.conf.bak";
+
+    // Read the file
+    let content = fs::read_to_string(pf_conf_path)
+        .map_err(|e| TunnelError::IoError(e))?;
+
+    // Check if the rule already exists
+    let rule_exists = content.lines().any(|line| line == nat_rule);
+
+    if add {
+        // Adding rule
+        log::info!("*** adding the nat rule to pf.conf...");
+        if rule_exists {
+            log::info!("*** already exists, nothing to do");
+            return Ok(()); // Already exists, nothing to do
+        }
+
+        // Build new content with rule inserted after the first "nat" line
+        let mut new_lines = Vec::new();
+        let mut found_nat = false;
+
+        for line in content.lines() {
+            new_lines.push(line.to_string());
+
+            if !found_nat && line.starts_with("nat") {
+                found_nat = true;
+                new_lines.push(nat_rule.to_string());
+            }
+        }
+
+        // Check if the NAT section was found
+        if !found_nat {
+            eprintln!("*** could NOT configure firewall because there are no existing NAT rules. See notes at docs/MACOS-FIREWALL.md");
+            return Err(TunnelError::InvalidConfig(
+                "No existing NAT rules in /etc/pf.conf".into()
+            ));
+        }
+
+        // Write to a temporary file
+        fs::write(pf_conf_new, new_lines.join("\n") + "\n")?;
+        log::info!("*** added the nat rule to pf.conf");
+    } else {
+        // Removing rule
+        log::info!("*** removing the nat rule from pf.conf...");
+        if !rule_exists {
+            log::info!("*** already removed, nothing to do");
+            return Ok(()); // Doesn't exist, nothing to do
+        }
+
+        // Filter out the rule
+        let new_lines: Vec<String> = content
+            .lines()
+            .filter(|line| *line != nat_rule)
+            .map(|s| s.to_string())
+            .collect();
+
+        // Write to a temporary file
+        fs::write(pf_conf_new, new_lines.join("\n") + "\n")?;
+        log::info!("*** removed the nat rule from pf.conf");
+    }
+
+    // Atomic operations: backup then replace
+    if std::path::Path::new(pf_conf_bak).exists() {
+        fs::remove_file(pf_conf_bak)?;
+    }
+    fs::rename(pf_conf_path, pf_conf_bak)?;
+    fs::rename(pf_conf_new, pf_conf_path)?;
+
+    Ok(())
 }
