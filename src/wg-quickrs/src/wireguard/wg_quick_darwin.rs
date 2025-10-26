@@ -93,7 +93,7 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
     Ok(iface)
 }
 
-pub fn del_interface(iface: &str, interface: &str) -> TunnelResult<()> {
+pub fn del_interface(iface: &str, interface: &str, _dns_manager: &mut DnsManager, _endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
     let sock_file = format!("/var/run/wireguard/{}.sock", iface);
     let _ = fs::remove_file(sock_file);
 
