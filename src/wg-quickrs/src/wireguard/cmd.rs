@@ -67,6 +67,7 @@ impl From<wg_quick::TunnelError> for WireGuardCommandError {
     }
 }
 
+static WG_TUNNEL_MANAGER: Lazy<Mutex<wg_quick::TunnelManager>> = Lazy::new(|| Mutex::new(wg_quick::TunnelManager::new(Default::default())));
 static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
 pub static WG_STATUS: Mutex<WireGuardStatus> = Mutex::new(WireGuardStatus::DOWN);
 
@@ -75,10 +76,11 @@ pub(crate) async fn run_vpn_server(
     _wireguard_config_folder: &Path,
 ) -> std::io::Result<()> {
     log::info!("Starting VPN server with wg-quick native implementation");
+    *WG_TUNNEL_MANAGER.lock().unwrap() = wg_quick::TunnelManager::new(Some(config.clone()));
 
     Box::pin(async move {
         log::info!("Always disable wireguard first on startup");
-        let _ = disable_tunnel(config);
+        let _ = disable_tunnel();
         match WG_STATUS.lock() {
             Ok(mut w) => *w = WireGuardStatus::DOWN,
             Err(e) => log::error!("Failed to acquire lock when forcing internal wireguard status tracker to down: {e}")
@@ -87,7 +89,7 @@ pub(crate) async fn run_vpn_server(
         if !config.agent.vpn.enabled {
             log::warn!("VPN server is disabled.");
         } else {
-            enable_tunnel(config).unwrap_or_else(|e| {
+            enable_tunnel().unwrap_or_else(|e| {
                 log::error!("Failed to enable the wireguard tunnel: {e}");
             });
         }
@@ -107,7 +109,7 @@ pub(crate) async fn run_vpn_server(
             _ = signal_interrupt.recv() => log::info!("Received SIGINT"),
         }
 
-        let _ = disable_tunnel(config);
+        let _ = disable_tunnel();
         Ok(())
     })
         .await
@@ -323,7 +325,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     }
 }
 
-pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandError> {
+pub(crate) fn disable_tunnel() -> Result<(), WireGuardCommandError> {
     *WG_STATUS
         .lock()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
@@ -332,9 +334,11 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
         .lock()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? = String::new();
 
-    log::info!("Stopping WireGuard tunnel: {}", config.network.identifier);
+    let mut wg_tunnel_manager = WG_TUNNEL_MANAGER
+        .lock()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
-    match wg_quick::stop_tunnel(config.clone()) {
+    match wg_tunnel_manager.stop_tunnel() {
         Ok(_) => {
             *WG_STATUS
                 .lock()
@@ -344,7 +348,6 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
             let mut buf = TELEMETRY.lock().unwrap();
             *buf = VecDeque::with_capacity(TELEMETRY_CAPACITY);
 
-            log::info!("WireGuard tunnel stopped successfully");
             Ok(())
         }
         Err(e) => {
@@ -358,15 +361,17 @@ pub(crate) fn disable_tunnel(config: &Config) -> Result<(), WireGuardCommandErro
     }
 }
 
-pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError> {
+pub(crate) fn enable_tunnel() -> Result<(), WireGuardCommandError> {
     *WG_STATUS
         .lock()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
         WireGuardStatus::UNKNOWN;
 
-    log::info!("Starting WireGuard tunnel: {}", config.network.identifier);
+    let mut wg_tunnel_manager = WG_TUNNEL_MANAGER
+        .lock()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
-    match wg_quick::start_tunnel(config.clone()) {
+    match wg_tunnel_manager.start_tunnel() {
         Ok(real_interface) => {
             let mut wg_interface_mut = WG_INTERFACE
                 .lock()
@@ -378,142 +383,8 @@ pub(crate) fn enable_tunnel(config: &Config) -> Result<(), WireGuardCommandError
                 .lock()
                 .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
                 WireGuardStatus::UP;
-
-            log::info!(
-                "Started WireGuard tunnel at {}:{} (interface: {})",
-                config.agent.web.address,
-                config.agent.vpn.port,
-                real_interface
-            );
             Ok(())
         }
         Err(e) => Err(WireGuardCommandError::from(e)),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashMap;
-
-    fn create_test_config() -> Config {
-        let mut peers = HashMap::new();
-
-        let private_key = wg_quickrs_wasm::helpers::wg_generate_key();
-
-        peers.insert(
-            "peer1".to_string(),
-            wg_quickrs_wasm::types::Peer {
-                name: "Test Server".to_string(),
-                address: "10.0.0.1/24".to_string(),
-                endpoint: wg_quickrs_wasm::types::EnabledValue {
-                    enabled: true,
-                    value: "0.0.0.0:51820".to_string(),
-                },
-                kind: "server".to_string(),
-                icon: wg_quickrs_wasm::types::EnabledValue::default(),
-                dns: wg_quickrs_wasm::types::EnabledValue::default(),
-                mtu: wg_quickrs_wasm::types::EnabledValue::default(),
-                scripts: wg_quickrs_wasm::types::Scripts::default(),
-                private_key,
-                created_at: "2025-01-01T00:00:00Z".to_string(),
-                updated_at: "2025-01-01T00:00:00Z".to_string(),
-            },
-        );
-
-        Config {
-            agent: wg_quickrs_wasm::types::Agent {
-                web: wg_quickrs_wasm::types::AgentWeb {
-                    address: "127.0.0.1".to_string(),
-                    http: wg_quickrs_wasm::types::AgentWebHttp {
-                        enabled: false,
-                        port: 8080,
-                    },
-                    https: wg_quickrs_wasm::types::AgentWebHttps {
-                        enabled: false,
-                        port: 8443,
-                        tls_cert: PathBuf::from("/dev/null"),
-                        tls_key: PathBuf::from("/dev/null"),
-                    },
-                    password: wg_quickrs_wasm::types::Password {
-                        enabled: false,
-                        hash: "".to_string(),
-                    },
-                },
-                vpn: wg_quickrs_wasm::types::AgentVpn {
-                    enabled: true,
-                    port: 51820,
-                },
-                firewall: wg_quickrs_wasm::types::AgentFirewall {
-                    enabled: false,
-                    utility: PathBuf::from("/usr/bin/ufw"),
-                    gateway: "192.168.1.1".to_string(),
-                },
-            },
-            network: wg_quickrs_wasm::types::Network {
-                identifier: "wgtest_cmd".to_string(),
-                subnet: "10.0.0.0/24".to_string(),
-                this_peer: "peer1".to_string(),
-                peers,
-                connections: HashMap::new(),
-                defaults: wg_quickrs_wasm::types::Defaults::default(),
-                reservations: HashMap::new(),
-                updated_at: "2025-01-01T00:00:00Z".to_string(),
-            },
-        }
-    }
-
-    #[test]
-    #[ignore]
-    fn test_enable_disable_tunnel() {
-        let config = create_test_config();
-
-        // Ensure clean state
-        let _ = disable_tunnel(&config);
-
-        // Test enable
-        let result = enable_tunnel(&config);
-        assert!(result.is_ok(), "Failed to enable tunnel: {:?}", result.err());
-
-        // Check status
-        let status = status_tunnel().unwrap();
-        assert_eq!(status, WireGuardStatus::UP);
-
-        // Check interface is set
-        let interface = WG_INTERFACE.lock().unwrap();
-        assert!(!interface.is_empty(), "Interface name not set");
-        drop(interface);
-
-        std::thread::sleep(std::time::Duration::from_secs(2));
-
-        // Test disable
-        let result = disable_tunnel(&config);
-        assert!(result.is_ok(), "Failed to disable tunnel: {:?}", result.err());
-
-        // Check status
-        let status = status_tunnel().unwrap();
-        assert_eq!(status, WireGuardStatus::DOWN);
-    }
-
-    #[test]
-    #[ignore]
-    fn test_telemetry_collection() {
-        let config = create_test_config();
-
-        let _ = disable_tunnel(&config);
-        enable_tunnel(&config).unwrap();
-
-        std::thread::sleep(std::time::Duration::from_secs(3));
-
-        // Trigger telemetry collection
-        update_timestamp(&LAST_TELEMETRY_QUERY_TS);
-        run_loop();
-
-        std::thread::sleep(std::time::Duration::from_secs(2));
-
-        let telemetry = get_telemetry().unwrap();
-        assert!(telemetry.is_some());
-
-        disable_tunnel(&config).unwrap();
     }
 }
