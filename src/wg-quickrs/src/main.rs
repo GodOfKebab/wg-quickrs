@@ -44,9 +44,14 @@ async fn main() -> ExitCode {
         });
 
     // get the wg_quickrs config file path
-    let config_folder = expand_tilde(args.wg_quickrs_config_folder.clone())
+    let mut config_folder = expand_tilde(args.wg_quickrs_config_folder.clone());
+    if !config_folder.exists() {
+        log::warn!("config folder does not exist, creating it at \"{}\"", config_folder.display());
+        std::fs::create_dir_all(&config_folder).expect("Failed to create WG_QUICKRS_CONFIG_FOLDER");
+    }
+    config_folder = config_folder
         .canonicalize()
-        .expect("Failed to set WG_QUICKRS_CONFIG_FOLDER");
+        .expect("Failed to parse WG_QUICKRS_CONFIG_FOLDER");
     WG_QUICKRS_CONFIG_FOLDER
         .set(config_folder.clone())
         .expect("Failed to set WG_QUICKRS_CONFIG_FOLDER");
