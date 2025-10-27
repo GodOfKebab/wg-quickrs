@@ -12,14 +12,7 @@ use std::path::PathBuf;
 pub struct Cli {
     #[arg(short, long, help = "Increase verbosity level from Info to Debug")]
     pub verbose: bool,
-    #[cfg(target_os = "macos")]
-    #[arg(long, default_value = "/opt/homebrew/etc/wg-quickrs/")]
-    pub wg_quickrs_config_folder: PathBuf,
-    #[cfg(target_os = "linux")]
     #[arg(long, default_value = "/etc/wg-quickrs/")]
-    pub wg_quickrs_config_folder: PathBuf,
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    #[arg(long)]
     pub wg_quickrs_config_folder: PathBuf,
     #[command(subcommand)]
     pub command: Commands,
@@ -33,15 +26,6 @@ pub enum Commands {
     Init(Box<InitOptions>),
     #[command(about = "Configure and run the wg-quickrs agent")]
     Agent {
-        #[cfg(target_os = "macos")]
-        #[arg(long, default_value = "/opt/homebrew/etc/wireguard/")]
-        wireguard_config_folder: PathBuf,
-        #[cfg(target_os = "linux")]
-        #[arg(long, default_value = "/etc/wireguard/")]
-        wireguard_config_folder: PathBuf,
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        #[arg(long)]
-        wireguard_config_folder: PathBuf,
         #[command(subcommand)]
         commands: AgentCommands,
     },

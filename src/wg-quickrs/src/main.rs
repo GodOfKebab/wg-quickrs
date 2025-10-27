@@ -68,11 +68,10 @@ async fn main() -> ExitCode {
     match &args.command {
         wg_quickrs_cli::Commands::Init(init_opts) => commands::init::initialize_agent(init_opts),
         wg_quickrs_cli::Commands::Agent {
-            wireguard_config_folder,
             commands,
         } => match commands {
             // wg-quickrs agent run
-            AgentCommands::Run => commands::agent::run_agent(wireguard_config_folder).await,
+            AgentCommands::Run => commands::agent::run_agent().await,
             // wg-quickrs agent set-web-address
             AgentCommands::SetWebAddress(v) => commands::config::set_agent_fields(
                 "address",

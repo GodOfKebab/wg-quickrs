@@ -5,7 +5,7 @@ use wg_quickrs_wasm::helpers::get_peer_wg_config;
 use wg_quickrs_wasm::types::{Config, Telemetry, TelemetryData, TelemetryDatum, WireGuardStatus};
 use std::collections::{HashMap, VecDeque};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -73,7 +73,6 @@ pub static WG_STATUS: Mutex<WireGuardStatus> = Mutex::new(WireGuardStatus::DOWN)
 
 pub(crate) async fn run_vpn_server(
     config: &Config,
-    _wireguard_config_folder: &Path,
 ) -> std::io::Result<()> {
     log::info!("Starting VPN server with wg-quick native implementation");
     *WG_TUNNEL_MANAGER.lock().unwrap() = wg_quick::TunnelManager::new(Some(config.clone()));

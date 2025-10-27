@@ -109,15 +109,38 @@ else
   echo "    ✅ Detected asset $(echo "$ASSET_URL" | cut -d'/' -f9-) in the $ARG_RELEASE release"
 fi
 
-case "$os" in
-  Linux)   WG_QUICKRS_INSTALL_DIR="/etc/wg-quickrs" ;;
-  Darwin)  WG_QUICKRS_INSTALL_DIR="/opt/homebrew/etc/wg-quickrs" ;;
-  *)       WG_QUICKRS_INSTALL_DIR="$HOME/.wg-quickrs" ;;
-esac
 
 # --- set up WG_QUICKRS_INSTALL_DIR ---
+WG_QUICKRS_SYSTEM_INSTALL_DIR="/etc/wg-quickrs"
+WG_QUICKRS_USER_INSTALL_DIR="$HOME/.wg-quickrs"
+WG_QUICKRS_INSTALL_DIR="$WG_QUICKRS_SYSTEM_INSTALL_DIR"
+WG_QUICKRS_INSTALL_DIR_OPTION=""
+WG_QUICKRS_REQUIRES_SUDO=0
 echo "⏳ Installing configuration files to: $WG_QUICKRS_INSTALL_DIR"
 mkdir -p "$WG_QUICKRS_INSTALL_DIR"
+
+download_release() {
+  if [ ! -w "$SYSTEM_BIN_DIR" ]; then
+    echo "🔐 Administrator privileges (write permission to $WG_QUICKRS_SYSTEM_INSTALL_DIR) required to download to $WG_QUICKRS_SYSTEM_INSTALL_DIR"
+    if ! sudo mkdir -p "$WG_QUICKRS_SYSTEM_INSTALL_DIR" 2>/dev/null; then
+      echo "    ⚠️  Failed to download to $WG_QUICKRS_SYSTEM_INSTALL_DIR, trying $WG_QUICKRS_USER_INSTALL_DIR instead"
+      mkdir -p "$WG_QUICKRS_USER_INSTALL_DIR"
+      if ! wget -qO- "$ASSET_URL" | tar -xzf - -C "$WG_QUICKRS_USER_INSTALL_DIR"; then
+        echo "        ❌ Failed to download release"
+        exit 1
+      fi
+      echo "        ✅ Downloaded wg-quickrs binary to $WG_QUICKRS_USER_INSTALL_DIR"
+      WG_QUICKRS_INSTALL_DIR="$WG_QUICKRS_USER_INSTALL_DIR"
+      WG_QUICKRS_INSTALL_DIR_OPTION=" --wg-quickrs-config-folder $WG_QUICKRS_USER_INSTALL_DIR"
+    else
+      wget -qO- "$ASSET_URL" | sudo tar -xzf - -C "$WG_QUICKRS_SYSTEM_INSTALL_DIR"
+      echo "    ✅ Downloaded wg-quickrs release to $WG_QUICKRS_SYSTEM_INSTALL_DIR"
+      WG_QUICKRS_REQUIRES_SUDO=1
+    fi
+  else
+    wget -qO- "$ASSET_URL" | tar -xzf - -C "$WG_QUICKRS_SYSTEM_INSTALL_DIR"
+  fi
+}
 
 SYSTEM_BIN_DIR="/usr/local/bin"
 USER_BIN_DIR="$HOME/.local/bin"
@@ -127,6 +150,7 @@ install_bin() {
     echo "🔐 Administrator privileges (write permission to $SYSTEM_BIN_DIR) required to install to $SYSTEM_BIN_DIR"
     if ! sudo mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$SYSTEM_BIN_DIR/wg-quickrs" 2>/dev/null; then
       echo "    ⚠️  Failed to install to $SYSTEM_BIN_DIR, trying $USER_BIN_DIR instead"
+      # check override
       mkdir -p "$USER_BIN_DIR"
       if ! mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$USER_BIN_DIR/wg-quickrs"; then
         echo "        ❌ Failed to install binary"
@@ -156,7 +180,7 @@ if [ -n "$(ls -A "$WG_QUICKRS_INSTALL_DIR" 2>/dev/null)" ]; then
   read overwrite
   overwrite=${overwrite:-n}
   if [ "$overwrite" = "y" ] || [ "$overwrite" = "Y" ]; then
-    wget -qO- "$ASSET_URL" | tar -xzf - -C "$WG_QUICKRS_INSTALL_DIR"
+    download_release
     install_bin
     echo "    ✅ Overwritten and updated files."
   else
@@ -164,18 +188,23 @@ if [ -n "$(ls -A "$WG_QUICKRS_INSTALL_DIR" 2>/dev/null)" ]; then
     exit
   fi
 else
-  wget -qO- "$ASSET_URL" | tar -xzf - -C "$WG_QUICKRS_INSTALL_DIR"
+  download_release
   install_bin
   echo "    ✅ Fresh install completed."
 fi
 
-printf "🤔 Do you want to set up TLS certs/keys now? [Y/n]: "
+printf "🤔 Do you want to set up TLS certs/keys (at \"%s/certs\") now? [Y/n]: " "$WG_QUICKRS_INSTALL_DIR"
 read setup_certs
 setup_certs=${setup_certs:-y}
 
 if [ "$setup_certs" = "y" ] || [ "$setup_certs" = "Y" ]; then
-  mkdir -p "$WG_QUICKRS_INSTALL_DIR/certs"
-  wget -q https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.1/tls-cert-generator.sh -O "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh"
+  if [ $WG_QUICKRS_REQUIRES_SUDO -eq 1  ]; then
+    sudo mkdir -p "$WG_QUICKRS_INSTALL_DIR/certs"
+    sudo wget -q https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.1/tls-cert-generator.sh -O "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh"
+  else
+    mkdir -p "$WG_QUICKRS_INSTALL_DIR/certs"
+    wget -q https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.1/tls-cert-generator.sh -O "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh"
+  fi
 
   echo "🔐 Enter server names for certificate generation:"
   echo "    - Specific hostnames/IPs (space-separated): example.com 192.168.1.1"
@@ -185,12 +214,16 @@ if [ "$setup_certs" = "y" ] || [ "$setup_certs" = "Y" ]; then
   read server_names
   server_names=${server_names:-"all"}
   echo "⏳ Generating certificates for: $server_names"
-  sh "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh" -f -o "$WG_QUICKRS_INSTALL_DIR/certs" "$server_names"
+  if [ $WG_QUICKRS_REQUIRES_SUDO -eq 1  ]; then
+    sudo sh "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh" -f -o "$WG_QUICKRS_INSTALL_DIR/certs" "$server_names"
+  else
+    sh "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh" -f -o "$WG_QUICKRS_INSTALL_DIR/certs" "${server_names}"
+  fi
   echo "✅ Generated TLS certs/keys"
 
   echo "ℹ️ If you want to generate cert/key in the future, run the following with YOUR_SERVER1, YOUR_SERVER2, etc. filled in"
   echo
-  echo "    sh $WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh" -o "$WG_QUICKRS_INSTALL_DIR/certs" YOUR_SERVER1 YOUR_SERVER2
+  printf "    sh \"%s/certs/tls-cert-generator.sh\" -o \"%s/certs\" YOUR_SERVER1 YOUR_SERVER2\n" "$WG_QUICKRS_INSTALL_DIR" "$WG_QUICKRS_INSTALL_DIR"
   echo
 else
   echo "⚠️ Skipping TLS cert setup. Remember to configure certs later!"
@@ -222,13 +255,13 @@ case "$current_shell" in
     echo
     ;;
   *)
-    echo "    ⚠️ You are not using a supported shell (bash/zsh) for shell completions. Skipping shell completions."
+    printf "    ⚠️ You are not using a supported shell (bash/zsh) for shell completions. Skipping shell completions.\n"
     ;;
 esac
 
 
-printf "\n🛠️ Then, you are ready to initialize your service with:\n\n"
-printf "    wg-quickrs init\n"
+printf "🛠️ Then, you are ready to initialize your agent with:\n\n"
+printf "    wg-quickrs%s init\n" "$WG_QUICKRS_INSTALL_DIR_OPTION"
 printf "\n🚀 After a successful initialization, you can start up your service with:\n\n"
-printf "    wg-quickrs agent run\n\n"
+printf "    wg-quickrs%s agent run\n\n" "$WG_QUICKRS_INSTALL_DIR_OPTION"
 

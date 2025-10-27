@@ -259,7 +259,7 @@ sudo apt install -y wireguard wireguard-tools
 
 Run the following and follow the prompts to configure network, agent, and default peer settings when generating new
 peers/connections.
-Without any flags, `init` command generates `/etc/wg-quickrs/conf.yml` in Linux (or `/opt/homebrew/etc/wg-quickrs/conf.yml` in macOS), where all the settings/configurations are stored.
+Without any flags, `init` command generates `/etc/wg-quickrs/conf.yml`, where all the settings/configurations are stored.
 If you want to later edit the configuration, you can either use the scripting commands at `wg-quickrs agent <TAB>` or
 manually edit this file and restart your agent.
 
