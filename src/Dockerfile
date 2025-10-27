@@ -1,13 +1,19 @@
-FROM --platform=linux/$BUILDARCH rust:1.90-slim AS wg-quickrs-wasm-builder
+FROM --platform=linux/$BUILDARCH rust:1.90-slim AS rust-builder
 WORKDIR /app
 
-RUN cargo install wasm-pack
+RUN apt update && apt install -y curl
 
 COPY src/Cargo.toml /app/Cargo.toml
 COPY src/Cargo.lock /app/Cargo.lock
 COPY src/wg-quickrs /app/wg-quickrs
 COPY src/wg-quickrs-cli /app/wg-quickrs-cli
 COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
+
+FROM rust-builder AS wg-quickrs-wasm-builder
+WORKDIR /app
+
+ADD https://raw.githubusercontent.com/drager/wasm-pack/refs/heads/master/docs/_installer/init.sh init.sh
+RUN bash init.sh
 RUN wasm-pack build wg-quickrs-wasm --target web --out-dir /app/pkg -- --locked --features wasm
 
 FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
@@ -17,7 +23,7 @@ RUN npm ci --omit=dev
 COPY --from=wg-quickrs-wasm-builder /app/pkg /app/wg-quickrs-web/pkg
 RUN npm run build
 
-FROM --platform=linux/$BUILDARCH rust:1.90-slim AS wg-quickrs-builder
+FROM rust-builder AS wg-quickrs-builder
 WORKDIR /app
 
 # Install Zig
@@ -28,18 +34,13 @@ RUN case "$BUILDARCH" in \
             arm) echo 'arm' > ZIG_TARGET ;; \
             *) echo "Unsupported architecture $BUILDARCH" >&2; exit 1 ;; \
             esac && \
-    apt-get update && apt-get install -y curl xz-utils git musl-dev cmake clang llvm-dev libclang-dev pkg-config && \
+    apt-get install -y xz-utils git musl-dev cmake clang llvm-dev libclang-dev pkg-config && \
     rm -rf /var/lib/apt/lists/* && \
     curl -L https://ziglang.org/download/0.15.1/zig-$(cat ZIG_TARGET)-linux-0.15.1.tar.xz | tar -xJ && \
     mv zig-* /usr/local/zig && \
     ln -s /usr/local/zig/zig /usr/local/bin/zig && \
     cargo install cargo-zigbuild
 
-COPY src/Cargo.lock /app/Cargo.lock
-COPY src/Cargo.toml /app/Cargo.toml
-COPY src/wg-quickrs /app/wg-quickrs
-COPY src/wg-quickrs-cli /app/wg-quickrs-cli
-COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
 COPY .git /app/.git
 
 # Setup target arch
@@ -59,22 +60,7 @@ RUN cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --ta
 
 FROM alpine:3.22 AS runner
 WORKDIR /app
-RUN apk add -U --no-cache wireguard-tools iptables
-RUN cat > /app/entrypoint.sh <<'EOF'
-#!/bin/bash
-# ensure PATH includes system sbin/bin
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-# create a dummy sudo if missing
-if [ ! -x /usr/bin/sudo ]; then
-  echo '#!/bin/sh' > /usr/bin/sudo
-  echo 'exec "$@"' >> /usr/bin/sudo
-  chmod +x /usr/bin/sudo
-fi
-
-# run the actual app
-exec /app/wg-quickrs --wg-quickrs-config-folder .wg-quickrs "$@"
-EOF
+RUN apk add -U --no-cache wireguard-tools-wg openresolv iproute2 iptables
 COPY --from=wg-quickrs-builder /app/bin/wg-quickrs /app/wg-quickrs
-ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
+ENTRYPOINT ["/app/wg-quickrs", "--wg-quickrs-config-folder", ".wg-quickrs"]
 #CMD ["tail", "-f", "/dev/null"]
