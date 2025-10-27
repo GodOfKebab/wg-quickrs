@@ -3,7 +3,7 @@ services:
   tls-cert-generator:
     image: godofkebab/tls-cert-generator
     volumes:
-      - .wg-quickrs/certs:/app/certs
+      - .wg-quickrs-docker/certs:/app/certs
     environment:
       COUNTRY: "XX"
       STATE: "XXX"
@@ -21,7 +21,7 @@ services:
       dockerfile: src/Dockerfile
       target: runner
     volumes:
-      - .wg-quickrs:/app/.wg-quickrs
+      - .wg-quickrs-docker:/app/.wg-quickrs
     command: >
       init --no-prompt true
       --network-identifier wg-quickrs-home
