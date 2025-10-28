@@ -1,6 +1,8 @@
+use chrono::naive::serde::ts_milliseconds;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -40,7 +42,7 @@ pub struct Summary {
     pub telemetry: Option<Telemetry>,
     pub digest: String,
     pub status: u8,
-    pub timestamp: String,
+    pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -48,7 +50,7 @@ pub struct SummaryDigest {
     pub telemetry: Option<Telemetry>,
     pub digest: String,
     pub status: u8,
-    pub timestamp: String,
+    pub timestamp: DateTime<Utc>,
 }
 
 impl From<&Summary> for SummaryDigest {
@@ -119,7 +121,7 @@ pub struct Network {
     pub connections: HashMap<String, Connection>,
     pub defaults: Defaults,
     pub reservations: HashMap<String, ReservationData>,
-    pub updated_at: String,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -133,8 +135,8 @@ pub struct Peer {
     pub mtu: EnabledValue,
     pub scripts: Scripts,
     pub private_key: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -236,7 +238,7 @@ impl Default for DefaultConnection {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ReservationData {
     pub peer_id: String,
-    pub valid_until: String,
+    pub valid_until: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -248,7 +250,8 @@ pub struct Telemetry {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct TelemetryData {
     pub datum: HashMap<String, TelemetryDatum>,
-    pub timestamp: u128,
+    #[serde(with = "ts_milliseconds")]
+    pub timestamp: NaiveDateTime,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -319,8 +322,8 @@ impl From<&AddedPeer> for Peer {
             mtu: added_peer.mtu.clone(),
             scripts: added_peer.scripts.clone(),
             private_key: added_peer.private_key.clone(),
-            created_at: "".to_string(),
-            updated_at: "".to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         }
     }
 }

@@ -1,8 +1,7 @@
 use std::collections::HashMap;
-use chrono::Duration;
+use chrono::{Duration, Utc};
 use wg_quickrs_wasm::validation::*;
 use wg_quickrs_wasm::types::*;
-use wg_quickrs_wasm::timestamp;
 
 
 /// Helper macro for passing tests
@@ -55,8 +54,8 @@ fn generate_peer(name: &str, address: &str) -> Peer {
         mtu: Default::default(),
         scripts: Default::default(),
         private_key: "".to_string(),
-        created_at: "".to_string(),
-        updated_at: "".to_string(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
     }
 }
 
@@ -69,7 +68,7 @@ fn generate_network(peers: HashMap<String, Peer>, subnet: &str, reservations: Ha
         connections: Default::default(),
         defaults: Default::default(),
         reservations,
-        updated_at: "".to_string(),
+        updated_at: Utc::now(),
     }
 }
 
@@ -132,7 +131,7 @@ fn test_check_internal_address() {
 
     // Address reserved with a valid reservation (future timestamp)
     let mut reservations = HashMap::new();
-    let future_time = timestamp::get_future_timestamp_formatted(Duration::minutes(10));
+    let future_time = Utc::now() + Duration::minutes(10);
     reservations.insert("10.0.0.10".into(), ReservationData {
         peer_id: "".to_string(),
         valid_until: future_time,
@@ -145,25 +144,13 @@ fn test_check_internal_address() {
 
     // Address with expired reservation (past timestamp) - should succeed
     let mut reservations = HashMap::new();
-    let past_time = timestamp::get_future_timestamp_formatted(Duration::minutes(-10));
+    let past_time = Utc::now() + Duration::minutes(-10);
     reservations.insert("10.0.0.10".into(), ReservationData {
         peer_id: "".to_string(),
         valid_until: past_time,
     });
     let network = generate_network(HashMap::new(), "10.0.0.0/24", reservations);
     ok!(check_internal_address("10.0.0.10", &network));
-
-    // Address with invalid timestamp format in the reservation
-    let mut reservations = HashMap::new();
-    reservations.insert("10.0.0.10".into(), ReservationData {
-        peer_id: "".to_string(),
-        valid_until: "invalid-timestamp".to_string(),
-    });
-    let network = generate_network(HashMap::new(), "10.0.0.0/24", reservations);
-    err_contains!(
-        check_internal_address("10.0.0.10", &network),
-        "failed to parse reservation validity period"
-    );
 
     // Valid address (success case)
     let network = generate_network(HashMap::new(), "10.0.0.0/24", HashMap::new());
@@ -176,7 +163,7 @@ fn test_check_internal_address() {
         .map(|(i, peer)| (i.to_string(), peer))
         .collect();
     let mut reservations = HashMap::new();
-    let past_time = timestamp::get_future_timestamp_formatted(Duration::minutes(-10));
+    let past_time = Utc::now() + Duration::minutes(-10);
     reservations.insert("10.0.0.10".into(), ReservationData {
         peer_id: "".to_string(),
         valid_until: past_time,

@@ -4,8 +4,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 use base64::Engine;
 use crate::types::{EnabledValue, Network};
 use base64::engine::general_purpose::STANDARD;
-use chrono::Duration;
-use crate::timestamp;
+use chrono::{Duration, Utc};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CheckResult {
@@ -66,12 +65,8 @@ pub fn check_internal_address(address: &str, network: &Network) -> CheckResult {
         return CheckResult { status: false, msg: format!("address is already taken by {}({})", peer.name, peer_id) };
     }
     if let Some(reservation_data) = network.reservations.get(address) {
-        match timestamp::get_duration_since_formatted(&reservation_data.valid_until) {
-            None => return CheckResult { status: false, msg: "failed to parse reservation validity period".into() },
-            Some(duration) if duration < Duration::zero() => {
-                return CheckResult { status: false, msg: "address is reserved for another peer".into() }
-            }
-            _ => {}
+        if Utc::now().signed_duration_since(&reservation_data.valid_until) < Duration::zero() {
+            return CheckResult { status: false, msg: "address is reserved for another peer".into() }
         }
     }
     CheckResult { status: true, msg: "".into() }

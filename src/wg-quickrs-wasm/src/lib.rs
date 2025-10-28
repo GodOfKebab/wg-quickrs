@@ -1,7 +1,6 @@
 pub mod helpers;
 pub mod types;
 pub mod validation;
-pub mod timestamp;
 
 // Only include these when compiling to wasm32
 #[cfg(target_arch = "wasm32")]

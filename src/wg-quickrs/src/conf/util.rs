@@ -3,7 +3,6 @@ use crate::macros::*;
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
 use crate::commands::validation::validate_config_file;
 use wg_quickrs_wasm::types::{Config, Agent, Network, Summary, WireGuardStatus};
-use wg_quickrs_wasm::timestamp::get_now_timestamp_formatted;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -11,6 +10,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
+use chrono::Utc;
 use thiserror::Error;
 use semver::Version;
 
@@ -180,7 +180,7 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
         telemetry,
         digest: config_w_digest.network_w_digest.digest,
         status: status.value(),
-        timestamp: get_now_timestamp_formatted(),
+        timestamp: Utc::now(),
     })
 }
 

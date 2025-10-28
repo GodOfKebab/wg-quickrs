@@ -10,13 +10,13 @@ use wg_quickrs_wasm::types::{
     Agent, AgentFirewall, AgentVpn, AgentWeb, AgentWebHttp, AgentWebHttps, Config,
     DefaultConnection, DefaultPeer, Defaults, EnabledValue, Network, Password, Peer, Scripts,
 };
-use wg_quickrs_wasm::timestamp::get_now_timestamp_formatted;
 use wg_quickrs_wasm::helpers::wg_generate_key;
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::{env, fs};
+use chrono::Utc;
 use uuid::Uuid;
 use wg_quickrs_wasm::validation::check_internal_address;
 
@@ -637,7 +637,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
             connections: Default::default(),
             defaults: Default::default(),
             reservations: Default::default(),
-            updated_at: "".to_string(),
+            updated_at: Utc::now(),
         })
     );
     step_counter += 1;
@@ -1037,7 +1037,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> ExitCode {
     );
 
     let peer_id = Uuid::new_v4().to_string();
-    let now = get_now_timestamp_formatted();
+    let now = Utc::now();
 
     let peer = Peer {
         name: agent_peer_name,

@@ -10,6 +10,7 @@ use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::Utc;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 use tokio::signal::unix::{signal, SignalKind};
@@ -149,10 +150,7 @@ fn run_loop() {
             }
             buf.push_back(TelemetryData {
                 datum: telemetry,
-                timestamp: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis(),
+                timestamp: Utc::now().naive_utc(),
             });
         }
         Err(e) => log::error!("Failed to get telemetry data => {}", e),

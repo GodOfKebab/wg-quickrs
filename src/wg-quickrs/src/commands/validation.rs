@@ -1,7 +1,6 @@
 use crate::{WG_QUICKRS_CONFIG_FOLDER, WG_QUICKRS_CONFIG_FILE};
 use wg_quickrs_wasm::validation::{check_field_enabled_value, check_field_str, check_internal_address, is_cidr, CheckResult};
 use std::path::Path;
-use chrono::DateTime;
 use wg_quickrs_wasm::types::EnabledValue;
 use uuid::Uuid;
 use crate::conf::util::{ConfUtilError, ConfigFile};
@@ -100,13 +99,6 @@ pub fn check_field_str_agent(field_name: &str, field_variable: &str) -> CheckRes
             }
             ret
         }
-        "timestamp" => {
-            ret.status = DateTime::parse_from_rfc3339(field_variable).is_ok();
-            if !ret.status {
-                ret.msg = format!("invalid timestamp: {}", field_variable);
-            }
-            ret
-        }
         _ => check_field_str(field_name, field_variable),
     }
 }
@@ -167,7 +159,6 @@ pub fn validate_config_file(config_file: &ConfigFile) -> Result<(), ConfUtilErro
     validate_field!(check_field_str_agent("identifier", &config_file.network.identifier), "network.identifier");
     validate_field!(check_field_str_agent("subnet", &config_file.network.subnet), "network.subnet");
     validate_field!(check_field_str_agent("peer_id", &config_file.network.this_peer), "network.this_peer");
-    validate_field!(check_field_str_agent("timestamp", &config_file.network.updated_at), "network.updated_at");
 
     // Validate peers
     for (peer_id, peer) in &config_file.network.peers {
@@ -185,8 +176,6 @@ pub fn validate_config_file(config_file: &ConfigFile) -> Result<(), ConfUtilErro
         validate_field!(check_field_enabled_value("dns", &peer.dns), format!("{}.dns", peer_path));
         validate_field!(check_field_enabled_value("mtu", &peer.mtu), format!("{}.mtu", peer_path));
         validate_field!(check_field_str("private_key", &peer.private_key), format!("{}.private_key", peer_path));
-        validate_field!(check_field_str_agent("timestamp", &peer.updated_at), format!("{}.updated_at", peer_path));
-        validate_field!(check_field_str_agent("timestamp", &peer.created_at), format!("{}.created_at", peer_path));
 
         // Validate scripts using macro
         validate_scripts!(peer.scripts, peer_path);
@@ -252,7 +241,6 @@ pub fn validate_config_file(config_file: &ConfigFile) -> Result<(), ConfUtilErro
 
         validate_field!(check_internal_address(address, &temp_network), reservations_path);
         validate_field!(check_field_str_agent("peer_id", &reservation.peer_id), format!("{}.peer_id", reservations_path));
-        validate_field!(check_field_str_agent("timestamp", &reservation.valid_until), format!("{}.valid_until", reservations_path));
     }
 
     Ok(())

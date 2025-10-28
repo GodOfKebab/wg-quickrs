@@ -3,9 +3,8 @@ use crate::conf::network;
 use crate::wireguard::cmd::sync_conf;
 use wg_quickrs_wasm::types::*;
 use wg_quickrs_wasm::validation::*;
-use wg_quickrs_wasm::timestamp::*;
 use actix_web::{HttpResponse, web};
-use chrono::Duration;
+use chrono::{Duration, Utc};
 use serde_json::json;
 use uuid::Uuid;
 use crate::commands::validation::check_field_str_agent;
@@ -51,7 +50,7 @@ macro_rules! get_mg_config_w_digest {
 macro_rules! post_mg_config_w_digest {
     ($c:expr) => {
         let config_file = util::ConfigFile::from(&$c.to_config());
-        $c.network_w_digest.network.updated_at = get_now_timestamp_formatted();
+        $c.network_w_digest.network.updated_at = Utc::now();
         $c.network_w_digest = match util::NetworkWDigest::from_network($c.network_w_digest.network.clone()) {
             Ok(network_digest) => network_digest,
             Err(_) => {
@@ -396,7 +395,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     );
                 }
                 let mut added_peer = wg_quickrs_wasm::types::Peer::from(&peer_details);
-                added_peer.created_at = get_now_timestamp_formatted();
+                added_peer.created_at = Utc::now();
                 added_peer.updated_at = added_peer.created_at.clone();
                 c.network_w_digest.network.peers.insert(peer_id.clone(), added_peer);
                 changed_config = true;
@@ -517,7 +516,7 @@ pub(crate) fn post_network_reserve_address() -> HttpResponse {
         };
 
     let reservation_peer_id = String::from(Uuid::new_v4());
-    let reservation_valid_until = get_future_timestamp_formatted(Duration::minutes(10));
+    let reservation_valid_until = Utc::now() + Duration::minutes(10);
     log::info!("reserved address {} for {} until {}", next_address.clone(), reservation_peer_id, reservation_valid_until);
     c.network_w_digest.network.reservations.insert(next_address.clone(), ReservationData {
         peer_id: reservation_peer_id.clone(),

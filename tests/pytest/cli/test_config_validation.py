@@ -43,8 +43,8 @@ def create_invalid_config_file(wg_quickrs_config_file, field_path, invalid_value
         ("network.subnet", "192.168.1.1", "network.subnet: subnet is not in CIDR format"),
         ("network.this_peer", "invalid-uuid", "network.this_peer: peer_id needs to follow uuid4 standards"),
         ("network.this_peer", "", "network.this_peer: peer_id needs to follow uuid4 standards"),
-        ("network.updated_at", "invalid-timestamp", "network.updated_at: invalid timestamp"),
-        ("network.updated_at", "2023-13-45T99:99:99Z", "network.updated_at: invalid timestamp"),
+        ("network.updated_at", "invalid-timestamp", "network.updated_at:"),
+        ("network.updated_at", "2023-13-45T99:99:99Z", "network.updated_at:"),
         
         # Peer field validation
         ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.name", "", "name cannot be empty"),
@@ -59,8 +59,8 @@ def create_invalid_config_file(wg_quickrs_config_file, field_path, invalid_value
         ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.mtu", {"enabled": True, "value": "99999"}, "MTU is invalid"),
         ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.private_key", "invalid-key", "private_key is not base64 encoded"),
         ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.private_key", "", "private_key is not base64 encoded"),
-        ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.created_at", "invalid-timestamp", "created_at: invalid timestamp"),
-        ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.updated_at", "invalid-timestamp", "updated_at: invalid timestamp"),
+        ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.created_at", "invalid-timestamp", "created_at:"),
+        ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.updated_at", "invalid-timestamp", "updated_at:"),
         ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.scripts.pre_up", [{"enabled": True, "value": "echo 'test'"}], "script needs to end with a semicolon"),
         ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.scripts.post_up", [{"enabled": True, "value": "invalid-script"}], "script needs to end with a semicolon"),
         ("network.peers.0ed989c6-6dba-4e3c-8034-08adf4262d9e.scripts.pre_down", [{"enabled": True, "value": "echo 'test' "}], "script needs to end with a semicolon"),
@@ -86,7 +86,7 @@ def create_invalid_config_file(wg_quickrs_config_file, field_path, invalid_value
         # reservations field validation
         ("network.reservations", {"invalid-ip": {"peer_id": "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "valid_until": "2025-12-31T23:59:59Z"}}, "address is not IPv4"),
         ("network.reservations", {"10.0.34.100": {"peer_id": "not-a-uuid", "valid_until": "2025-12-31T23:59:59Z"}}, "peer_id needs to follow uuid4 standards"),
-        ("network.reservations", {"10.0.34.100": {"peer_id": "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "valid_until": "invalid-timestamp"}}, "invalid timestamp"),
+        ("network.reservations", {"10.0.34.100": {"peer_id": "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "valid_until": "invalid-timestamp"}}, "network.reservations.10.0.34.100.valid_until"),
     ]
 )
 def test_config_validation_failures(setup_wg_quickrs_folder, field_path, invalid_value, expected_error_contains):
