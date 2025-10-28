@@ -34,12 +34,11 @@ RUN case "$BUILDARCH" in \
             arm) echo 'arm' > ZIG_TARGET ;; \
             *) echo "Unsupported architecture $BUILDARCH" >&2; exit 1 ;; \
             esac && \
-    apt-get install -y xz-utils git musl-dev cmake clang llvm-dev libclang-dev pkg-config && \
-    rm -rf /var/lib/apt/lists/* && \
+    apt-get install -y xz-utils git cmake clang && \
     curl -L https://ziglang.org/download/0.15.1/zig-$(cat ZIG_TARGET)-linux-0.15.1.tar.xz | tar -xJ && \
     mv zig-* /usr/local/zig && \
     ln -s /usr/local/zig/zig /usr/local/bin/zig && \
-    cargo install cargo-zigbuild
+    cargo install --locked cargo-zigbuild
 
 COPY .git /app/.git
 
