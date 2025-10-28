@@ -1,12 +1,12 @@
 use crate::wireguard::cmd::{disable_tunnel, enable_tunnel, WG_STATUS};
 use actix_web::{web, HttpResponse};
 use serde_json::json;
-
+use wg_quickrs_wasm::types::WireGuardStatus;
 
 pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
     #[derive(serde::Serialize, serde::Deserialize)]
     struct StatusBody {
-        status: u8,
+        status: WireGuardStatus,
     }
     let body_raw = String::from_utf8_lossy(&body);
     let status_body: StatusBody = match serde_json::from_str(&body_raw) {
@@ -17,19 +17,20 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
             }));
         }
     };
-    if status_body.status == WG_STATUS.lock().unwrap().value() {
-        return HttpResponse::Ok().json(json!(status_body));
-    }
 
-    let action = if status_body.status == wg_quickrs_wasm::types::WireGuardStatus::UP.value() {
+    let action = if status_body.status == WireGuardStatus::UP {
         enable_tunnel
-    } else if status_body.status == wg_quickrs_wasm::types::WireGuardStatus::DOWN.value() {
+    } else if status_body.status == WireGuardStatus::DOWN {
         disable_tunnel
     } else {
         return HttpResponse::BadRequest().json(json!({
             "error": "Invalid status value"
         }));
     };
+
+    if status_body.status == *WG_STATUS.lock().unwrap() {
+        return HttpResponse::Ok().json(json!(status_body));
+    }
 
     match action() {
         Ok(_) => HttpResponse::Ok().json(json!(status_body)),

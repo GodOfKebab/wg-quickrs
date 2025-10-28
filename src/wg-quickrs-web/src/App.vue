@@ -40,13 +40,13 @@
         <div class="inline-block float-right pr-3 my-auto">
           <!-- Web Server Status -->
           <div class="flex items-center pl-1">
-            <div v-if="webServerStatus === ServerStatusEnum.unknown"
+            <div v-if="webServerStatus === 'unknown'"
                  class="inline-block shadow-md rounded-lg p-1.5 mr-2 bg-yellow-500 hover:bg-yellow-400"
                  title="Management Web Server Status Unknown"></div>
-            <div v-else-if="webServerStatus === ServerStatusEnum.down"
+            <div v-else-if="webServerStatus === 'down'"
                  class="inline-block shadow-md rounded-lg p-1.5 mr-2 bg-red-500 hover:bg-red-400"
                  title="Management Web Server is Down/Not reachable"></div>
-            <div v-else-if="webServerStatus === ServerStatusEnum.up"
+            <div v-else-if="webServerStatus === 'up'"
                  class="inline-block shadow-md rounded-lg p-1.5 mr-2 bg-green-500 hover:bg-green-400"
                  title="Management Web Server is Up"></div>
             <span class="text-sm text-gray-500 text-right">Web Server Status</span>
@@ -54,18 +54,18 @@
 
           <!-- WireGuard Status -->
           <div class="flex items-center pl-1">
-            <div v-if="wireguardStatus === ServerStatusEnum.unknown"
+            <div v-if="wireguardStatus === 'unknown'"
                  class="inline-block align-middle shadow-md rounded-full transition-all w-5 h-3 mr-1.5 bg-yellow-500 hover:bg-yellow-400"
                  title="WireGuard Networking Status Unknown">
               <div class="shadow-md rounded-full w-1 h-1 m-1 ml-2 bg-white"></div>
             </div>
-            <div v-else-if="wireguardStatus === ServerStatusEnum.down"
+            <div v-else-if="wireguardStatus === 'down'"
                  class="inline-block align-middle shadow-md rounded-full transition-all w-5 h-3 mr-1.5 bg-red-500 cursor-pointer hover:bg-red-400"
                  title="Enable WireGuard Networking"
                  @click="dialogId = 'network-toggle'">
               <div class="shadow-md rounded-full w-1 h-1 m-1 bg-white"></div>
             </div>
-            <div v-else-if="wireguardStatus === ServerStatusEnum.up"
+            <div v-else-if="wireguardStatus === 'up'"
                  class="inline-block align-middle shadow-md rounded-full transition-all w-5 h-3 mr-1.5 bg-green-500 cursor-pointer hover:bg-green-400"
                  title="Disable WireGuard Networking"
                  @click="dialogId = 'network-toggle'">
@@ -119,7 +119,7 @@
     <div class="container mx-auto shrink-0 max-w-6xl">
       <!-- Add a Peer -->
       <div class="items-center justify-center p-3 px-5 border-gray-100">
-        <button :disabled="webServerStatus !== ServerStatusEnum.up"
+        <button :disabled="webServerStatus !== 'up'"
                 class="bg-green-100 text-gray-700 border-2 border-gray-500 py-2 px-4 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white"
                 @click="dialogId = 'create-peer'">
           <span class="text-sm">Add a Peer</span>
@@ -190,16 +190,16 @@
     <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = '' }"
                    modal-classes="max-w-xl"
                    :left-button-text="'Cancel'"
-                   :right-button-classes="wireguardStatus === ServerStatusEnum.up ? ['text-white', 'bg-red-600', 'hover:bg-red-700', 'border-red-900'] : ['text-white', 'bg-green-600', 'hover:bg-green-700', 'border-green-900']"
+                   :right-button-classes="wireguardStatus === 'up' ? ['text-white', 'bg-red-600', 'hover:bg-red-700', 'border-red-900'] : ['text-white', 'bg-green-600', 'hover:bg-green-700', 'border-green-900']"
                    :right-button-click="() => { toggleWireGuardNetworking(); dialogId = ''; }"
-                   :right-button-text="wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable'"
+                   :right-button-text="wireguardStatus === 'up' ? 'Disable' : 'Enable'"
                    class="z-10"
                    icon="danger">
       <h3 class="text-lg leading-6 font-medium text-gray-900">
-        {{ wireguardStatus === ServerStatusEnum.up ? 'Disable' : 'Enable' }} the WireGuard Network
+        {{ wireguardStatus === 'up' ? 'Disable' : 'Enable' }} the WireGuard Network
       </h3>
       <div class="mt-2 text-sm text-gray-500">
-        Are you sure you want to {{ wireguardStatus === ServerStatusEnum.up ? 'disable' : 'enable' }} the WireGuard
+        Are you sure you want to {{ wireguardStatus === 'up' ? 'disable' : 'enable' }} the WireGuard
         network?
       </div>
     </custom-dialog>
@@ -250,8 +250,8 @@ export default {
   data() {
     return {
       refreshRate: 1000,
-      webServerStatus: 0,
-      wireguardStatus: 0,
+      webServerStatus: 'unknown',
+      wireguardStatus: 'unknown',
       ServerStatusEnum: {
         'unknown': 0,
         'down': 1,
@@ -299,7 +299,7 @@ export default {
       let need_to_update_network = true;
       if (this.digest.length === 64) {
         await this.api.get_network_summary('?only_digest=true').then(summary => {
-          this.webServerStatus = this.ServerStatusEnum.up;
+          this.webServerStatus = 'up';
           this.wireguardStatus = summary.status;
           need_to_update_network = this.digest !== summary.digest;
           this.telemetry = summary.telemetry;
@@ -310,11 +310,11 @@ export default {
           this.last_fetch.since = 0;
         }).catch(err => {
           this.telemetry = null;
-          this.wireguardStatus = this.ServerStatusEnum.unknown;
+          this.wireguardStatus = 'unknown';
           if (err.toString() === 'TypeError: Load failed') {
-            this.webServerStatus = this.ServerStatusEnum.down;
+            this.webServerStatus = 'down';
           } else {
-            this.webServerStatus = this.ServerStatusEnum.unknown;
+            this.webServerStatus = 'unknown';
             console.log(err);
           }
         });
@@ -322,7 +322,7 @@ export default {
 
       if (need_to_update_network) {
         await this.api.get_network_summary('?only_digest=false').then(summary => {
-          this.webServerStatus = this.ServerStatusEnum.up;
+          this.webServerStatus = 'up';
           this.digest = summary.digest;
           this.telemetry = summary.telemetry;
           this.network = summary.network;
@@ -343,11 +343,11 @@ export default {
           this.last_fetch.since = 0;
         }).catch(err => {
           this.telemetry = null;
-          this.wireguardStatus = this.ServerStatusEnum.unknown;
+          this.wireguardStatus = 'unknown';
           if (err.toString() === 'TypeError: Load failed') {
-            this.webServerStatus = this.ServerStatusEnum.down;
+            this.webServerStatus = 'down';
           } else {
-            this.webServerStatus = this.ServerStatusEnum.unknown;
+            this.webServerStatus = 'unknown';
             console.log(err);
           }
         });
@@ -368,14 +368,14 @@ export default {
       }
     },
     toggleWireGuardNetworking() {
-      const curr = this.wireguardStatus === this.ServerStatusEnum.up;
-      this.api.post_wireguard_status({status: curr ? this.ServerStatusEnum.down : this.ServerStatusEnum.up})
+      const curr = this.wireguardStatus === 'up';
+      this.api.post_wireguard_status({status: curr ? 'down' : 'up'})
           .then(() => {
             this.refresh();
           }).catch(err => {
         console.log(err);
       });
-      this.wireguardStatus = this.ServerStatusEnum.unknown;
+      this.wireguardStatus = 'unknown';
     },
     onPeerSelected(peer_id) {
       this.dialogId = `selected-peer-id=${peer_id}`;

@@ -14,20 +14,11 @@ pub enum WireGuardLibError {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
 pub enum WireGuardStatus {
     UNKNOWN,
     DOWN,
     UP,
-}
-
-impl WireGuardStatus {
-    pub fn value(&self) -> u8 {
-        match *self {
-            WireGuardStatus::UNKNOWN => 0,
-            WireGuardStatus::DOWN => 1,
-            WireGuardStatus::UP => 2,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -41,7 +32,7 @@ pub struct Summary {
     pub network: Network,
     pub telemetry: Option<Telemetry>,
     pub digest: String,
-    pub status: u8,
+    pub status: WireGuardStatus,
     pub timestamp: DateTime<Utc>,
 }
 
@@ -49,7 +40,7 @@ pub struct Summary {
 pub struct SummaryDigest {
     pub telemetry: Option<Telemetry>,
     pub digest: String,
-    pub status: u8,
+    pub status: WireGuardStatus,
     pub timestamp: DateTime<Utc>,
 }
 
@@ -58,7 +49,7 @@ impl From<&Summary> for SummaryDigest {
         SummaryDigest {
             telemetry: summary.telemetry.clone(),
             digest: summary.digest.clone(),
-            status: summary.status,
+            status: summary.status.clone(),
             timestamp: summary.timestamp.clone(),
         }
     }

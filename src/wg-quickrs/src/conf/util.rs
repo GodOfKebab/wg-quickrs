@@ -166,7 +166,7 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
         WireGuardStatus::UNKNOWN
     });
     // let telemetry = None;
-    let telemetry = if status.value() == WireGuardStatus::UP.value() {
+    let telemetry = if status == WireGuardStatus::UP {
         get_telemetry().unwrap_or_else(|e| {
             log::error!("{e}");
             None
@@ -179,7 +179,7 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
         network: config_w_digest.network_w_digest.network,
         telemetry,
         digest: config_w_digest.network_w_digest.digest,
-        status: status.value(),
+        status,
         timestamp: Utc::now(),
     })
 }
