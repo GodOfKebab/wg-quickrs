@@ -51,7 +51,7 @@ jobs:
       - name: Build wg-quickrs binary
         run: |
           cd src
-          sudo apt-get update && sudo apt-get install -y musl-dev cmake clang llvm-dev libclang-dev pkg-config
+          sudo apt-get update && sudo apt-get install -y git cmake clang
           cargo install cargo-zigbuild
           rustup target add ${{ env.target }}
           cargo clean
@@ -96,5 +96,4 @@ jobs:
         run: |
           chmod +x src/target/release/wg-quickrs
           cd tests/pytest
-          sudo chmod -R 777 /etc/wireguard
           python -m pytest
