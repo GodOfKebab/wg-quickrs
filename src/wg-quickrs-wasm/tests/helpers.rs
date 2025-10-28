@@ -1,4 +1,5 @@
 use wg_quickrs_wasm::helpers::*;
+use wg_quickrs_wasm::types::conf::WireGuardKey;
 
 struct TestVector<'a> {
     priv_b64: &'a str,
@@ -32,10 +33,9 @@ fn test_wireguard_vectors() {
     ];
 
     for vec in vectors {
-        let derived = wg_public_key_from_private_key(vec.priv_b64)
-            .expect("Failed to derive public key");
+        let derived = wg_public_key_from_private_key(&WireGuardKey::from_base64(vec.priv_b64).unwrap());
         assert_eq!(
-            derived, vec.expected_pub_b64,
+            derived, WireGuardKey::from_base64(vec.expected_pub_b64).unwrap(),
             "Mismatch for private key: {}",
             vec.priv_b64
         );

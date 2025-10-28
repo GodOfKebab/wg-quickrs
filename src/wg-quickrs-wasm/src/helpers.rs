@@ -1,23 +1,20 @@
-use crate::types;
-use crate::types::WireGuardLibError;
-use base64::{engine::general_purpose, Engine as _};
+use crate::types::conf::{Network, EndpointAddress, WireGuardKey};
+use crate::types::misc::{WireGuardLibError};
 use x25519_dalek::{PublicKey, StaticSecret};
 use rand::RngCore;
+use uuid::Uuid;
 
 
 pub fn get_peer_wg_config(
-    network: &types::Network,
-    peer_id: &str,
+    network: &Network,
+    peer_id: &Uuid,
     version: &str,
     stripped: bool,
-    peer_hidden_scripts: Option<String>,
 ) -> Result<String, WireGuardLibError> {
     let this_peer = match network.peers.get(peer_id) {
         Some(n) => n,
         None => {
-            return Err(WireGuardLibError::PeerNotFound(format!(
-                "peer_id: {peer_id}"
-            )));
+            return Err(WireGuardLibError::PeerNotFound(*peer_id));
         }
     };
 
@@ -41,39 +38,38 @@ pub fn get_peer_wg_config(
     }
 
     if this_peer.endpoint.enabled
-        && let Some((_host, port)) = this_peer.endpoint.value.rsplit_once(':')
     {
-        writeln!(wg_conf, "ListenPort = {port}").unwrap();
+        writeln!(wg_conf, "ListenPort = {}", this_peer.endpoint.port).unwrap();
     }
     if !stripped {
         if this_peer.dns.enabled {
-            writeln!(wg_conf, "DNS = {}", this_peer.dns.value).unwrap();
+            writeln!(wg_conf, "DNS = {}", this_peer.dns.addresses.iter()
+                .map(|net| net.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")).unwrap();
         }
         if this_peer.mtu.enabled {
             writeln!(wg_conf, "MTU = {}", this_peer.mtu.value).unwrap();
         }
         let script_fields = &this_peer.scripts;
-        if let Some(hidden_scripts) = peer_hidden_scripts {
-            writeln!(wg_conf, "{}", hidden_scripts).unwrap();
-        }
         for script_field in &script_fields.pre_up {
             if script_field.enabled {
-                writeln!(wg_conf, "PreUp = {}", script_field.value).unwrap();
+                writeln!(wg_conf, "PreUp = {}", script_field.script).unwrap();
             }
         }
         for script_field in &script_fields.post_up {
             if script_field.enabled {
-                writeln!(wg_conf, "PostUp = {}", script_field.value).unwrap();
+                writeln!(wg_conf, "PostUp = {}", script_field.script).unwrap();
             }
         }
         for script_field in &script_fields.pre_down {
             if script_field.enabled {
-                writeln!(wg_conf, "PreDown = {}", script_field.value).unwrap();
+                writeln!(wg_conf, "PreDown = {}", script_field.script).unwrap();
             }
         }
         for script_field in &script_fields.post_down {
             if script_field.enabled {
-                writeln!(wg_conf, "PostDown = {}", script_field.value).unwrap();
+                writeln!(wg_conf, "PostDown = {}", script_field.script).unwrap();
             }
         }
     }
@@ -88,84 +84,57 @@ pub fn get_peer_wg_config(
             continue;
         }
 
-        let parts: Vec<&str> = connection_id.split('*').collect();
-        if parts.len() != 2 {
-            continue;
-        } // or handle error
-        let (other_peer_id, allowed_ips) = if parts[0] == peer_id {
-            (parts[1], &connection_details.allowed_ips_a_to_b)
+        let (other_peer_id, allowed_ips) = if connection_id.a == *peer_id {
+            (connection_id.b, &connection_details.allowed_ips_a_to_b)
         } else {
-            (parts[0], &connection_details.allowed_ips_b_to_a)
+            (connection_id.a, &connection_details.allowed_ips_b_to_a)
         };
-        let other_peer_details = match network.peers.get(other_peer_id) {
+        let other_peer_details = match network.peers.get(&other_peer_id) {
             Some(n) => n,
             None => {
-                return Err(WireGuardLibError::PeerNotFound(format!(
-                    "peer_id: {peer_id}"
-                )));
+                return Err(WireGuardLibError::PeerNotFound(*peer_id));
             }
         };
-        writeln!(
-            wg_conf,
-            "# Linked Peer: {} ({})",
-            other_peer_details.name, other_peer_id
-        )
-        .unwrap();
+        writeln!(wg_conf, "# Linked Peer: {} ({})", other_peer_details.name, other_peer_id).unwrap();
         writeln!(wg_conf, "[Peer]").unwrap();
-        writeln!(wg_conf, "PublicKey = {}", wg_public_key_from_private_key(&other_peer_details.private_key)?).unwrap();
-        writeln!(
-            wg_conf,
-            "PresharedKey = {}",
-            connection_details.pre_shared_key
-        )
-        .unwrap();
-        writeln!(wg_conf, "AllowedIPs = {allowed_ips}").unwrap();
+        writeln!(wg_conf, "PublicKey = {}", wg_public_key_from_private_key(&other_peer_details.private_key)).unwrap();
+        writeln!(wg_conf, "PresharedKey = {}", connection_details.pre_shared_key).unwrap();
+        writeln!(wg_conf, "AllowedIPs = {}", allowed_ips.iter()
+            .map(|net| net.to_string())
+            .collect::<Vec<_>>()
+            .join(", ")).unwrap();
 
         if connection_details.persistent_keepalive.enabled {
             writeln!(
                 wg_conf,
                 "PersistentKeepalive = {}",
-                connection_details.persistent_keepalive.value
+                connection_details.persistent_keepalive.period
             )
             .unwrap();
         }
         if other_peer_details.endpoint.enabled {
-            writeln!(wg_conf, "Endpoint = {}", other_peer_details.endpoint.value).unwrap();
+            if let EndpointAddress::Ipv4(ipv4) = &other_peer_details.endpoint.address {
+                writeln!(wg_conf, "Endpoint = {}:{}", ipv4.to_string(), other_peer_details.endpoint.port).unwrap();
+            } else if let EndpointAddress::Hostname(hostname) = &other_peer_details.endpoint.address {
+                writeln!(wg_conf, "Endpoint = {}:{}", hostname, other_peer_details.endpoint.port).unwrap();
+            }
         }
         writeln!(wg_conf).unwrap();
     }
     Ok(wg_conf)
 }
 
-
-pub fn get_connection_id(peer1: &str, peer2: &str) -> String {
-    if peer1 > peer2 {
-        format!("{peer1}*{peer2}")
-    } else {
-        format!("{peer2}*{peer1}")
-    }
-}
-
-
-/// Compute a WireGuard public key from a base64-encoded private key.
-pub fn wg_public_key_from_private_key(base64_priv: &str) -> Result<String, WireGuardLibError> {
-    // Decode base64-encoded private key (32 bytes)
-    let priv_bytes: [u8; 32] = general_purpose::STANDARD
-        .decode(base64_priv.trim())
-        .map_err(|e| WireGuardLibError::KeyDecodeFailed(e.to_string()))?
-        .as_slice()
-        .try_into()
-        .map_err(|_| WireGuardLibError::KeyDecodeFailed("key != 32 bytes".to_string()))?;
-
-    let secret = StaticSecret::from(priv_bytes);
+/// Compute a WireGuard public key with a private key.
+pub fn wg_public_key_from_private_key(priv_bytes: &WireGuardKey) -> WireGuardKey {
+    let secret = StaticSecret::from(*priv_bytes.as_bytes());
     let public = PublicKey::from(&secret);
-    Ok(general_purpose::STANDARD.encode(public.as_bytes()))
+    WireGuardKey(*public.as_bytes())
 }
 
 
-/// Generate a new WireGuard private key (Base64-encoded)
-pub fn wg_generate_key() -> String {
+/// Generate a new WireGuard private key
+pub fn wg_generate_key() -> WireGuardKey {
     let mut key_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut key_bytes);
-    general_purpose::STANDARD.encode(key_bytes)
+    WireGuardKey(key_bytes)
 }
