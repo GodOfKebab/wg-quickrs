@@ -51,8 +51,8 @@ jobs:
       - name: Build wg-quickrs binary
         run: |
           cd src
-          sudo apt-get update && sudo apt-get install -y git cmake clang
-          cargo install cargo-zigbuild
+          sudo apt-get update && sudo apt-get install -y cmake clang
+          cargo install --locked cargo-zigbuild
           rustup target add ${{ env.target }}
           cargo clean
           cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=${{ env.target }}
