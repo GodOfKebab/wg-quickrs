@@ -3,12 +3,11 @@ use crate::types::misc::{WireGuardLibError};
 use x25519_dalek::{PublicKey, StaticSecret};
 use rand::RngCore;
 use uuid::Uuid;
-
+use crate::macros::full_version;
 
 pub fn get_peer_wg_config(
     network: &Network,
     peer_id: &Uuid,
-    version: &str,
     stripped: bool,
 ) -> Result<String, WireGuardLibError> {
     let this_peer = match network.peers.get(peer_id) {
@@ -21,11 +20,11 @@ pub fn get_peer_wg_config(
     let mut wg_conf = String::new();
     use std::fmt::Write as FmtWrite; // brings `write!` macro for String
 
-    writeln!(wg_conf, "# auto-generated using wg-quickrs ({version})").unwrap();
+    writeln!(wg_conf, "# auto-generated using wg-quickrs ({})", full_version!()).unwrap();
     writeln!(
         wg_conf,
-        "# wg-quickrs network identifier: {}\n",
-        network.identifier
+        "# wg-quickrs network name: {}\n",
+        network.name
     )
     .unwrap();
 

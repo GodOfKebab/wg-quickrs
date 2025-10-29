@@ -1,19 +1,25 @@
 'use strict';
 
 import {
-    check_field_enabled_value_frontend,
-    check_internal_address,
-    check_field_str_frontend,
-    get_connection_id_frontend,
-    get_peer_wg_config_frontend,
-    wg_public_key_from_private_key_frontend,
-    wg_generate_key_frontend
+    get_peer_wg_config_wasm,
+    wg_public_key_from_private_key_wasm,
+    wg_generate_key_wasm,
+    validate_peer_name_wasm,
+    validate_peer_address_wasm,
+    validate_peer_endpoint_wasm,
+    validate_peer_kind_wasm,
+    validate_peer_icon_wasm,
+    validate_peer_dns_wasm,
+    validate_peer_mtu_wasm,
+    validate_peer_script_wasm,
+    validate_persistent_keepalive_wasm,
+    validate_allowed_ips_wasm,
 } from '../../pkg/wg_quickrs_wasm.js';
 
 export default class WireGuardHelper {
 
-    static getPeerConfig(network, peerId, version) {
-        return get_peer_wg_config_frontend(network, peerId, version);
+    static getPeerConfig(network, peerId) {
+        return get_peer_wg_config_wasm(network, peerId);
     }
 
     static downloadPeerConfig(network, peerId, version) {
@@ -34,18 +40,37 @@ export default class WireGuardHelper {
 
     static checkField(fieldName, fieldVariable, network=null) {
         if (typeof fieldVariable === 'string')
-            if (fieldName === 'address')
-                return check_internal_address(fieldVariable, network)
+            if (fieldName === 'name')
+                return validate_peer_name_wasm(fieldVariable)
+            else if (fieldName === 'address')
+                return validate_peer_address_wasm(fieldVariable, network)
+            else if (fieldName === 'kind')
+                return validate_peer_kind_wasm(fieldVariable)
+            else if (fieldName === 'allowed_ips')
+                return validate_allowed_ips_wasm(fieldVariable)
             else
-                return check_field_str_frontend(fieldName, fieldVariable);
+                return { failed: true, message: `Invalid field key '${fieldName}'` };
         else if (fieldVariable.enabled !== undefined && fieldVariable.value !== undefined)
-            return check_field_enabled_value_frontend(fieldName, fieldVariable);
+            if (fieldName === 'endpoint')
+                return validate_peer_endpoint_wasm(fieldVariable.enabled, fieldVariable.value)
+            else if (fieldName === 'icon')
+                return validate_peer_icon_wasm(fieldVariable.enabled, fieldVariable.value)
+            else if (fieldName === 'dns')
+                return validate_peer_dns_wasm(fieldVariable.enabled, fieldVariable.value)
+            else if (fieldName === 'mtu')
+                return validate_peer_mtu_wasm(fieldVariable.enabled, fieldVariable.value)
+            else if (fieldName === 'script')
+                return validate_peer_script_wasm(fieldVariable.enabled, fieldVariable.value)
+            else if (fieldName === 'persistent_keepalive')
+                return validate_persistent_keepalive_wasm(fieldVariable.enabled, fieldVariable.value)
+            else
+                return { failed: true, message: `Invalid field key '${fieldName}'` };
         else
-            return { status: false, message: `Invalid field type for ${fieldName}` };
+            return { failed: true, message: `Invalid field type for ${fieldName}` };
     }
 
     static getConnectionId(peer1, peer2) {
-        return get_connection_id_frontend(peer1, peer2);
+        return `${peer1}*${peer2}`;
     }
 
     static getConnectionPeers(connectionId) {
@@ -53,11 +78,11 @@ export default class WireGuardHelper {
     }
 
     static wg_public_key_from_private_key(private_key) {
-        return wg_public_key_from_private_key_frontend(private_key);
+        return wg_public_key_from_private_key_wasm(private_key);
     }
 
     static wg_generate_key() {
-        return wg_generate_key_frontend();
+        return wg_generate_key_wasm();
     }
 
 }

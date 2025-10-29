@@ -1,6 +1,5 @@
-use std::hash::{Hash, Hasher};
 use serde::{Deserialize, Serialize, Deserializer, Serializer};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -8,6 +7,71 @@ use chrono::{DateTime, Utc};
 use ipnet::Ipv4Net;
 use uuid::Uuid;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+use sha2::{Digest, Sha256};
+use crate::macros::*;
+use crate::types::misc::WireGuardLibError;
+use bincode;
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct ConfigFile {
+    pub version: String,
+    pub agent: Agent,
+    pub network: Network,
+}
+
+impl From<&ConfigFile> for Config {
+    fn from(file_config: &ConfigFile) -> Self {
+        Config {
+            agent: file_config.agent.clone(),
+            network: file_config.network.clone(),
+        }
+    }
+}
+
+
+impl From<&Config> for ConfigFile {
+    fn from(config: &Config) -> Self {
+        ConfigFile {
+            version: wg_quickrs_version!().into(),
+            agent: config.agent.clone(),
+            network: config.network.clone(),
+        }
+    }
+}
+
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct ConfigWNetworkDigest {
+    pub agent: Agent,
+    pub network_w_digest: NetworkWDigest,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct NetworkWDigest {
+    pub network: Network,
+    pub digest: String,
+}
+
+impl TryFrom<&Network> for NetworkWDigest {
+    type Error = WireGuardLibError;
+
+    fn try_from(network: &Network) -> Result<NetworkWDigest, WireGuardLibError> {
+        let network_bytes = bincode::serialize(&network).map_err(|_| WireGuardLibError::SerializationFailed())?;
+        let digest = STANDARD.encode(Sha256::digest(&network_bytes));
+        Ok(NetworkWDigest { network: network.clone(), digest })
+    }
+}
+
+impl ConfigWNetworkDigest {
+    pub(crate) fn from_config(config: Config) -> Result<Self, WireGuardLibError> {
+        let network_w_digest = NetworkWDigest::try_from(&config.network)?;
+        Ok(ConfigWNetworkDigest { agent: config.agent, network_w_digest })
+    }
+
+    pub(crate) fn to_config(&self) -> Config {
+        Config{ agent: self.agent.clone(), network: self.network_w_digest.network.clone() }
+    }
+}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Config {
@@ -63,7 +127,7 @@ pub struct AgentFirewall {
     pub gateway: String,
 }
 
-#[derive(Eq, PartialEq, Debug, Clone)]
+#[derive(Eq, Ord, PartialOrd, PartialEq, Debug, Clone)]
 pub struct ConnectionId {
     pub a: Uuid,
     pub b: Uuid
@@ -72,13 +136,6 @@ pub struct ConnectionId {
 impl ConnectionId {
     pub fn contains(&self, id: &Uuid) -> bool {
         &self.a == id || &self.b == id
-    }
-}
-
-impl Hash for ConnectionId {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.a.hash(state);
-        self.b.hash(state);
     }
 }
 
@@ -115,13 +172,13 @@ impl<'de> Deserialize<'de> for ConnectionId {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Network {
-    pub identifier: String,
+    pub name: String,
     pub subnet: Ipv4Net,
     pub this_peer: Uuid,
-    pub peers: HashMap<Uuid, Peer>,
-    pub connections: HashMap<ConnectionId, Connection>,
+    pub peers: BTreeMap<Uuid, Peer>,
+    pub connections: BTreeMap<ConnectionId, Connection>,
     pub defaults: Defaults,
-    pub reservations: HashMap<Ipv4Addr, ReservationData>,
+    pub reservations: BTreeMap<Ipv4Addr, ReservationData>,
     pub updated_at: DateTime<Utc>,
 }
 
@@ -244,9 +301,9 @@ impl<'de> Deserialize<'de> for WireGuardKey {
 pub struct Connection {
     pub enabled: bool,
     pub pre_shared_key: WireGuardKey,
+    pub persistent_keepalive: PersistentKeepalive,
     pub allowed_ips_a_to_b: AllowedIPs,
     pub allowed_ips_b_to_a: AllowedIPs,
-    pub persistent_keepalive: PersistentKeepalive,
 }
 
 pub type AllowedIPs = Vec<Ipv4Net>;

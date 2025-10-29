@@ -1,6 +1,6 @@
 use chrono::naive::serde::ts_milliseconds;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::net::Ipv4Addr;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use uuid::Uuid;
@@ -43,7 +43,7 @@ pub struct Telemetry {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct TelemetryData {
-    pub datum: HashMap<ConnectionId, TelemetryDatum>,
+    pub datum: BTreeMap<ConnectionId, TelemetryDatum>,
     #[serde(with = "ts_milliseconds")]
     pub timestamp: NaiveDateTime,
 }
@@ -58,16 +58,16 @@ pub struct TelemetryDatum {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ChangeSum {
     pub changed_fields: Option<ChangedFields>,
-    pub added_peers: Option<HashMap<Uuid, AddedPeer>>,
-    pub added_connections: Option<HashMap<ConnectionId, Connection>>,
+    pub added_peers: Option<BTreeMap<Uuid, AddedPeer>>,
+    pub added_connections: Option<BTreeMap<ConnectionId, Connection>>,
     pub removed_peers: Option<Vec<Uuid>>,
     pub removed_connections: Option<Vec<ConnectionId>>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ChangedFields {
-    pub peers: Option<HashMap<Uuid, OptionalPeer>>,
-    pub connections: Option<HashMap<ConnectionId, OptionalConnection>>,
+    pub peers: Option<BTreeMap<Uuid, OptionalPeer>>,
+    pub connections: Option<BTreeMap<ConnectionId, OptionalConnection>>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -95,9 +95,9 @@ pub struct OptionalScripts {
 pub struct OptionalConnection {
     pub enabled: Option<bool>,
     pub pre_shared_key: Option<WireGuardKey>,
+    pub persistent_keepalive: Option<PersistentKeepalive>,
     pub allowed_ips_a_to_b: Option<AllowedIPs>,
     pub allowed_ips_b_to_a: Option<AllowedIPs>,
-    pub persistent_keepalive: Option<PersistentKeepalive>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
