@@ -83,7 +83,7 @@ Build `wg-quickrs-wasm` directory.
 [//]: # (build-src-debian: 1.1.2 Build wg-quickrs-wasm - Build 'wg-quickrs-wasm' directory.)
 
 ```sh
-wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --features wasm --color=always
+wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg
 ```
 
 ---

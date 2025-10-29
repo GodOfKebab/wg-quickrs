@@ -30,7 +30,7 @@ jobs:
       - name: Build wg-quickrs-wasm
         run: |
           cd src/
-          wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --locked --features wasm
+          wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --locked
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

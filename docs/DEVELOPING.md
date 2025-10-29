@@ -10,7 +10,7 @@ Following will build the WASM the target once.
 
 ```sh
 # running directory: src/
-wasm-pack build wg-quickrs-web --target web --out-dir ../wg-quickrs-web/pkg -- --features wasm
+wasm-pack build wg-quickrs-web --target web --out-dir ../wg-quickrs-web/pkg
 ```
 
 ## 2. Vue/Frontend
@@ -57,7 +57,7 @@ For the unit tests, run the following.
 ```sh
 # running directory: src/
 # generate wasm target
-wasm-pack build wg-quickrs-web --target web --out-dir ../wg-quickrs-web/pkg -- --features wasm
+wasm-pack build wg-quickrs-web --target web --out-dir ../wg-quickrs-web/pkg
 # build frontend
 cd ../wg-quickrs-web/
 npm ci --omit=dev

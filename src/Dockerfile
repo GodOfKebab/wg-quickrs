@@ -14,7 +14,7 @@ WORKDIR /app
 
 ADD https://raw.githubusercontent.com/drager/wasm-pack/refs/heads/master/docs/_installer/init.sh init.sh
 RUN bash init.sh
-RUN wasm-pack build wg-quickrs-wasm --target web --out-dir /app/pkg -- --locked --features wasm
+RUN wasm-pack build wg-quickrs-wasm --target web --out-dir /app/pkg -- --locked
 
 FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
 WORKDIR /app/wg-quickrs-web
