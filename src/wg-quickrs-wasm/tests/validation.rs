@@ -31,34 +31,34 @@ macro_rules! is_err {
 
 #[test]
 fn test_validate_ipv4_address() {
-    ok!(validate_ipv4_address("10.0.0.1"));
+    ok!(parse_and_validate_ipv4_address("10.0.0.1"));
     is_err!(
-        validate_ipv4_address("not-an-ip"),
+        parse_and_validate_ipv4_address("not-an-ip"),
         ValidationError::NotIPv4Address()
     );
     is_err!(
-        validate_ipv4_address("999.999.999.999"),
+        parse_and_validate_ipv4_address("999.999.999.999"),
         ValidationError::NotIPv4Address()
     );
     is_err!(
-        validate_ipv4_address("10.0.0"),
+        parse_and_validate_ipv4_address("10.0.0"),
         ValidationError::NotIPv4Address()
     );
 }
 
 #[test]
 fn test_validate_port() {
-    ok!(validate_port("80"));
+    ok!(parse_and_validate_port("80"));
     is_err!(
-        validate_port("not-a-port"),
+        parse_and_validate_port("not-a-port"),
         ValidationError::NotPortNumber()
     );
     is_err!(
-        validate_port("70000"),
+        parse_and_validate_port("70000"),
         ValidationError::NotPortNumber()
     );
     is_err!(
-        validate_port("-1"),
+        parse_and_validate_port("-1"),
         ValidationError::NotPortNumber()
     );
 }
@@ -67,47 +67,47 @@ fn test_validate_port() {
 
 #[test]
 fn test_validate_network_name() {
-    ok!(validate_network_name("test-name"));
-    is_err!(validate_network_name(""), ValidationError::EmptyNetworkName());
+    ok!(parse_and_validate_network_name("test-name"));
+    is_err!(parse_and_validate_network_name(""), ValidationError::EmptyNetworkName());
 }
 
 #[test]
 fn test_validate_ipv4_subnet() {
-    ok!(validate_ipv4_subnet("10.0.0.0/24"));
+    ok!(parse_and_validate_ipv4_subnet("10.0.0.0/24"));
     is_err!(
-        validate_ipv4_subnet("not-a-cidr"),
+        parse_and_validate_ipv4_subnet("not-a-cidr"),
         ValidationError::NotCIDR()
     );
     is_err!(
-        validate_ipv4_subnet("999.999.999.999/24"),
+        parse_and_validate_ipv4_subnet("999.999.999.999/24"),
         ValidationError::NotCIDR()
     );
     is_err!(
-        validate_ipv4_subnet("10.0.0/24"),
+        parse_and_validate_ipv4_subnet("10.0.0/24"),
         ValidationError::NotCIDR()
     );
     is_err!(
-        validate_ipv4_subnet("10.0.0.0/-1"),
+        parse_and_validate_ipv4_subnet("10.0.0.0/-1"),
         ValidationError::NotCIDR()
     );
     is_err!(
-        validate_ipv4_subnet("10.0.0.0/33"),
+        parse_and_validate_ipv4_subnet("10.0.0.0/33"),
         ValidationError::NotCIDR()
     );
 }
 
 #[test]
 fn test_validate_peer_id() {
-    ok!(validate_peer_id(&Uuid::new_v4().to_string()));
-    is_err!(validate_peer_id("not-a-uuid"), ValidationError::InvalidUuid());
+    ok!(parse_and_validate_peer_id(&Uuid::new_v4().to_string()));
+    is_err!(parse_and_validate_peer_id("not-a-uuid"), ValidationError::InvalidUuid());
 }
 
 // Network.Peer Fields
 
 #[test]
 fn test_validate_name() {
-    ok!(validate_peer_name("test-name"));
-    is_err!(validate_peer_name(""), ValidationError::EmptyPeerName());
+    ok!(parse_and_validate_peer_name("test-name"));
+    is_err!(parse_and_validate_peer_name(""), ValidationError::EmptyPeerName());
 }
 
 fn generate_peer(name: &str, address: &str) -> Peer {
@@ -146,26 +146,26 @@ fn test_validate_peer_address() {
     // Invalid IPv4 address
     let network = generate_network(BTreeMap::new(), "10.0.0.0/24", BTreeMap::new());
     is_err!(
-        validate_peer_address("not-an-ip", &network),
+        parse_and_validate_peer_address("not-an-ip", &network),
         ValidationError::NotIPv4Address()
     );
     is_err!(
-        validate_peer_address("999.999.999.999", &network),
+        parse_and_validate_peer_address("999.999.999.999", &network),
         ValidationError::NotIPv4Address()
     );
     is_err!(
-        validate_peer_address("10.0.0", &network),
+        parse_and_validate_peer_address("10.0.0", &network),
         ValidationError::NotIPv4Address()
     );
 
     // Address not in subnet
     let network = generate_network(BTreeMap::new(), "10.0.0.0/24", BTreeMap::new());
     is_err!(
-        validate_peer_address("192.168.1.10", &network),
+        parse_and_validate_peer_address("192.168.1.10", &network),
         ValidationError::AddressNotInSubnet()
     );
     is_err!(
-        validate_peer_address("10.0.1.5", &network),
+        parse_and_validate_peer_address("10.0.1.5", &network),
         ValidationError::AddressNotInSubnet()
     );
 
@@ -176,7 +176,7 @@ fn test_validate_peer_address() {
         "10.0.0.0/24",
         BTreeMap::new());
     is_err!(
-        validate_peer_address("10.0.0.5", &network),
+        parse_and_validate_peer_address("10.0.0.5", &network),
         ValidationError::AddressIsTaken(alice_peer_id, "Alice".to_string())
     );
 
@@ -189,7 +189,7 @@ fn test_validate_peer_address() {
             valid_until: Utc::now() + Duration::minutes(10),
         })]));
     is_err!(
-        validate_peer_address("10.0.0.10", &network),
+        parse_and_validate_peer_address("10.0.0.10", &network),
         ValidationError::AddressIsReserved()
     );
 
@@ -201,11 +201,11 @@ fn test_validate_peer_address() {
             peer_id: Uuid::new_v4(),
             valid_until: Utc::now() - Duration::minutes(10),
         })]));
-    ok!(validate_peer_address("10.0.0.10", &network));
+    ok!(parse_and_validate_peer_address("10.0.0.10", &network));
 
     // Valid address (success case)
     let network = generate_network(BTreeMap::new(), "10.0.0.0/24", BTreeMap::new());
-    ok!(validate_peer_address("10.0.0.20", &network));
+    ok!(parse_and_validate_peer_address("10.0.0.20", &network));
 
     // Edge case: Valid address with peers and reservations, but not conflicting
     let network = generate_network(
@@ -215,43 +215,44 @@ fn test_validate_peer_address() {
             peer_id: Uuid::new_v4(),
             valid_until: Utc::now() - Duration::minutes(10),
         })]));
-    ok!(validate_peer_address("10.0.0.30", &network));
+    ok!(parse_and_validate_peer_address("10.0.0.30", &network));
 
     // Edge case: Network boundaries
     is_err!(
-        validate_peer_address("10.0.0.0", &network),
+        parse_and_validate_peer_address("10.0.0.0", &network),
         ValidationError::AddressIsSubnetNetwork()
     );
     is_err!(
-        validate_peer_address("10.0.0.255", &network),
+        parse_and_validate_peer_address("10.0.0.255", &network),
         ValidationError::AddressIsSubnetBroadcast()
     );
 }
 
 #[test]
 fn test_validate_peer_endpoint() {
-    ok!(validate_peer_endpoint(false, "")); // disabled = ok
-    ok!(validate_peer_endpoint(true, "10.0.0.1:51820"));
-    ok!(validate_peer_endpoint(true, "YOUR-SERVER:51820"));
-    ok!(validate_peer_endpoint(true, "example.com:51820"));
+    ok!(parse_and_validate_peer_endpoint("10.0.0.1:51820"));
+    ok!(parse_and_validate_peer_endpoint("YOUR-SERVER:51820"));
+    ok!(parse_and_validate_peer_endpoint("example.com:51820"));
     is_err!(
-        validate_peer_endpoint(true, "notvalid"),
+        parse_and_validate_peer_endpoint(""),
+        ValidationError::InvalidEndpoint()
+    );
+    is_err!(
+        parse_and_validate_peer_endpoint("notvalid"),
         ValidationError::InvalidEndpoint()
     );
 }
 
 #[test]
 fn test_validate_peer_kind() {
-    ok!(validate_peer_kind("anything"));
+    ok!(parse_and_validate_peer_kind("anything"));
 }
 
 #[test]
 fn test_validate_peer_icon() {
-    ok!(validate_peer_icon(false, ""));
-    ok!(validate_peer_icon(false, "anything"));
-    ok!(validate_peer_icon(true, "anything"));
+    ok!(parse_and_validate_peer_icon_src("anything"));
     is_err!(
-        validate_peer_icon(true, ""),
+        parse_and_validate_peer_icon_src(""),
         ValidationError::EmptyIcon()
     );
 }
@@ -259,71 +260,80 @@ fn test_validate_peer_icon() {
 
 #[test]
 fn test_validate_peer_dns() {
-    ok!(validate_peer_dns(false, "")); // disabled = ok
-    ok!(validate_peer_dns(true, "8.8.8.8"));
-    ok!(validate_peer_dns(true, "8.8.8.8, 1.1.1.1"));
+    ok!(parse_and_validate_peer_dns_addresses("8.8.8.8"));
+    ok!(parse_and_validate_peer_dns_addresses("8.8.8.8, 1.1.1.1"));
     is_err!(
-        validate_peer_dns(true, "8.8.8.8, not-an-ip"),
+        parse_and_validate_peer_dns_addresses(""),
         ValidationError::NotIPv4Address()
     );
     is_err!(
-        validate_peer_dns(true, "not-an-ip"),
+        parse_and_validate_peer_dns_addresses("8.8.8.8, not-an-ip"),
+        ValidationError::NotIPv4Address()
+    );
+    is_err!(
+        parse_and_validate_peer_dns_addresses("not-an-ip"),
         ValidationError::NotIPv4Address()
     );
 }
 
 #[test]
 fn test_validate_peer_mtu() {
-    ok!(validate_peer_mtu(false, "")); // disabled = ok
-    ok!(validate_peer_mtu(true, "1500"));
-    ok!(validate_peer_mtu(true, "10000"));
+    ok!(parse_and_validate_peer_mtu_value("1500"));
+    ok!(parse_and_validate_peer_mtu_value("10000"));
     is_err!(
-        validate_peer_mtu(true, "-1"),
+        parse_and_validate_peer_mtu_value(""),
         ValidationError::InvalidMtu()
     );
     is_err!(
-        validate_peer_mtu(true, "10001"),
+        parse_and_validate_peer_mtu_value("-1"),
         ValidationError::InvalidMtu()
     );
     is_err!(
-        validate_peer_mtu(true, "70000"),
+        parse_and_validate_peer_mtu_value("10001"),
         ValidationError::InvalidMtu()
     );
     is_err!(
-        validate_peer_mtu(true, "notnum"),
+        parse_and_validate_peer_mtu_value("70000"),
+        ValidationError::InvalidMtu()
+    );
+    is_err!(
+        parse_and_validate_peer_mtu_value("notnum"),
         ValidationError::InvalidMtu()
     );
 }
 
 #[test]
 fn test_validate_peer_script() {
-    ok!(validate_peer_script(false, ""));
-    ok!(validate_peer_script(true, "echo ok;"));
+    ok!(parse_and_validate_peer_script("echo ok;"));
     is_err!(
-        validate_peer_script(true, "echo missing_semicolon"),
+        parse_and_validate_peer_script(""),
+        ValidationError::ScriptMissingSemicolon()
+    );
+    is_err!(
+        parse_and_validate_peer_script("echo missing_semicolon"),
         ValidationError::ScriptMissingSemicolon()
     );
 }
 
 #[test]
 fn test_validate_wg_key() {
-    ok!(validate_wg_key("qBZArZg+2vEvD5tS8T7m0H0/xvd1PKdoBHXWIrQ1DEE="));
+    ok!(parse_and_validate_wg_key("qBZArZg+2vEvD5tS8T7m0H0/xvd1PKdoBHXWIrQ1DEE="));
     is_err!(
-        validate_wg_key("def"),
+        parse_and_validate_wg_key("def"),
         ValidationError::NotWireGuardKey()
     );
     is_err!(
-        validate_wg_key(""),
+        parse_and_validate_wg_key(""),
         ValidationError::NotWireGuardKey()
     );
 
-    ok!(validate_wg_key("ySMLaPaHVrxg/rdmZlGUemyt2JKxwSdeYUa3l34RwbE="));
+    ok!(parse_and_validate_wg_key("ySMLaPaHVrxg/rdmZlGUemyt2JKxwSdeYUa3l34RwbE="));
     is_err!(
-        validate_wg_key("ghi"),
+        parse_and_validate_wg_key("ghi"),
         ValidationError::NotWireGuardKey()
     );
     is_err!(
-        validate_wg_key(""),
+        parse_and_validate_wg_key(""),
         ValidationError::NotWireGuardKey()
     );
 }
@@ -332,28 +342,31 @@ fn test_validate_wg_key() {
 
 #[test]
 fn test_validate_conn_persistent_keepalive() {
-    ok!(validate_conn_persistent_keepalive(false, "")); // disabled = ok
-    ok!(validate_conn_persistent_keepalive(true, "25"));
+    ok!(parse_and_validate_conn_persistent_keepalive_period("25"));
     is_err!(
-        validate_conn_persistent_keepalive(true, "-1"),
+        parse_and_validate_conn_persistent_keepalive_period(""),
         ValidationError::InvalidPersistentKeepalive()
     );
     is_err!(
-        validate_conn_persistent_keepalive(true, "70000"),
+        parse_and_validate_conn_persistent_keepalive_period("-1"),
         ValidationError::InvalidPersistentKeepalive()
     );
     is_err!(
-        validate_conn_persistent_keepalive(true, "notnum"),
+        parse_and_validate_conn_persistent_keepalive_period("70000"),
+        ValidationError::InvalidPersistentKeepalive()
+    );
+    is_err!(
+        parse_and_validate_conn_persistent_keepalive_period("notnum"),
         ValidationError::InvalidPersistentKeepalive()
     );
 }
 
 #[test]
 fn test_validate_conn_allowed_ips() {
-    ok!(validate_conn_allowed_ips("10.0.0.0/24"));
-    ok!(validate_conn_allowed_ips("10.0.0.0/24, 192.168.1.0/24"));
+    ok!(parse_and_validate_conn_allowed_ips("10.0.0.0/24"));
+    ok!(parse_and_validate_conn_allowed_ips("10.0.0.0/24, 192.168.1.0/24"));
     is_err!(
-        validate_conn_allowed_ips("invalid"),
+        parse_and_validate_conn_allowed_ips("invalid"),
         ValidationError::InvalidAllowedIPs()
     );
 }

@@ -48,62 +48,62 @@ mod wasm {
 
     #[wasm_bindgen]
     pub fn validate_peer_name_wasm(name: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_peer_name(name));
+        let res = ValidationResultWasm::from(parse_and_validate_peer_name(name));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
     pub fn validate_peer_address_wasm(address: &str, network_js: JsValue) -> Result<JsValue, JsValue> {
         let network: Network = serde_wasm_bindgen::from_value(network_js)?;
-        let res = ValidationResultWasm::from(validate_peer_address(address, &network));
+        let res = ValidationResultWasm::from(parse_and_validate_peer_address(address, &network));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
-    pub fn validate_peer_endpoint_wasm(enabled: bool, endpoint: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_peer_endpoint(enabled, endpoint));
+    pub fn validate_peer_endpoint_wasm(endpoint: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_peer_endpoint(endpoint));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
     pub fn validate_peer_kind_wasm(kind: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_peer_kind(kind));
+        let res = ValidationResultWasm::from(parse_and_validate_peer_kind(kind));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
-    pub fn validate_peer_icon_wasm(enabled: bool, src: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_peer_icon(enabled, src));
+    pub fn validate_peer_icon_wasm(src: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_peer_icon_src(src));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
-    pub fn validate_peer_dns_wasm(enabled: bool, dns: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_peer_dns(enabled, dns));
+    pub fn validate_peer_dns_wasm(dns: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_peer_dns_addresses(dns));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
-    pub fn validate_peer_mtu_wasm(enabled: bool, mtu: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_peer_mtu(enabled, mtu));
+    pub fn validate_peer_mtu_wasm(mtu: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_peer_mtu_value(mtu));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
-    pub fn validate_peer_script_wasm(enabled: bool, script: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_peer_script(enabled, script));
+    pub fn validate_peer_script_wasm(script: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_peer_script(script));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
-    pub fn validate_persistent_keepalive_wasm(enabled: bool, persistent_keepalive: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_conn_persistent_keepalive(enabled, persistent_keepalive));
+    pub fn validate_persistent_keepalive_wasm(persistent_keepalive: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_conn_persistent_keepalive_period(persistent_keepalive));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]
     pub fn validate_allowed_ips_wasm(allowed_ips: &str) -> Result<JsValue, JsValue> {
-        let res = ValidationResultWasm::from(validate_conn_allowed_ips(allowed_ips));
+        let res = ValidationResultWasm::from(parse_and_validate_conn_allowed_ips(allowed_ips));
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
