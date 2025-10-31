@@ -1,3 +1,4 @@
 pub mod api;
-pub mod conf;
+pub mod config;
 pub mod misc;
+pub mod network;

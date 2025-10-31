@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 use std::net::Ipv4Addr;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use uuid::Uuid;
-use crate::types::conf::*;
 use crate::types::misc::*;
+use crate::types::network::*;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Summary {

@@ -1,10 +1,10 @@
+#![cfg(not(target_arch = "wasm32"))]
 use std::env;
 use std::path::PathBuf;
 #[cfg(not(target_arch = "wasm32"))]
 use get_if_addrs::{get_if_addrs, Interface};
 
 /// Get primary IP of the current machine
-#[cfg(not(target_arch = "wasm32"))]
 pub fn get_interfaces() -> Vec<Interface> {
     let mut interfaces: Vec<Interface> = Vec::new();
     for iface in get_if_addrs()
@@ -31,12 +31,12 @@ fn find_in_path(cmd: &str) -> Option<PathBuf> {
 }
 
 /// Get a list of firewall utilities available on the system.
-pub fn firewall_utility_options() -> Vec<String> {
+pub fn firewall_utility_options() -> Vec<PathBuf> {
     let candidates = ["iptables", "pfctl"];
-    let mut ret: Vec<String> = Vec::new();
+    let mut ret: Vec<PathBuf> = Vec::new();
     for prog in candidates {
         if let Some(path) = find_in_path(prog) {
-            ret.push(path.to_str().unwrap().to_string());
+            ret.push(path);
         }
     }
     ret

@@ -2,49 +2,13 @@ use serde::{Deserialize, Serialize, Deserializer, Serializer};
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::net::Ipv4Addr;
-use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 use ipnet::Ipv4Net;
 use uuid::Uuid;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sha2::{Digest, Sha256};
-use crate::macros::*;
 use crate::types::misc::WireGuardLibError;
 use bincode;
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct ConfigFile {
-    pub version: String,
-    pub agent: Agent,
-    pub network: Network,
-}
-
-impl From<&ConfigFile> for Config {
-    fn from(file_config: &ConfigFile) -> Self {
-        Config {
-            agent: file_config.agent.clone(),
-            network: file_config.network.clone(),
-        }
-    }
-}
-
-
-impl From<&Config> for ConfigFile {
-    fn from(config: &Config) -> Self {
-        ConfigFile {
-            version: wg_quickrs_version!().into(),
-            agent: config.agent.clone(),
-            network: config.network.clone(),
-        }
-    }
-}
-
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct ConfigWNetworkDigest {
-    pub agent: Agent,
-    pub network_w_digest: NetworkWDigest,
-}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct NetworkWDigest {
@@ -60,71 +24,6 @@ impl TryFrom<&Network> for NetworkWDigest {
         let digest = STANDARD.encode(Sha256::digest(&network_bytes));
         Ok(NetworkWDigest { network: network.clone(), digest })
     }
-}
-
-impl ConfigWNetworkDigest {
-    pub(crate) fn from_config(config: Config) -> Result<Self, WireGuardLibError> {
-        let network_w_digest = NetworkWDigest::try_from(&config.network)?;
-        Ok(ConfigWNetworkDigest { agent: config.agent, network_w_digest })
-    }
-
-    pub(crate) fn to_config(&self) -> Config {
-        Config{ agent: self.agent.clone(), network: self.network_w_digest.network.clone() }
-    }
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct Config {
-    pub agent: Agent,
-    pub network: Network,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct Agent {
-    pub web: AgentWeb,
-    pub vpn: AgentVpn,
-    pub firewall: AgentFirewall,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct AgentWeb {
-    pub address: Ipv4Addr,
-    pub http: AgentWebHttp,
-    pub https: AgentWebHttps,
-    pub password: Password,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct AgentWebHttp {
-    pub enabled: bool,
-    pub port: u16,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct AgentWebHttps {
-    pub enabled: bool,
-    pub port: u16,
-    pub tls_cert: PathBuf,
-    pub tls_key: PathBuf,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct Password {
-    pub enabled: bool,
-    pub hash: String,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct AgentVpn {
-    pub enabled: bool,
-    pub port: u16,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct AgentFirewall {
-    pub enabled: bool,
-    pub utility: PathBuf,
-    pub gateway: String,
 }
 
 #[derive(Eq, Ord, PartialOrd, PartialEq, Debug, Clone)]
@@ -251,6 +150,20 @@ pub struct Scripts {
     pub post_down: Vec<Script>,
 }
 
+impl IntoIterator for Scripts {
+    type Item = (String, Vec<Script>);
+    type IntoIter = std::array::IntoIter<(String, Vec<Script>), 4>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        [
+            ("pre_up".to_string(), self.pre_up),
+            ("post_up".to_string(), self.post_up),
+            ("pre_down".to_string(), self.pre_down),
+            ("post_down".to_string(), self.post_down)
+        ].into_iter()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct WireGuardKey(pub [u8; 32]);
 
@@ -340,4 +253,3 @@ pub struct ReservationData {
     pub peer_id: Uuid,
     pub valid_until: DateTime<Utc>,
 }
-

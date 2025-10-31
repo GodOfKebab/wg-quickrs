@@ -2,8 +2,10 @@ use std::collections::BTreeMap;
 use std::net::Ipv4Addr;
 use chrono::{Duration, Utc};
 use uuid::Uuid;
-use wg_quickrs_wasm::validation::*;
-use wg_quickrs_wasm::types::conf::*;
+use wg_quickrs_wasm::validation::network::*;
+use wg_quickrs_wasm::validation::agent::*;
+use wg_quickrs_wasm::validation::error::*;
+use wg_quickrs_wasm::types::network::*;
 
 
 /// Helper macro for passing tests

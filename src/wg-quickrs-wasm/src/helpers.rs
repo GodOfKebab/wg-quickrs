@@ -1,9 +1,11 @@
-use crate::types::conf::{Network, EndpointAddress, WireGuardKey};
+use chrono::{Duration, Utc};
+use crate::types::network::*;
 use crate::types::misc::{WireGuardLibError};
 use x25519_dalek::{PublicKey, StaticSecret};
 use rand::RngCore;
 use uuid::Uuid;
 use crate::macros::full_version;
+
 
 pub fn get_peer_wg_config(
     network: &Network,
@@ -136,4 +138,18 @@ pub fn wg_generate_key() -> WireGuardKey {
     let mut key_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut key_bytes);
     WireGuardKey(key_bytes)
+}
+
+pub fn get_connection_id(peer1: Uuid, peer2: Uuid) -> ConnectionId {
+    if peer1 > peer2 {
+        ConnectionId { a: peer1, b: peer2 }
+    } else {
+        ConnectionId { a: peer2, b: peer1 }
+    }
+}
+
+pub fn remove_expired_reservations(network: &mut Network) {
+    network.reservations.retain(|_, lease_data| {
+        Utc::now().signed_duration_since(&lease_data.valid_until) < Duration::zero()
+    });
 }
