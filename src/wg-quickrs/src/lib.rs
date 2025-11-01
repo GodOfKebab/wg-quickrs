@@ -8,4 +8,3 @@ pub mod commands;
 pub mod conf;
 pub mod web;
 pub mod wireguard;
-pub mod macros;

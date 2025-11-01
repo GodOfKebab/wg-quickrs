@@ -1,6 +1,6 @@
-use crate::macros::full_version;
 use clap::{CommandFactory, FromArgMatches};
 use wg_quickrs_cli::Cli;
+use wg_quickrs_wasm::macros::full_version;
 
 // Create a new Cli instance with the version set from the full_version!() macro
 pub(crate) fn parse() -> Cli {

@@ -7,6 +7,7 @@ use std::process::ExitCode;
 use thiserror::Error;
 use wg_quickrs::{WG_QUICKRS_CONFIG_FOLDER, WG_QUICKRS_CONFIG_FILE};
 use wg_quickrs_wasm::validation::error::ValidationError;
+use wg_quickrs_wasm::macros::full_version;
 use crate::commands::agent::AgentRunError;
 use crate::commands::init::InitError;
 
@@ -14,7 +15,6 @@ use crate::commands::init::InitError;
 mod cli;
 mod commands;
 mod conf;
-mod macros;
 mod web;
 mod wireguard;
 

@@ -1,9 +1,11 @@
 use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
-use crate::macros::*;
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
 use wg_quickrs_wasm::types::config::{Config, ConfigFile, ConfigWNetworkDigest};
 use wg_quickrs_wasm::types::api::{Summary};
 use wg_quickrs_wasm::types::misc::{WireGuardStatus};
+use wg_quickrs_wasm::validation::config_file::{validate_config_file, ConfigFileValidationError};
+use wg_quickrs_wasm::validation::error::ValidationError;
+use wg_quickrs_wasm::macros::wg_quickrs_version;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -12,8 +14,6 @@ use std::sync::{Mutex, OnceLock};
 use chrono::Utc;
 use thiserror::Error;
 use semver::Version;
-use wg_quickrs_wasm::validation::config_file::{validate_config_file, ConfigFileValidationError};
-use wg_quickrs_wasm::validation::error::ValidationError;
 
 #[derive(Error, Debug)]
 pub enum ConfUtilError {

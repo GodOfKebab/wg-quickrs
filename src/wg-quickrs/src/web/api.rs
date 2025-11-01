@@ -1,5 +1,4 @@
 use crate::conf;
-use crate::macros::*;
 use crate::wireguard;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, patch, post, web};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
@@ -9,6 +8,8 @@ use rand::{RngCore, rng};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
+use wg_quickrs_wasm::macros::{wg_quickrs_version, build_info};
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Claims {
