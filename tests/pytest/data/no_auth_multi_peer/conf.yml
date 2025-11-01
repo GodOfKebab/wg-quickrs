@@ -21,7 +21,7 @@ agent:
     utility: ''
     gateway: ''
 network:
-  identifier: wg-quickrs-home
+  name: wg-quickrs-home
   subnet: '10.0.34.0/24'
   this_peer: '0ed989c6-6dba-4e3c-8034-08adf4262d9e'
   peers:
@@ -30,17 +30,19 @@ network:
       address: '10.0.34.1'
       endpoint:
         enabled: true
-        value: '127.0.0.1:51820'
+        address: !ipv4 '127.0.0.1'
+        port: 51820
       kind: server
       icon:
         enabled: false
-        value: ''
+        src: ''
       dns:
         enabled: true
-        value: '1.1.1.1'
+        addresses:
+          - '1.1.1.1'
       mtu:
         enabled: false
-        value: ''
+        value: 1420
       scripts:
         pre_up: []
         post_up: []
@@ -54,17 +56,19 @@ network:
       address: '10.0.34.3'
       endpoint:
         enabled: false
-        value: ''
+        address: none
+        port: 51820
       kind: laptop
       icon:
         enabled: false
-        value: ''
+        src: ''
       dns:
         enabled: true
-        value: '1.1.1.1'
+        addresses:
+          - '1.1.1.1'
       mtu:
         enabled: false
-        value: ''
+        value: 1420
       scripts:
         pre_up: []
         post_up: []
@@ -78,17 +82,19 @@ network:
       address: '10.0.34.2'
       endpoint:
         enabled: false
-        value: ''
+        address: none
+        port: 51820
       kind: laptop
       icon:
         enabled: false
-        value: ''
+        src: ''
       dns:
         enabled: true
-        value: '1.1.1.1'
+        addresses:
+          - '1.1.1.1'
       mtu:
         enabled: false
-        value: ''
+        value: 1420
       scripts:
         pre_up: []
         post_up: []
@@ -101,34 +107,40 @@ network:
     '9541bbb0-a3c0-4b83-8637-96820cae7983*0ed989c6-6dba-4e3c-8034-08adf4262d9e':
       enabled: true
       pre_shared_key: '4L1CmDfDP1eo9AjYJF6pX2g4RGjjfKeuQeeTz6eZyNU='
-      allowed_ips_a_to_b: '0.0.0.0/0'
-      allowed_ips_b_to_a: '10.0.34.3/32'
+      allowed_ips_a_to_b:
+        - '0.0.0.0/0'
+      allowed_ips_b_to_a:
+        - '10.0.34.3/32'
       persistent_keepalive:
         enabled: true
-        value: '25'
+        period: 25
     '6e9a8440-f884-4b54-bfe7-b982f15e40fd*0ed989c6-6dba-4e3c-8034-08adf4262d9e':
       enabled: true
       pre_shared_key: '8cQ1g8N6We4ZRxYG5Kz0O13i0mhgOG6F+jSkWWo9LVI='
-      allowed_ips_a_to_b: '0.0.0.0/0'
-      allowed_ips_b_to_a: '10.0.34.2/32'
+      allowed_ips_a_to_b:
+        - '0.0.0.0/0'
+      allowed_ips_b_to_a:
+        - '10.0.34.2/32'
       persistent_keepalive:
         enabled: true
-        value: '25'
+        period: 25
   defaults:
     peer:
       endpoint:
         enabled: false
-        value: ''
+        address: none
+        port: 51820
       kind: laptop
       icon:
         enabled: false
-        value: ''
+        src: ''
       dns:
         enabled: true
-        value: '1.1.1.1'
+        addresses:
+          - '1.1.1.1'
       mtu:
         enabled: false
-        value: ''
+        value: 1420
       scripts:
         pre_up: []
         post_up: []
@@ -137,7 +149,7 @@ network:
     connection:
       persistent_keepalive:
         enabled: true
-        value: '25'
+        period: 25
   reservations:
     '10.0.34.4':
       peer_id: f857bbe1-0063-4dff-98da-78b47efd6453

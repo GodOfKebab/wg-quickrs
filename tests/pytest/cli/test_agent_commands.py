@@ -9,10 +9,12 @@ from tests.pytest.helpers import (
     get_available_network_interfaces,
     deep_get
 )
-import yaml
 import subprocess
 from deepdiff import DeepDiff
 import pytest
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
 
 
 
@@ -20,7 +22,7 @@ def run_and_check_success(cmd, field, field_val, success):
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
 
     with open(wg_quickrs_config_file) as stream:
-        old_conf = yaml.safe_load(stream)
+        old_conf = yaml.load(stream)
 
     result = subprocess.run(
         get_wg_quickrs_command() + ['agent'] + cmd,
@@ -35,12 +37,19 @@ def run_and_check_success(cmd, field, field_val, success):
         return
 
     with open(wg_quickrs_config_file) as stream:
-        new_conf = yaml.safe_load(stream)
+        new_conf = yaml.load(stream)
 
     # check diff
     diff = DeepDiff(old_conf, new_conf, ignore_order=True)
     expected_path = "root" + "".join(f"['{k}']" for k in field)
+
+    # If the field type changes from str to PathBuf (like when setting fw utility), only check 'type_changes'
+    if 'type_changes' in diff:
+        assert diff["type_changes"][expected_path]["new_value"] == field_val
+        return
+    # Otherwise, check 'values_changed'
     assert diff["values_changed"][expected_path]["old_value"] == deep_get(old_conf, field)
+    # Python testing doesn't calculate hashes, so we can't compare the hash values
     if cmd[0] != "reset-web-password":
         assert diff["values_changed"][expected_path]["new_value"] == field_val
 

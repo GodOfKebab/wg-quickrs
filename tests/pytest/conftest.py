@@ -3,7 +3,9 @@ from subprocess import Popen
 import os
 import shutil
 import pytest
-import yaml
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
 
 
 def setup_certs_folder(address):
@@ -46,7 +48,7 @@ def setup_wg_quickrs_folder(request):
             )
             # Load config to extract agent address
             with open(wg_quickrs_config_file) as stream:
-                conf = yaml.safe_load(stream)
+                conf = yaml.load(stream)
             # TLS cert generation
             if conf['agent']['web']['https']['enabled']:
                 setup_certs_folder(conf['agent']['web']['address'])
@@ -70,7 +72,7 @@ def setup_wg_quickrs_agent(request, setup_wg_quickrs_folder):
 
         # Load config to extract agent address
         with open(wg_quickrs_config_file) as stream:
-            conf = yaml.safe_load(stream)
+            conf = yaml.load(stream)
 
         # prefer https over http
         if conf['agent']['web']['https']['enabled']:

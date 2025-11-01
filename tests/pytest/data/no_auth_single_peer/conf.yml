@@ -21,7 +21,7 @@ agent:
     utility: ''
     gateway: ''
 network:
-  identifier: wg-quickrs-home
+  name: wg-quickrs-home
   subnet: '10.0.34.0/24'
   this_peer: '0ed989c6-6dba-4e3c-8034-08adf4262d9e'
   peers:
@@ -30,17 +30,19 @@ network:
       address: '10.0.34.1'
       endpoint:
         enabled: true
-        value: '127.0.0.1:51820'
+        address: !ipv4 '127.0.0.1'
+        port: 51820
       kind: server
       icon:
         enabled: false
-        value: ''
+        src: ''
       dns:
         enabled: true
-        value: '1.1.1.1'
+        addresses:
+          - '1.1.1.1'
       mtu:
         enabled: false
-        value: ''
+        value: 1420
       scripts:
         pre_up: []
         post_up: []
@@ -54,17 +56,19 @@ network:
     peer:
       endpoint:
         enabled: false
-        value: ''
+        address: none
+        port: 51820
       kind: laptop
       icon:
         enabled: false
-        value: ''
+        src: ''
       dns:
         enabled: true
-        value: '1.1.1.1'
+        addresses:
+          - '1.1.1.1'
       mtu:
         enabled: false
-        value: ''
+        value: 1420
       scripts:
         pre_up: []
         post_up: []
@@ -73,6 +77,6 @@ network:
     connection:
       persistent_keepalive:
         enabled: true
-        value: '25'
+        period: 25
   reservations: {}
   updated_at: '2025-10-04T00:36:44Z'

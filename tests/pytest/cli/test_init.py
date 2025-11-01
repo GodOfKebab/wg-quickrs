@@ -52,7 +52,7 @@ def generate_init_no_prompt_opts(
         default_connection_persistent_keepalive="--default-connection-persistent-keepalive-enabled false",
 ):
     return f"""
-    --network-identifier wg-quickrs-home \\
+    --network-name wg-quickrs-home \\
     --network-subnet {network_subnet} \\
     --agent-web-address {agent_web_address} \\
     {agent_web_http} \\
@@ -118,8 +118,8 @@ def test_init_no_prompt_simple(setup_wg_quickrs_folder):
         ("agent_peer_vpn_internal_address", "192.168.1.1", False),  # incorrect subnet/internal-address combination
         ("agent_peer_vpn_internal_address", "not-an-address", False),
         ("agent_peer_dns", "--agent-peer-dns-enabled true", False),
-        ("agent_peer_dns", "--agent-peer-dns-enabled true --agent-peer-dns-server 1.1.1.1", True),
-        ("agent_peer_dns", "--agent-peer-dns-enabled true --agent-peer-dns-server not-an-address", False),
+        ("agent_peer_dns", "--agent-peer-dns-enabled true --agent-peer-dns-addresses 1.1.1.1", True),
+        ("agent_peer_dns", "--agent-peer-dns-enabled true --agent-peer-dns-addresses not-an-address", False),
         ("agent_peer_mtu", "--agent-peer-mtu-enabled true", False),
         ("agent_peer_mtu", "--agent-peer-mtu-enabled true --agent-peer-mtu-value 1420", True),
         ("agent_peer_mtu", "--agent-peer-mtu-enabled true --agent-peer-mtu-value not-an-mtu-val", False),
@@ -138,8 +138,8 @@ def test_init_no_prompt_simple(setup_wg_quickrs_folder):
         ("default_peer_icon", "--default-peer-icon-enabled true", False),
         ("default_peer_icon", "--default-peer-icon-enabled true --default-peer-icon-src example-src", True),
         ("default_peer_dns", "--default-peer-dns-enabled true", False),
-        ("default_peer_dns", "--default-peer-dns-enabled true --default-peer-dns-server 1.1.1.1", True),
-        ("default_peer_dns", "--default-peer-dns-enabled true --default-peer-dns-server not-an-address", False),
+        ("default_peer_dns", "--default-peer-dns-enabled true --default-peer-dns-addresses 1.1.1.1", True),
+        ("default_peer_dns", "--default-peer-dns-enabled true --default-peer-dns-addresses not-an-address", False),
         ("default_peer_mtu", "--default-peer-mtu-enabled true", False),
         ("default_peer_mtu", "--default-peer-mtu-enabled true --default-peer-mtu-value 1420", True),
         ("default_peer_mtu", "--default-peer-mtu-enabled true --default-peer-mtu-value not-an-mtu-val", False),
