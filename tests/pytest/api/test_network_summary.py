@@ -1,3 +1,4 @@
+from tests.pytest.conftest import setup_wg_quickrs_agent
 import requests
 
 
@@ -17,7 +18,7 @@ def test_get_summary_full(setup_wg_quickrs_agent):
 
     # Verify network structure
     network = data["network"]
-    assert "identifier" in network
+    assert "name" in network
     assert "subnet" in network
     assert "this_peer" in network
     assert "peers" in network

@@ -114,23 +114,24 @@ def get_test_peer_data() -> Dict[str, Any]:
     """Get test peer data for adding peers."""
     return {
         "name": "test-peer",
-        "address": "10.0.34.100",
+        "address": "127.0.0.1",
         "endpoint": {
             "enabled": True,
-            "value": "192.168.1.100:51820"
+            "address": { "ipv4": "192.168.1.100" },
+            "port": 51820
         },
         "kind": "laptop",
         "icon": {
             "enabled": False,
-            "value": ""
+            "src": ""
         },
         "dns": {
             "enabled": True,
-            "value": "1.1.1.1"
+            "addresses": ["1.1.1.1"]
         },
         "mtu": {
             "enabled": False,
-            "value": ""
+            "value": 1420
         },
         "scripts": {
             "pre_up": [],
@@ -147,11 +148,11 @@ def get_test_connection_data() -> Dict[str, Any]:
     return {
         "enabled": True,
         "pre_shared_key": "QjF2m3eEcOuBjVqE1K5yB6z9Tf1Hk8qW2aXvNc5uE0o=",
-        "allowed_ips_a_to_b": "0.0.0.0/0",
-        "allowed_ips_b_to_a": "10.0.34.0/24",
+        "allowed_ips_a_to_b": ["0.0.0.0/0"],
+        "allowed_ips_b_to_a": ["10.0.34.0/24"],
         "persistent_keepalive": {
             "enabled": True,
-            "value": "25"
+            "period": 25
         }
     }
 
