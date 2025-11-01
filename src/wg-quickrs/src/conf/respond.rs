@@ -112,16 +112,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                             bad_request!("changed_fields.peers.{}.address: {}", peer_id, e)
                         })?;
                     }
-                    if let Some(address) = &peer_details.endpoint {
-                        peer_config.endpoint.enabled = address.enabled;
-                        peer_config.endpoint.port = address.port;
-                        peer_config.endpoint.address = if address.enabled {
-                            validate_peer_endpoint_address(&address.address).map_err(|e| {
-                                bad_request!("changed_fields.peers.{}.endpoint: {}", peer_id, e)
-                            })?
-                        } else {
-                            address.address.clone()
-                        }
+                    if let Some(endpoint) = &peer_details.endpoint {
+                        peer_config.endpoint = validate_peer_endpoint(&endpoint).map_err(|e| {
+                            bad_request!("changed_fields.peers.{}.endpoint: {}", peer_id, e)
+                        })?;
                     }
                     if let Some(kind) = &peer_details.kind {
                         peer_config.kind = parse_and_validate_peer_kind(kind).map_err(|e| {
@@ -129,28 +123,19 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                         })?;
                     }
                     if let Some(icon) = &peer_details.icon {
-                        peer_config.icon.enabled = icon.enabled;
-                        peer_config.icon.src = if icon.enabled {
-                            parse_and_validate_peer_icon_src(&icon.src).map_err(|e| {
-                                bad_request!("changed_fields.peers.{}.icon: {}", peer_id, e)
-                            })?
-                        } else {
-                            icon.src.clone()
-                        }
+                        peer_config.icon = validate_peer_icon(&icon).map_err(|e| {
+                            bad_request!("changed_fields.peers.{}.icon: {}", peer_id, e)
+                        })?;
                     }
                     if let Some(dns) = &peer_details.dns {
-                        peer_config.dns = dns.clone();
-                        // If deserialization succeeds, dns is already validated.
+                        peer_config.dns = validate_peer_dns(dns).map_err(|e| {
+                            bad_request!("changed_fields.peers.{}.dns: {}", peer_id, e)
+                        })?;
                     }
                     if let Some(mtu) = &peer_details.mtu {
-                        peer_config.mtu.enabled = mtu.enabled;
-                        peer_config.mtu.value = if mtu.enabled {
-                            validate_peer_mtu_value(mtu.value).map_err(|e| {
-                                bad_request!("changed_fields.peers.{}.mtu: {}", peer_id, e)
-                            })?
-                        } else {
-                            mtu.value
-                        }
+                        peer_config.mtu = validate_peer_mtu(&mtu).map_err(|e| {
+                            bad_request!("changed_fields.peers.{}.mtu: {}", peer_id, e)
+                        })?;
                     }
                     if let Some(private_key) = &peer_details.private_key {
                         peer_config.private_key = private_key.clone();
@@ -206,8 +191,9 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                         // If deserialization succeeds, allowed_ips_b_to_a is already validated.
                     }
                     if let Some(persistent_keepalive) = connection_details.persistent_keepalive {
-                        connection_config.persistent_keepalive = persistent_keepalive;
-                        // If deserialization succeeds, persistent_keepalive is already validated.
+                        connection_config.persistent_keepalive = validate_conn_persistent_keepalive_period(&persistent_keepalive).map_err(|e| {
+                            bad_request!("changed_fields.connections.{}.persistent_keepalive: {}", connection_id, e)
+                        })?;
                     }
                     changed_config = true;
                 } else {
@@ -238,25 +224,22 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 validate_peer_address(&peer_details.address, &c.network_w_digest.network).map_err(|e| {
                     bad_request!("added_peers.{}.address: {}", peer_id, e)
                 })?;
-                if peer_details.endpoint.enabled {
-                    validate_peer_endpoint_address(&peer_details.endpoint.address).map_err(|e| {
-                        bad_request!("added_peers.{}.endpoint: {}", peer_id, e)
-                    })?;
-                }
+                validate_peer_endpoint(&peer_details.endpoint).map_err(|e| {
+                    bad_request!("added_peers.{}.endpoint: {}", peer_id, e)
+                })?;
                 parse_and_validate_peer_kind(&peer_details.kind).map_err(|e| {
                     bad_request!("added_peers.{}.kind: {}", peer_id, e)
                 })?;
-                if peer_details.icon.enabled {
-                    parse_and_validate_peer_icon_src(&peer_details.icon.src).map_err(|e| {
-                        bad_request!("added_peers.{}.icon: {}", peer_id, e)
-                    })?;
-                }
+                validate_peer_icon(&peer_details.icon).map_err(|e| {
+                    bad_request!("added_peers.{}.icon: {}", peer_id, e)
+                })?;
+                validate_peer_dns(&peer_details.dns).map_err(|e| {
+                    bad_request!("added_peers.{}.dns: {}", peer_id, e)
+                })?;
                 // If deserialization succeeds, dns is already validated.
-                if peer_details.mtu.enabled {
-                    validate_peer_mtu_value(peer_details.mtu.value).map_err(|e| {
-                        bad_request!("added_peers.{}.mtu: {}", peer_id, e)
-                    })?;
-                }
+                validate_peer_mtu(&peer_details.mtu).map_err(|e| {
+                    bad_request!("added_peers.{}.mtu: {}", peer_id, e)
+                })?;
                 // If deserialization succeeds, private_key is already validated.
                 validate_peer_scripts(&peer_details.scripts.pre_up).map_err(|e| {
                     bad_request!("added_peers.{}.scripts.pre_up: {}", peer_id, e)
@@ -306,7 +289,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 // If deserialization succeeds, pre_shared_key is already validated.
                 // If deserialization succeeds, allowed_ips_a_to_b is already validated.
                 // If deserialization succeeds, allowed_ips_b_to_a is already validated.
-                // If deserialization succeeds, persistent_keepalive is already validated.
+                validate_conn_persistent_keepalive_period(&connection_details.persistent_keepalive).map_err(|e| {
+                    bad_request!("added_connections.{}.persistent_keepalive: {}", connection_id, e)
+                })?;
+
                 c.network_w_digest
                     .network
                     .connections

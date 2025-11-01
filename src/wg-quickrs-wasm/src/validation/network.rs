@@ -86,6 +86,17 @@ pub fn validate_peer_endpoint_address(endpoint_address: &EndpointAddress) -> Val
     Ok(endpoint_address.clone())
 }
 
+pub fn validate_peer_endpoint(endpoint: &Endpoint) -> ValidationResult<Endpoint> {
+    if endpoint.enabled {
+        validate_peer_endpoint_address(&endpoint.address)?;
+        if endpoint.address == EndpointAddress::None {
+            return Err(ValidationError::EmptyEndpoint())
+        }
+    }
+
+    Ok(endpoint.clone())
+}
+
 pub fn parse_and_validate_peer_kind(kind: &str) -> ValidationResult<String> {
     // no validation
     Ok(kind.to_string())
@@ -98,12 +109,27 @@ pub fn parse_and_validate_peer_icon_src(src: &str) -> ValidationResult<String> {
     Ok(src.to_string())
 }
 
+pub fn validate_peer_icon(icon: &Icon) -> ValidationResult<Icon> {
+    if icon.enabled {
+        parse_and_validate_peer_icon_src(icon.src.as_str())?;
+    }
+    Ok(icon.clone())
+}
+
 pub fn parse_and_validate_peer_dns_addresses(dns: &str) -> ValidationResult<Vec<Ipv4Addr>> {
     let addresses = dns.split(',')
         .map(|address| address.trim().parse().map_err(|_| ValidationError::NotIPv4Address()))
         .collect::<ValidationResult<Vec<_>>>()?;
 
     Ok(addresses)
+}
+
+pub fn validate_peer_dns(dns: &Dns) -> ValidationResult<Dns> {
+    if dns.enabled && dns.addresses.is_empty() {
+        return Err(ValidationError::EmptyDns());
+    }
+
+    Ok(dns.clone())
 }
 
 pub fn parse_and_validate_peer_mtu_value(mtu_value: &str) -> ValidationResult<u16> {
@@ -118,6 +144,14 @@ pub fn validate_peer_mtu_value(mtu_value: u16) -> ValidationResult<u16> {
     }
 
     Ok(mtu_value)
+}
+
+pub fn validate_peer_mtu(mtu: &Mtu) -> ValidationResult<Mtu> {
+    if mtu.enabled {
+        validate_peer_mtu_value(mtu.value)?;
+    }
+
+    Ok(mtu.clone())
 }
 
 pub fn parse_and_validate_peer_script(script: &str) -> ValidationResult<String> {
@@ -145,11 +179,21 @@ pub fn parse_and_validate_wg_key(key: &str) -> ValidationResult<WireGuardKey> {
 
 // Network.Connection Fields
 
-pub fn parse_and_validate_conn_persistent_keepalive_period(persistent_keepalive: &str) -> ValidationResult<u16> {
-    let period = persistent_keepalive.parse::<u16>()
-        .map_err(|_| ValidationError::InvalidPersistentKeepalive())?;
-
+pub fn parse_and_validate_conn_persistent_keepalive_period(persistent_keepalive_period: &str) -> ValidationResult<u16> {
+    let period = persistent_keepalive_period.parse::<u16>()
+        .map_err(|_| ValidationError::InvalidPersistentKeepalivePeriod())?;
+    if period == 0 {
+        return Err(ValidationError::InvalidPersistentKeepalivePeriod());
+    }
     Ok(period)
+}
+
+pub fn validate_conn_persistent_keepalive_period(persistent_keepalive: &PersistentKeepalive) -> ValidationResult<PersistentKeepalive> {
+    if persistent_keepalive.enabled {
+        parse_and_validate_conn_persistent_keepalive_period(&persistent_keepalive.period.to_string())?;
+    }
+
+    Ok(persistent_keepalive.clone())
 }
 
 pub fn parse_and_validate_conn_allowed_ips(allowed_ips: &str) -> ValidationResult<AllowedIPs> {

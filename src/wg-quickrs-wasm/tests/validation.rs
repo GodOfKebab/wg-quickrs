@@ -345,19 +345,19 @@ fn test_validate_conn_persistent_keepalive() {
     ok!(parse_and_validate_conn_persistent_keepalive_period("25"));
     is_err!(
         parse_and_validate_conn_persistent_keepalive_period(""),
-        ValidationError::InvalidPersistentKeepalive()
+        ValidationError::InvalidPersistentKeepalivePeriod()
     );
     is_err!(
         parse_and_validate_conn_persistent_keepalive_period("-1"),
-        ValidationError::InvalidPersistentKeepalive()
+        ValidationError::InvalidPersistentKeepalivePeriod()
     );
     is_err!(
         parse_and_validate_conn_persistent_keepalive_period("70000"),
-        ValidationError::InvalidPersistentKeepalive()
+        ValidationError::InvalidPersistentKeepalivePeriod()
     );
     is_err!(
         parse_and_validate_conn_persistent_keepalive_period("notnum"),
-        ValidationError::InvalidPersistentKeepalive()
+        ValidationError::InvalidPersistentKeepalivePeriod()
     );
 }
 

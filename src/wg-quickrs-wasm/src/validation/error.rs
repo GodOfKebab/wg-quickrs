@@ -35,10 +35,14 @@ pub enum ValidationError {
     AddressIsReserved(),
     #[error("endpoint is invalid")]
     InvalidEndpoint(),
+    #[error("endpoint is empty")]
+    EmptyEndpoint(),
     #[error("endpoint port is invalid")]
     InvalidEndpointPort(),
     #[error("icon cannot be empty when enabled")]
     EmptyIcon(),
+    #[error("dns cannot be empty when enabled")]
+    EmptyDns(),
     #[error("MTU is invalid (1-9999)")]
     InvalidMtu(),
     #[error("script missing a semicolon")]
@@ -47,8 +51,8 @@ pub enum ValidationError {
     ScriptMissingSemicolonAt(usize),
     #[error("key is not a valid WireGuard key (32 bytes, base64 encoded)")]
     NotWireGuardKey(),
-    #[error("persistent_keepalive is invalid")]
-    InvalidPersistentKeepalive(),
+    #[error("persistent_keepalive period is not a valid number (1-65535)")]
+    InvalidPersistentKeepalivePeriod(),
     #[error("allowed_ips is not in CIDR format")]
     InvalidAllowedIPs(),
 }

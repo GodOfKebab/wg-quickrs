@@ -57,17 +57,15 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
         parse_and_validate_peer_kind(&peer.kind).map_err(|e| {
             ConfigFileValidationError::Validation(format!("{}.kind", peer_path), e)
         })?;
-        if peer.icon.enabled {
-            parse_and_validate_peer_icon_src(&peer.icon.src).map_err(|e| {
-                ConfigFileValidationError::Validation(format!("{}.icon", peer_path), e)
-            })?;
-        }
-        // skip network.peers.{peer_id}.dns because if it can be deserialized, it means it's valid
-        if peer.mtu.enabled {
-            validate_peer_mtu_value(peer.mtu.value).map_err(|e| {
-                ConfigFileValidationError::Validation(format!("{}.mtu", peer_path), e)
-            })?;
-        }
+        validate_peer_icon(&peer.icon).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.icon", peer_path), e)
+        })?;
+        validate_peer_dns(&peer.dns).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.dns", peer_path), e)
+        })?;
+        validate_peer_mtu(&peer.mtu).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.mtu", peer_path), e)
+        })?;
         // skip network.peers.{peer_id}.private_key because if it can be deserialized, it means it's valid
 
         for (script_type, scripts) in peer.scripts.clone() {
@@ -82,11 +80,16 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
     }
 
     // Validate connections
-    // skip network.connections.{conn_id} because if it can be deserialized, it means it's valid
-    // skip network.connections.{conn_id}.pre_shared_key because if it can be deserialized, it means it's valid
-    // skip network.connections.{conn_id}.allowed_ips_a_to_b because if it can be deserialized, it means it's valid
-    // skip network.connections.{conn_id}.allowed_ips_b_to_a because if it can be deserialized, it means it's valid
-    // skip network.connections.{conn_id}.persistent_keepalive because if it can be deserialized, it means it's valid
+    for (connection_id, connection) in &config_file.network.connections {
+        let conn_path = format!("network.connections.{}", connection_id);
+        // skip network.connections.{conn_id} because if it can be deserialized, it means it's valid
+        // skip network.connections.{conn_id}.pre_shared_key because if it can be deserialized, it means it's valid
+        // skip network.connections.{conn_id}.allowed_ips_a_to_b because if it can be deserialized, it means it's valid
+        // skip network.connections.{conn_id}.allowed_ips_b_to_a because if it can be deserialized, it means it's valid
+        validate_conn_persistent_keepalive_period(&connection.persistent_keepalive).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.persistent_keepalive", conn_path), e)
+        })?;
+    }
 
     // Validate defaults
     let defaults_path = "network.defaults";
@@ -94,28 +97,24 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
     parse_and_validate_peer_kind(&config_file.network.defaults.peer.kind).map_err(|e| {
         ConfigFileValidationError::Validation(format!("{}.peer.kind", defaults_path), e)
     })?;
-    if config_file.network.defaults.peer.icon.enabled {
-        parse_and_validate_peer_icon_src(&config_file.network.defaults.peer.icon.src).map_err(|e| {
-            ConfigFileValidationError::Validation(format!("{}.peer.icon", defaults_path), e)
-        })?;
-    }
-    // skip network.defaults.peer.dns because if it can be deserialized, it means it's valid
-    if config_file.network.defaults.peer.mtu.enabled {
-        validate_peer_mtu_value(config_file.network.defaults.peer.mtu.value).map_err(|e| {
-            ConfigFileValidationError::Validation(format!("{}.peer.mtu", defaults_path), e)
-        })?;
-    }
+    validate_peer_icon(&config_file.network.defaults.peer.icon).map_err(|e| {
+        ConfigFileValidationError::Validation(format!("{}.peer.icon", defaults_path), e)
+    })?;
+    validate_peer_dns(&config_file.network.defaults.peer.dns).map_err(|e| {
+        ConfigFileValidationError::Validation(format!("{}.peer.dns", defaults_path), e)
+    })?;
+    validate_peer_mtu(&config_file.network.defaults.peer.mtu).map_err(|e| {
+        ConfigFileValidationError::Validation(format!("{}.peer.mtu", defaults_path), e)
+    })?;
     for (script_type, scripts) in config_file.network.defaults.peer.scripts.clone() {
-        for (i, script) in scripts.into_iter().enumerate() {
-            if script.enabled {
-                parse_and_validate_peer_script(&script.script).map_err(|e| {
-                    ConfigFileValidationError::Validation(format!("{defaults_path}.scripts.{script_type}.{i}"), e)
-                })?;
-            }
-        }
+        validate_peer_scripts(&scripts).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{defaults_path}.peer.scripts.{script_type}"), e)
+        })?;
     }
 
-    // skip network.defaults.connection.persistent_keepalive because if it can be deserialized, it means it's valid
+    validate_conn_persistent_keepalive_period(&config_file.network.defaults.connection.persistent_keepalive).map_err(|e| {
+        ConfigFileValidationError::Validation(format!("{}.connection.persistent_keepalive", defaults_path), e)
+    })?;
 
     // Validate reservations
     for (address, _reservation) in &config_file.network.reservations {
