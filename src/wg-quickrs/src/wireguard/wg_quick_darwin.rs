@@ -7,7 +7,7 @@ use std::os::unix::process::CommandExt;
 use std::process::Command;
 use std::time::{Duration, SystemTime};
 use regex::Regex;
-use wg_quickrs_wasm::types::network::{Dns, Mtu};
+use wg_quickrs_lib::types::network::{Dns, Mtu};
 use crate::wireguard::wg_quick;
 use crate::wireguard::wg_quick::{DnsManager, EndpointRouter, TunnelError, TunnelResult};
 

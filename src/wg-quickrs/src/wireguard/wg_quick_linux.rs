@@ -4,8 +4,9 @@ use std::process::Command;
 use std::fs;
 use std::path::Path;
 use std::env;
+use std::net::Ipv4Addr;
 use regex::Regex;
-use wg_quickrs_wasm::types::EnabledValue;
+use wg_quickrs_lib::types::network::Mtu;
 use crate::wireguard::wg_quick;
 use crate::wireguard::wg_quick::{DnsManager, TunnelError, TunnelResult};
 
@@ -41,7 +42,7 @@ pub fn add_address(iface: &str, addr: &str, is_ipv6: bool) -> TunnelResult<()> {
     Ok(())
 }
 
-pub fn set_mtu_and_up(iface: &str, mtu: &EnabledValue) -> TunnelResult<()> {
+pub fn set_mtu_and_up(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
     let mtu_val = if mtu.enabled {
         mtu.value.to_string()
     } else {
@@ -158,7 +159,7 @@ fn resolvconf_iface_prefix() -> String {
     String::new()
 }
 
-pub fn set_dns(dns_servers: &Vec<String>, interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<()> {
+pub fn set_dns(dns_servers: &Vec<Ipv4Addr>, interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<()> {
     dns_manager.have_set_dns = false;
     if dns_servers.is_empty() {
         return Ok(());

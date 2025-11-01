@@ -53,7 +53,7 @@ The project is mainly split into three parts:
 
 * **`wg-quickrs`** – backend, frontend server, and scripting tools bundled in `wg-quickrs` binary
 * **`wg-quickrs-web`** – frontend assets
-* **`wg-quickrs-wasm`** – rust code shared between `wg-quickrs` (imported as a library) and `wg-quickrs-web` (using WASM)
+* **`wg-quickrs-lib`** – rust code shared between `wg-quickrs` (imported as a library) and `wg-quickrs-web` (using WASM)
 
 ---
 
@@ -68,22 +68,22 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 ---
 
-#### 1.1.2 Build `wg-quickrs-wasm`
+#### 1.1.2 Build `wg-quickrs-lib`
 
 Install `wasm-pack` dependency.
 
-[//]: # (install-deps-debian: 1.1.2 Build wg-quickrs-wasm - Install 'wasm-pack' dependency)
+[//]: # (install-deps-debian: 1.1.2 Build wg-quickrs-lib - Install 'wasm-pack' dependency)
 
 ```sh
 cargo install wasm-pack
 ```
 
-Build `wg-quickrs-wasm` directory.
+Build `wg-quickrs-lib` directory.
 
-[//]: # (build-src-debian: 1.1.2 Build wg-quickrs-wasm - Build 'wg-quickrs-wasm' directory.)
+[//]: # (build-src-debian: 1.1.2 Build wg-quickrs-lib - Build 'wg-quickrs-lib' directory.)
 
 ```sh
-wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg
+wasm-pack build wg-quickrs-lib --target web --out-dir ../wg-quickrs-web/pkg
 ```
 
 ---

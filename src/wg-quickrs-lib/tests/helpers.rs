@@ -1,5 +1,5 @@
-use wg_quickrs_wasm::helpers::*;
-use wg_quickrs_wasm::types::network::WireGuardKey;
+use wg_quickrs_lib::helpers::*;
+use wg_quickrs_lib::types::network::WireGuardKey;
 
 struct TestVector<'a> {
     priv_b64: &'a str,

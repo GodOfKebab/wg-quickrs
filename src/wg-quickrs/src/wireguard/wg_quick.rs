@@ -4,8 +4,8 @@ use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;
 use thiserror::Error;
-use wg_quickrs_wasm::types::config::Config;
-use wg_quickrs_wasm::types::network::{Peer, Script};
+use wg_quickrs_lib::types::config::Config;
+use wg_quickrs_lib::types::network::{Peer, Script};
 use crate::wireguard::cmd::WireGuardCommandError;
 #[cfg(target_os = "macos")]
 use crate::wireguard::wg_quick_darwin as wg_quick_platform;
@@ -26,7 +26,7 @@ pub enum TunnelError {
     #[error("Invalid configuration: {0}")]
     InvalidConfig(String),
     #[error("{0}")]
-    WireGuardLibError(#[from] wg_quickrs_wasm::types::misc::WireGuardLibError),
+    WireGuardLibError(#[from] wg_quickrs_lib::types::misc::WireGuardLibError),
     #[error("{0}")]
     WireGuardCommandError(#[from] WireGuardCommandError),
     #[cfg(target_os = "macos")]
@@ -312,7 +312,7 @@ impl TunnelManager {
         let iface = self.real_interface.as_ref().unwrap();
         let config = self.config.as_ref().unwrap();
 
-        let wg_config = wg_quickrs_wasm::helpers::get_peer_wg_config(&config.network, &config.network.this_peer, true)?;
+        let wg_config = wg_quickrs_lib::helpers::get_peer_wg_config(&config.network, &config.network.this_peer, true)?;
 
         let mut temp_file = NamedTempFile::new()?;
         writeln!(temp_file, "{}", wg_config)?;
@@ -453,7 +453,7 @@ fn get_allowed_ips(iface: &str) -> TunnelResult<Vec<String>> {
     // Parse and collect valid CIDR entries
     let mut cidrs: Vec<String> = String::from_utf8_lossy(&*output.stdout)
         .split_whitespace()
-        .filter(|s| wg_quickrs_wasm::validation::network::parse_and_validate_ipv4_subnet(s).is_ok())
+        .filter(|s| wg_quickrs_lib::validation::network::parse_and_validate_ipv4_subnet(s).is_ok())
         .map(String::from)
         .collect();
 

@@ -14,7 +14,7 @@ import {
     validate_peer_script_wasm,
     validate_persistent_keepalive_wasm,
     validate_allowed_ips_wasm,
-} from '../../pkg/wg_quickrs_wasm.js';
+} from '../../pkg/wg_quickrs_lib.js';
 
 export default class WireGuardHelper {
 

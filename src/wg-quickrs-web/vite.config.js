@@ -19,6 +19,6 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.wasm'],
   optimizeDeps: {
-      exclude: ['wg-quickrs-wasm'],
+      exclude: ['wg-quickrs-lib'],
   }
 });

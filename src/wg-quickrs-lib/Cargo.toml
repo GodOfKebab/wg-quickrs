@@ -1,11 +1,11 @@
 [package]
-name = "wg-quickrs-wasm"
+name = "wg-quickrs-lib"
 edition = "2024"
 rust-version = "1.90"
 build = "build.rs"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib", "cdylib"]
 
 [build-dependencies]
 chrono = "0.4.41"

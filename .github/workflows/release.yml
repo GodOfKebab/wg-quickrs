@@ -26,11 +26,11 @@ jobs:
       - name: Install wasm-pack
         run: cargo install wasm-pack
 
-      # Build wg-quickrs-wasm
-      - name: Build wg-quickrs-wasm
+      # Build wg-quickrs-lib for wasm
+      - name: Build wg-quickrs-lib
         run: |
           cd src/
-          wasm-pack build wg-quickrs-wasm --target web --out-dir ../wg-quickrs-web/pkg -- --locked
+          wasm-pack build wg-quickrs-lib --target web --out-dir ../wg-quickrs-web/pkg -- --locked
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

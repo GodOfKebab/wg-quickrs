@@ -1,15 +1,15 @@
 use crate::conf::util;
 use crate::conf::network;
 use crate::wireguard::cmd::sync_conf;
-use wg_quickrs_wasm::types::api::{SummaryDigest, ChangeSum};
-use wg_quickrs_wasm::validation::network::*;
+use wg_quickrs_lib::types::api::{SummaryDigest, ChangeSum};
+use wg_quickrs_lib::validation::network::*;
 use actix_web::{HttpResponse, web};
 use chrono::{Duration, Utc};
 use serde_json::json;
 use uuid::Uuid;
-use wg_quickrs_wasm::helpers::remove_expired_reservations;
-use wg_quickrs_wasm::types::network::{ReservationData, NetworkWDigest};
-use wg_quickrs_wasm::types::config::ConfigFile;
+use wg_quickrs_lib::helpers::remove_expired_reservations;
+use wg_quickrs_lib::types::network::{ReservationData, NetworkWDigest};
+use wg_quickrs_lib::types::config::ConfigFile;
 use crate::conf::helpers::{get_allocated_addresses};
 
 macro_rules! http_response {
@@ -253,7 +253,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 validate_peer_scripts(&peer_details.scripts.post_down).map_err(|e| {
                     bad_request!("added_peers.{}.scripts.post_down: {}", peer_id, e)
                 })?;
-                let mut added_peer = wg_quickrs_wasm::types::network::Peer::from(&peer_details);
+                let mut added_peer = wg_quickrs_lib::types::network::Peer::from(&peer_details);
                 added_peer.created_at = Utc::now();
                 added_peer.updated_at = added_peer.created_at.clone();
                 c.network_w_digest.network.peers.insert(peer_id, added_peer);

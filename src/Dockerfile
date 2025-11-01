@@ -7,20 +7,20 @@ COPY src/Cargo.toml /app/Cargo.toml
 COPY src/Cargo.lock /app/Cargo.lock
 COPY src/wg-quickrs /app/wg-quickrs
 COPY src/wg-quickrs-cli /app/wg-quickrs-cli
-COPY src/wg-quickrs-wasm /app/wg-quickrs-wasm
+COPY src/wg-quickrs-lib /app/wg-quickrs-lib
 
-FROM rust-builder AS wg-quickrs-wasm-builder
+FROM rust-builder AS wg-quickrs-lib-builder
 WORKDIR /app
 
 ADD https://raw.githubusercontent.com/drager/wasm-pack/refs/heads/master/docs/_installer/init.sh init.sh
 RUN bash init.sh
-RUN wasm-pack build wg-quickrs-wasm --target web --out-dir /app/pkg -- --locked
+RUN wasm-pack build wg-quickrs-lib --target web --out-dir /app/pkg -- --locked
 
 FROM --platform=linux/$BUILDARCH node:24-alpine AS node-builder
 WORKDIR /app/wg-quickrs-web
 COPY src/wg-quickrs-web .
 RUN npm ci --omit=dev
-COPY --from=wg-quickrs-wasm-builder /app/pkg /app/wg-quickrs-web/pkg
+COPY --from=wg-quickrs-lib-builder /app/pkg /app/wg-quickrs-web/pkg
 RUN npm run build
 
 FROM rust-builder AS wg-quickrs-builder

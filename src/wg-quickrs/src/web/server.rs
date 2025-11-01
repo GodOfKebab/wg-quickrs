@@ -4,7 +4,7 @@ use crate::web::app;
 #[cfg(debug_assertions)]
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware};
-use wg_quickrs_wasm::types::config::Config;
+use wg_quickrs_lib::types::config::Config;
 use rustls::{
     ServerConfig,
     pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},

@@ -1,11 +1,11 @@
 use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
-use wg_quickrs_wasm::types::config::{Config, ConfigFile, ConfigWNetworkDigest};
-use wg_quickrs_wasm::types::api::{Summary};
-use wg_quickrs_wasm::types::misc::{WireGuardStatus};
-use wg_quickrs_wasm::validation::config_file::{validate_config_file, ConfigFileValidationError};
-use wg_quickrs_wasm::validation::error::ValidationError;
-use wg_quickrs_wasm::macros::wg_quickrs_version;
+use wg_quickrs_lib::types::config::{Config, ConfigFile, ConfigWNetworkDigest};
+use wg_quickrs_lib::types::api::{Summary};
+use wg_quickrs_lib::types::misc::{WireGuardStatus};
+use wg_quickrs_lib::validation::config_file::{validate_config_file, ConfigFileValidationError};
+use wg_quickrs_lib::validation::error::ValidationError;
+use wg_quickrs_lib::macros::wg_quickrs_version;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -38,7 +38,7 @@ pub enum ConfUtilError {
     #[error("conf::util::error::validation -> {0}")]
     Validation(#[from] ValidationError),
     #[error("{0}")]
-    WireGuardLibError(#[from] wg_quickrs_wasm::types::misc::WireGuardLibError),
+    WireGuardLibError(#[from] wg_quickrs_lib::types::misc::WireGuardLibError),
     #[error("{0}")]
     ConfigFile(#[from] ConfigFileValidationError),
 }

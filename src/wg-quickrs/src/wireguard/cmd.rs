@@ -1,9 +1,9 @@
 use crate::{conf};
 use once_cell::sync::Lazy;
-use wg_quickrs_wasm::helpers::get_peer_wg_config;
-use wg_quickrs_wasm::types::config::{Config};
-use wg_quickrs_wasm::types::api::{Telemetry, TelemetryData, TelemetryDatum};
-use wg_quickrs_wasm::types::misc::{WireGuardStatus};
+use wg_quickrs_lib::helpers::get_peer_wg_config;
+use wg_quickrs_lib::types::config::{Config};
+use wg_quickrs_lib::types::api::{Telemetry, TelemetryData, TelemetryDatum};
+use wg_quickrs_lib::types::misc::{WireGuardStatus};
 use std::collections::{BTreeMap, VecDeque};
 use std::io::Write;
 use std::path::PathBuf;
@@ -15,7 +15,7 @@ use chrono::Utc;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 use tokio::signal::unix::{signal, SignalKind};
-use wg_quickrs_wasm::types::network::ConnectionId;
+use wg_quickrs_lib::types::network::ConnectionId;
 use crate::wireguard::wg_quick;
 
 const TELEMETRY_CAPACITY: usize = 21;
@@ -226,7 +226,7 @@ fn show_dump(config: &Config) -> Result<BTreeMap<ConnectionId, TelemetryDatum>, 
                 let public_key = parts[0];
 
                 for (peer_id, peer_details) in config.network.peers.clone() {
-                    if wg_quickrs_wasm::helpers::wg_public_key_from_private_key(&peer_details.private_key).to_base64() != public_key
+                    if wg_quickrs_lib::helpers::wg_public_key_from_private_key(&peer_details.private_key).to_base64() != public_key
                     {
                         continue;
                     }
@@ -234,7 +234,7 @@ fn show_dump(config: &Config) -> Result<BTreeMap<ConnectionId, TelemetryDatum>, 
                     let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
                     let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
                     let connection_id =
-                        wg_quickrs_wasm::helpers::get_connection_id(config.network.this_peer.clone(), peer_id.clone());
+                        wg_quickrs_lib::helpers::get_connection_id(config.network.this_peer.clone(), peer_id.clone());
 
                     let (transfer_a_to_b, transfer_b_to_a) = if connection_id.a == config.network.this_peer {
                         (transfer_tx, transfer_rx)

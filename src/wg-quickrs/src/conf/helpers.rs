@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use wg_quickrs_wasm::types::network::Network;
+use wg_quickrs_lib::types::network::Network;
 
 
 pub(crate) fn get_allocated_addresses(network: &Network) -> Vec<Ipv4Addr> {

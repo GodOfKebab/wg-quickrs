@@ -2496,7 +2496,7 @@ dependencies = [
  "toml",
  "uuid",
  "wg-quickrs-cli",
- "wg-quickrs-wasm",
+ "wg-quickrs-lib",
 ]
 
 [[package]]
@@ -2508,7 +2508,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wg-quickrs-wasm"
+name = "wg-quickrs-lib"
 version = "0.0.0"
 dependencies = [
  "base64",

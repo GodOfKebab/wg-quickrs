@@ -233,7 +233,7 @@ import PeerCreateDialog from "@/components/dialogs/peer-create-dialog.vue";
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import init from '../pkg/wg_quickrs_wasm.js';
+import init from '../pkg/wg_quickrs_lib.js';
 
 dayjs.extend(relativeTime);
 

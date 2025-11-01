@@ -6,8 +6,8 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use thiserror::Error;
 use wg_quickrs::{WG_QUICKRS_CONFIG_FOLDER, WG_QUICKRS_CONFIG_FILE};
-use wg_quickrs_wasm::validation::error::ValidationError;
-use wg_quickrs_wasm::macros::full_version;
+use wg_quickrs_lib::validation::error::ValidationError;
+use wg_quickrs_lib::macros::full_version;
 use crate::commands::agent::AgentRunError;
 use crate::commands::init::InitError;
 

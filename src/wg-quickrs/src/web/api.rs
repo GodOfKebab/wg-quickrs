@@ -8,7 +8,7 @@ use rand::{RngCore, rng};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
-use wg_quickrs_wasm::macros::{wg_quickrs_version, build_info};
+use wg_quickrs_lib::macros::{wg_quickrs_version, build_info};
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
