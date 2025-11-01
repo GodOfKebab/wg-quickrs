@@ -2473,6 +2473,7 @@ dependencies = [
  "dialoguer",
  "dirs",
  "get_if_addrs",
+ "ipnet",
  "ipnetwork",
  "jsonwebtoken",
  "libc",
@@ -2503,6 +2504,7 @@ name = "wg-quickrs-cli"
 version = "0.0.0"
 dependencies = [
  "clap",
+ "ipnet",
 ]
 
 [[package]]

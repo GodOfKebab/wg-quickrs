@@ -1,9 +1,10 @@
 use crate::{conf};
-use crate::macros::*;
 use once_cell::sync::Lazy;
 use wg_quickrs_wasm::helpers::get_peer_wg_config;
-use wg_quickrs_wasm::types::{Config, Telemetry, TelemetryData, TelemetryDatum, WireGuardStatus};
-use std::collections::{HashMap, VecDeque};
+use wg_quickrs_wasm::types::config::{Config};
+use wg_quickrs_wasm::types::api::{Telemetry, TelemetryData, TelemetryDatum};
+use wg_quickrs_wasm::types::misc::{WireGuardStatus};
+use std::collections::{BTreeMap, VecDeque};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
@@ -14,6 +15,7 @@ use chrono::Utc;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 use tokio::signal::unix::{signal, SignalKind};
+use wg_quickrs_wasm::types::network::ConnectionId;
 use crate::wireguard::wg_quick;
 
 const TELEMETRY_CAPACITY: usize = 21;
@@ -182,7 +184,7 @@ pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> 
     Ok(wg_status_mut.clone())
 }
 
-fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGuardCommandError> {
+fn show_dump(config: &Config) -> Result<BTreeMap<ConnectionId, TelemetryDatum>, WireGuardCommandError> {
     let wg_interface_mut = WG_INTERFACE
         .lock()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
@@ -213,7 +215,7 @@ fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGua
                 ));
             }
 
-            let mut telemetry = HashMap::<String, TelemetryDatum>::new();
+            let mut telemetry = BTreeMap::<ConnectionId, TelemetryDatum>::new();
 
             let dump = String::from_utf8_lossy(&output.stdout);
             for line in dump.trim().lines().skip(1) {
@@ -224,9 +226,7 @@ fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGua
                 let public_key = parts[0];
 
                 for (peer_id, peer_details) in config.network.peers.clone() {
-                    if wg_quickrs_wasm::helpers::wg_public_key_from_private_key(&peer_details.private_key)
-                        .ok()
-                        .as_deref() != Some(public_key)
+                    if wg_quickrs_wasm::helpers::wg_public_key_from_private_key(&peer_details.private_key).to_base64() != public_key
                     {
                         continue;
                     }
@@ -234,22 +234,20 @@ fn show_dump(config: &Config) -> Result<HashMap<String, TelemetryDatum>, WireGua
                     let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
                     let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
                     let connection_id =
-                        wg_quickrs_wasm::helpers::get_connection_id(&config.network.this_peer, &peer_id);
+                        wg_quickrs_wasm::helpers::get_connection_id(config.network.this_peer.clone(), peer_id.clone());
+
+                    let (transfer_a_to_b, transfer_b_to_a) = if connection_id.a == config.network.this_peer {
+                        (transfer_tx, transfer_rx)
+                    } else {
+                        (transfer_rx, transfer_tx)
+                    };
 
                     telemetry.insert(
                         connection_id.clone(),
                         TelemetryDatum {
                             latest_handshake_at: parts[4].parse::<u64>().unwrap_or(0),
-                            transfer_a_to_b: if connection_id.starts_with(&format!("{}*", config.network.this_peer)) {
-                                transfer_tx
-                            } else {
-                                transfer_rx
-                            },
-                            transfer_b_to_a: if connection_id.starts_with(&format!("{}*", config.network.this_peer)) {
-                                transfer_rx
-                            } else {
-                                transfer_tx
-                            },
+                            transfer_a_to_b,
+                            transfer_b_to_a,
                         },
                     );
                     break;
@@ -269,9 +267,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     let wg_conf_stripped = match get_peer_wg_config(
         &config.network,
         &config.network.this_peer,
-        full_version!(),
         true,
-        None,
     ) {
         Ok(n) => n,
         Err(e) => {

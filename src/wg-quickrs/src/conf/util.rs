@@ -1,10 +1,9 @@
-use crate::{WG_QUICKRS_CONFIG_FILE};
+use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
 use crate::macros::*;
 use crate::wireguard::cmd::{get_telemetry, status_tunnel};
-use crate::commands::validation::validate_config_file;
-use wg_quickrs_wasm::types::{Config, Agent, Network, Summary, WireGuardStatus};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use wg_quickrs_wasm::types::config::{Config, ConfigFile, ConfigWNetworkDigest};
+use wg_quickrs_wasm::types::api::{Summary};
+use wg_quickrs_wasm::types::misc::{WireGuardStatus};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -13,8 +12,8 @@ use std::sync::{Mutex, OnceLock};
 use chrono::Utc;
 use thiserror::Error;
 use semver::Version;
-
-pub static CONFIG_W_NETWORK_DIGEST: OnceLock<Mutex<ConfigWNetworkDigest>> = OnceLock::new();
+use wg_quickrs_wasm::validation::config_file::{validate_config_file, ConfigFileValidationError};
+use wg_quickrs_wasm::validation::error::ValidationError;
 
 #[derive(Error, Debug)]
 pub enum ConfUtilError {
@@ -36,8 +35,33 @@ pub enum ConfUtilError {
     InvalidVersion(semver::Error),
     #[error("conf::util::error::version_not_supported -> conf.yml version not supported: expected {0}, got {1}")]
     VersionNotSupported(String, String),
-    #[error("conf::util::error::validation -> {0} validation failed: {1}")]
-    Validation(PathBuf, String),
+    #[error("conf::util::error::validation -> {0}")]
+    Validation(#[from] ValidationError),
+    #[error("{0}")]
+    WireGuardLibError(#[from] wg_quickrs_wasm::types::misc::WireGuardLibError),
+    #[error("{0}")]
+    ConfigFile(#[from] ConfigFileValidationError),
+}
+
+pub static CONFIG_W_NETWORK_DIGEST: OnceLock<Mutex<ConfigWNetworkDigest>> = OnceLock::new();
+
+fn set_or_init_config_w_digest(config_w_network_digest: ConfigWNetworkDigest) -> Result<(), ConfUtilError> {
+    let mut_opt = CONFIG_W_NETWORK_DIGEST.get();
+    if mut_opt.is_none() {
+        return CONFIG_W_NETWORK_DIGEST
+            .set(Mutex::new(config_w_network_digest.clone()))
+            .map_err(|_| ConfUtilError::MutexSetFailed());
+    }
+
+    mut_opt
+        .unwrap()
+        .lock()
+        .map(|mut c| {
+            c.agent = config_w_network_digest.agent;
+            c.network_w_digest = config_w_network_digest.network_w_digest;
+            Ok(())
+        })
+        .map_err(|e| ConfUtilError::MutexLockFailed(e.to_string()))?
 }
 
 pub(crate) fn get_config() -> Result<Config, ConfUtilError> {
@@ -54,10 +78,10 @@ fn get_config_w_digest() -> Result<ConfigWNetworkDigest, ConfUtilError> {
             .map_err(|e| ConfUtilError::MutexLockFailed(e.to_string()));
     }
 
-    let file_path = WG_QUICKRS_CONFIG_FILE.get().unwrap();
-    let config_str =
-        fs::read_to_string(file_path).map_err(|e| ConfUtilError::Read(file_path.clone(), e))?;
-    let config_file: ConfigFile = serde_yml::from_str(&config_str).map_err(ConfUtilError::Parse)?;
+    let config_file_path = WG_QUICKRS_CONFIG_FILE.get().unwrap();
+    let config_str = fs::read_to_string(config_file_path)
+        .map_err(|e| ConfUtilError::Read(config_file_path.clone(), e))?;
+    let mut config_file: ConfigFile = serde_yml::from_str(&config_str).map_err(ConfUtilError::Parse)?;
     let build_version = Version::parse(wg_quickrs_version!()).unwrap();
     let conf_ver = Version::parse(config_file.version.as_str()).map_err(ConfUtilError::InvalidVersion)?;
     if build_version.major != conf_ver.major {
@@ -67,10 +91,11 @@ fn get_config_w_digest() -> Result<ConfigWNetworkDigest, ConfUtilError> {
         ));
     }
     // Validate config_file fields
-    validate_config_file(&config_file)?;
+    let config_folder_path = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
+    validate_config_file(&mut config_file, config_folder_path)?;
 
     let config_w_digest = ConfigWNetworkDigest::from_config(Config::from(&config_file))?;
-    ConfigWNetworkDigest::set_or_init(config_w_digest.clone())?;
+    set_or_init_config_w_digest(config_w_digest.clone())?;
     log::info!("loaded config file");
     Ok(config_w_digest)
 }
@@ -102,7 +127,7 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
 
 pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
     let config_w_digest = ConfigWNetworkDigest::from_config(config.clone())?;
-    ConfigWNetworkDigest::set_or_init(config_w_digest.clone())?;
+    set_or_init_config_w_digest(config_w_digest)?;
 
     let config_file = ConfigFile::from(&config.clone());
     let config_file_str = serde_yml::to_string(&config_file).map_err(ConfUtilError::Serialization)?;

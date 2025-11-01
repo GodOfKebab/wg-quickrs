@@ -48,7 +48,7 @@ async fn get_network_summary(req: HttpRequest, query: web::Query<SummaryBody>) -
     if let Err(e) = enforce_auth(req) {
         return e;
     }
-    conf::respond::get_network_summary(query)
+    conf::respond::get_network_summary(query).unwrap_or_else(|e| e)
 }
 
 #[patch("/api/network/config")]
@@ -56,7 +56,7 @@ async fn patch_network_config(req: HttpRequest, body: web::Bytes) -> impl Respon
     if let Err(e) = enforce_auth(req) {
         return e;
     }
-    conf::respond::patch_network_config(body)
+    conf::respond::patch_network_config(body).unwrap_or_else(|e| e)
 }
 
 #[post("/api/network/reserve/address")]
@@ -64,7 +64,7 @@ async fn post_network_reserve_address(req: HttpRequest) -> impl Responder {
     if let Err(e) = enforce_auth(req) {
         return e;
     }
-    conf::respond::post_network_reserve_address()
+    conf::respond::post_network_reserve_address().unwrap_or_else(|e| e)
 }
 
 #[post("/api/wireguard/status")]

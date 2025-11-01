@@ -1,13 +1,8 @@
-use chrono::{Duration, Utc};
-use wg_quickrs_wasm::types::Network;
+use std::net::Ipv4Addr;
+use wg_quickrs_wasm::types::network::Network;
 
-pub(crate) fn remove_expired_reservations(network: &mut Network) {
-    network.reservations.retain(|_, lease_data| {
-        Utc::now().signed_duration_since(&lease_data.valid_until) < Duration::zero()
-    });
-}
 
-pub(crate) fn get_allocated_addresses(network: &Network) -> Vec<String> {
+pub(crate) fn get_allocated_addresses(network: &Network) -> Vec<Ipv4Addr> {
     network.peers.values()
         .map(|peer| peer.address.clone())
         .chain(network.reservations.keys().cloned())

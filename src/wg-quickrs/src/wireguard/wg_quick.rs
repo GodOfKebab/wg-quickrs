@@ -4,9 +4,8 @@ use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;
 use thiserror::Error;
-
-use wg_quickrs_wasm::types::{Config, EnabledValue, Peer};
-use crate::macros::full_version;
+use wg_quickrs_wasm::types::config::Config;
+use wg_quickrs_wasm::types::network::{Peer, Script};
 use crate::wireguard::cmd::WireGuardCommandError;
 #[cfg(target_os = "macos")]
 use crate::wireguard::wg_quick_darwin as wg_quick_platform;
@@ -27,7 +26,7 @@ pub enum TunnelError {
     #[error("Invalid configuration: {0}")]
     InvalidConfig(String),
     #[error("{0}")]
-    WireGuardLibError(#[from] wg_quickrs_wasm::types::WireGuardLibError),
+    WireGuardLibError(#[from] wg_quickrs_wasm::types::misc::WireGuardLibError),
     #[error("{0}")]
     WireGuardCommandError(#[from] WireGuardCommandError),
     #[cfg(target_os = "macos")]
@@ -117,7 +116,7 @@ impl TunnelManager {
 
     fn interface_name(&self) -> String {
         let config = self.config.as_ref().unwrap();
-        config.network.identifier.clone()
+        config.network.name.clone()
     }
 
     fn this_peer(&self) -> TunnelResult<Peer> {
@@ -244,10 +243,10 @@ impl TunnelManager {
         let iface = self.real_interface.as_ref().unwrap();
 
         let this_peer = &self.this_peer()?;
-        let addresses: Vec<&str> = this_peer.address.split(',').map(|s| s.trim()).collect();
+        let addresses = vec![this_peer.address.clone()];
 
         let config = self.config.as_ref().unwrap();
-        let subnet_slash = config.network.subnet.as_str().split('/').nth(1).unwrap();
+        let subnet_slash = config.network.subnet.prefix_len();
 
         for addr in addresses {
             let addr_w_subnet = format!("{}/{}", addr, subnet_slash);
@@ -270,11 +269,11 @@ impl TunnelManager {
         log::info!("[#] Setting DNS for WireGuard interface: {}", self.interface_name());
         let this_peer = &self.this_peer()?;
 
-        if !this_peer.dns.enabled || this_peer.dns.value.is_empty() {
+        if !this_peer.dns.enabled || this_peer.dns.addresses.is_empty() {
             return Ok(());
         }
 
-        let dns_servers = this_peer.dns.value.split(',').map(|s| s.trim().to_string()).collect();
+        let dns_servers = this_peer.dns.addresses.clone();
         let interface_name = self.interface_name();
         let _ = wg_quick_platform::set_dns(&dns_servers, &interface_name, &mut self.dns_manager);
         Ok(())
@@ -293,7 +292,7 @@ impl TunnelManager {
         let config = self.config.as_ref().unwrap();
 
         for cidr in allowed_ips {
-            wg_quick_platform::add_route(iface, &config.network.identifier, &cidr, &mut self.endpoint_router)?;
+            wg_quick_platform::add_route(iface, &config.network.name, &cidr, &mut self.endpoint_router)?;
         }
 
         Ok(())
@@ -313,7 +312,7 @@ impl TunnelManager {
         let iface = self.real_interface.as_ref().unwrap();
         let config = self.config.as_ref().unwrap();
 
-        let wg_config = wg_quickrs_wasm::helpers::get_peer_wg_config(&config.network, &config.network.this_peer, full_version!(), true, None)?;
+        let wg_config = wg_quickrs_wasm::helpers::get_peer_wg_config(&config.network, &config.network.this_peer, true)?;
 
         let mut temp_file = NamedTempFile::new()?;
         writeln!(temp_file, "{}", wg_config)?;
@@ -349,22 +348,22 @@ impl TunnelManager {
         let subnet = &config.network.subnet;
         let gateway = &config.agent.firewall.gateway;
         let port = &config.agent.vpn.port;
-        let interface = &config.network.identifier;
+        let interface = &config.network.name;
 
-        let mut cmds: Vec<EnabledValue> = Vec::new();
+        let mut cmds: Vec<Script> = Vec::new();
         let hooks = match hook_type {
             HookType::PreUp => &this_peer.scripts.pre_up,
             HookType::PostUp => {
                 if config.agent.firewall.enabled && let Some(utility) = config.agent.firewall.utility.file_name() {
                     if utility == "iptables" {
-                        let _ = cmd(&[fw_utility, "-t", "nat", "-I", "POSTROUTING", "-s", subnet, "-o", gateway, "-j", "MASQUERADE"]);
+                        let _ = cmd(&[fw_utility, "-t", "nat", "-I", "POSTROUTING", "-s", &subnet.to_string(), "-o", gateway, "-j", "MASQUERADE"]);
                         let _ = cmd(&[fw_utility, "-I", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
                         let _ = cmd(&[fw_utility, "-I", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
                         let _ = cmd(&[fw_utility, "-I", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
                         #[cfg(not(feature = "docker"))]
                         let _ = cmd(&["sysctl", "-w", "net.ipv4.ip_forward=1"]);
                     } else if utility == "pfctl" {
-                        match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet, true) {
+                        match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet.to_string(), true) {
                             Ok(()) => {
                                 let _ = cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
                                 let _ = cmd(&[fw_utility, "-e"]);
@@ -381,14 +380,14 @@ impl TunnelManager {
             HookType::PostDown => {
                 if config.agent.firewall.enabled && let Some(utility) = config.agent.firewall.utility.file_name() {
                     if utility == "iptables" {
-                        let _ = cmd(&[fw_utility, "-t", "nat", "-D", "POSTROUTING", "-s", subnet, "-o", gateway, "-j", "MASQUERADE"]);
+                        let _ = cmd(&[fw_utility, "-t", "nat", "-D", "POSTROUTING", "-s", &subnet.to_string(), "-o", gateway, "-j", "MASQUERADE"]);
                         let _ = cmd(&[fw_utility, "-D", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
                         let _ = cmd(&[fw_utility, "-D", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
                         let _ = cmd(&[fw_utility, "-D", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
                         #[cfg(not(feature = "docker"))]
                         let _ = cmd(&["sysctl", "-w", "net.ipv4.ip_forward=0"]);
                     } else if utility == "pfctl" {
-                        match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet, false) {
+                        match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet.to_string(), false) {
                             Ok(_) => {}
                             Err(e) => log::warn!("Warning: Failed to modify pf.conf: {}", e),
                         };
@@ -408,7 +407,7 @@ impl TunnelManager {
                 continue;
             }
 
-            let output = cmd(&["sh", "-c", &hook.value])?;
+            let output = cmd(&["sh", "-c", &hook.script])?;
 
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
@@ -454,7 +453,7 @@ fn get_allowed_ips(iface: &str) -> TunnelResult<Vec<String>> {
     // Parse and collect valid CIDR entries
     let mut cidrs: Vec<String> = String::from_utf8_lossy(&*output.stdout)
         .split_whitespace()
-        .filter(|s| wg_quickrs_wasm::validation::is_cidr(s))
+        .filter(|s| wg_quickrs_wasm::validation::network::parse_and_validate_ipv4_subnet(s).is_ok())
         .map(String::from)
         .collect();
 

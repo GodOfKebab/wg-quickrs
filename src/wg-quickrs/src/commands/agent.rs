@@ -1,25 +1,21 @@
 use crate::web::server;
 use crate::{conf, wireguard};
-use std::process::ExitCode;
+use thiserror::Error;
 use tokio::try_join;
+use crate::conf::util::ConfUtilError;
 
-pub async fn run_agent() -> ExitCode {
-    // get the wireguard config file path
-    let config = match conf::util::get_config() {
-        Ok(config) => config,
-        Err(e) => {
-            log::error!("{e}");
-            return ExitCode::FAILURE;
-        }
-    };
+#[derive(Error, Debug)]
+pub enum AgentRunError {
+    #[error("Configuration Error: {0}")]
+    Conf(#[from] ConfUtilError),
+    #[error("IO Error: {0}")]
+    IO(#[from] std::io::Error),
+}
 
+pub async fn run_agent() -> Result<(), AgentRunError> {
+    let config = conf::util::get_config()?;
     let web_future = server::run_web_server(&config);
     let vpn_future = wireguard::cmd::run_vpn_server(&config);
-    match try_join!(web_future, vpn_future).map(|_| ()) {
-        Ok(_) => ExitCode::SUCCESS,
-        Err(e) => {
-            log::error!("{e}");
-            ExitCode::FAILURE
-        }
-    }
+    try_join!(web_future, vpn_future)?;
+    Ok(())
 }

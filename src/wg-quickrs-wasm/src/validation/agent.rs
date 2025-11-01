@@ -29,7 +29,7 @@ pub fn validate_tls_file(config_folder: &Path, tls_file: &Path) -> ValidationRes
         return Err(ValidationError::TlsFileNotAFile());
     }
 
-    Ok(tls_file_path)
+    Ok(tls_file.to_path_buf())
 }
 
 pub fn parse_and_validate_fw_gateway(fw_gateway: &str) -> ValidationResult<String> {

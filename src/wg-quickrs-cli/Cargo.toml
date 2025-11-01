@@ -5,3 +5,4 @@ rust-version = "1.90"
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+ipnet = "2.11.0"

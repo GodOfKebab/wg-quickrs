@@ -41,8 +41,10 @@ pub enum ValidationError {
     EmptyIcon(),
     #[error("MTU is invalid (1-9999)")]
     InvalidMtu(),
-    #[error("script needs to end with a semicolon")]
+    #[error("script missing a semicolon")]
     ScriptMissingSemicolon(),
+    #[error("script missing a semicolon at line {0}")]
+    ScriptMissingSemicolonAt(usize),
     #[error("key is not a valid WireGuard key (32 bytes, base64 encoded)")]
     NotWireGuardKey(),
     #[error("persistent_keepalive is invalid")]

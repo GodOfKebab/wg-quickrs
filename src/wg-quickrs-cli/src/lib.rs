@@ -1,3 +1,5 @@
+use std::net::Ipv4Addr;
+use ipnet::Ipv4Net;
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -33,17 +35,17 @@ pub enum Commands {
 
 #[derive(Debug, Args)]
 pub struct InitOptions {
-    #[arg(long, default_value = None, long_help = "Set VPN network identifier", value_name = "wg-quickrs"
+    #[arg(long, default_value = None, long_help = "Set VPN network name", value_name = "wg-quickrs-home"
     )]
-    pub network_identifier: Option<String>,
+    pub network_name: Option<String>,
 
     #[arg(long, default_value = None, long_help = "Set VPN network CIDR subnet", value_name = "10.0.34.0/24"
     )]
-    pub network_subnet: Option<String>,
+    pub network_subnet: Option<Ipv4Net>,
 
     #[arg(long, default_value = None, long_help = "Set agent web server bind IPv4 address"
     )]
-    pub agent_web_address: Option<String>,
+    pub agent_web_address: Option<Ipv4Addr>,
 
     #[arg(long, default_value = None, long_help = "Enable HTTP on web server")]
     pub agent_web_http_enabled: Option<bool>,
@@ -99,7 +101,7 @@ pub struct InitOptions {
 
     #[arg(long, default_value = None, long_help = "Set internal IPv4 address for agent in VPN network", value_name = "10.0.34.1"
     )]
-    pub agent_peer_vpn_internal_address: Option<String>,
+    pub agent_peer_vpn_internal_address: Option<Ipv4Addr>,
 
     #[arg(long, default_value = None, long_help = "Set publicly accessible endpoint(IP/FQDN:PORT) for VPN endpoint"
     )]
@@ -120,15 +122,15 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Enable DNS configuration for agent")]
     pub agent_peer_dns_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set DNS server for agent", value_name = "1.1.1.1"
+    #[arg(long, default_value = None, long_help = "Set DNS addresses for agent", value_name = "1.1.1.1"
     )]
-    pub agent_peer_dns_server: Option<String>,
+    pub agent_peer_dns_addresses: Option<String>,
 
     #[arg(long, default_value = None, long_help = "Enable MTU configuration for agent")]
     pub agent_peer_mtu_enabled: Option<bool>,
 
     #[arg(long, default_value = None, long_help = "Set MTU value for agent", value_name = "1420")]
-    pub agent_peer_mtu_value: Option<String>,
+    pub agent_peer_mtu_value: Option<u16>,
 
     #[arg(long, default_value = None, long_help = "Enable PreUp script for agent")]
     pub agent_peer_script_pre_up_enabled: Option<bool>,
@@ -176,16 +178,16 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Enable DNS for new peers by default")]
     pub default_peer_dns_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set default DNS server for new peers", value_name = "1.1.1.1"
+    #[arg(long, default_value = None, long_help = "Set default DNS addresses for new peers", value_name = "1.1.1.1"
     )]
-    pub default_peer_dns_server: Option<String>,
+    pub default_peer_dns_addresses: Option<String>,
 
     #[arg(long, default_value = None, long_help = "Enable MTU for new peers by default")]
     pub default_peer_mtu_enabled: Option<bool>,
 
     #[arg(long, default_value = None, long_help = "Set default MTU value for new peers", value_name = "1420"
     )]
-    pub default_peer_mtu_value: Option<String>,
+    pub default_peer_mtu_value: Option<u16>,
 
     #[arg(long, default_value = None, long_help = "Enable PreUp script for new peers by default"
     )]
@@ -225,7 +227,7 @@ pub struct InitOptions {
 
     #[arg(long, default_value = None, long_help = "Set default PersistentKeepalive period in seconds", value_name = "25"
     )]
-    pub default_connection_persistent_keepalive_period: Option<String>,
+    pub default_connection_persistent_keepalive_period: Option<u16>,
 
     #[arg(long, default_value = None, long_help = "Disable interactive setup prompts")]
     pub no_prompt: Option<bool>,
@@ -292,7 +294,7 @@ pub enum AgentCommands {
 #[derive(Debug, Args)]
 pub struct AddressArg {
     #[arg(help = "IPv4 address")]
-    pub address: String,
+    pub address: Ipv4Addr,
 }
 
 #[derive(Debug, Args)]

@@ -1,195 +1,88 @@
 use crate::conf::util;
 use crate::conf::network;
 use crate::wireguard::cmd::sync_conf;
-use wg_quickrs_wasm::types::*;
-use wg_quickrs_wasm::validation::*;
+use wg_quickrs_wasm::types::api::{SummaryDigest, ChangeSum};
+use wg_quickrs_wasm::validation::network::*;
 use actix_web::{HttpResponse, web};
 use chrono::{Duration, Utc};
 use serde_json::json;
 use uuid::Uuid;
-use crate::commands::validation::check_field_str_agent;
-use crate::conf::helpers::{get_allocated_addresses, remove_expired_reservations};
+use wg_quickrs_wasm::helpers::remove_expired_reservations;
+use wg_quickrs_wasm::types::network::{ReservationData, NetworkWDigest};
+use wg_quickrs_wasm::types::config::ConfigFile;
+use crate::conf::helpers::{get_allocated_addresses};
 
-pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody>) -> HttpResponse {
-    let summary = match util::get_summary() {
-        Ok(summary) => summary,
-        Err(_) => {
-            return HttpResponse::InternalServerError().body("Unable to get config");
-        }
+macro_rules! http_response {
+    ($status:ident, $status_str:expr, $($arg:tt)*) => {
+        HttpResponse::$status().json(json!({
+            "status": $status_str,
+            "message": format!($($arg)*)
+        }))
     };
-    let response_data = if query.only_digest {
-        json!(wg_quickrs_wasm::types::SummaryDigest::from(&summary))
-    } else {
-        json!(summary)
-    };
-    HttpResponse::Ok().json(response_data)
+}
+
+macro_rules! bad_request {
+    ($($arg:tt)*) => { http_response!(BadRequest, "bad_request", $($arg)*) };
+}
+
+macro_rules! forbidden {
+    ($($arg:tt)*) => { http_response!(Forbidden, "forbidden", $($arg)*) };
+}
+
+macro_rules! not_found {
+    ($($arg:tt)*) => { http_response!(NotFound, "not_found", $($arg)*) };
+}
+
+macro_rules! internal_server_error {
+    ($($arg:tt)*) => { http_response!(InternalServerError, "internal_server_error", $($arg)*) };
 }
 
 macro_rules! get_mg_config_w_digest {
     () => {{
-        let mut_opt = util::CONFIG_W_NETWORK_DIGEST.get();
-        if mut_opt.is_none() {
-            return HttpResponse::InternalServerError().json(json!({
-                "status": "internal_server_error",
-                "message": "can't handle request: internal config variables are not initialized"
-            }));
-        }
-
-        let mut_lock_opt = mut_opt.unwrap().lock();
-        if mut_lock_opt.is_err() {
-            return HttpResponse::InternalServerError().json(json!({
-                "status": "internal_server_error",
-                "message": "can't handle request: unable to acquire lock on config variables"
-            }));
-        }
-
-        mut_lock_opt.unwrap()
+        util::CONFIG_W_NETWORK_DIGEST
+            .get()
+            .ok_or_else(|| internal_server_error!("can't handle request: internal config variables are not initialized"))?
+            .lock()
+            .map_err(|_| internal_server_error!("can't handle request: unable to acquire lock on config variables"))?
     }};
 }
 
 macro_rules! post_mg_config_w_digest {
-    ($c:expr) => {
-        let config_file = util::ConfigFile::from(&$c.to_config());
+    ($c:expr) => {{
+        let config_file = ConfigFile::from(&$c.to_config());
         $c.network_w_digest.network.updated_at = Utc::now();
-        $c.network_w_digest = match util::NetworkWDigest::from_network($c.network_w_digest.network.clone()) {
-            Ok(network_digest) => network_digest,
-            Err(_) => {
-                return HttpResponse::InternalServerError().json(json!({
-                    "status": "internal_server_error",
-                    "message": "can't handle request: unable to compute config digest"
-                }));
-            }
-        };
-        let config_file_str = match serde_yml::to_string(&config_file).map_err(util::ConfUtilError::Serialization) {
-            Ok(s) => s,
-            Err(_) => {
-                return HttpResponse::InternalServerError().json(json!({
-                    "status": "internal_server_error",
-                    "message": "can't handle request: unable to serialize config"
-                }));
-            }
-        };
-        match util::write_config(config_file_str) {
-            Ok(_) => {}
-            Err(_) => {
-                return HttpResponse::InternalServerError().json(json!({
-                    "status": "internal_server_error",
-                    "message": "can't handle request: unable to write config"
-                }));
-            }
-        }
-        log::info!("updated config file");
-    };
+        $c.network_w_digest = NetworkWDigest::try_from($c.network_w_digest.network.clone())
+            .map_err(|_| internal_server_error!("can't handle request: unable to compute config digest"))?;
+
+        let config_file_str = serde_yml::to_string(&config_file)
+            .map_err(|_| internal_server_error!("can't handle request: unable to serialize config"))?;
+
+        util::write_config(config_file_str)
+            .map_err(|_| internal_server_error!("can't handle request: unable to write config"))?;
+    }};
 }
 
-pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
+pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody>) -> Result<HttpResponse, HttpResponse> {
+    let summary = util::get_summary()
+        .map_err(|_| internal_server_error!("can't handle request: unable to get summary"))?;
+    let response_data = if query.only_digest {
+        json!(SummaryDigest::from(&summary))
+    } else {
+        json!(summary)
+    };
+    Ok(HttpResponse::Ok().json(response_data))
+}
+
+pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, HttpResponse> {
     let body_raw = String::from_utf8_lossy(&body);
     let change_sum: ChangeSum = match serde_json::from_str(&body_raw) {
         Ok(val) => val,
         Err(err) => {
-            return HttpResponse::BadRequest().json(json!({
-                "error": format!("Invalid JSON: {err}")
-            }));
+            return Err(bad_request!("invalid JSON: {}", err));
         }
     };
 
     log::info!("update_config with the change_sum = \n{:?}", change_sum);
-
-    // process changed_fields
-    macro_rules! update_bool {
-        ($target:expr, $source:expr, $field:ident) => {
-            if let Some(value) = $source.$field {
-                $target.$field = value;
-            }
-        };
-    }
-
-    macro_rules! validate_return_400 {
-        ($val_res:expr, $field_parent:expr, $field:ident) => {
-            if !$val_res.status {
-                return HttpResponse::BadRequest().json(json!({
-                    "status": "bad_request",
-                    "message": format!("{}.{}: {}", $field_parent, stringify!($field), $val_res.msg)
-                }));
-            }
-        }
-    }
-
-    macro_rules! validate_str {
-        ($value:expr, $field_parent:expr, $field:ident) => {
-            let val_res = check_field_str(stringify!($field), $value);
-            validate_return_400!(val_res, $field_parent, $field);
-        };
-    }
-
-    macro_rules! validate_address_further {
-        ($address:expr, $field_parent:expr, $network:expr) => {
-            let val_res = check_internal_address($address, $network);
-            validate_return_400!(val_res, $field_parent, address);
-
-        };
-    }
-
-    macro_rules! validate_enabled_value {
-        ($value:expr, $field_parent:expr, $field:ident) => {
-            let val_res = check_field_enabled_value(stringify!($field), $value);
-            validate_return_400!(val_res, $field_parent, $field);
-        };
-    }
-
-    macro_rules! validate_then_update_str {
-        ($target:expr, $source:expr, $subtype:ident, $id:expr, $field:ident) => {
-            if let Some(value) = $source.$field {
-                validate_str!(
-                    &value,
-                    format!("changed_fields.{}.{}", stringify!($subtype), $id),
-                    $field
-                );
-                $target.$field = value;
-            }
-        };
-    }
-
-    macro_rules! validate_then_update_enabled_value {
-        ($target:expr, $source:expr, $subtype:ident, $id:expr, $field:ident) => {
-            if let Some(value) = $source.$field {
-                validate_enabled_value!(
-                    &value,
-                    format!("changed_fields.{}.{}", stringify!($subtype), $id),
-                    $field
-                );
-                $target.$field = value;
-            }
-        };
-    }
-
-    macro_rules! validate_then_update_script {
-        ($target:expr, $source:expr, $id:expr, $field:ident) => {
-            if let Some(enabled_values) = $source.$field {
-                $target.scripts.$field = Vec::new();
-                for (i, enabled_value) in enabled_values.iter().enumerate() {
-                    validate_enabled_value!(
-                        enabled_value,
-                        format!("changed_fields.peer.{}.scripts[{}]", $id, i),
-                        $field
-                    );
-
-                    if !enabled_value.enabled {
-                        $target.scripts.$field.push(enabled_value.clone());
-                        continue;
-                    }
-                    for script_string_line in
-                        enabled_value.value.split(";").filter(|&x| !x.is_empty())
-                    {
-                        $target.scripts.$field.push(EnabledValue {
-                            enabled: true,
-                            value: format!("{script_string_line};"),
-                        })
-                    }
-                }
-            }
-        };
-    }
 
     let mut c = get_mg_config_w_digest!();
     let this_peer = c.network_w_digest.network.this_peer.clone();
@@ -197,78 +90,98 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
 
     remove_expired_reservations(&mut c.network_w_digest.network);
 
+    // process changed_fields
     if let Some(changed_fields) = change_sum.changed_fields {
         if let Some(changed_fields_peers) = changed_fields.peers {
             for (peer_id, peer_details) in changed_fields_peers {
-                let network_copy = c.network_w_digest.network.clone();
+                let mut network_copy = c.network_w_digest.network.clone();
                 if let Some(peer_config) = c.network_w_digest.network.peers.get_mut(&peer_id) {
                     if peer_id == this_peer && peer_details.endpoint.is_some() {
                         log::info!("A client tried to change the host's endpoint! (forbidden)");
-                        return HttpResponse::Forbidden().json(json!({
-                            "status": "forbidden",
-                            "message": "can't change the host's endpoint"
-                        }));
+                        return Err(forbidden!("can't change the host's endpoint"))
                     }
 
-                    validate_then_update_str!(peer_config, peer_details, peer, peer_id, name);
-                    // validate address separately to enforce subnet and duplication check
-                    if let Some(value) = peer_details.address {
-                        validate_address_further!(
-                            &value,
-                            format!("changed_fields.peer.{}", peer_id),
-                            &network_copy
-                        );
-                        peer_config.address = value;
+                    if let Some(name) = &peer_details.name {
+                        peer_config.name = parse_and_validate_peer_name(&name).map_err(|e| {
+                            bad_request!("changed_fields.peers.{}.name: {}", peer_id, e)
+                        })?;
                     }
-                    validate_then_update_enabled_value!(
-                        peer_config,
-                        peer_details,
-                        peer,
-                        peer_id,
-                        endpoint
-                    );
-                    validate_then_update_str!(peer_config, peer_details, peer, peer_id, kind);
-                    validate_then_update_enabled_value!(
-                        peer_config,
-                        peer_details,
-                        peer,
-                        peer_id,
-                        icon
-                    );
-                    validate_then_update_enabled_value!(
-                        peer_config,
-                        peer_details,
-                        peer,
-                        peer_id,
-                        dns
-                    );
-                    validate_then_update_enabled_value!(
-                        peer_config,
-                        peer_details,
-                        peer,
-                        peer_id,
-                        mtu
-                    );
-                    validate_then_update_str!(
-                        peer_config,
-                        peer_details,
-                        peer,
-                        peer_id,
-                        private_key
-                    );
+                    if let Some(address) = &peer_details.address {
+                        network_copy.peers.retain(|id, _| id != &peer_id);
+                        peer_config.address = validate_peer_address(&address, &network_copy).map_err(|e| {
+                            bad_request!("changed_fields.peers.{}.address: {}", peer_id, e)
+                        })?;
+                    }
+                    if let Some(address) = &peer_details.endpoint {
+                        peer_config.endpoint.enabled = address.enabled;
+                        peer_config.endpoint.port = address.port;
+                        peer_config.endpoint.address = if address.enabled {
+                            validate_peer_endpoint_address(&address.address).map_err(|e| {
+                                bad_request!("changed_fields.peers.{}.endpoint: {}", peer_id, e)
+                            })?
+                        } else {
+                            address.address.clone()
+                        }
+                    }
+                    if let Some(kind) = &peer_details.kind {
+                        peer_config.kind = parse_and_validate_peer_kind(kind).map_err(|e| {
+                            bad_request!("changed_fields.peers.{}.kind: {}", peer_id, e)
+                        })?;
+                    }
+                    if let Some(icon) = &peer_details.icon {
+                        peer_config.icon.enabled = icon.enabled;
+                        peer_config.icon.src = if icon.enabled {
+                            parse_and_validate_peer_icon_src(&icon.src).map_err(|e| {
+                                bad_request!("changed_fields.peers.{}.icon: {}", peer_id, e)
+                            })?
+                        } else {
+                            icon.src.clone()
+                        }
+                    }
+                    if let Some(dns) = &peer_details.dns {
+                        peer_config.dns = dns.clone();
+                        // If deserialization succeeds, dns is already validated.
+                    }
+                    if let Some(mtu) = &peer_details.mtu {
+                        peer_config.mtu.enabled = mtu.enabled;
+                        peer_config.mtu.value = if mtu.enabled {
+                            validate_peer_mtu_value(mtu.value).map_err(|e| {
+                                bad_request!("changed_fields.peers.{}.mtu: {}", peer_id, e)
+                            })?
+                        } else {
+                            mtu.value
+                        }
+                    }
+                    if let Some(private_key) = &peer_details.private_key {
+                        peer_config.private_key = private_key.clone();
+                        // If deserialization succeeds, private_key is already validated.
+                    }
 
                     if let Some(scripts) = peer_details.scripts {
-                        validate_then_update_script!(peer_config, scripts, peer_id, pre_up);
-                        validate_then_update_script!(peer_config, scripts, peer_id, post_up);
-                        validate_then_update_script!(peer_config, scripts, peer_id, pre_down);
-                        validate_then_update_script!(peer_config, scripts, peer_id, post_down);
+                        if let Some(scripts) = scripts.pre_up {
+                            peer_config.scripts.pre_up = validate_peer_scripts(&scripts).map_err(|e| {
+                                bad_request!("changed_fields.peers.{}.scripts.pre_up: {}", peer_id, e)
+                            })?;
+                        }
+                        if let Some(scripts) = scripts.post_up {
+                            peer_config.scripts.post_up = validate_peer_scripts(&scripts).map_err(|e| {
+                                bad_request!("changed_fields.peers.{}.scripts.post_up: {}", peer_id, e)
+                            })?;
+                        }
+                        if let Some(scripts) = scripts.pre_down {
+                            peer_config.scripts.pre_down = validate_peer_scripts(&scripts).map_err(|e| {
+                                bad_request!("changed_fields.peers.{}.scripts.pre_down: {}", peer_id, e)
+                            })?;
+                        }
+                        if let Some(scripts) = scripts.post_down {
+                            peer_config.scripts.post_down = validate_peer_scripts(&scripts).map_err(|e| {
+                                bad_request!("changed_fields.peers.{}.scripts.post_down: {}", peer_id, e)
+                            })?;
+                        }
                     }
                     changed_config = true;
                 } else {
-                    return HttpResponse::NotFound().json(json!({
-                        "status": "not_found",
-                        "message": format!("peer '{peer_id}' does not exist")
-                    }));
+                    return Err(not_found!("peer '{peer_id}' does not exist"));
                 }
             }
         }
@@ -277,41 +190,28 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                 if let Some(connection_config) =
                     c.network_w_digest.network.connections.get_mut(&connection_id)
                 {
-                    update_bool!(connection_config, connection_details, enabled);
-                    validate_then_update_str!(
-                        connection_config,
-                        connection_details,
-                        connection,
-                        connection_id,
-                        pre_shared_key
-                    );
-                    validate_then_update_str!(
-                        connection_config,
-                        connection_details,
-                        connection,
-                        connection_id,
-                        allowed_ips_a_to_b
-                    );
-                    validate_then_update_str!(
-                        connection_config,
-                        connection_details,
-                        connection,
-                        connection_id,
-                        allowed_ips_b_to_a
-                    );
-                    validate_then_update_enabled_value!(
-                        connection_config,
-                        connection_details,
-                        connection,
-                        connection_id,
-                        persistent_keepalive
-                    );
+                    if let Some(enabled) = connection_details.enabled {
+                        connection_config.enabled = enabled;
+                    }
+                    if let Some(pre_shared_key) = connection_details.pre_shared_key {
+                        connection_config.pre_shared_key = pre_shared_key;
+                        // If deserialization succeeds, pre_shared_key is already validated.
+                    }
+                    if let Some(allowed_ips_a_to_b) = connection_details.allowed_ips_a_to_b {
+                        connection_config.allowed_ips_a_to_b = allowed_ips_a_to_b;
+                        // If deserialization succeeds, allowed_ips_a_to_b is already validated.
+                    }
+                    if let Some(allowed_ips_b_to_a) = connection_details.allowed_ips_b_to_a {
+                        connection_config.allowed_ips_b_to_a = allowed_ips_b_to_a;
+                        // If deserialization succeeds, allowed_ips_b_to_a is already validated.
+                    }
+                    if let Some(persistent_keepalive) = connection_details.persistent_keepalive {
+                        connection_config.persistent_keepalive = persistent_keepalive;
+                        // If deserialization succeeds, persistent_keepalive is already validated.
+                    }
                     changed_config = true;
                 } else {
-                    return HttpResponse::NotFound().json(json!({
-                        "status": "not_found",
-                        "message": format!("connection '{connection_id}' does not exist")
-                    }));
+                    return Err(not_found!("connection '{connection_id}' does not exist"));
                 }
             }
         }
@@ -321,19 +221,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(added_peers) = change_sum.added_peers {
         for (peer_id, peer_details) in added_peers {
             {
-                let res = check_field_str_agent("peer_id", peer_id.as_str());
-                if !res.status {
-                    return HttpResponse::BadRequest().json(json!({
-                        "status": "bad_request",
-                        "message": format!("added_peers.{}: {}", peer_id, res.msg)
-                    }));
-                }
+                let network_copy = c.network_w_digest.network.clone();
                 if let Some(value) = c.network_w_digest.network.reservations.get(&peer_details.address)
-                    && value.peer_id != peer_id{
-                    return HttpResponse::Forbidden().json(json!({
-                        "status": "forbidden",
-                        "message": format!("address '{}' is reserved for another peer_id", peer_details.address)
-                    }));
+                    && value.peer_id != peer_id {
+                    return Err(forbidden!("address '{}' is reserved for another peer_id", peer_details.address));
                 }
                 // ensure the address is taken off the reservation list so check_internal_address succeeds (this won't be posted if it fails early)
                 c.network_w_digest
@@ -341,63 +232,49 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
                     .reservations
                     .retain(|address, _|  *address != peer_details.address);
 
-                validate_str!(&peer_details.name, format!("added_peers.{}", peer_id), name);
-                // validate address separately to enforce subnet and duplication check
-                validate_address_further!(
-                    &peer_details.address,
-                    format!("added_peers.{}", peer_id),
-                    &c.network_w_digest.network
-                );
-                validate_enabled_value!(
-                    &peer_details.endpoint,
-                    format!("added_peers.{}", peer_id),
-                    endpoint
-                );
-                validate_str!(&peer_details.kind, format!("added_peers.{}", peer_id), kind);
-                validate_enabled_value!(
-                    &peer_details.icon,
-                    format!("added_peers.{}", peer_id),
-                    icon
-                );
-                validate_enabled_value!(&peer_details.dns, format!("added_peers.{}", peer_id), dns);
-                validate_enabled_value!(&peer_details.mtu, format!("added_peers.{}", peer_id), mtu);
-                validate_str!(
-                    &peer_details.private_key,
-                    format!("added_peers.{}", peer_id),
-                    private_key
-                );
-                for (i, enabled_value) in peer_details.scripts.pre_up.iter().enumerate() {
-                    validate_enabled_value!(
-                        enabled_value,
-                        format!("added_peers.{}.scripts.pre_up[{}]", peer_id, i),
-                        pre_up
-                    );
+                // If deserialization succeeds, peer_id is already validated.
+                parse_and_validate_peer_name(&peer_details.name).map_err(|e| {
+                    bad_request!("added_peers.{}.name: {}", peer_id, e)
+                })?;
+                validate_peer_address(&peer_details.address, &network_copy).map_err(|e| {
+                    bad_request!("added_peers.{}.address: {}", peer_id, e)
+                })?;
+                if peer_details.endpoint.enabled {
+                    validate_peer_endpoint_address(&peer_details.endpoint.address).map_err(|e| {
+                        bad_request!("added_peers.{}.endpoint: {}", peer_id, e)
+                    })?;
                 }
-                for (i, enabled_value) in peer_details.scripts.post_up.iter().enumerate() {
-                    validate_enabled_value!(
-                        enabled_value,
-                        format!("added_peers.{}.scripts.post_up[{}]", peer_id, i),
-                        post_up
-                    );
+                parse_and_validate_peer_kind(&peer_details.kind).map_err(|e| {
+                    bad_request!("added_peers.{}.kind: {}", peer_id, e)
+                })?;
+                if peer_details.icon.enabled {
+                    parse_and_validate_peer_icon_src(&peer_details.icon.src).map_err(|e| {
+                        bad_request!("added_peers.{}.icon: {}", peer_id, e)
+                    })?;
                 }
-                for (i, enabled_value) in peer_details.scripts.pre_down.iter().enumerate() {
-                    validate_enabled_value!(
-                        enabled_value,
-                        format!("added_peers.{}.scripts.pre_down[{}]", peer_id, i),
-                        pre_down
-                    );
+                // If deserialization succeeds, dns is already validated.
+                if peer_details.mtu.enabled {
+                    validate_peer_mtu_value(peer_details.mtu.value).map_err(|e| {
+                        bad_request!("added_peers.{}.mtu: {}", peer_id, e)
+                    })?;
                 }
-                for (i, enabled_value) in peer_details.scripts.post_down.iter().enumerate() {
-                    validate_enabled_value!(
-                        enabled_value,
-                        format!("added_peers.{}.scripts.post_down[{}]", peer_id, i),
-                        post_down
-                    );
-                }
-                let mut added_peer = wg_quickrs_wasm::types::Peer::from(&peer_details);
+                // If deserialization succeeds, private_key is already validated.
+                validate_peer_scripts(&peer_details.scripts.pre_up).map_err(|e| {
+                    bad_request!("added_peers.{}.scripts.pre_up: {}", peer_id, e)
+                })?;
+                validate_peer_scripts(&peer_details.scripts.post_up).map_err(|e| {
+                    bad_request!("added_peers.{}.scripts.post_up: {}", peer_id, e)
+                })?;
+                validate_peer_scripts(&peer_details.scripts.pre_down).map_err(|e| {
+                    bad_request!("added_peers.{}.scripts.pre_down: {}", peer_id, e)
+                })?;
+                validate_peer_scripts(&peer_details.scripts.post_down).map_err(|e| {
+                    bad_request!("added_peers.{}.scripts.post_down: {}", peer_id, e)
+                })?;
+                let mut added_peer = wg_quickrs_wasm::types::network::Peer::from(&peer_details);
                 added_peer.created_at = Utc::now();
                 added_peer.updated_at = added_peer.created_at.clone();
-                c.network_w_digest.network.peers.insert(peer_id.clone(), added_peer);
+                c.network_w_digest.network.peers.insert(peer_id, added_peer);
                 changed_config = true;
             }
         }
@@ -407,10 +284,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(removed_peers) = change_sum.removed_peers {
         for peer_id in removed_peers {
             {
-                c.network_w_digest.network.peers.remove(peer_id.as_str());
+                c.network_w_digest.network.peers.remove(&peer_id);
                 // automatically remove connections
-                for connection_id in c.network_w_digest.network.connections.clone().keys().filter(|&x| x.contains(peer_id.as_str())) {
-                    c.network_w_digest.network.connections.remove(connection_id.as_str());
+                for connection_id in c.network_w_digest.network.connections.clone().keys().filter(|&x| x.contains(&peer_id)) {
+                    c.network_w_digest.network.connections.remove(connection_id);
                 }
                 changed_config = true;
             }
@@ -421,43 +298,16 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(added_connections) = change_sum.added_connections {
         for (connection_id, connection_details) in added_connections {
             {
-                match connection_id.rsplit_once('*') {
-                    Some((peer_a_id, peer_b_id)) => {
-                        if !c.network_w_digest.network.peers.contains_key(peer_a_id) || !c.network_w_digest.network.peers.contains_key(peer_b_id) {
-                            return HttpResponse::BadRequest().json(json!({
-                                "status": "bad_request",
-                                "message": format!("added_connections.{}: 'peer_id' doesn't exist", connection_id)
-                            }));
-                        }
-                    }
-                    None => {
-                        return HttpResponse::BadRequest().json(json!({
-                            "status": "bad_request",
-                            "message": format!("added_connections.{}: not a valid connection_id", connection_id)
-                        }));
-                    },
+                if !c.network_w_digest.network.peers.contains_key(&connection_id.a) {
+                    return Err(bad_request!("added_connections.{}: 'peer_id' doesn't exist", connection_id.a));
                 }
-
-                validate_str!(
-                    &connection_details.pre_shared_key,
-                    format!("added_connections.{}", connection_id),
-                    pre_shared_key
-                );
-                validate_str!(
-                    &connection_details.allowed_ips_a_to_b,
-                    format!("added_connections.{}", connection_id),
-                    allowed_ips_a_to_b
-                );
-                validate_str!(
-                    &connection_details.allowed_ips_b_to_a,
-                    format!("added_connections.{}", connection_id),
-                    allowed_ips_b_to_a
-                );
-                validate_enabled_value!(
-                    &connection_details.persistent_keepalive,
-                    format!("added_connections.{}", connection_id),
-                    persistent_keepalive
-                );
+                if !c.network_w_digest.network.peers.contains_key(&connection_id.b) {
+                    return Err(bad_request!("added_connections.{}: 'peer_id' doesn't exist", connection_id.b));
+                }
+                // If deserialization succeeds, pre_shared_key is already validated.
+                // If deserialization succeeds, allowed_ips_a_to_b is already validated.
+                // If deserialization succeeds, allowed_ips_b_to_a is already validated.
+                // If deserialization succeeds, persistent_keepalive is already validated.
                 c.network_w_digest
                     .network
                     .connections
@@ -471,62 +321,49 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> HttpResponse {
     if let Some(removed_connections) = change_sum.removed_connections {
         for connection_id in removed_connections {
             {
-                c.network_w_digest.network.connections.remove(connection_id.as_str());
+                c.network_w_digest.network.connections.remove(&connection_id);
                 changed_config = true;
             }
         }
     }
     if !changed_config {
         log::info!("nothing to update");
-        return HttpResponse::BadRequest().json(json!({
-            "status": "bad_request",
-            "message": "nothing to update"
-        }));
+        return Err(bad_request!("nothing to update"));
     }
     post_mg_config_w_digest!(c);
 
     if c.agent.vpn.enabled {
-        match sync_conf(&c.clone().to_config()) {
-            Ok(_) => {}
-            Err(e) => {
-                log::error!("{e}");
-                return HttpResponse::InternalServerError().into();
-            }
-        };
+        sync_conf(&c.clone().to_config()).map_err(|e| {
+            log::error!("{e}");
+            internal_server_error!("can't handle request: unable to synchronize config")
+        })?;
         log::info!("synchronized config file");
     }
 
-    HttpResponse::Ok().json(json!({
+    Ok(HttpResponse::Ok().json(json!({
         "status": "ok"
-    }))
+    })))
 }
 
-pub(crate) fn post_network_reserve_address() -> HttpResponse {
+pub(crate) fn post_network_reserve_address() -> Result<HttpResponse, HttpResponse> {
     let mut c = get_mg_config_w_digest!();
-
     remove_expired_reservations(&mut c.network_w_digest.network);
     let allocated_addresses = get_allocated_addresses(&c.network_w_digest.network);
-    let next_address =
-        match network::get_next_available_address(&c.network_w_digest.network.subnet, &allocated_addresses) {
-            Some(next_address) => next_address,
-            None => {
-                return HttpResponse::InternalServerError()
-                    .body("Failed to get next available address".to_string());
-            }
-        };
+    let next_address = network::get_next_available_address(&c.network_w_digest.network.subnet, &allocated_addresses)
+        .ok_or_else(|| HttpResponse::Conflict().body("No more IP addresses available in the pool".to_string()))?;
 
-    let reservation_peer_id = String::from(Uuid::new_v4());
+    let reservation_peer_id = Uuid::new_v4();
     let reservation_valid_until = Utc::now() + Duration::minutes(10);
-    log::info!("reserved address {} for {} until {}", next_address.clone(), reservation_peer_id, reservation_valid_until);
     c.network_w_digest.network.reservations.insert(next_address.clone(), ReservationData {
         peer_id: reservation_peer_id.clone(),
         valid_until: reservation_valid_until.clone(),
     });
     post_mg_config_w_digest!(c);
 
-    HttpResponse::Ok().json(json!({
+    log::info!("reserved address {} for {} until {}", next_address.clone(), reservation_peer_id, reservation_valid_until);
+    Ok(HttpResponse::Ok().json(json!({
         "address": next_address,
         "peer_id": reservation_peer_id,
         "valid_until": reservation_valid_until
-    }))
+    })))
 }

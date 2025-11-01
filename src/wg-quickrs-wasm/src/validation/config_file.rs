@@ -13,13 +13,13 @@ pub enum ConfigFileValidationError {
     Validation(String, ValidationError),
 }
 
-pub fn validate_config_file(config_file: &mut ConfigFile, config_file_path: &PathBuf) -> Result<(), ConfigFileValidationError> {
+pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &PathBuf) -> Result<(), ConfigFileValidationError> {
     // Validate Agent
     if config_file.agent.web.https.enabled {
-        validate_tls_file(config_file_path, &config_file.agent.web.https.tls_cert).map_err(|e| {
+        validate_tls_file(config_folder_path, &config_file.agent.web.https.tls_cert).map_err(|e| {
             ConfigFileValidationError::Validation("agent.web.https.tls_cert".to_string(), e)
         })?;
-        validate_tls_file(config_file_path, &config_file.agent.web.https.tls_key).map_err(|e| {
+        validate_tls_file(config_folder_path, &config_file.agent.web.https.tls_key).map_err(|e| {
             ConfigFileValidationError::Validation("agent.web.https.tls_key".to_string(), e)
         })?;
     }
@@ -50,7 +50,7 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_file_path: &Pat
         parse_and_validate_peer_name(&peer.name).map_err(|e| {
             ConfigFileValidationError::Validation(format!("{}.name", peer_path), e)
         })?;
-        validate_peer_address(&peer.address, &config_file.network).map_err(|e| {
+        validate_peer_address(&peer.address, &temp_network).map_err(|e| {
             ConfigFileValidationError::Validation(format!("{}.address", peer_path), e)
         })?;
         // skip network.peers.{peer_id}.endpoint because if it can be deserialized, it means it's valid

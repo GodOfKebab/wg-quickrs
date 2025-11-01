@@ -40,7 +40,7 @@ pub struct ConfigWNetworkDigest {
 
 impl ConfigWNetworkDigest {
     pub fn from_config(config: Config) -> Result<Self, WireGuardLibError> {
-        let network_w_digest = NetworkWDigest::try_from(&config.network)?;
+        let network_w_digest = NetworkWDigest::try_from(config.network)?;
         Ok(ConfigWNetworkDigest { agent: config.agent, network_w_digest })
     }
 

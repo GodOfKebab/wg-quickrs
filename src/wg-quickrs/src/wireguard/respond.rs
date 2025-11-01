@@ -1,7 +1,7 @@
 use crate::wireguard::cmd::{disable_tunnel, enable_tunnel, WG_STATUS};
 use actix_web::{web, HttpResponse};
 use serde_json::json;
-use wg_quickrs_wasm::types::WireGuardStatus;
+use wg_quickrs_wasm::types::misc::WireGuardStatus;
 
 pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
     #[derive(serde::Serialize, serde::Deserialize)]

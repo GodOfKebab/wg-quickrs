@@ -1,12 +1,13 @@
 #![cfg(target_os = "macos")]
 use std::collections::HashMap;
 use std::fs;
+use std::net::Ipv4Addr;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::process::CommandExt;
 use std::process::Command;
 use std::time::{Duration, SystemTime};
 use regex::Regex;
-use wg_quickrs_wasm::types::EnabledValue;
+use wg_quickrs_wasm::types::network::{Dns, Mtu};
 use crate::wireguard::wg_quick;
 use crate::wireguard::wg_quick::{DnsManager, EndpointRouter, TunnelError, TunnelResult};
 
@@ -114,16 +115,16 @@ pub fn add_address(iface: &str, addr: &str, is_ipv6: bool) -> TunnelResult<()> {
     Ok(())
 }
 
-pub fn set_mtu_and_up(iface: &str, mtu: &EnabledValue) -> TunnelResult<()> {
+pub fn set_mtu_and_up(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
     set_mtu(iface, mtu)?;
     wg_quick::cmd(&["ifconfig", iface, "up"])?;
 
     Ok(())
 }
 
-pub fn set_mtu(iface: &str, mtu: &EnabledValue) -> TunnelResult<()> {
+pub fn set_mtu(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
     let mtu_val = if mtu.enabled {
-        mtu.value.parse::<u16>().unwrap()
+        mtu.value
     } else {
         // Find default interface
         let netstat_output = wg_quick::cmd(&["netstat", "-nr", "-f", "inet"])?;
@@ -228,13 +229,14 @@ fn get_search_domains(service: &str) -> TunnelResult<String> {
     })
 }
 
-pub fn set_dns(dns_servers: &Vec<String>, _interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<()> {
+pub fn set_dns(dns_servers: &Vec<Ipv4Addr>, _interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<()> {
     collect_services(dns_manager)?;
 
     for service in dns_manager.service_dns.keys() {
         // Set DNS servers
         let mut set_dns_cmd = vec!["networksetup", "-setdnsservers", service];
-        set_dns_cmd.extend(dns_servers.iter().map(|s| s.as_str()));
+        let dns_strings: Vec<String> = dns_servers.iter().map(|s| s.to_string()).collect();
+        set_dns_cmd.extend(dns_strings.iter().map(|s| s.as_str()));
         let _ = wg_quick::cmd(&set_dns_cmd)?;
 
         // Set search domains - always set search domains to Empty since DNS_SEARCH is empty
@@ -379,7 +381,7 @@ fn get_default_gateway(ipv6: bool) -> TunnelResult<String> {
     Err(TunnelError::DefaultGatewayNotFound())
 }
 
-pub fn start_monitor_daemon(iface: &str, interface_name: &str, dns: &EnabledValue, mtu: &EnabledValue, endpoint_router: &EndpointRouter, dns_manager: &DnsManager) -> TunnelResult<()> {
+pub fn start_monitor_daemon(iface: &str, interface_name: &str, dns: &Dns, mtu: &Mtu, endpoint_router: &EndpointRouter, dns_manager: &DnsManager) -> TunnelResult<()> {
     let iface_clone = iface.to_string();
     let interface_name_clone = interface_name.to_string();
     let dns_clone = dns.clone();
@@ -415,8 +417,8 @@ pub fn start_monitor_daemon(iface: &str, interface_name: &str, dns: &EnabledValu
 fn monitor_daemon_worker(
     real_iface: String,
     _interface: String,
-    dns: EnabledValue,
-    mtu: EnabledValue,
+    dns: Dns,
+    mtu: Mtu,
     endpoint_router: EndpointRouter,
     dns_manager: DnsManager,
 ) -> TunnelResult<()> {
@@ -424,7 +426,7 @@ fn monitor_daemon_worker(
     use std::io::{BufRead, BufReader};
 
     let dns_servers = if dns.enabled {
-        dns.value.split(',').map(|s| s.trim().to_string()).collect()
+        dns.addresses
     } else {
         Vec::new()
     };

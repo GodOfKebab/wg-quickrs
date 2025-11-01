@@ -16,13 +16,13 @@ pub struct NetworkWDigest {
     pub digest: String,
 }
 
-impl TryFrom<&Network> for NetworkWDigest {
+impl TryFrom<Network> for NetworkWDigest {
     type Error = WireGuardLibError;
 
-    fn try_from(network: &Network) -> Result<NetworkWDigest, WireGuardLibError> {
+    fn try_from(network: Network) -> Result<NetworkWDigest, WireGuardLibError> {
         let network_bytes = bincode::serialize(&network).map_err(|_| WireGuardLibError::SerializationFailed())?;
         let digest = STANDARD.encode(Sha256::digest(&network_bytes));
-        Ok(NetworkWDigest { network: network.clone(), digest })
+        Ok(NetworkWDigest { network, digest })
     }
 }
 
@@ -65,6 +65,12 @@ impl<'de> Deserialize<'de> for ConnectionId {
             .map_err(|e| serde::de::Error::custom(format!("invalid uuid 'b': {}", e)))?;
 
         Ok(ConnectionId { a, b })
+    }
+}
+
+impl Display for ConnectionId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}*{}", self.a, self.b)
     }
 }
 
