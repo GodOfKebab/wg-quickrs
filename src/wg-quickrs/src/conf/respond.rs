@@ -221,7 +221,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     if let Some(added_peers) = change_sum.added_peers {
         for (peer_id, peer_details) in added_peers {
             {
-                let network_copy = c.network_w_digest.network.clone();
                 if let Some(value) = c.network_w_digest.network.reservations.get(&peer_details.address)
                     && value.peer_id != peer_id {
                     return Err(forbidden!("address '{}' is reserved for another peer_id", peer_details.address));
@@ -236,7 +235,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 parse_and_validate_peer_name(&peer_details.name).map_err(|e| {
                     bad_request!("added_peers.{}.name: {}", peer_id, e)
                 })?;
-                validate_peer_address(&peer_details.address, &network_copy).map_err(|e| {
+                validate_peer_address(&peer_details.address, &c.network_w_digest.network).map_err(|e| {
                     bad_request!("added_peers.{}.address: {}", peer_id, e)
                 })?;
                 if peer_details.endpoint.enabled {
