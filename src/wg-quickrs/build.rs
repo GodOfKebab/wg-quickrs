@@ -14,29 +14,33 @@ fn main() {
     }
     let cmd = InitOptionsWrapper::command();
 
-    let flags = cmd
-        .get_arguments()
-        .filter_map(|arg| arg.get_long().map(|long| format!("--{}", long)))
-        .collect::<Vec<String>>();
+    let mut const_content = String::new();
 
-    let helps = cmd
-        .get_arguments()
-        .map(|arg| arg.get_long_help().unwrap_or_default().to_string())
-        .collect::<Vec<String>>();
+    for arg in cmd.get_arguments() {
+        if let Some(long) = arg.get_long() {
+            if long == "no-prompt" {
+                continue
+            }
+            let help = arg.get_long_help().unwrap_or_default().to_string();
+            let const_name = long.replace('-', "_").to_uppercase();
+
+            const_content.push_str(&format!(
+                r#"
+pub const INIT_{}_FLAG: &str = "--{}";
+pub const INIT_{}_HELP: &str = "{}";
+"#,
+                const_name,
+                long,
+                const_name,
+                help.replace('"', "\\\"").replace('\n', "\\n")
+            ));
+        }
+    }
 
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("init_options_generated.rs");
 
-    let content = format!(
-        r#"
-pub const INIT_FLAGS: &[&str] = &{flags:?};
-pub const INIT_HELPS: &[&str] = &{helps:?};
-        "#,
-        flags = flags,
-        helps = helps,
-    );
-
-    fs::write(dest_path, content).expect("Could not write init_options_generated.rs");
+    fs::write(dest_path, const_content).expect("Could not write init_options_generated.rs");
 
     // Generate completion scripts
     let cli = Cli::command();

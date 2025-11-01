@@ -233,7 +233,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     log::info!("Initializing wg-quickrs...");
 
     let mut step_counter = 1;
-    let mut cli_field_counter = 0;
 
     println!("[general network settings 1-2/28]");
     // [1/28] --network-identifier
@@ -241,12 +240,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.network_name.clone(),
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_NETWORK_NAME_FLAG,
+        INIT_NETWORK_NAME_HELP,
         Some("wg-quickrs-home".into()),
         parse_and_validate_network_name,
     );
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [2/28] --network-subnet
@@ -254,12 +252,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.network_subnet.clone().map(|o| o.to_string()),
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_NETWORK_SUBNET_FLAG,
+        INIT_NETWORK_SUBNET_HELP,
         Some("10.0.34.0/24".into()),
         parse_and_validate_ipv4_subnet,
     );
-    cli_field_counter += 1;
     step_counter += 1;
 
     println!("[general network settings complete]");
@@ -275,12 +272,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_web_address.clone().map(|o| o.to_string()),
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_WEB_ADDRESS_FLAG,
+        INIT_AGENT_WEB_ADDRESS_HELP,
         iface_ip.map(|o| o.to_string()),
         parse_and_validate_ipv4_address,
     );
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [4/28] --agent-web-http-enabled & --agent-web-http-port
@@ -288,18 +284,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_web_http_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_WEB_HTTP_ENABLED_FLAG,
+        INIT_AGENT_WEB_HTTP_ENABLED_HELP,
         true,
     );
-    cli_field_counter += 1;
     let agent_web_http_port = if agent_web_http_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_web_http_port.map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_WEB_HTTP_PORT_FLAG,
+            format!("\t{}", INIT_AGENT_WEB_HTTP_PORT_HELP).as_str(),
             Some("80".into()),
             parse_and_validate_port,
         )
@@ -307,7 +302,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, use a default port of 80
         80
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [5/28] --agent-web-https-enabled & --agent-web-https-port
@@ -315,11 +309,10 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_web_https_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_WEB_HTTPS_ENABLED_FLAG,
+        INIT_AGENT_WEB_HTTPS_ENABLED_HELP,
         true,
     );
-    cli_field_counter += 1;
     let (agent_web_https_port, agent_web_https_tls_cert, agent_web_https_tls_key) = if agent_web_https_enabled {
         let config_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
         let (option_cert, option_key) = find_cert_server(&config_folder, agent_web_address.to_string());
@@ -328,8 +321,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_web_https_port.map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_WEB_HTTPS_PORT_FLAG,
+            format!("\t{}", INIT_AGENT_WEB_HTTPS_PORT_HELP).as_str(),
             Some("443".into()),
             parse_and_validate_port,
         );
@@ -337,8 +330,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_web_https_tls_cert.clone().map(|o| o.display().to_string()),
-            INIT_FLAGS[cli_field_counter+1],
-            format!("\t{}", INIT_HELPS[cli_field_counter+1]).as_str(),
+            INIT_AGENT_WEB_HTTPS_TLS_CERT_FLAG,
+            format!("\t{}", INIT_AGENT_WEB_HTTPS_TLS_CERT_HELP).as_str(),
             option_cert.map(|o| o.display().to_string()),
             move |s: &str| parse_and_validate_tls_file(&config_folder, s),
         );
@@ -346,8 +339,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_web_https_tls_key.clone().map(|o| o.display().to_string()),
-            INIT_FLAGS[cli_field_counter+2],
-            format!("\t{}", INIT_HELPS[cli_field_counter+2]).as_str(),
+            INIT_AGENT_WEB_HTTPS_TLS_KEY_FLAG,
+            format!("\t{}", INIT_AGENT_WEB_HTTPS_TLS_KEY_HELP).as_str(),
             option_key.map(|o| o.display().to_string()),
             move |s: &str| parse_and_validate_tls_file(&config_folder, s),
         );
@@ -356,7 +349,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, use a default port of 443
         (443, Default::default(), Default::default())
     };
-    cli_field_counter += 3;
     step_counter += 1;
 
     // [6/28] --agent-enable-web-password
@@ -364,19 +356,18 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_web_password_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_WEB_PASSWORD_ENABLED_FLAG,
+        INIT_AGENT_WEB_PASSWORD_ENABLED_HELP,
         true,
     );
-    cli_field_counter += 1;
     // [6/28] --agent-web-password
     let agent_web_password_hash = if agent_web_password_enabled {
         let password = get_init_password(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_web_password.clone(),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_WEB_PASSWORD_FLAG,
+            format!("\t{}", INIT_AGENT_WEB_PASSWORD_HELP).as_str(),
         );
         let password_hash = helpers::calculate_password_hash(password.trim()).unwrap_or_else(|_| {
             eprintln!("unable to calculate password hash, disabling password");
@@ -387,7 +378,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     } else {
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [7/28] --agent-vpn-enabled & --agent-vpn-port
@@ -395,18 +385,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_vpn_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_VPN_ENABLED_FLAG,
+        INIT_AGENT_VPN_ENABLED_HELP,
         true,
     );
-    cli_field_counter += 1;
     let agent_vpn_port = if agent_vpn_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_vpn_port.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_VPN_PORT_FLAG,
+            format!("\t{}", INIT_AGENT_VPN_PORT_HELP).as_str(),
             Some("51820".into()),
             parse_and_validate_port,
         )
@@ -414,7 +403,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, use a default port of 51820
         51820
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [8/28] --agent-firewall-enabled
@@ -422,19 +410,18 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_firewall_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_FIREWALL_ENABLED_FLAG,
+        INIT_AGENT_FIREWALL_ENABLED_HELP,
         true,
     );
-    cli_field_counter += 1;
     let (agent_firewall_utility, agent_firewall_gateway) = if agent_firewall_enabled {
         // [8/28] --agent-firewall-utility
         let utility = get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_FIREWALL_UTILITY_FLAG,
+            format!("\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
             firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),  // the first fw option is the default
             parse_and_validate_fw_utility,
         );
@@ -443,8 +430,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_firewall_gateway.clone(),
-            INIT_FLAGS[cli_field_counter+1],
-            format!("\t{}", INIT_HELPS[cli_field_counter+1]).as_str(),
+            INIT_AGENT_FIREWALL_GATEWAY_FLAG,
+            format!("\t{}", INIT_AGENT_FIREWALL_GATEWAY_HELP).as_str(),
             iface_name,
             parse_and_validate_fw_gateway,
         );
@@ -452,7 +439,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     } else {
         ("".into(), "".into())
     };
-    cli_field_counter += 2;
     step_counter += 1;
 
     println!("[agent settings complete]");
@@ -463,12 +449,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_name.clone(),
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_NAME_FLAG,
+        INIT_AGENT_PEER_NAME_HELP,
         Some("wg-quickrs-host".into()),
         parse_and_validate_peer_name,
     );
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [10/28] --agent-peer-vpn-internal-address
@@ -486,12 +471,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_vpn_internal_address.clone().map(|o| o.to_string()),
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_VPN_INTERNAL_ADDRESS_FLAG,
+        INIT_AGENT_PEER_VPN_INTERNAL_ADDRESS_HELP,
         get_next_available_address(&network_subnet, &Vec::new()).map(|o| o.to_string()),
         move |s: &str| parse_and_validate_peer_address(s, &temp_network),
     );
-    cli_field_counter += 1;
     step_counter += 1;
 
     // update the address in the recommended endpoint
@@ -507,12 +491,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_vpn_endpoint.clone(),
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_VPN_ENDPOINT_FLAG,
+        INIT_AGENT_PEER_VPN_ENDPOINT_HELP,
         Some(format!("{}:51820", iface_ip.unwrap())),
         parse_and_validate_peer_endpoint,
     );
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [12/28] --agent-peer-kind
@@ -520,12 +503,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_kind.clone(),
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_KIND_FLAG,
+        INIT_AGENT_PEER_KIND_HELP,
         Some("server".into()),
         parse_and_validate_peer_kind,
     );
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [13/28] --agent-peer-icon-enabled & --agent-peer-icon-src
@@ -533,18 +515,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_icon_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_ICON_ENABLED_FLAG,
+        INIT_AGENT_PEER_ICON_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let agent_peer_icon_src = if agent_peer_icon_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_peer_icon_src.clone(),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_PEER_ICON_SRC_FLAG,
+            format!("\t{}", INIT_AGENT_PEER_ICON_SRC_HELP).as_str(),
             None,
             parse_and_validate_peer_icon_src,
         )
@@ -552,7 +533,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty string
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [14/28] --agent-peer-dns-enabled & --agent-peer-dns-server
@@ -560,18 +540,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_dns_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_DNS_ENABLED_FLAG,
+        INIT_AGENT_PEER_DNS_ENABLED_HELP,
         true,
     );
-    cli_field_counter += 1;
     let agent_peer_dns_addresses = if agent_peer_dns_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_peer_dns_addresses.clone(),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_PEER_DNS_ADDRESSES_FLAG,
+            format!("\t{}", INIT_AGENT_PEER_DNS_ADDRESSES_HELP).as_str(),
             Some("1.1.1.1".into()),
             parse_and_validate_peer_dns_addresses,
         )
@@ -579,7 +558,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         vec![]
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [15/28] --agent-peer-mtu-enabled & --agent-peer-mtu-value
@@ -587,18 +565,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_mtu_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_MTU_ENABLED_FLAG,
+        INIT_AGENT_PEER_MTU_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let agent_peer_mtu_value = if agent_peer_mtu_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_peer_mtu_value.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_PEER_MTU_VALUE_FLAG,
+            format!("\t{}", INIT_AGENT_PEER_MTU_VALUE_HELP).as_str(),
             Some("1420".into()),
             parse_and_validate_peer_mtu_value,
         )
@@ -606,7 +583,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an mtu of 1420
         1420
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [16/28] --agent-peer-script-pre-up-enabled & --agent-peer-script-pre-up-line
@@ -614,18 +590,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_pre_up_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
+        INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let agent_peer_script_pre_up_line = if agent_peer_script_pre_up_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_peer_script_pre_up_line.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
+            format!("\t{}", INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_HELP).as_str(),
             None,
             parse_and_validate_peer_script,
         )
@@ -633,7 +608,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [17/28] --agent-peer-script-post-up-enabled & --agent-peer-script-post-up-line
@@ -641,18 +615,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_post_up_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
+        INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let agent_peer_script_post_up_line = if agent_peer_script_post_up_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_peer_script_post_up_line.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_FLAG,
+            format!("\t{}", INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_HELP).as_str(),
             None,
             parse_and_validate_peer_script,
         )
@@ -660,7 +633,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [18/28] --agent-peer-script-pre-down-enabled & --agent-peer-script-pre-down-line
@@ -668,18 +640,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_pre_down_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
+        INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let agent_peer_script_pre_down_line = if agent_peer_script_pre_down_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_peer_script_pre_down_line.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
+            format!("\t{}", INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_HELP).as_str(),
             None,
             parse_and_validate_peer_script,
         )
@@ -687,7 +658,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [19/28] --agent-peer-script-post-down-enabled & --agent-peer-script-post-down-line
@@ -695,18 +665,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_post_down_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
+        INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let agent_peer_script_post_down_line = if agent_peer_script_post_down_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.agent_peer_script_post_down_line.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
+            format!("\t{}", INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_HELP).as_str(),
             None,
             parse_and_validate_peer_script,
         )
@@ -714,7 +683,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     println!("[peer settings complete]");
@@ -725,12 +693,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_kind.clone(),
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_PEER_KIND_FLAG,
+        INIT_DEFAULT_PEER_KIND_HELP,
         Some("laptop".into()),
         parse_and_validate_peer_kind,
     );
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [21/28] --default-peer-icon-enabled & --default-peer-icon-src
@@ -738,18 +705,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_icon_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_PEER_ICON_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_ICON_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let default_peer_icon_src = if default_peer_icon_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.default_peer_icon_src.clone(),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_DEFAULT_PEER_ICON_SRC_FLAG,
+            format!("\t{}", INIT_DEFAULT_PEER_ICON_SRC_HELP).as_str(),
             None,
             parse_and_validate_peer_icon_src,
         )
@@ -757,7 +723,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty string
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [22/28] --default-peer-dns-enabled & --default-peer-dns-server
@@ -765,18 +730,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_dns_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_PEER_DNS_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_DNS_ENABLED_HELP,
         true,
     );
-    cli_field_counter += 1;
     let default_peer_dns_addresses = if default_peer_dns_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.default_peer_dns_addresses.clone(),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_DEFAULT_PEER_DNS_ADDRESSES_FLAG,
+            format!("\t{}", INIT_DEFAULT_PEER_DNS_ADDRESSES_HELP).as_str(),
             Some("1.1.1.1".into()),
             parse_and_validate_peer_dns_addresses,
         )
@@ -784,7 +748,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         vec![]
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [23/28] --default-peer-mtu-enabled & --default-peer-mtu-value
@@ -792,18 +755,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_mtu_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_PEER_MTU_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_MTU_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let default_peer_mtu_value = if default_peer_mtu_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.default_peer_mtu_value.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_DEFAULT_PEER_MTU_VALUE_FLAG,
+            format!("\t{}", INIT_DEFAULT_PEER_MTU_VALUE_HELP).as_str(),
             Some("1420".into()),
             parse_and_validate_peer_mtu_value,
         )
@@ -811,7 +773,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an mtu of 1420
         1420
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [24/28] --default-peer-script-pre-up-enabled & --default-peer-script-pre-up-line
@@ -819,18 +780,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_pre_up_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let default_peer_script_pre_up_line = if default_peer_script_pre_up_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.default_peer_script_pre_up_line.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
+            format!("\t{}", INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_HELP).as_str(),
             None,
             parse_and_validate_peer_script,
         )
@@ -838,7 +798,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [25/28] --default-peer-script-post-up-enabled & --default-peer-script-post-up-line
@@ -846,18 +805,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_post_up_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let default_peer_script_post_up_line = if default_peer_script_post_up_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.default_peer_script_post_up_line.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_FLAG,
+            format!("\t{}", INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_HELP).as_str(),
             None,
             parse_and_validate_peer_script,
         )
@@ -865,7 +823,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [26/28] --default-peer-script-pre-down-enabled & --default-peer-script-pre-down-line
@@ -873,18 +830,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_pre_down_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let default_peer_script_pre_down_line = if default_peer_script_pre_down_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.default_peer_script_pre_down_line.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
+            format!("\t{}", INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_HELP).as_str(),
             None,
             parse_and_validate_peer_script,
         )
@@ -892,7 +848,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [27/28] --default-peer-script-post-down-enabled & --default-peer-script-post-down-line
@@ -900,18 +855,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_post_down_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
         false,
     );
-    cli_field_counter += 1;
     let default_peer_script_post_down_line = if default_peer_script_post_down_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.default_peer_script_post_down_line.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
+            format!("\t{}", INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_HELP).as_str(),
             None,
             parse_and_validate_peer_script,
         )
@@ -919,7 +873,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // if disabled, default to an empty list
         "".into()
     };
-    cli_field_counter += 1;
     step_counter += 1;
 
     // [28/28] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
@@ -927,18 +880,17 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_connection_persistent_keepalive_enabled,
-        INIT_FLAGS[cli_field_counter],
-        INIT_HELPS[cli_field_counter],
+        INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_ENABLED_FLAG,
+        format!("\t{}", INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_ENABLED_HELP).as_str(),
         true,
     );
-    cli_field_counter += 1;
     let default_connection_persistent_keepalive_period = if default_connection_persistent_keepalive_enabled {
         get_init_value(
             init_opts.no_prompt,
             step_counter,
             init_opts.default_connection_persistent_keepalive_period.clone().map(|o| o.to_string()),
-            INIT_FLAGS[cli_field_counter],
-            format!("\t{}", INIT_HELPS[cli_field_counter]).as_str(),
+            INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_FLAG,
+            format!("\t{}", INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_HELP).as_str(),
             Some("25".into()),
             parse_and_validate_conn_persistent_keepalive_period,
         )
