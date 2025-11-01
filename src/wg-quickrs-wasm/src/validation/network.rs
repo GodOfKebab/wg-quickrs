@@ -129,9 +129,11 @@ pub fn parse_and_validate_peer_script(script: &str) -> ValidationResult<String> 
 
 pub fn validate_peer_scripts(script: &Vec<Script>) -> ValidationResult<Vec<Script>> {
     for (i, script) in script.iter().enumerate() {
-        parse_and_validate_peer_script(&script.script).map_err(|_| {
-            ValidationError::ScriptMissingSemicolonAt(i)
-        })?;
+        if script.enabled {
+            parse_and_validate_peer_script(&script.script).map_err(|_| {
+                ValidationError::ScriptMissingSemicolonAt(i)
+            })?;
+        }
     }
     Ok(script.clone())
 }
