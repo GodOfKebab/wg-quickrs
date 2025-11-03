@@ -70,9 +70,9 @@ pub fn parse_and_validate_peer_endpoint(endpoint_address: &str) -> ValidationRes
 
     // Try parsing as IPv4 first, then fall back to the hostname
     if let Ok(ipv4) = address_str.parse::<Ipv4Addr>() {
-        return Ok(EndpointAddress::Ipv4AndPort(Ipv4AndPort{ address: ipv4, port }));
+        return Ok(EndpointAddress::Ipv4AndPort(Ipv4AndPort{ ipv4, port }));
     } else if hostname_validator::is_valid(address_str) {
-        return Ok(EndpointAddress::HostnameAndPort(HostnameAndPort{ address: address_str.to_string(), port }));
+        return Ok(EndpointAddress::HostnameAndPort(HostnameAndPort{ hostname: address_str.to_string(), port }));
     }
 
     Err(ValidationError::InvalidEndpoint())
@@ -80,7 +80,7 @@ pub fn parse_and_validate_peer_endpoint(endpoint_address: &str) -> ValidationRes
 
 pub fn validate_peer_endpoint(endpoint: &Endpoint) -> ValidationResult<Endpoint> {
     if let EndpointAddress::HostnameAndPort(h) = &endpoint.address {
-        if !hostname_validator::is_valid(&h.address) {
+        if !hostname_validator::is_valid(&h.hostname) {
             return Err(ValidationError::InvalidEndpoint());
         }
     }

@@ -31,7 +31,7 @@ network:
       endpoint:
         enabled: true
         address: !ipv4_and_port
-          address: '127.0.0.1'
+          ipv4: '127.0.0.1'
           port: 51820
       kind: server
       icon:

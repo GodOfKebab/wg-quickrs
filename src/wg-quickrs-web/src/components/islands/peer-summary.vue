@@ -82,10 +82,10 @@ export default {
         return "";
       }
       if ('ipv4_and_port' in endpoint.address) {
-        return `${endpoint.address.ipv4_and_port.address}:${endpoint.address.ipv4_and_port.port}`;
+        return `${endpoint.address.ipv4_and_port.ipv4}:${endpoint.address.ipv4_and_port.port}`;
       }
       if ('hostname_and_port' in endpoint.address) {
-        return `${endpoint.address.hostname_and_port.address}:${endpoint.address.hostname_and_port.port}`;
+        return `${endpoint.address.hostname_and_port.hostname}:${endpoint.address.hostname_and_port.port}`;
       }
       return "";
     }

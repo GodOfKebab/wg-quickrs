@@ -123,9 +123,9 @@ pub fn get_peer_wg_config(
         }
         if other_peer_details.endpoint.enabled {
             if let EndpointAddress::Ipv4AndPort(ipv4_port) = &other_peer_details.endpoint.address {
-                writeln!(wg_conf, "Endpoint = {}:{}", ipv4_port.address.to_string(), ipv4_port.port).unwrap();
+                writeln!(wg_conf, "Endpoint = {}:{}", ipv4_port.ipv4.to_string(), ipv4_port.port).unwrap();
             } else if let EndpointAddress::HostnameAndPort(host_port) = &other_peer_details.endpoint.address {
-                writeln!(wg_conf, "Endpoint = {}:{}", host_port.address, host_port.port).unwrap();
+                writeln!(wg_conf, "Endpoint = {}:{}", host_port.hostname, host_port.port).unwrap();
             }
         }
         writeln!(wg_conf).unwrap();

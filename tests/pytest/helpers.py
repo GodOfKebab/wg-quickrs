@@ -117,7 +117,7 @@ def get_test_peer_data() -> Dict[str, Any]:
         "address": "127.0.0.1",
         "endpoint": {
             "enabled": True,
-            "address": { "ipv4_and_port": {"address": "192.168.1.100", "port": 51820} },
+            "address": { "ipv4_and_port": {"ipv4": "192.168.1.100", "port": 51820} },
         },
         "kind": "laptop",
         "icon": {

@@ -189,7 +189,7 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
     "peer_data_variant,expected_status,test_description",
     [
         # Different endpoint configurations
-        ({"endpoint": {"enabled": True, "address": { "ipv4_and_port": {"address": "192.168.1.100", "port": 51111} }}}, 200, "add peer with endpoint"),
+        ({"endpoint": {"enabled": True, "address": { "ipv4_and_port": {"ipv4": "192.168.1.100", "port": 51111} }}}, 200, "add peer with endpoint"),
         ({"endpoint": {"enabled": False, "address": "none"}}, 200, "add peer without endpoint"),
         ({"endpoint": {"enabled": True, "address": "none"}}, 400, "endpoint validation error"),
 

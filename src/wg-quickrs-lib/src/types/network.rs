@@ -127,13 +127,13 @@ impl Default for EndpointAddress {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Ipv4AndPort {
-    pub address: Ipv4Addr,
+    pub ipv4: Ipv4Addr,
     pub port: u16,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct HostnameAndPort {
-    pub address: String,
+    pub hostname: String,
     pub port: u16,
 }
 
