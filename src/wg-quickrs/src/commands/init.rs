@@ -948,8 +948,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
                     address: agent_peer_vpn_internal_address,
                     endpoint: Endpoint {
                         enabled: true,
-                        address: agent_peer_vpn_endpoint.0,
-                        port: agent_peer_vpn_endpoint.1,
+                        address: agent_peer_vpn_endpoint,
                     },
                     kind: agent_peer_kind.to_string(),
                     icon: Icon {
@@ -984,7 +983,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
                     endpoint: Endpoint {
                         enabled: false,
                         address: EndpointAddress::None,
-                        port: 51820,
                     },
                     kind: default_peer_kind.to_string(),
                     icon: Icon{

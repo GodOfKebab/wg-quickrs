@@ -78,22 +78,14 @@ pub fn parse_and_validate_peer_endpoint(endpoint_address: &str) -> ValidationRes
     Err(ValidationError::InvalidEndpoint())
 }
 
-pub fn validate_peer_endpoint_address(endpoint_address: &EndpointAddress) -> ValidationResult<EndpointAddress> {
-    if let EndpointAddress::HostnameAndPort(h) = endpoint_address {
+pub fn validate_peer_endpoint(endpoint: &Endpoint) -> ValidationResult<Endpoint> {
+    if let EndpointAddress::HostnameAndPort(h) = &endpoint.address {
         if !hostname_validator::is_valid(&h.address) {
             return Err(ValidationError::InvalidEndpoint());
         }
     }
-
-    Ok(endpoint_address.clone())
-}
-
-pub fn validate_peer_endpoint(endpoint: &Endpoint) -> ValidationResult<Endpoint> {
-    if endpoint.enabled {
-        validate_peer_endpoint_address(&endpoint.address)?;
-        if endpoint.address == EndpointAddress::None {
-            return Err(ValidationError::EmptyEndpoint())
-        }
+    if !endpoint.enabled && endpoint.address == EndpointAddress::None {
+        return Err(ValidationError::EmptyEndpoint());
     }
 
     Ok(endpoint.clone())
