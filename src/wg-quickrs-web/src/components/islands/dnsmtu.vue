@@ -1,42 +1,45 @@
 <template>
-  <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
+  <div :class="[div_color]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
       <!-- DNS -->
-      <input-field v-model="peer_local.dns"
+      <input-field v-model="peer_local_str.dns"
                    :placeholder="defaultDnsmtu.dns.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
-                   :input-color="FIELD_COLOR_LOOKUP[is_changed_field.dns]"
-                   :is-enabled-value="true"
-                   :value-prev="peer.dns"
+                   :input-color="field_color.dns"
+                   value-field="addresses"
+                   :value-prev="peer_str.dns"
                    undo-button-alignment-classes="right-[5px] top-[6px]"
                    label="DNS"></input-field>
-      <datalist id="DNS-list">
-        <option :value="defaultDnsmtu.dns.value">
-          Forward all DNS related traffic to {{ defaultDnsmtu.dns.value }}
-        </option>
-      </datalist>
+<!--      <datalist id="DNS-list">-->
+<!--        <option :value="defaultDnsmtu.dns.value">-->
+<!--          Forward all DNS related traffic to {{ defaultDnsmtu.dns.value }}-->
+<!--        </option>-->
+<!--      </datalist>-->
 
       <!-- MTU -->
       <!-- TODO: fix the undo button shadow -->
-      <input-field v-model="peer_local.mtu"
+      <input-field v-model="peer_local_str.mtu"
                    :placeholder="defaultDnsmtu.mtu.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
-                   :input-color="FIELD_COLOR_LOOKUP[is_changed_field.mtu]"
-                   :is-enabled-value="true"
-                   :value-prev="peer.mtu"
+                   :input-color="field_color.mtu"
+                   value-field="value"
+                   :value-prev="peer_str.mtu"
                    undo-button-alignment-classes="right-[5px] top-[6px]"
                    label="MTU"></input-field>
-      <datalist id="MTU-list">
-        <option :value="`${defaultDnsmtu.mtu.value}`">
-          Set MTU to {{ defaultDnsmtu.mtu.value }}
-        </option>
-      </datalist>
+<!--      <datalist id="MTU-list">-->
+<!--        <option :value="`${defaultDnsmtu.mtu.value}`">-->
+<!--          Set MTU to {{ defaultDnsmtu.mtu.value }}-->
+<!--        </option>-->
+<!--      </datalist>-->
     </div>
   </div>
 </template>
 
 <script>
-import WireGuardHelper from "@/js/wg-helper.js";
-import FastEqual from "fast-deep-equal";
-import InputField from "@/components/ui/input-field.vue";
+import WireGuardHelper from "@/src/js/wg-helper.js";
+import InputField from "@/src/components/ui/input-field.vue";
+import {
+  validate_peer_dns_wasm,
+  validate_peer_mtu_wasm,
+} from '@/pkg/wg_quickrs_lib.js'
 
 
 export default {
@@ -50,59 +53,70 @@ export default {
     defaultDnsmtu: {
       type: Object,
       default: {
-        dns: {enabled: false, value: ""},
-        mtu: {enabled: false, value: ""},
+        dns: {enabled: false, value: []},
+        mtu: {enabled: false, value: 0},
       },
     },
   },
   data() {
     return {
-      peer_local: {dns: {enabled: false, value: ""}, mtu: {enabled: false, value: ""}},
-      island_change_sum: {
-        changed_fields: {},
-        errors: {},
-      },
+      peer_str: {dns: {enabled: false, addresses: ""}, mtu: {enabled: false, value: ""}},
+      peer_local_str: {dns: {enabled: false, addresses: ""}, mtu: {enabled: false, value: ""}},
       FIELD_COLOR_LOOKUP: {
-        0: 'bg-white',
-        1: 'enabled:bg-green-200',
-        '-1': 'enabled:bg-red-200',
+        unchanged: 'bg-white',
+        changed: 'enabled:bg-green-200',
+        error: 'enabled:bg-red-200',
       },
-      is_changed_field: {dns: 0, mtu: 0},
-      color_div: 'bg-green-50',
+      field_color: {dns: null, mtu: null},
+      div_color: 'bg-green-50',
     };
   },
   created() {
-    this.peer_local.dns = JSON.parse(JSON.stringify(this.peer.dns));
-    this.peer_local.mtu = JSON.parse(JSON.stringify(this.peer.mtu));
+    this.peer_local_str.dns.enabled = this.peer.dns.enabled;
+    this.peer_local_str.dns.addresses = this.peer.dns.addresses.join(", ");
+    this.peer_local_str.mtu.enabled = this.peer.mtu.enabled;
+    this.peer_local_str.mtu.value = this.peer.mtu.value.toString();
+    this.peer_str = JSON.parse(JSON.stringify(this.peer_local_str));
   },
   emits: ['updated-change-sum'],
-  methods: {
-    check_field_status(field_name) {
-      const ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name]);
-      if (!ret.status) return [-1, ret.msg];
-      if (FastEqual(this.peer_local[field_name], this.peer[field_name])) return [0, ''];
-      return [1, ''];
-    },
-    emit_island_change_sum() {
-      this.$emit("updated-change-sum", this.island_change_sum);
-    }
-  },
+  methods: {},
   watch: {
-    peer_local: {
+    peer_local_str: {
       handler() {
-        let errorDetected = false;
-        let changeDetected = false;
-        for (let field in this.peer_local) {
-          let msg = "";
-          [this.is_changed_field[field], msg] = this.check_field_status(field);
-          this.island_change_sum.errors[field] = this.is_changed_field[field] === -1 ? msg : null;
-          this.island_change_sum.changed_fields[field] = this.is_changed_field[field] === 1 ? this.peer_local[field] : null;
+        // Initialize the change sum object
+        let island_change_sum = {
+          errors: {},
+          changed_fields: {}
+        };
 
-          errorDetected ||= this.is_changed_field[field] === -1;
-          changeDetected ||= this.is_changed_field[field] !== 0;
-        }
-        this.emit_island_change_sum();
-        this.color_div = errorDetected ? 'bg-red-50' : changeDetected ? 'bg-green-100' : 'bg-green-50';
+        // dns
+        [this.field_color.dns, island_change_sum] = WireGuardHelper.validateField(
+            'dns',
+            validate_peer_dns_wasm,
+            this.peer.dns,
+            island_change_sum,
+            this.FIELD_COLOR_LOOKUP,
+            this.peer_local_str.dns.enabled,   // validator args
+            this.peer_local_str.dns.addresses  // validator args
+        );
+
+        // mtu
+        [this.field_color.mtu, island_change_sum] = WireGuardHelper.validateField(
+            'mtu',
+            validate_peer_mtu_wasm,
+            this.peer.mtu,
+            island_change_sum,
+            this.FIELD_COLOR_LOOKUP,
+            this.peer_local_str.mtu.enabled,  // validator args
+            this.peer_local_str.mtu.value     // validator args
+        );
+
+        // Check for errors or changes
+        const errorDetected = Object.values(island_change_sum.errors).some(err => err !== null);
+        const changeDetected = Object.values(island_change_sum.changed_fields).some(field => field !== null);
+        this.div_color = errorDetected ? 'bg-red-50' : changeDetected ? 'bg-green-100' : 'bg-green-50';
+
+        this.$emit("updated-change-sum", island_change_sum);
       },
       deep: true,
     }

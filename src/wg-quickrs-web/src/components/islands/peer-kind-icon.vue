@@ -1,8 +1,8 @@
 <template>
-  <div :class="[color_div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
+  <div :class="[div_color]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
     <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
       <!--  Kind  -->
-      <input-field v-model="peer_local.kind" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.kind]"
+      <input-field v-model="peer_local.kind" :input-color="field_color.kind"
                    :value-prev="peer.kind"
                    class="col-span-2 md:col-span-1"
                    label="Kind"
@@ -19,8 +19,8 @@
       </datalist>
 
       <!-- Icon -->
-      <input-field v-model="peer_local.icon" :input-color="FIELD_COLOR_LOOKUP[is_changed_field.icon]"
-                   :is-enabled-value="true"
+      <input-field v-model="peer_local.icon" :input-color="field_color.icon"
+                   value-field="src"
                    :value-prev="peer.icon"
                    class="col-span-2"
                    label="Icon"
@@ -31,9 +31,12 @@
 </template>
 
 <script>
-import WireGuardHelper from "@/js/wg-helper.js";
-import FastEqual from "fast-deep-equal";
-import InputField from "@/components/ui/input-field.vue";
+import WireGuardHelper from "@/src/js/wg-helper.js";
+import InputField from "@/src/components/ui/input-field.vue";
+import {
+  validate_peer_kind_wasm,
+  validate_peer_icon_wasm,
+} from '@/pkg/wg_quickrs_lib.js'
 
 
 export default {
@@ -48,24 +51,20 @@ export default {
       type: Object,
       default: {
         kind: "",
-        icon: {enabled: false, value: ""},
+        icon: {enabled: false, src: ""},
       },
     },
   },
   data() {
     return {
-      peer_local: {kind: "", icon: {enabled: false, value: ""}},
-      island_change_sum: {
-        changed_fields: {},
-        errors: {},
-      },
+      peer_local: {kind: "", icon: {enabled: false, src: ""}},
       FIELD_COLOR_LOOKUP: {
-        0: 'bg-white',
-        1: 'enabled:bg-green-200',
-        '-1': 'enabled:bg-red-200',
+        unchanged: 'bg-white',
+        changed: 'enabled:bg-green-200',
+        error: 'enabled:bg-red-200',
       },
-      is_changed_field: {kind: 0, icon: 0},
-      color_div: 'bg-green-50',
+      field_color: {kind: null, icon: null},
+      div_color: 'bg-green-50',
     };
   },
   created() {
@@ -73,36 +72,43 @@ export default {
     this.peer_local.icon = JSON.parse(JSON.stringify(this.peer.icon));
   },
   emits: ['updated-change-sum'],
-  methods: {
-    _fast_equal(s1, s2) {
-      return FastEqual(s1, s2);
-    },
-    check_field_status(field_name) {
-      const ret = WireGuardHelper.checkField(field_name, this.peer_local[field_name]);
-      if (!ret.status) return [-1, ret.msg];
-      if (FastEqual(this.peer_local[field_name], this.peer[field_name])) return [0, ''];
-      return [1, ''];
-    },
-    emit_island_change_sum() {
-      this.$emit("updated-change-sum", this.island_change_sum);
-    }
-  },
+  methods: {},
   watch: {
     peer_local: {
       handler() {
-        let errorDetected = false;
-        let changeDetected = false;
-        for (let field in this.peer_local) {
-          let msg = "";
-          [this.is_changed_field[field], msg] = this.check_field_status(field);
-          this.island_change_sum.errors[field] = this.is_changed_field[field] === -1 ? msg : null;
-          this.island_change_sum.changed_fields[field] = this.is_changed_field[field] === 1 ? this.peer_local[field] : null;
+        // Initialize the change sum object
+        let island_change_sum = {
+          errors: {},
+          changed_fields: {}
+        };
 
-          errorDetected ||= this.is_changed_field[field] === -1;
-          changeDetected ||= this.is_changed_field[field] !== 0;
-        }
-        this.emit_island_change_sum();
-        this.color_div = errorDetected ? 'bg-red-50' : changeDetected ? 'bg-green-100' : 'bg-green-50';
+        // kind
+        [this.field_color.kind, island_change_sum] = WireGuardHelper.validateField(
+            'kind',
+            validate_peer_kind_wasm,
+            this.peer.kind,
+            island_change_sum,
+            this.FIELD_COLOR_LOOKUP,
+            this.peer_local.kind  // validator arg
+        );
+
+        // icon
+        [this.field_color.icon, island_change_sum] = WireGuardHelper.validateField(
+            'icon',
+            validate_peer_icon_wasm,
+            this.peer.icon,
+            island_change_sum,
+            this.FIELD_COLOR_LOOKUP,
+            this.peer_local.icon.enabled,  // validator args
+            this.peer_local.icon.src       // validator args
+        );
+
+        // Check for errors or changes
+        const errorDetected = Object.values(island_change_sum.errors).some(err => err !== null);
+        const changeDetected = Object.values(island_change_sum.changed_fields).some(field => field !== null);
+        this.div_color = errorDetected ? 'bg-red-50' : changeDetected ? 'bg-green-100' : 'bg-green-50';
+
+        this.$emit("updated-change-sum", island_change_sum);
       },
       deep: true,
     }

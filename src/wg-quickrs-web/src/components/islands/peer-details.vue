@@ -32,17 +32,18 @@
                  :disabled="!are_keys_updated"
                  alignment-classes="right-[6px] top-[6px]"
                  image-classes="h-7"
-                 @click="peer_local_private_key = peer.private_key;">
+                 @click="peer_local_private_key = peer.private_key; $emit('updated-change-sum', {changed_fields: {}, errors: {}},
+    )">
     </undo-button>
   </div>
 
 </template>
 
 <script>
-import Field from "@/components/ui/field.vue";
-import UndoButton from "@/components/ui/buttons/undo.vue";
-import RefreshButton from "@/components/ui/buttons/refresh.vue";
-import WireGuardHelper from "@/js/wg-helper.js";
+import Field from "@/src/components/ui/field.vue";
+import UndoButton from "@/src/components/ui/buttons/undo.vue";
+import RefreshButton from "@/src/components/ui/buttons/refresh.vue";
+import WireGuardHelper from "@/src/js/wg-helper.js";
 
 export default {
   name: "peer-details-island",

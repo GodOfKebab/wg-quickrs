@@ -2,7 +2,7 @@
 
   <div v-if="other_static_peer_ids.length +  other_roaming_peer_ids.length > 0">
     <!-- selection box -->
-    <div :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peers_box]]"
+    <div :class="field_color.attached_peers_box"
          class="my-2 pt-2 pl-1 pr-3 shadow-md border rounded relative">
 
       <!-- static neighbors -->
@@ -87,8 +87,8 @@
       </div>
 
       <!-- Undo Button -->
-      <undo-button v-if="is_changed_field.attached_peers_box"
-                   :disabled="!is_changed_field.attached_peers_box"
+      <undo-button v-if="field_color.attached_peers_box !== DIV_COLOR_LOOKUP.unchanged"
+                   :disabled="field_color.attached_peers_box === DIV_COLOR_LOOKUP.unchanged"
                    alignment-classes="right-[6px] top-[6px]"
                    image-classes="h-7"
                    @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids; update_added_removed_change_sum();">
@@ -99,7 +99,7 @@
     <div v-for="otherPeerId in [...other_static_peer_ids, ...other_roaming_peer_ids]"
          class="relative text-sm">
       <div v-if="all_attached_peer_ids_local.includes(otherPeerId)"
-           :class="[DIV_COLOR_LOOKUP[is_changed_field.attached_peer_box[otherPeerId]]]"
+           :class="[field_color.peer_box[otherPeerId]]"
            class="my-2 py-2 pl-1 pr-3 shadow-md border rounded overflow-x-auto whitespace-nowrap highlight-remove-box">
 
         <!-- enabled checkbox-->
@@ -142,9 +142,9 @@
           <div class="w-92">
             <input-field v-if="connections_local.persistent_keepalive[otherPeerId]"
                          v-model="connections_local.persistent_keepalive[otherPeerId]"
-                         :input-color="FIELD_COLOR_LOOKUP[is_changed_field.persistent_keepalive[otherPeerId]]"
-                         :is-enabled-value="true"
-                         :value-prev="Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId)) ? network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].persistent_keepalive : network.defaults.connection.persistent_keepalive"
+                         :input-color="field_color.persistent_keepalive[otherPeerId]"
+                         value-field="period"
+                         :value-prev="stringify_persistent_keepalive(Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId)) ? network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].persistent_keepalive : network.defaults.connection.persistent_keepalive)"
                          undo-button-alignment-classes="right-[6px] top-[4px]"
                          label="PersistentKeepalive"
                          placeholder="seconds"></input-field>
@@ -160,28 +160,28 @@
               <div class="inline-block relative">
                 <input v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
                        v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
-                       :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
+                       :class="[field_color.allowed_ips_a_to_b[otherPeerId]]"
                        :list="otherPeerId + 'focusPeerName to peerDetails.name'"
                        class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
                 <input v-else
                        v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
-                       :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
+                       :class="[field_color.allowed_ips_b_to_a[otherPeerId]]"
                        :list="otherPeerId + 'focusPeerName to peerDetails.name'"
                        class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
                 <!-- Undo Button -->
                 <undo-button
-                    v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && is_changed_field.allowed_ips_a_to_b[otherPeerId] && !isNewPeer"
-                    :disabled="!is_changed_field.allowed_ips_a_to_b[otherPeerId]"
+                    v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_a_to_b[otherPeerId] !== FIELD_COLOR_LOOKUP.unchanged && !isNewPeer"
+                    :disabled="field_color.allowed_ips_a_to_b[otherPeerId] === FIELD_COLOR_LOOKUP.unchanged"
                     alignment-classes="right-[5px] top-[2px]"
                     image-classes="h-5"
-                    @click="connections_local.allowed_ips_a_to_b[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b;">
+                    @click="connections_local.allowed_ips_a_to_b[otherPeerId] = stringify_allowed_ips(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b);">
                 </undo-button>
                 <undo-button
-                    v-else-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && is_changed_field.allowed_ips_b_to_a[otherPeerId] && !isNewPeer"
-                    :disabled="!is_changed_field.allowed_ips_b_to_a[otherPeerId]"
+                    v-else-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_b_to_a[otherPeerId] !== FIELD_COLOR_LOOKUP.unchanged && !isNewPeer"
+                    :disabled="field_color.allowed_ips_b_to_a[otherPeerId] === FIELD_COLOR_LOOKUP.unchanged"
                     alignment-classes="right-[5px] top-[2px]"
                     image-classes="h-5"
-                    @click="connections_local.allowed_ips_b_to_a[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a;">
+                    @click="connections_local.allowed_ips_b_to_a[otherPeerId] = stringify_allowed_ips(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a);">
                 </undo-button>
               </div>
               <span class="flex-none pr-2"> to <strong>{{ network.peers[otherPeerId].name }}</strong></span>
@@ -194,28 +194,28 @@
               <div class="inline-block relative">
                 <input v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId)"
                        v-model="connections_local.allowed_ips_a_to_b[otherPeerId]"
-                       :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_a_to_b[otherPeerId]]]"
+                       :class="field_color.allowed_ips_a_to_b[otherPeerId]"
                        :list="otherPeerId + 'peerDetails.name to focusPeerName'"
                        class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
                 <input v-else
                        v-model="connections_local.allowed_ips_b_to_a[otherPeerId]"
-                       :class="[FIELD_COLOR_LOOKUP[is_changed_field.allowed_ips_b_to_a[otherPeerId]]]"
+                       :class="field_color.allowed_ips_b_to_a[otherPeerId]"
                        :list="otherPeerId + 'peerDetails.name to focusPeerName'"
                        class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
                 <!-- Undo Button -->
                 <undo-button
-                    v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && is_changed_field.allowed_ips_a_to_b[otherPeerId] && !isNewPeer"
-                    :disabled="!is_changed_field.allowed_ips_a_to_b[otherPeerId]"
+                    v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_a_to_b[otherPeerId] !== FIELD_COLOR_LOOKUP.unchanged && !isNewPeer"
+                    :disabled="field_color.allowed_ips_a_to_b[otherPeerId] === FIELD_COLOR_LOOKUP.unchanged"
                     alignment-classes="right-[5px] top-[2px]"
                     image-classes="h-5"
-                    @click="connections_local.allowed_ips_a_to_b[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b;">
+                    @click="connections_local.allowed_ips_a_to_b[otherPeerId] = stringify_allowed_ips(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b);">
                 </undo-button>
                 <undo-button
-                    v-else-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && is_changed_field.allowed_ips_b_to_a[otherPeerId] && !isNewPeer"
-                    :disabled="!is_changed_field.allowed_ips_b_to_a[otherPeerId]"
+                    v-else-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_b_to_a[otherPeerId] !== FIELD_COLOR_LOOKUP.unchanged && !isNewPeer"
+                    :disabled="field_color.allowed_ips_b_to_a[otherPeerId] === FIELD_COLOR_LOOKUP.unchanged"
                     alignment-classes="right-[5px] top-[2px]"
                     image-classes="h-5"
-                    @click="connections_local.allowed_ips_b_to_a[otherPeerId] = network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a;">
+                    @click="connections_local.allowed_ips_b_to_a[otherPeerId] = stringify_allowed_ips(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a);">
                 </undo-button>
               </div>
               <span class="flex-none pr-2"> to <strong>{{ network.peers[peerId].name }}</strong></span>
@@ -242,8 +242,8 @@
         </div>
 
         <!-- Undo Button -->
-        <undo-button v-if="is_changed_field.attached_peer_box[otherPeerId] && !isNewPeer"
-                     :disabled="!is_changed_field.attached_peer_box[otherPeerId] || isNewPeer"
+        <undo-button v-if="field_color.peer_box[otherPeerId] !== DIV_COLOR_LOOKUP.unchanged && !isNewPeer"
+                     :disabled="field_color.peer_box[otherPeerId] === DIV_COLOR_LOOKUP.unchanged || isNewPeer"
                      alignment-classes="right-[7px] top-[7px]"
                      image-classes="h-7"
                      @click="undo_connection_changes(otherPeerId);">
@@ -257,12 +257,13 @@
 
 <script>
 import FastEqual from "fast-deep-equal";
-import WireGuardHelper from "@/js/wg-helper.js";
-import Checkbox from "@/components/ui/checkbox.vue";
-import Field from "@/components/ui/field.vue";
-import UndoButton from "@/components/ui/buttons/undo.vue";
-import InputField from "@/components/ui/input-field.vue";
-import RefreshButton from "@/components/ui/buttons/refresh.vue";
+import WireGuardHelper from "@/src/js/wg-helper.js";
+import Checkbox from "@/src/components/ui/checkbox.vue";
+import Field from "@/src/components/ui/field.vue";
+import UndoButton from "@/src/components/ui/buttons/undo.vue";
+import InputField from "@/src/components/ui/input-field.vue";
+import RefreshButton from "@/src/components/ui/buttons/refresh.vue";
+import {validate_conn_allowed_ips_wasm, validate_conn_persistent_keepalive_wasm} from "@/pkg/wg_quickrs_lib.js";
 
 
 export default {
@@ -304,19 +305,19 @@ export default {
         errors: {},
       },
       FIELD_COLOR_LOOKUP: {
-        0: 'bg-white',
-        1: 'enabled:bg-green-200',
-        '-1': 'enabled:bg-red-200',
+        unchanged: 'bg-white',
+        changed: 'enabled:bg-green-200',
+        error: 'enabled:bg-red-200',
       },
       DIV_COLOR_LOOKUP: {
-        0: 'bg-green-50',
-        1: 'bg-green-100',
-        2: 'bg-blue-50',
-        '-1': 'bg-red-100',
+        unchanged: 'bg-green-50',
+        changed: 'bg-blue-50',
+        error: 'bg-red-50',
+        new: 'bg-green-100',
       },
-      is_changed_field: {
-        attached_peers_box: 0,
-        attached_peer_box: {},
+      field_color: {
+        attached_peers_box: null,
+        peer_box: {},
         allowed_ips_a_to_b: {},
         allowed_ips_b_to_a: {},
         persistent_keepalive: {},
@@ -331,9 +332,9 @@ export default {
       const connectionId = WireGuardHelper.getConnectionId(this.peerId, other_peer_id);
       this.connections_local.enabled[other_peer_id] = this.network.connections[connectionId].enabled;
       this.connections_local.pre_shared_key[other_peer_id] = this.network.connections[connectionId].pre_shared_key;
-      this.connections_local.allowed_ips_a_to_b[other_peer_id] = this.network.connections[connectionId].allowed_ips_a_to_b;
-      this.connections_local.allowed_ips_b_to_a[other_peer_id] = this.network.connections[connectionId].allowed_ips_b_to_a;
-      this.connections_local.persistent_keepalive[other_peer_id] = JSON.parse(JSON.stringify(this.network.connections[connectionId].persistent_keepalive));
+      this.connections_local.allowed_ips_a_to_b[other_peer_id] = this.stringify_allowed_ips(this.network.connections[connectionId].allowed_ips_a_to_b);
+      this.connections_local.allowed_ips_b_to_a[other_peer_id] = this.stringify_allowed_ips(this.network.connections[connectionId].allowed_ips_b_to_a);
+      this.connections_local.persistent_keepalive[other_peer_id] = this.stringify_persistent_keepalive(this.network.connections[connectionId].persistent_keepalive);
     }
 
     if (this.isNewPeer) {
@@ -342,16 +343,14 @@ export default {
     }
   },
   methods: {
-    check_connection_field_status(other_peer_id, field_name) {
-      const connection_id = this._WireGuardHelper_getConnectionId(other_peer_id);
-      if (Object.keys(this.network.connections).includes(connection_id) && FastEqual(this.connections_local[field_name][other_peer_id], this.network.connections[connection_id][field_name])) return [0, ''];
-      if (!Object.keys(this.connections_local[field_name]).includes(other_peer_id)) return [-1, 'connections_local is out of sync'];
-      const ret = WireGuardHelper.checkField(field_name, this.connections_local[field_name][other_peer_id]);
-      if (!ret.status) return [-1, ret.msg];
-      return [1, ''];
+    stringify_allowed_ips(allowed_ips) {
+      return allowed_ips.join(", ")
     },
-    emit_island_change_sum() {
-      this.$emit("updated-change-sum", this.island_change_sum);
+    stringify_persistent_keepalive(persistent_keepalive) {
+      return {
+        enabled: persistent_keepalive.enabled,
+        period: `${persistent_keepalive.period}`,
+      }
     },
     _WireGuardHelper_getConnectionId(otherPeerId) {
       return WireGuardHelper.getConnectionId(this.peerId, otherPeerId);
@@ -361,7 +360,7 @@ export default {
       const default_allowed_ips = this.peerId === this.network.this_peer || peer_id === this.network.this_peer ? '0.0.0.0/0' : this.network.subnet;
 
       this.connections_local.pre_shared_key[peer_id] = WireGuardHelper.wg_generate_key();
-      this.connections_local.persistent_keepalive[peer_id] = JSON.parse(JSON.stringify(this.network.defaults.connection.persistent_keepalive));
+      this.connections_local.persistent_keepalive[peer_id] = this.stringify_persistent_keepalive(this.network.defaults.connection.persistent_keepalive);
       if (this.network.peers[this.peerId].endpoint.enabled === this.network.peers[peer_id].endpoint.enabled) {
         this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
         this.connections_local.allowed_ips_b_to_a[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[this.peerId].address}/32` : `${this.network.peers[peer_id].address}/32`;
@@ -392,9 +391,9 @@ export default {
           added_connections[this._WireGuardHelper_getConnectionId(peerId)] = {
             enabled: this.connections_local.enabled[peerId],
             pre_shared_key: this.connections_local.pre_shared_key[peerId],
-            allowed_ips_a_to_b: this.connections_local.allowed_ips_a_to_b[peerId],
-            allowed_ips_b_to_a: this.connections_local.allowed_ips_b_to_a[peerId],
-            persistent_keepalive: this.connections_local.persistent_keepalive[peerId],
+            allowed_ips_a_to_b: validate_conn_allowed_ips_wasm(this.connections_local.allowed_ips_a_to_b[peerId]).value,
+            allowed_ips_b_to_a: validate_conn_allowed_ips_wasm(this.connections_local.allowed_ips_b_to_a[peerId]).value,
+            persistent_keepalive: validate_conn_persistent_keepalive_wasm(this.connections_local.persistent_keepalive[peerId].enabled, this.connections_local.persistent_keepalive[peerId].period).value,
           };
         }
       }
@@ -406,9 +405,9 @@ export default {
           removed_connections[this._WireGuardHelper_getConnectionId(peerId)] = {
             enabled: this.connections_local.enabled[peerId],
             pre_shared_key: this.connections_local.pre_shared_key[peerId],
-            allowed_ips_a_to_b: this.connections_local.allowed_ips_a_to_b[peerId],
-            allowed_ips_b_to_a: this.connections_local.allowed_ips_b_to_a[peerId],
-            persistent_keepalive: this.connections_local.persistent_keepalive[peerId],
+            allowed_ips_a_to_b: validate_conn_allowed_ips_wasm(this.connections_local.allowed_ips_a_to_b[peerId]).value,
+            allowed_ips_b_to_a: validate_conn_allowed_ips_wasm(this.connections_local.allowed_ips_b_to_a[peerId]).value,
+            persistent_keepalive: validate_conn_persistent_keepalive_wasm(this.connections_local.persistent_keepalive[peerId].enabled, this.connections_local.persistent_keepalive[peerId].period).value,
           };
         }
       }
@@ -423,9 +422,9 @@ export default {
 
       this.connections_local.enabled[otherPeerId] = this.network.connections[connection_id].enabled;
       this.connections_local.pre_shared_key[otherPeerId] = this.network.connections[connection_id].pre_shared_key;
-      this.connections_local.persistent_keepalive[otherPeerId] = JSON.parse(JSON.stringify(this.network.connections[connection_id].persistent_keepalive));
-      this.connections_local.allowed_ips_a_to_b[otherPeerId] = this.network.connections[connection_id].allowed_ips_a_to_b;
-      this.connections_local.allowed_ips_b_to_a[otherPeerId] = this.network.connections[connection_id].allowed_ips_b_to_a;
+      this.connections_local.persistent_keepalive[otherPeerId] = this.stringify_persistent_keepalive(this.network.connections[connection_id].persistent_keepalive);
+      this.connections_local.allowed_ips_a_to_b[otherPeerId] = this.stringify_allowed_ips(this.network.connections[connection_id].allowed_ips_a_to_b);
+      this.connections_local.allowed_ips_b_to_a[otherPeerId] = this.stringify_allowed_ips(this.network.connections[connection_id].allowed_ips_b_to_a);
     },
     async refreshPreSharedKey(otherPeerId) {
       this.connections_local.pre_shared_key[otherPeerId] = WireGuardHelper.wg_generate_key();
@@ -514,49 +513,97 @@ export default {
   },
   watch: {
     all_attached_peer_ids_local() {
-      this.is_changed_field.attached_peers_box = FastEqual(this.all_attached_peer_ids_local, this.all_attached_peer_ids) ? 0 : 1;
+      this.field_color.attached_peers_box = FastEqual(this.all_attached_peer_ids_local, this.all_attached_peer_ids) ? this.DIV_COLOR_LOOKUP.unchanged : this.DIV_COLOR_LOOKUP.new;
     },
     connections_local: {
       handler() {
         const changed_fields = {};
+        const errors = {};
         for (const other_peer_id of this.all_attached_peer_ids_local) {
-          let _msg = "";
-          [this.is_changed_field.persistent_keepalive[other_peer_id], _msg] = this.check_connection_field_status(other_peer_id, 'persistent_keepalive');
-          [this.is_changed_field.allowed_ips_a_to_b[other_peer_id], _msg] = this.check_connection_field_status(other_peer_id, 'allowed_ips_a_to_b');
-          [this.is_changed_field.allowed_ips_b_to_a[other_peer_id], _msg] = this.check_connection_field_status(other_peer_id, 'allowed_ips_b_to_a');
-
           const connection_id = this._WireGuardHelper_getConnectionId(other_peer_id);
-          const connection_details = {
+          const connection_local_details = {
             enabled: this.connections_local.enabled[other_peer_id],
             pre_shared_key: this.connections_local.pre_shared_key[other_peer_id],
             persistent_keepalive: this.connections_local.persistent_keepalive[other_peer_id],
             allowed_ips_a_to_b: this.connections_local.allowed_ips_a_to_b[other_peer_id],
             allowed_ips_b_to_a: this.connections_local.allowed_ips_b_to_a[other_peer_id],
+          };
+
+          let connection_orig_details = {
+            enabled: null,
+            pre_shared_key: null,
+            persistent_keepalive: null,
+            allowed_ips_a_to_b: null,
+            allowed_ips_b_to_a: null,
+          }
+          if (this.network.connections[connection_id]) {
+            connection_orig_details = this.network.connections[connection_id];
           }
 
-          if (FastEqual(connection_details, this.network.connections[connection_id])) {
-            this.is_changed_field.attached_peer_box[other_peer_id] = 0;
-          } else {
-            if ([this.is_changed_field.persistent_keepalive[other_peer_id], this.is_changed_field.allowed_ips_a_to_b[other_peer_id], this.is_changed_field.allowed_ips_b_to_a[other_peer_id]].includes(-1)) {
-              this.is_changed_field.attached_peer_box[other_peer_id] = -1;
-            } else {
-              this.is_changed_field.attached_peer_box[other_peer_id] = Object.keys(this.network.connections).includes(connection_id) ? 2 : 1;
-            }
+          // Initialize the change sum object
+          let connection_change_sum = {
+            errors: {},
+            changed_fields: {}
+          };
+
+          if (connection_local_details.enabled !== connection_orig_details.enabled) {
+            connection_change_sum.changed_fields.enabled = connection_local_details.enabled;
           }
 
-          const connection_changed_fields = {};
-          for (const [fkey, fvalue] of Object.entries(connection_details)) {
-            if (!Object.keys(this.network.connections).includes(connection_id)) {
-              continue;
-            }
-            if (!FastEqual(fvalue, this.network.connections[connection_id][fkey])) {
-              connection_changed_fields[fkey] = fvalue;
-            }
+          if (connection_local_details.pre_shared_key !== connection_orig_details.pre_shared_key) {
+            connection_change_sum.changed_fields.pre_shared_key = connection_local_details.pre_shared_key;
           }
-          if (Object.keys(connection_changed_fields).length > 0) {
-            changed_fields[connection_id] = connection_changed_fields;
+
+          // persistent_keepalive
+          [this.field_color.persistent_keepalive[other_peer_id], connection_change_sum] = WireGuardHelper.validateField(
+              'persistent_keepalive',
+              validate_conn_persistent_keepalive_wasm,
+              connection_orig_details.persistent_keepalive,
+              connection_change_sum,
+              this.FIELD_COLOR_LOOKUP,
+              connection_local_details.persistent_keepalive.enabled,  // validator arg
+              connection_local_details.persistent_keepalive.period    // validator arg
+          );
+
+          // allowed_ips_a_to_b
+          [this.field_color.allowed_ips_a_to_b[other_peer_id], connection_change_sum] = WireGuardHelper.validateField(
+              'allowed_ips_a_to_b',
+              validate_conn_allowed_ips_wasm,
+              connection_orig_details.allowed_ips_a_to_b,
+              connection_change_sum,
+              this.FIELD_COLOR_LOOKUP,
+              connection_local_details.allowed_ips_a_to_b,  // validator arg
+          );
+
+          // allowed_ips_b_to_a
+          [this.field_color.allowed_ips_b_to_a[other_peer_id], connection_change_sum] = WireGuardHelper.validateField(
+              'allowed_ips_b_to_a',
+              validate_conn_allowed_ips_wasm,
+              connection_orig_details.allowed_ips_b_to_a,
+              connection_change_sum,
+              this.FIELD_COLOR_LOOKUP,
+              connection_local_details.allowed_ips_b_to_a,  // validator arg
+          );
+
+          connection_change_sum.errors = Object.fromEntries(
+              Object.entries(connection_change_sum.errors).filter(([key, obj]) => obj !== null)
+          );
+          if (Object.keys(connection_change_sum.errors).length > 0) {
+            errors[connection_id] = connection_change_sum.errors;
+            this.field_color.peer_box[other_peer_id] = this.DIV_COLOR_LOOKUP.error;
+            continue;
           }
+          connection_change_sum.changed_fields = Object.fromEntries(
+              Object.entries(connection_change_sum.changed_fields).filter(([key, obj]) => obj !== null)
+          );
+          if (Object.keys(connection_change_sum.changed_fields).length > 0) {
+            changed_fields[connection_id] = connection_change_sum.changed_fields;
+            this.field_color.peer_box[other_peer_id] = this.network.connections[connection_id] ? this.DIV_COLOR_LOOKUP.changed : this.DIV_COLOR_LOOKUP.new;
+            continue;
+          }
+          this.field_color.peer_box[other_peer_id] = this.DIV_COLOR_LOOKUP.unchanged;
         }
+        this.island_change_sum.errors = errors;
         this.island_change_sum.changed_fields = changed_fields;
         this.update_added_removed_change_sum();
       },
@@ -564,8 +611,8 @@ export default {
     },
     island_change_sum: {
       handler() {
-        // console.log(JSON.stringify(this.island_change_sum, false, 2));
-        this.emit_island_change_sum();
+        console.log(JSON.stringify(this.island_change_sum));
+        this.$emit("updated-change-sum", this.island_change_sum)
       },
       deep: true
     }

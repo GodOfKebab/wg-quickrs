@@ -4,17 +4,9 @@ import {
     get_peer_wg_config_wasm,
     wg_public_key_from_private_key_wasm,
     wg_generate_key_wasm,
-    validate_peer_name_wasm,
-    validate_peer_address_wasm,
-    validate_peer_endpoint_wasm,
-    validate_peer_kind_wasm,
-    validate_peer_icon_wasm,
-    validate_peer_dns_wasm,
-    validate_peer_mtu_wasm,
-    validate_peer_script_wasm,
-    validate_persistent_keepalive_wasm,
-    validate_allowed_ips_wasm,
-} from '../../pkg/wg_quickrs_lib.js';
+    get_connection_id_wasm,
+} from '@/pkg/wg_quickrs_lib.js';
+import FastEqual from "fast-deep-equal";
 
 export default class WireGuardHelper {
 
@@ -38,39 +30,26 @@ export default class WireGuardHelper {
         document.body.removeChild(element);
     }
 
-    static checkField(fieldName, fieldVariable, network=null) {
-        if (typeof fieldVariable === 'string')
-            if (fieldName === 'name')
-                return validate_peer_name_wasm(fieldVariable)
-            else if (fieldName === 'address')
-                return validate_peer_address_wasm(fieldVariable, network)
-            else if (fieldName === 'kind')
-                return validate_peer_kind_wasm(fieldVariable)
-            else if (fieldName === 'allowed_ips')
-                return validate_allowed_ips_wasm(fieldVariable)
-            else
-                return { failed: true, message: `Invalid field key '${fieldName}'` };
-        else if (fieldVariable.enabled !== undefined && fieldVariable.value !== undefined)
-            if (fieldName === 'endpoint')
-                return validate_peer_endpoint_wasm(fieldVariable.enabled, fieldVariable.value)
-            else if (fieldName === 'icon')
-                return validate_peer_icon_wasm(fieldVariable.enabled, fieldVariable.value)
-            else if (fieldName === 'dns')
-                return validate_peer_dns_wasm(fieldVariable.enabled, fieldVariable.value)
-            else if (fieldName === 'mtu')
-                return validate_peer_mtu_wasm(fieldVariable.enabled, fieldVariable.value)
-            else if (fieldName === 'script')
-                return validate_peer_script_wasm(fieldVariable.enabled, fieldVariable.value)
-            else if (fieldName === 'persistent_keepalive')
-                return validate_persistent_keepalive_wasm(fieldVariable.enabled, fieldVariable.value)
-            else
-                return { failed: true, message: `Invalid field key '${fieldName}'` };
-        else
-            return { failed: true, message: `Invalid field type for ${fieldName}` };
+    static validateField(fieldName, validator, originalValue, island_change_sum, field_color_lookup, ...validatorArgs) {
+        const result = validator(...validatorArgs);
+
+        if (result.error) {
+            island_change_sum.errors[fieldName] = result.error;
+            return [field_color_lookup["error"], island_change_sum];
+        }
+
+        if (!FastEqual(result.value, originalValue)) {
+            island_change_sum.changed_fields[fieldName] = result.value;
+            return [field_color_lookup["changed"], island_change_sum];
+        }
+
+        island_change_sum.changed_fields[fieldName] = null;
+        island_change_sum.errors[fieldName] = null;
+        return [field_color_lookup["unchanged"], island_change_sum];
     }
 
     static getConnectionId(peer1, peer2) {
-        return `${peer1}*${peer2}`;
+        return get_connection_id_wasm(peer1, peer2);
     }
 
     static getConnectionPeers(connectionId) {
