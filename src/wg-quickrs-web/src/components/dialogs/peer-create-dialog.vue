@@ -123,21 +123,21 @@
 </template>
 
 <script>
-import CustomDialog from "@/components/dialogs/custom-dialog.vue";
-import PeerSummaryIsland from "@/components/islands/peer-summary.vue";
-import PeerKindIconIsland from "@/components/islands/peer-kind-icon.vue";
-import DNSMTUIsland from "@/components/islands/dnsmtu.vue";
-import ScriptsIsland from "@/components/islands/scripts.vue";
-import PeerDetails from "@/components/islands/peer-details.vue";
-import ConnectionIslands from "@/components/islands/connections.vue";
-import ChangeSum from "@/components/change-sum.vue";
-import WireGuardHelper from "@/js/wg-helper.js";
-import DeleteButton from "@/components/ui/buttons/delete.vue";
-import CompareButton from "@/components/ui/buttons/compare.vue";
-import EditButton from "@/components/ui/buttons/edit.vue";
-import ConfButton from "@/components/ui/buttons/conf.vue";
-import QrButton from "@/components/ui/buttons/qr.vue";
-import DownloadButton from "@/components/ui/buttons/download.vue";
+import CustomDialog from "@/src/components/dialogs/custom-dialog.vue";
+import PeerSummaryIsland from "@/src/components/islands/peer-summary.vue";
+import PeerKindIconIsland from "@/src/components/islands/peer-kind-icon.vue";
+import DNSMTUIsland from "@/src/components/islands/dnsmtu.vue";
+import ScriptsIsland from "@/src/components/islands/scripts.vue";
+import PeerDetails from "@/src/components/islands/peer-details.vue";
+import ConnectionIslands from "@/src/components/islands/connections.vue";
+import ChangeSum from "@/src/components/change-sum.vue";
+import WireGuardHelper from "@/src/js/wg-helper.js";
+import DeleteButton from "@/src/components/ui/buttons/delete.vue";
+import CompareButton from "@/src/components/ui/buttons/compare.vue";
+import EditButton from "@/src/components/ui/buttons/edit.vue";
+import ConfButton from "@/src/components/ui/buttons/conf.vue";
+import QrButton from "@/src/components/ui/buttons/qr.vue";
+import DownloadButton from "@/src/components/ui/buttons/download.vue";
 
 export default {
   name: "peer-config-dialog",

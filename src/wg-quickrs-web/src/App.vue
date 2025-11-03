@@ -223,17 +223,17 @@
 </template>
 
 <script>
-import API from "@/js/api.js";
-import TrafficGraph from "@/components/traffic-graph.vue";
-import MapVisual from "@/components/map-visual.vue";
-import CustomDialog from "@/components/dialogs/custom-dialog.vue";
-import PasswordDialog from "@/components/dialogs/password-dialog.vue";
-import PeerConfigDialog from "@/components/dialogs/peer-config-dialog.vue";
-import PeerCreateDialog from "@/components/dialogs/peer-create-dialog.vue";
+import API from "@/src/js/api.js";
+import TrafficGraph from "@/src/components/traffic-graph.vue";
+import MapVisual from "@/src/components/map-visual.vue";
+import CustomDialog from "@/src/components/dialogs/custom-dialog.vue";
+import PasswordDialog from "@/src/components/dialogs/password-dialog.vue";
+import PeerConfigDialog from "@/src/components/dialogs/peer-config-dialog.vue";
+import PeerCreateDialog from "@/src/components/dialogs/peer-create-dialog.vue";
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import init from '../pkg/wg_quickrs_lib.js';
+import init from '@/pkg/wg_quickrs_lib.js';
 
 dayjs.extend(relativeTime);
 

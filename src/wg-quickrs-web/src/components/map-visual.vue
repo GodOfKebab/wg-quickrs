@@ -7,15 +7,15 @@
 <script>
 import ForceGraph from "force-graph";
 import FastEqual from "fast-deep-equal";
-import WireGuardHelper from "@/js/wg-helper.js";
-import ServerSVG from "@/assets/icons/flowbite/server.svg";         // "server" @ https://flowbite.com/icons/
-import DesktopSVG from "@/assets/icons/flowbite/desktop-pc.svg";    // "desktop-pc" @ https://flowbite.com/icons/
-import LaptopSVG from "@/assets/icons/flowbite/laptop-code.svg";    // "laptop-code" @ https://flowbite.com/icons/
-import TabletSVG from "@/assets/icons/flowbite/tablet.svg";         // "tablet" @ https://flowbite.com/icons/
-import PhoneSVG from "@/assets/icons/flowbite/mobile-phone.svg";    // "mobile-phone" @ https://flowbite.com/icons/
-import IoTSVG from "@/assets/icons/flowbite/cloud-arrow-up.svg";    // "cloud-arrow-up" @ https://flowbite.com/icons/
-import OtherSVG from "@/assets/icons/flowbite/question-circle.svg"; // "question-circle" @ https://flowbite.com/icons/
-import LandmarkSVG from "@/assets/icons/flowbite/landmark.svg";     // "landmark" @ https://flowbite.com/icons/
+import WireGuardHelper from "@/src/js/wg-helper.js";
+import ServerSVG from "@/src/assets/icons/flowbite/server.svg";         // "server" @ https://flowbite.com/icons/
+import DesktopSVG from "@/src/assets/icons/flowbite/desktop-pc.svg";    // "desktop-pc" @ https://flowbite.com/icons/
+import LaptopSVG from "@/src/assets/icons/flowbite/laptop-code.svg";    // "laptop-code" @ https://flowbite.com/icons/
+import TabletSVG from "@/src/assets/icons/flowbite/tablet.svg";         // "tablet" @ https://flowbite.com/icons/
+import PhoneSVG from "@/src/assets/icons/flowbite/mobile-phone.svg";    // "mobile-phone" @ https://flowbite.com/icons/
+import IoTSVG from "@/src/assets/icons/flowbite/cloud-arrow-up.svg";    // "cloud-arrow-up" @ https://flowbite.com/icons/
+import OtherSVG from "@/src/assets/icons/flowbite/question-circle.svg"; // "question-circle" @ https://flowbite.com/icons/
+import LandmarkSVG from "@/src/assets/icons/flowbite/landmark.svg";     // "landmark" @ https://flowbite.com/icons/
 
 const nodeKindIconMap = {
   "server": ServerSVG,

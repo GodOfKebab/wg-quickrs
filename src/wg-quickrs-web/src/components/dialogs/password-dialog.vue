@@ -58,7 +58,7 @@
 </template>
 
 <script>
-import Checkbox from "@/components/ui/checkbox.vue";
+import Checkbox from "@/src/components/ui/checkbox.vue";
 
 export default {
   name: "password-dialog",

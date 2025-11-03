@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import Field from "@/components/ui/field.vue";
+import Field from "@/src/components/ui/field.vue";
 
 export default {
   name: "checkbox",
