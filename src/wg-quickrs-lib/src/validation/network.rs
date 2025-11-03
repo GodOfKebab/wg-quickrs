@@ -161,13 +161,18 @@ pub fn parse_and_validate_peer_script(script: &str) -> ValidationResult<String> 
     Ok(script.to_string())
 }
 
+pub fn validate_peer_script(script: &Script) -> ValidationResult<Script> {
+    if script.enabled {
+        parse_and_validate_peer_script(&script.script)?;
+    }
+    Ok(script.clone())
+}
+
 pub fn validate_peer_scripts(script: &Vec<Script>) -> ValidationResult<Vec<Script>> {
     for (i, script) in script.iter().enumerate() {
-        if script.enabled {
-            parse_and_validate_peer_script(&script.script).map_err(|_| {
-                ValidationError::ScriptMissingSemicolonAt(i)
-            })?;
-        }
+        validate_peer_script(script).map_err(|_| {
+            ValidationError::ScriptMissingSemicolonAt(i)
+        })?;
     }
     Ok(script.clone())
 }
