@@ -9,14 +9,13 @@
                    :value-prev="peer_str.dns"
                    undo-button-alignment-classes="right-[5px] top-[6px]"
                    label="DNS"></input-field>
-<!--      <datalist id="DNS-list">-->
-<!--        <option :value="defaultDnsmtu.dns.value">-->
-<!--          Forward all DNS related traffic to {{ defaultDnsmtu.dns.value }}-->
-<!--        </option>-->
-<!--      </datalist>-->
+      <datalist id="DNS-list">
+        <option :value="stringify_dns_addresses(defaultDnsmtu.dns.addresses)">
+          Forward all DNS related traffic to {{ stringify_dns_addresses(defaultDnsmtu.dns.addresses) }}
+        </option>
+      </datalist>
 
       <!-- MTU -->
-      <!-- TODO: fix the undo button shadow -->
       <input-field v-model="peer_local_str.mtu"
                    :placeholder="defaultDnsmtu.mtu.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
                    :input-color="field_color.mtu"
@@ -24,11 +23,11 @@
                    :value-prev="peer_str.mtu"
                    undo-button-alignment-classes="right-[5px] top-[6px]"
                    label="MTU"></input-field>
-<!--      <datalist id="MTU-list">-->
-<!--        <option :value="`${defaultDnsmtu.mtu.value}`">-->
-<!--          Set MTU to {{ defaultDnsmtu.mtu.value }}-->
-<!--        </option>-->
-<!--      </datalist>-->
+      <datalist id="MTU-list">
+        <option :value="`${defaultDnsmtu.mtu.value}`">
+          Set MTU to {{ defaultDnsmtu.mtu.value }}
+        </option>
+      </datalist>
     </div>
   </div>
 </template>
@@ -73,13 +72,17 @@ export default {
   },
   created() {
     this.peer_local_str.dns.enabled = this.peer.dns.enabled;
-    this.peer_local_str.dns.addresses = this.peer.dns.addresses.join(", ");
+    this.peer_local_str.dns.addresses = this.stringify_dns_addresses(this.peer.dns.addresses);
     this.peer_local_str.mtu.enabled = this.peer.mtu.enabled;
     this.peer_local_str.mtu.value = this.peer.mtu.value.toString();
     this.peer_str = JSON.parse(JSON.stringify(this.peer_local_str));
   },
   emits: ['updated-change-sum'],
-  methods: {},
+  methods: {
+    stringify_dns_addresses(addresses) {
+      return addresses.join(", ");
+    }
+  },
   watch: {
     peer_local_str: {
       handler() {
