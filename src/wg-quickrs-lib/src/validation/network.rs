@@ -84,7 +84,7 @@ pub fn validate_peer_endpoint(endpoint: &Endpoint) -> ValidationResult<Endpoint>
             return Err(ValidationError::InvalidEndpoint());
         }
     }
-    if !endpoint.enabled && endpoint.address == EndpointAddress::None {
+    if endpoint.enabled && endpoint.address == EndpointAddress::None {
         return Err(ValidationError::EmptyEndpoint());
     }
 
