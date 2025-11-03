@@ -21,8 +21,7 @@ def test_patch_forbidden_endpoint_change(setup_wg_quickrs_agent):
                 this_peer_id: {
                     "endpoint": {
                         "enabled": True,
-                        "address": { "ipv4": "192.168.1.100" },
-                        "port": 51111
+                        "address": { "ipv4_and_port": {"address": "192.168.1.100", "port": 51111} },
                     }
                 }
             }

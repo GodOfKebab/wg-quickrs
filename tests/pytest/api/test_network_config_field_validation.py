@@ -189,9 +189,9 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
     "peer_data_variant,expected_status,test_description",
     [
         # Different endpoint configurations
-        ({"endpoint": {"enabled": True, "address": {"ipv4": "192.168.1.100"}, "port": 51820}}, 200, "add peer with endpoint"),
-        ({"endpoint": {"enabled": False, "address": "none", "port": 51820}}, 200, "add peer without endpoint"),
-        ({"endpoint": {"enabled": True, "address": "none", "port": 51820}}, 400, "endpoint validation error"),
+        ({"endpoint": {"enabled": True, "address": { "ipv4_and_port": {"address": "192.168.1.100", "port": 51111} }}}, 200, "add peer with endpoint"),
+        ({"endpoint": {"enabled": False, "address": "none"}}, 200, "add peer without endpoint"),
+        ({"endpoint": {"enabled": True, "address": "none"}}, 400, "endpoint validation error"),
 
         # Different peer kind
         ({"kind": "desktop"}, 200, "add desktop peer"),
@@ -261,10 +261,8 @@ def test_add_peer_variants(setup_wg_quickrs_agent, peer_data_variant, expected_s
         for field_name_key, field_name_value in peer_data.items():
             if field_name_key == 'endpoint':
                 assert new_conf['network']['peers'][peer_id][field_name_key]['enabled'] == field_name_value['enabled']
-                assert new_conf['network']['peers'][peer_id][field_name_key]['port'] == field_name_value['port']
-                if new_conf['network']['peers'][peer_id][field_name_key]['address'] != 'none':
-                    assert new_conf['network']['peers'][peer_id][field_name_key]['address'].tag.value == f"!{next(iter(field_name_value['address']))}"
-                    assert new_conf['network']['peers'][peer_id][field_name_key]['address'].value == field_name_value['address']['ipv4']
+                if 'ipv4_and_port' in field_name_value['address']:
+                    assert new_conf['network']['peers'][peer_id][field_name_key]['address'] == field_name_value['address']['ipv4_and_port']
                 else:
                     assert new_conf['network']['peers'][peer_id][field_name_key]['address'] == field_name_value['address']
             else:

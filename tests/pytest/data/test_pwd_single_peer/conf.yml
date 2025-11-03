@@ -30,8 +30,9 @@ network:
       address: '10.0.34.1'
       endpoint:
         enabled: true
-        address: !ipv4 '127.0.0.1'
-        port: 51820
+        address: !ipv4_and_port
+          address: '127.0.0.1'
+          port: 51820
       kind: server
       icon:
         enabled: false
