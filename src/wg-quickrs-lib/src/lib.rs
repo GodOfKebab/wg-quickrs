@@ -72,8 +72,7 @@ mod wasm {
         let res = match parse_and_validate_peer_endpoint(endpoint) {
             Ok(v) => {ValidationResultWasm::from(Ok(Endpoint{
                 enabled,
-                address: v.0,
-                port: v.1,
+                address: v,
             }))}
             Err(e) => ValidationResultWasm{ error: e.to_string(), value: None }
         };
