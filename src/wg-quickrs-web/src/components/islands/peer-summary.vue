@@ -81,11 +81,11 @@ export default {
       if (endpoint.address === "none") {
         return "";
       }
-      if ('ipv4' in endpoint.address) {
-        return `${endpoint.address.ipv4}:${endpoint.port}`;
+      if ('ipv4_and_port' in endpoint.address) {
+        return `${endpoint.address.ipv4_and_port.address}:${endpoint.address.ipv4_and_port.port}`;
       }
-      if ('hostname' in endpoint.address) {
-        return `${endpoint.address.hostname}:${endpoint.port}`;
+      if ('hostname_and_port' in endpoint.address) {
+        return `${endpoint.address.hostname_and_port.address}:${endpoint.address.hostname_and_port.port}`;
       }
       return "";
     }
