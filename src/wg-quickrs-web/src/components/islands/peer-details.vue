@@ -1,6 +1,6 @@
 <template>
 
-  <div :class="[this.are_keys_updated ? 'bg-green-100' : 'bg-green-50']"
+  <div :class="[colors.div]"
       class="my-2 pt-1 pb-2 px-3 shadow-md border rounded relative">
     <div class="overflow-x-auto text-lg whitespace-nowrap">
       <div class="mt-1 flex items-center">
@@ -56,15 +56,22 @@ export default {
     api: {
       type: Object,
       default: null,
-    }
+    },
+    isNewPeer: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
       peer_local_private_key: {},
+      DIV_COLOR_LOOKUP: null,
+      colors: {div: null},
     };
   },
   created() {
     this.peer_local_private_key = this.peer.private_key;
+    this.DIV_COLOR_LOOKUP = WireGuardHelper.get_div_colors(this.isNewPeer);
   },
   emits: ['updated-change-sum'],
   methods: {
@@ -81,7 +88,9 @@ export default {
   },
   computed: {
     are_keys_updated() {
-      return this.peer_local_private_key !== this.peer.private_key;
+      let keys_updated = this.peer_local_private_key !== this.peer.private_key;
+      this.colors.div = keys_updated ? this.DIV_COLOR_LOOKUP.changed : this.DIV_COLOR_LOOKUP.unchanged;
+      return keys_updated;
     },
     peer_local_public_key() {
       return WireGuardHelper.wg_public_key_from_private_key(this.peer_local_private_key);

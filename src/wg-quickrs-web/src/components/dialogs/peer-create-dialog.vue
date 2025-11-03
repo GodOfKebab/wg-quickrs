@@ -54,31 +54,35 @@
 
           <peer-kind-icon-island v-if="default_peer_conf.kind !== undefined
                                      && default_peer_conf.icon !== undefined"
+                                 :is-new-peer="true"
                                  :peer="default_peer_conf"
                                  class="my-2 mr-2"
                                  @updated-change-sum="onUpdatedPeerKindIconIslandChangeSum"></peer-kind-icon-island>
 
           <dnsmtu-island v-if="default_peer_conf.dns !== undefined
                                && default_peer_conf.mtu !== undefined"
+                         :is-new-peer="true"
                          :default-dnsmtu="{dns: network.defaults.peer.dns, mtu: network.defaults.peer.mtu}"
                          :peer="default_peer_conf"
                          class="my-2 mr-2"
                          @updated-change-sum="onUpdatedDnsmtuIslandChangeSum"></dnsmtu-island>
 
           <scripts-island v-if="default_peer_conf.scripts !== undefined"
+                          :is-new-peer="true"
                           :peer="default_peer_conf"
                           class="my-2 mr-2"
                           @updated-change-sum="onUpdatedScriptsIslandChangeSum"></scripts-island>
 
           <peer-details-island v-if="default_peer_conf.private_key !== undefined"
+                               :is-new-peer="true"
                                :api="api"
                                :peer="default_peer_conf"
                                class="my-2 mr-2"
                                @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"></peer-details-island>
 
           <connection-islands v-if="network_w_new_peer"
-                              :api="api"
                               :is-new-peer="true"
+                              :api="api"
                               :network="network_w_new_peer"
                               :peer-id="peerId"
                               class="my-2 mr-2"

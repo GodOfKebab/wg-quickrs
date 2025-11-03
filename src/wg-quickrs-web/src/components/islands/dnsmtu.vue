@@ -1,10 +1,10 @@
 <template>
-  <div :class="[div_color]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
+  <div :class="[colors.div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
       <!-- DNS -->
       <input-field v-model="peer_local_str.dns"
                    :placeholder="defaultDnsmtu.dns.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
-                   :input-color="field_color.dns"
+                   :input-color="colors.dns"
                    value-field="addresses"
                    :value-prev="peer_str.dns"
                    undo-button-alignment-classes="right-[5px] top-[6px]"
@@ -18,7 +18,7 @@
       <!-- MTU -->
       <input-field v-model="peer_local_str.mtu"
                    :placeholder="defaultDnsmtu.mtu.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
-                   :input-color="field_color.mtu"
+                   :input-color="colors.mtu"
                    value-field="value"
                    :value-prev="peer_str.mtu"
                    undo-button-alignment-classes="right-[5px] top-[6px]"
@@ -56,18 +56,18 @@ export default {
         mtu: {enabled: false, value: 0},
       },
     },
+    isNewPeer: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
       peer_str: {dns: {enabled: false, addresses: ""}, mtu: {enabled: false, value: ""}},
       peer_local_str: {dns: {enabled: false, addresses: ""}, mtu: {enabled: false, value: ""}},
-      FIELD_COLOR_LOOKUP: {
-        unchanged: 'bg-white',
-        changed: 'enabled:bg-green-200',
-        error: 'enabled:bg-red-200',
-      },
-      field_color: {dns: null, mtu: null},
-      div_color: 'bg-green-50',
+      FIELD_COLOR_LOOKUP: null,
+      DIV_COLOR_LOOKUP: null,
+      colors: {dns: null, mtu: null, div: null},
     };
   },
   created() {
@@ -76,6 +76,8 @@ export default {
     this.peer_local_str.mtu.enabled = this.peer.mtu.enabled;
     this.peer_local_str.mtu.value = this.peer.mtu.value.toString();
     this.peer_str = JSON.parse(JSON.stringify(this.peer_local_str));
+    this.FIELD_COLOR_LOOKUP = WireGuardHelper.get_field_colors(this.isNewPeer);
+    this.DIV_COLOR_LOOKUP = WireGuardHelper.get_div_colors(this.isNewPeer);
   },
   emits: ['updated-change-sum'],
   methods: {
@@ -93,7 +95,7 @@ export default {
         };
 
         // dns
-        [this.field_color.dns, island_change_sum] = WireGuardHelper.validateField(
+        [this.colors.dns, island_change_sum] = WireGuardHelper.validateField(
             'dns',
             validate_peer_dns_wasm,
             this.peer.dns,
@@ -104,7 +106,7 @@ export default {
         );
 
         // mtu
-        [this.field_color.mtu, island_change_sum] = WireGuardHelper.validateField(
+        [this.colors.mtu, island_change_sum] = WireGuardHelper.validateField(
             'mtu',
             validate_peer_mtu_wasm,
             this.peer.mtu,
@@ -117,7 +119,7 @@ export default {
         // Check for errors or changes
         const errorDetected = Object.values(island_change_sum.errors).some(err => err !== null);
         const changeDetected = Object.values(island_change_sum.changed_fields).some(field => field !== null);
-        this.div_color = errorDetected ? 'bg-red-50' : changeDetected ? 'bg-green-100' : 'bg-green-50';
+        this.colors.div = errorDetected ? this.DIV_COLOR_LOOKUP.error : changeDetected ? this.DIV_COLOR_LOOKUP.changed : this.DIV_COLOR_LOOKUP.unchanged;
 
         this.$emit("updated-change-sum", island_change_sum);
       },

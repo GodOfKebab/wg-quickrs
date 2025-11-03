@@ -1,5 +1,5 @@
 <template>
-  <div :class="[div_color]" class="py-2 pl-1 pr-3 shadow-md border rounded">
+  <div :class="[colors.div]" class="py-2 pl-1 pr-3 shadow-md border rounded">
     <!-- Add buttons -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pl-2 pb-1">
       <div v-for="field in Object.keys(SCRIPTS_KEY_LOOKUP)" :key="field" class="items-center justify-center pt-1 border-gray-100">
@@ -24,7 +24,7 @@
           <input-field v-model="peer_local_scripts[field][i-1]"
                        :class="peer_local_scripts.deleted[field].has(i-1) ? 'opacity-50' : ''"
                        :disabled="peer_local_scripts.deleted[field].has(i-1)"
-                       :input-color="field_color[field][i-1]"
+                       :input-color="colors[field][i-1]"
                        value-field="script"
                        :value-prev="peer.scripts[field][i-1] ? peer.scripts[field][i-1] : { enabled: true, script: ''}"
                        undo-button-alignment-classes="right-[5px] top-[6px]"
@@ -63,6 +63,10 @@ export default {
       type: Object,
       default: {},
     },
+    isNewPeer: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -84,16 +88,12 @@ export default {
         pre_down: 'PreDown',
         post_down: 'PostDown',
       },
-      FIELD_COLOR_LOOKUP: {
-        unchanged: 'bg-white',
-        changed: 'enabled:bg-green-200',
-        error: 'enabled:bg-red-200',
-      },
-      field_color: {pre_up: [], post_up: [], pre_down: [], post_down: []},
-      div_color: 'bg-green-50',
+      FIELD_COLOR_LOOKUP: null,
+      DIV_COLOR_LOOKUP: null,
+      colors: {pre_up: [], post_up: [], pre_down: [], post_down: [], div: null},
     };
   },
-  beforeMount() {
+  created() {
     const peer_local_scripts = JSON.parse(JSON.stringify(this.peer.scripts));
     this.peer_local_scripts.pre_up = peer_local_scripts.pre_up;
     this.peer_local_scripts.post_up = peer_local_scripts.post_up;
@@ -103,6 +103,8 @@ export default {
     this.peer_local_scripts.deleted.post_up = new Set();
     this.peer_local_scripts.deleted.pre_down = new Set();
     this.peer_local_scripts.deleted.post_down = new Set();
+    this.FIELD_COLOR_LOOKUP = WireGuardHelper.get_field_colors(this.isNewPeer);
+    this.DIV_COLOR_LOOKUP = WireGuardHelper.get_div_colors(this.isNewPeer);
   },
   emits: ['updated-change-sum'],
   methods: {
@@ -155,7 +157,7 @@ export default {
 
             let script_change_sum = {errors: {}, changed_fields: {}};
 
-            [this.field_color[field][i], script_change_sum] = WireGuardHelper.validateField(
+            [this.colors[field][i], script_change_sum] = WireGuardHelper.validateField(
                 field,
                 validate_peer_script_wasm,
                 this.peer.scripts[field][i] || null,
@@ -185,7 +187,7 @@ export default {
         }
 
         this.emit_island_change_sum(island_change_sum);
-        this.div_color = errorDetected ? 'bg-red-50' : changeDetected ? 'bg-green-100' : 'bg-green-50';
+        this.colors.div = errorDetected ? this.DIV_COLOR_LOOKUP.error : changeDetected ? this.DIV_COLOR_LOOKUP.changed : this.DIV_COLOR_LOOKUP.unchanged;
       },
       deep: true,
     }
