@@ -70,10 +70,7 @@ mod wasm {
     #[wasm_bindgen]
     pub fn validate_peer_endpoint_wasm(enabled: bool, endpoint: &str) -> Result<JsValue, JsValue> {
         let res = match parse_and_validate_peer_endpoint(endpoint) {
-            Ok(v) => {ValidationResultWasm::from(Ok(Endpoint{
-                enabled,
-                address: v,
-            }))}
+            Ok(e) => ValidationResultWasm::from(validate_peer_endpoint(&Endpoint{ enabled, address: e })),
             Err(e) => ValidationResultWasm{ error: e.to_string(), value: None }
         };
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
