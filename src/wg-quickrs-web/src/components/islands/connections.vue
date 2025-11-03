@@ -35,7 +35,7 @@
                   </svg>
                 </span>
 
-                <span class="align-middle ml-1 truncate">
+                <span class="align-middle ml-2 truncate">
                   <strong class="text-lg">{{ network.peers[peerId].name }}</strong>
                   {{ network.peers[peerId].address }} ({{ peerId }})
                 </span>
@@ -76,7 +76,7 @@
                   </svg>
                 </span>
 
-                <span class="align-middle ml-1 truncate">
+                <span class="align-middle ml-2 truncate">
                   <strong class="text-lg">{{ network.peers[peerId].name }}</strong>
                   {{ network.peers[peerId].address }} ({{ peerId }})
                 </span>
@@ -119,7 +119,7 @@
                   </svg>
                 </span>
 
-            <span class="align-middle ml-1">
+            <span class="align-middle ml-2">
                   <strong class="text-lg">{{ network.peers[otherPeerId].name }}</strong>
                   {{ network.peers[otherPeerId].address }} ({{ otherPeerId }})
                 </span>
