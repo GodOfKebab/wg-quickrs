@@ -111,8 +111,11 @@ pub struct Endpoint {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum EndpointAddress {
+    #[serde(rename = "none")]
     None,
+    #[serde(rename = "ipv4_and_port")]
     Ipv4AndPort(Ipv4AndPort),
+    #[serde(rename = "hostname_and_port")]
     HostnameAndPort(HostnameAndPort),
 }
 
