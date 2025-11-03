@@ -53,7 +53,9 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
         validate_peer_address(&peer.address, &temp_network).map_err(|e| {
             ConfigFileValidationError::Validation(format!("{}.address", peer_path), e)
         })?;
-        // skip network.peers.{peer_id}.endpoint because if it can be deserialized, it means it's valid
+        validate_peer_endpoint(&peer.endpoint).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.endpoint", peer_path), e)
+        })?;
         parse_and_validate_peer_kind(&peer.kind).map_err(|e| {
             ConfigFileValidationError::Validation(format!("{}.kind", peer_path), e)
         })?;
@@ -93,7 +95,9 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
 
     // Validate defaults
     let defaults_path = "network.defaults";
-    // skip network.defaults.peer.endpoint because if it can be deserialized, it means it's valid
+    validate_peer_endpoint(&config_file.network.defaults.peer.endpoint).map_err(|e| {
+        ConfigFileValidationError::Validation(format!("{}.peer.endpoint", defaults_path), e)
+    })?;
     parse_and_validate_peer_kind(&config_file.network.defaults.peer.kind).map_err(|e| {
         ConfigFileValidationError::Validation(format!("{}.peer.kind", defaults_path), e)
     })?;
