@@ -40,7 +40,15 @@ pub fn get_peer_wg_config(
 
     if this_peer.endpoint.enabled
     {
-        writeln!(wg_conf, "ListenPort = {}", this_peer.endpoint.port).unwrap();
+        match &this_peer.endpoint.address {
+            EndpointAddress::None => {}
+            EndpointAddress::Ipv4AndPort(ipv4_port) => {
+                writeln!(wg_conf, "ListenPort = {}", ipv4_port.port).unwrap();
+            }
+            EndpointAddress::HostnameAndPort(host_port) => {
+                writeln!(wg_conf, "ListenPort = {}", host_port.port).unwrap();
+            }
+        };
     }
     if !stripped {
         if this_peer.dns.enabled {
@@ -114,10 +122,10 @@ pub fn get_peer_wg_config(
             .unwrap();
         }
         if other_peer_details.endpoint.enabled {
-            if let EndpointAddress::Ipv4(ipv4) = &other_peer_details.endpoint.address {
-                writeln!(wg_conf, "Endpoint = {}:{}", ipv4.to_string(), other_peer_details.endpoint.port).unwrap();
-            } else if let EndpointAddress::Hostname(hostname) = &other_peer_details.endpoint.address {
-                writeln!(wg_conf, "Endpoint = {}:{}", hostname, other_peer_details.endpoint.port).unwrap();
+            if let EndpointAddress::Ipv4AndPort(ipv4_port) = &other_peer_details.endpoint.address {
+                writeln!(wg_conf, "Endpoint = {}:{}", ipv4_port.address.to_string(), ipv4_port.port).unwrap();
+            } else if let EndpointAddress::HostnameAndPort(host_port) = &other_peer_details.endpoint.address {
+                writeln!(wg_conf, "Endpoint = {}:{}", host_port.address, host_port.port).unwrap();
             }
         }
         writeln!(wg_conf).unwrap();

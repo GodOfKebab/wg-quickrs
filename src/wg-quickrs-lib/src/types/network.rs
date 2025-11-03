@@ -106,21 +106,32 @@ pub struct Peer {
 pub struct Endpoint {
     pub enabled: bool,
     pub address: EndpointAddress,
-    pub port: u16,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum EndpointAddress {
     None,
-    Ipv4(Ipv4Addr),
-    Hostname(String),
+    Ipv4AndPort(Ipv4AndPort),
+    HostnameAndPort(HostnameAndPort),
 }
 
 impl Default for EndpointAddress {
     fn default() -> Self {
         EndpointAddress::None
     }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct Ipv4AndPort {
+    pub address: Ipv4Addr,
+    pub port: u16,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct HostnameAndPort {
+    pub address: String,
+    pub port: u16,
 }
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Debug, Clone)]

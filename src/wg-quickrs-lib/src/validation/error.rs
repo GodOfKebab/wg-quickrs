@@ -35,10 +35,10 @@ pub enum ValidationError {
     AddressIsReserved(),
     #[error("endpoint is invalid")]
     InvalidEndpoint(),
-    #[error("endpoint is empty")]
-    EmptyEndpoint(),
     #[error("endpoint port is invalid")]
     InvalidEndpointPort(),
+    #[error("endpoint cannot be empty when enabled")]
+    EmptyEndpoint(),
     #[error("icon cannot be empty when enabled")]
     EmptyIcon(),
     #[error("dns cannot be empty when enabled")]

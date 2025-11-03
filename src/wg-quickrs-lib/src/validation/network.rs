@@ -56,7 +56,11 @@ pub fn validate_peer_address(address_ipv4: &Ipv4Addr, network: &Network) -> Vali
     Ok(address_ipv4.clone())
 }
 
-pub fn parse_and_validate_peer_endpoint(endpoint_address: &str) -> ValidationResult<(EndpointAddress, u16)> {
+pub fn parse_and_validate_peer_endpoint(endpoint_address: &str) -> ValidationResult<EndpointAddress> {
+    if endpoint_address.is_empty() {
+        return Ok(EndpointAddress::None);
+    }
+
     // Split by last ':' to separate address and port
     let (address_str, port_str) = endpoint_address.rsplit_once(':')
         .ok_or(ValidationError::InvalidEndpoint())?;
@@ -65,20 +69,18 @@ pub fn parse_and_validate_peer_endpoint(endpoint_address: &str) -> ValidationRes
         .map_err(|_| ValidationError::InvalidEndpointPort())?;
 
     // Try parsing as IPv4 first, then fall back to the hostname
-    let address = if let Ok(ipv4) = address_str.parse::<Ipv4Addr>() {
-        EndpointAddress::Ipv4(ipv4)
+    if let Ok(ipv4) = address_str.parse::<Ipv4Addr>() {
+        return Ok(EndpointAddress::Ipv4AndPort(Ipv4AndPort{ address: ipv4, port }));
     } else if hostname_validator::is_valid(address_str) {
-        EndpointAddress::Hostname(address_str.to_string())
-    } else {
-        return Err(ValidationError::InvalidEndpoint());
-    };
+        return Ok(EndpointAddress::HostnameAndPort(HostnameAndPort{ address: address_str.to_string(), port }));
+    }
 
-    Ok((address, port))
+    Err(ValidationError::InvalidEndpoint())
 }
 
 pub fn validate_peer_endpoint_address(endpoint_address: &EndpointAddress) -> ValidationResult<EndpointAddress> {
-    if let EndpointAddress::Hostname(h) = endpoint_address {
-        if !hostname_validator::is_valid(&h) {
+    if let EndpointAddress::HostnameAndPort(h) = endpoint_address {
+        if !hostname_validator::is_valid(&h.address) {
             return Err(ValidationError::InvalidEndpoint());
         }
     }

@@ -230,13 +230,10 @@ fn test_validate_peer_address() {
 
 #[test]
 fn test_validate_peer_endpoint() {
+    ok!(parse_and_validate_peer_endpoint(""));
     ok!(parse_and_validate_peer_endpoint("10.0.0.1:51820"));
     ok!(parse_and_validate_peer_endpoint("YOUR-SERVER:51820"));
     ok!(parse_and_validate_peer_endpoint("example.com:51820"));
-    is_err!(
-        parse_and_validate_peer_endpoint(""),
-        ValidationError::InvalidEndpoint()
-    );
     is_err!(
         parse_and_validate_peer_endpoint("notvalid"),
         ValidationError::InvalidEndpoint()
