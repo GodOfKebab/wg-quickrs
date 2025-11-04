@@ -169,13 +169,13 @@ import PeerDetails from "@/src/components/islands/peer-details.vue";
 import ConnectionIslands from "@/src/components/islands/connections.vue";
 import ChangeSum from "@/src/components/change-sum.vue";
 import DeleteButton from "@/src/components/ui/buttons/delete.vue";
-import WireGuardHelper from "@/src/js/wg-helper.js";
 import QRCode from "qrcode";
 import CompareButton from "@/src/components/ui/buttons/compare.vue";
 import EditButton from "@/src/components/ui/buttons/edit.vue";
 import ConfButton from "@/src/components/ui/buttons/conf.vue";
 import QrButton from "@/src/components/ui/buttons/qr.vue";
 import DownloadButton from "@/src/components/ui/buttons/download.vue";
+import {get_peer_wg_config_wasm} from "@/pkg/wg_quickrs_lib.js";
 
 export default {
   name: "peer-config-dialog",
@@ -276,7 +276,20 @@ export default {
       QRCode.toCanvas(document.getElementById('qr-canvas'), this.peer_wg_conf_file);
     },
     downloadPeerConfig() {
-      WireGuardHelper.downloadPeerConfig(this.network, this.peerId, this.version.full_version);
+      const peerConfigFileContents = get_peer_wg_config_wasm(this.network, this.peerId);
+      const peerConfigFileName = this.network.peers[this.peerId].name.replace(/[^a-zA-Z0-9_=+.-]/g, '-').replace(/(-{2,}|-$)/g, '-').replace(/-$/, '').substring(0, 32);
+
+      const element = document.createElement('a');
+      element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(peerConfigFileContents)}`);
+      element.setAttribute('download', `${this.network.identifier}-${peerConfigFileName}.conf`);
+
+      element.style.display = 'none';
+      document.body.appendChild(element);
+
+      element.click();
+
+      document.body.removeChild(element);
+
     }
   },
   computed: {
@@ -284,7 +297,7 @@ export default {
       return this.network.peers[this.peerId];
     },
     peer_wg_conf_file() {
-      return WireGuardHelper.getPeerConfig(this.network, this.peerId, this.version.full_version);
+      return get_peer_wg_config_wasm(this.network, this.peerId);
     },
     changeSum() {
       const data = {

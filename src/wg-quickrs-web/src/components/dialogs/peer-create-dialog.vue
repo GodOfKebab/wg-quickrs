@@ -135,13 +135,16 @@ import ScriptsIsland from "@/src/components/islands/scripts.vue";
 import PeerDetails from "@/src/components/islands/peer-details.vue";
 import ConnectionIslands from "@/src/components/islands/connections.vue";
 import ChangeSum from "@/src/components/change-sum.vue";
-import WireGuardHelper from "@/src/js/wg-helper.js";
 import DeleteButton from "@/src/components/ui/buttons/delete.vue";
 import CompareButton from "@/src/components/ui/buttons/compare.vue";
 import EditButton from "@/src/components/ui/buttons/edit.vue";
 import ConfButton from "@/src/components/ui/buttons/conf.vue";
 import QrButton from "@/src/components/ui/buttons/qr.vue";
 import DownloadButton from "@/src/components/ui/buttons/download.vue";
+import {
+  get_peer_wg_config_wasm,
+  wg_generate_key_wasm,
+} from '@/pkg/wg_quickrs_lib.js';
 
 export default {
   name: "peer-config-dialog",
@@ -213,7 +216,7 @@ export default {
       this.peer_id_address_valid_until = response.valid_until;
     });
 
-    this.default_peer_conf.private_key = WireGuardHelper.wg_generate_key();
+    this.default_peer_conf.private_key = wg_generate_key_wasm();
   },
   methods: {
     onUpdatedPeerSummaryIslandChangeSum(data) {
@@ -298,7 +301,7 @@ export default {
     peer_wg_conf_file() {
       const wg_network = this.network_w_new_peer;
       wg_network.connections = this.change_sum.added_connections;
-      return WireGuardHelper.getPeerConfig(wg_network, this.peerId, this.version.full_version);
+      return get_peer_wg_config_wasm(wg_network, this.peerId, this.version.full_version);
     },
   },
 }

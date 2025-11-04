@@ -44,6 +44,10 @@ import Field from "@/src/components/ui/field.vue";
 import UndoButton from "@/src/components/ui/buttons/undo.vue";
 import RefreshButton from "@/src/components/ui/buttons/refresh.vue";
 import WireGuardHelper from "@/src/js/wg-helper.js";
+import {
+  wg_generate_key_wasm,
+  wg_public_key_from_private_key_wasm,
+} from '@/pkg/wg_quickrs_lib.js';
 
 export default {
   name: "peer-details-island",
@@ -76,7 +80,7 @@ export default {
   emits: ['updated-change-sum'],
   methods: {
     async refreshPeerEditKeys() {
-      this.peer_local_private_key = WireGuardHelper.wg_generate_key();
+      this.peer_local_private_key = wg_generate_key_wasm();
       this.$emit("updated-change-sum", {
             changed_fields: {
               private_key: this.peer_local_private_key,
@@ -93,7 +97,7 @@ export default {
       return keys_updated;
     },
     peer_local_public_key() {
-      return WireGuardHelper.wg_public_key_from_private_key(this.peer_local_private_key);
+      return wg_public_key_from_private_key_wasm(this.peer_local_private_key);
     }
   },
 }

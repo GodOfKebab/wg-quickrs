@@ -7,7 +7,6 @@
 <script>
 import ForceGraph from "force-graph";
 import FastEqual from "fast-deep-equal";
-import WireGuardHelper from "@/src/js/wg-helper.js";
 import ServerSVG from "@/src/assets/icons/flowbite/server.svg";         // "server" @ https://flowbite.com/icons/
 import DesktopSVG from "@/src/assets/icons/flowbite/desktop-pc.svg";    // "desktop-pc" @ https://flowbite.com/icons/
 import LaptopSVG from "@/src/assets/icons/flowbite/laptop-code.svg";    // "laptop-code" @ https://flowbite.com/icons/
@@ -15,7 +14,8 @@ import TabletSVG from "@/src/assets/icons/flowbite/tablet.svg";         // "tabl
 import PhoneSVG from "@/src/assets/icons/flowbite/mobile-phone.svg";    // "mobile-phone" @ https://flowbite.com/icons/
 import IoTSVG from "@/src/assets/icons/flowbite/cloud-arrow-up.svg";    // "cloud-arrow-up" @ https://flowbite.com/icons/
 import OtherSVG from "@/src/assets/icons/flowbite/question-circle.svg"; // "question-circle" @ https://flowbite.com/icons/
-import LandmarkSVG from "@/src/assets/icons/flowbite/landmark.svg";     // "landmark" @ https://flowbite.com/icons/
+import LandmarkSVG from "@/src/assets/icons/flowbite/landmark.svg";
+import {get_connection_id_wasm} from "@/pkg/wg_quickrs_lib.js";     // "landmark" @ https://flowbite.com/icons/
 
 const nodeKindIconMap = {
   "server": ServerSVG,
@@ -217,7 +217,7 @@ export default {
                 }
                 hoverNode = node || null;
               })
-              .onNodeDragEnd(node => {
+              .onNodeDragEnd(_ => {
                 highlightNodes.clear();
                 highlightLinks.clear();
                 hoverNode = null;
@@ -302,7 +302,7 @@ export default {
         for (const [connection_id, telemetry_details] of Object.entries(last_data.datum)) {
           for (const link of this.graph.graphData().links) {
             if (link.source.id === undefined) continue;
-            if (connection_id !== WireGuardHelper.getConnectionId(link.source.id, link.target.id)) continue;
+            if (connection_id !== get_connection_id_wasm(link.source.id, link.target.id)) continue;
             if (!Object.keys(previous_data.datum).includes(connection_id)) continue;
 
             const trafficBytesPrev = connection_id.startsWith(link.source.id) ? previous_data.datum[connection_id].transfer_a_to_b : previous_data.datum[connection_id].transfer_b_to_a;
@@ -323,6 +323,10 @@ export default {
   },
   computed: {},
   methods: {
+    getConnectionPeers(connectionId) {
+      const ab = connectionId.split('*');
+      return {a: ab[0], b: ab[1]};
+    },
     calculateForceGraphData(network) {
       const peerSize = {};
       Object.keys(network.peers).forEach(peerId => {
@@ -345,7 +349,7 @@ export default {
 
       for (const [connectionId, connectionDetails] of Object.entries(network.connections)) {
         if (connectionDetails.enabled) {
-          const {a, b} = WireGuardHelper.getConnectionPeers(connectionId);
+          const {a, b} = this.getConnectionPeers(connectionId);
           const linkColorStrength = 1
               + network.static_peer_ids.includes(a)
               + network.static_peer_ids.includes(b);

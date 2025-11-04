@@ -257,7 +257,12 @@ import Field from "@/src/components/ui/field.vue";
 import UndoButton from "@/src/components/ui/buttons/undo.vue";
 import InputField from "@/src/components/ui/input-field.vue";
 import RefreshButton from "@/src/components/ui/buttons/refresh.vue";
-import {validate_conn_allowed_ips_wasm, validate_conn_persistent_keepalive_wasm} from "@/pkg/wg_quickrs_lib.js";
+import {
+  get_connection_id_wasm,
+  validate_conn_allowed_ips_wasm,
+  validate_conn_persistent_keepalive_wasm,
+  wg_generate_key_wasm
+} from "@/pkg/wg_quickrs_lib.js";
 
 
 export default {
@@ -323,7 +328,7 @@ export default {
     this.attached_roaming_peer_ids_local = this.attached_roaming_peer_ids;
 
     for (const other_peer_id of this.all_attached_peer_ids) {
-      const connectionId = WireGuardHelper.getConnectionId(this.peerId, other_peer_id);
+      const connectionId = get_connection_id_wasm(this.peerId, other_peer_id);
       this.connections_local.enabled[other_peer_id] = this.network.connections[connectionId].enabled;
       this.connections_local.pre_shared_key[other_peer_id] = this.network.connections[connectionId].pre_shared_key;
       this.connections_local.allowed_ips_a_to_b[other_peer_id] = this.stringify_allowed_ips(this.network.connections[connectionId].allowed_ips_a_to_b);
@@ -347,13 +352,13 @@ export default {
       }
     },
     _WireGuardHelper_getConnectionId(otherPeerId) {
-      return WireGuardHelper.getConnectionId(this.peerId, otherPeerId);
+      return get_connection_id_wasm(this.peerId, otherPeerId);
     },
     async initialize_connection(peer_id) {
       const connection_id = this._WireGuardHelper_getConnectionId(peer_id);
       const default_allowed_ips = this.peerId === this.network.this_peer || peer_id === this.network.this_peer ? '0.0.0.0/0' : this.network.subnet;
 
-      this.connections_local.pre_shared_key[peer_id] = WireGuardHelper.wg_generate_key();
+      this.connections_local.pre_shared_key[peer_id] = wg_generate_key_wasm();
       this.connections_local.persistent_keepalive[peer_id] = this.stringify_persistent_keepalive(this.network.defaults.connection.persistent_keepalive);
       if (this.network.peers[this.peerId].endpoint.enabled === this.network.peers[peer_id].endpoint.enabled) {
         this.connections_local.allowed_ips_a_to_b[peer_id] = connection_id.startsWith(this.peerId) ? `${this.network.peers[peer_id].address}/32` : `${this.network.peers[this.peerId].address}/32`;
@@ -390,7 +395,7 @@ export default {
       this.connections_local.allowed_ips_b_to_a[otherPeerId] = this.stringify_allowed_ips(this.network.connections[connection_id].allowed_ips_b_to_a);
     },
     async refreshPreSharedKey(otherPeerId) {
-      this.connections_local.pre_shared_key[otherPeerId] = WireGuardHelper.wg_generate_key();
+      this.connections_local.pre_shared_key[otherPeerId] = wg_generate_key_wasm();
     }
   },
   emits: ['updated-change-sum'],
@@ -416,7 +421,7 @@ export default {
     attached_static_peer_ids() {
       const ids = [];
       for (const otherPeerId of this.other_static_peer_ids) {
-        const connectionId = WireGuardHelper.getConnectionId(otherPeerId, this.peerId);
+        const connectionId = get_connection_id_wasm(otherPeerId, this.peerId);
         if (Object.keys(this.network.connections).includes(connectionId)) ids.push(otherPeerId);
       }
       return ids;
@@ -424,7 +429,7 @@ export default {
     attached_roaming_peer_ids() {
       const ids = [];
       for (const otherPeerId of this.other_roaming_peer_ids) {
-        const connectionId = WireGuardHelper.getConnectionId(otherPeerId, this.peerId);
+        const connectionId = get_connection_id_wasm(otherPeerId, this.peerId);
         if (Object.keys(this.network.connections).includes(connectionId)) ids.push(otherPeerId);
       }
       return ids;
@@ -550,7 +555,7 @@ export default {
           );
 
           connection_change_sum.errors = Object.fromEntries(
-              Object.entries(connection_change_sum.errors).filter(([key, obj]) => obj !== null)
+              Object.entries(connection_change_sum.errors).filter(([_, obj]) => obj !== null)
           );
           if (Object.keys(connection_change_sum.errors).length > 0) {
             errors[connection_id] = connection_change_sum.errors;
@@ -558,7 +563,7 @@ export default {
             continue;
           }
           connection_change_sum.changed_fields = Object.fromEntries(
-              Object.entries(connection_change_sum.changed_fields).filter(([key, obj]) => obj !== null)
+              Object.entries(connection_change_sum.changed_fields).filter(([_, obj]) => obj !== null)
           );
           if (Object.keys(connection_change_sum.changed_fields).length > 0) {
             if (!(this.all_attached_peer_ids.includes(other_peer_id))) {
