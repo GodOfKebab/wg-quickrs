@@ -125,8 +125,7 @@ def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_valu
                         assert new_conf['network']['peers'][this_peer_id][field_name_key][script_type] == script_value
                 else:
                     assert new_conf['network']['peers'][this_peer_id][field_name_key] == field_name_value
-    # else:
-    #     assert old_conf == new_conf  # TODO: fix equals fail
+
 
 @pytest.mark.parametrize(
     "field_name,field_value,expected_status,test_description",
@@ -209,8 +208,6 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
         else:
             for field_name_key, field_name_value in field_name.items():
                 assert new_conf['network']['connections'][other_peer1_this_peer_connection_id][field_name_key] == field_name_value
-    # else:
-    #     assert old_conf == new_conf  # TODO: fix equals fail
 
 
 @pytest.mark.parametrize(
@@ -310,8 +307,6 @@ def test_add_peer_variants(setup_wg_quickrs_agent, peer_data_variant, expected_s
                     assert new_conf['network']['peers'][peer_id][field_name_key]['address'] == field_name_value['address']
             else:
                 assert new_conf['network']['peers'][peer_id][field_name_key] == field_name_value
-    # else:
-    #     assert old_conf == new_conf  # TODO: fix equals fail
 
 
 @pytest.mark.parametrize(
@@ -377,6 +372,4 @@ def test_add_connection_variants(setup_wg_quickrs_agent, connection_data_variant
     if response.status_code == 200:
         for field_name_key, field_name_value in connection_data.items():
             assert new_conf['network']['connections'][connection_id][field_name_key] == field_name_value
-    # else:
-    #     assert old_conf == new_conf  # TODO: fix equals fail
 

@@ -50,10 +50,6 @@ def test_add_peer_with_reserved_address(setup_wg_quickrs_agent):
     assert response.status_code == 400
     assert "uuid" in response.json()["message"]
 
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
-
     another_peer_id = "a1c11ade-dd1a-4f5a-a6f9-3b6c6d10f416"
     change_sum_w_another_peer_id = {
         "added_peers": {
@@ -63,10 +59,6 @@ def test_add_peer_with_reserved_address(setup_wg_quickrs_agent):
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum_w_another_peer_id)
     assert response.status_code == 403
     assert "reserved for another" in response.json()["message"]
-
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
 
     correct_change_sum = {
         "added_peers": {
@@ -107,11 +99,6 @@ def test_change_peer_address_with_conflicting_reserved_address(setup_wg_quickrs_
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 400
     assert "address is already reserved for another peer" in response.json()["message"]
-
-    # yaml validation
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
 
 
 def test_add_peer_with_unreserved_address(setup_wg_quickrs_agent):

@@ -35,10 +35,6 @@ def test_patch_forbidden_endpoint_change(setup_wg_quickrs_agent):
     assert data["status"] == "forbidden"
     assert "can't change the host's endpoint" in data["message"]
 
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
-
 
 def test_patch_peer_not_found(setup_wg_quickrs_agent):
     """Test changing a peer that doesn't exist."""
@@ -63,10 +59,6 @@ def test_patch_peer_not_found(setup_wg_quickrs_agent):
     assert data["status"] == "not_found"
     assert "does not exist" in data["message"]
 
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
-
 
 def test_add_bad_connection(setup_wg_quickrs_agent):
     """Test adding a bad connection."""
@@ -85,10 +77,6 @@ def test_add_bad_connection(setup_wg_quickrs_agent):
     assert setup_response.status_code == 400
     assert "uuid*uuid" in setup_response.json()["message"]
 
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
-
     peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
     peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
     fake_connection_id = f"{peer1_id}*{peer2_id}"
@@ -100,10 +88,6 @@ def test_add_bad_connection(setup_wg_quickrs_agent):
     setup_response = requests.patch(f"{base_url}/api/network/config", json=fake_setup_change_sum)
     assert setup_response.status_code == 400
     assert "'peer_id' doesn't exist" in setup_response.json()["message"]
-
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
 
 
 def test_invalid_json(setup_wg_quickrs_agent):
@@ -117,10 +101,6 @@ def test_invalid_json(setup_wg_quickrs_agent):
     assert response.status_code == 400
     data = response.json()
     assert "invalid JSON" in data["message"]
-
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
 
 
 def test_empty_change_sum(setup_wg_quickrs_agent):
@@ -137,10 +117,6 @@ def test_empty_change_sum(setup_wg_quickrs_agent):
     data = response.json()
     assert data["status"] == "bad_request"
     assert "nothing to update" in data["message"]
-
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
 
 
 def test_connection_not_found(setup_wg_quickrs_agent):
@@ -165,10 +141,6 @@ def test_connection_not_found(setup_wg_quickrs_agent):
     data = response.json()
     assert data["status"] == "not_found"
     assert "does not exist" in data["message"]
-
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
 
 
 def test_remove_peer(setup_wg_quickrs_agent):
@@ -242,11 +214,6 @@ def test_change_peer_address_with_conflicting_address(setup_wg_quickrs_agent):
     assert response.status_code == 400
     assert "taken by" in response.json()["message"]
     assert "wg-quickrs-host" in response.json()["message"]
-
-    # yaml validation
-    # with open(wg_quickrs_config_file) as stream:
-    #     new_conf = yaml.load(stream)
-    # assert old_conf == new_conf  # TODO: fix equals fail
 
 
 def test_patch_with_malformed_json(setup_wg_quickrs_agent):
