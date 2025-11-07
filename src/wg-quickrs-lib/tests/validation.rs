@@ -104,12 +104,6 @@ fn test_validate_peer_id() {
 
 // Network.Peer Fields
 
-#[test]
-fn test_validate_name() {
-    ok!(parse_and_validate_peer_name("test-name"));
-    is_err!(parse_and_validate_peer_name(""), ValidationError::EmptyPeerName());
-}
-
 fn generate_peer(name: &str, address: &str) -> Peer {
     Peer {
         name: name.to_string(),
@@ -139,6 +133,12 @@ fn generate_network(peers: BTreeMap<Uuid, Peer>, subnet: &str, reservations: BTr
             .collect(),
         updated_at: Default::default(),
     }
+}
+
+#[test]
+fn test_validate_peer_name() {
+    ok!(parse_and_validate_peer_name("test-name"));
+    is_err!(parse_and_validate_peer_name(""), ValidationError::EmptyPeerName());
 }
 
 #[test]
@@ -241,6 +241,59 @@ fn test_validate_peer_endpoint() {
 }
 
 #[test]
+fn test_validate_endpoint_struct() {
+    // Disabled endpoint should always be valid (even with None address)
+    let endpoint = Endpoint {
+        enabled: false,
+        address: EndpointAddress::None,
+    };
+    ok!(validate_peer_endpoint(&endpoint));
+
+    // Enabled endpoint with None address should fail
+    let endpoint = Endpoint {
+        enabled: true,
+        address: EndpointAddress::None,
+    };
+    is_err!(
+        validate_peer_endpoint(&endpoint),
+        ValidationError::EmptyEndpoint()
+    );
+
+    // Enabled endpoint with a valid IPv4 address should succeed
+    let endpoint = Endpoint {
+        enabled: true,
+        address: EndpointAddress::Ipv4AndPort(Ipv4AndPort {
+            ipv4: "10.0.0.1".parse().unwrap(),
+            port: 51820,
+        }),
+    };
+    ok!(validate_peer_endpoint(&endpoint));
+
+    // Enabled endpoint with a valid hostname should succeed
+    let endpoint = Endpoint {
+        enabled: true,
+        address: EndpointAddress::HostnameAndPort(HostnameAndPort {
+            hostname: "example.com".to_string(),
+            port: 51820,
+        }),
+    };
+    ok!(validate_peer_endpoint(&endpoint));
+
+    // Enabled endpoint with an invalid hostname should fail
+    let endpoint = Endpoint {
+        enabled: true,
+        address: EndpointAddress::HostnameAndPort(HostnameAndPort {
+            hostname: "".to_string(),
+            port: 51820,
+        }),
+    };
+    is_err!(
+        validate_peer_endpoint(&endpoint),
+        ValidationError::InvalidEndpoint()
+    );
+}
+
+#[test]
 fn test_validate_peer_kind() {
     ok!(parse_and_validate_peer_kind("anything"));
 }
@@ -254,6 +307,32 @@ fn test_validate_peer_icon() {
     );
 }
 
+#[test]
+fn test_validate_icon_struct() {
+    // Disabled icon should always be valid (even with empty src)
+    let icon = Icon {
+        enabled: false,
+        src: "".to_string(),
+    };
+    ok!(validate_peer_icon(&icon));
+
+    // Enabled icon with empty src should fail
+    let icon = Icon {
+        enabled: true,
+        src: "".to_string(),
+    };
+    is_err!(
+        validate_peer_icon(&icon),
+        ValidationError::EmptyIcon()
+    );
+
+    // Enabled icon with valid src should succeed
+    let icon = Icon {
+        enabled: true,
+        src: "laptop".to_string(),
+    };
+    ok!(validate_peer_icon(&icon));
+}
 
 #[test]
 fn test_validate_peer_dns() {
@@ -271,6 +350,33 @@ fn test_validate_peer_dns() {
         parse_and_validate_peer_dns_addresses("not-an-ip"),
         ValidationError::NotIPv4Address()
     );
+}
+
+#[test]
+fn test_validate_dns_struct() {
+    // Disabled dns should always be valid (even with empty addresses)
+    let dns = Dns {
+        enabled: false,
+        addresses: vec![],
+    };
+    ok!(validate_peer_dns(&dns));
+
+    // Enabled dns with empty addresses should fail
+    let dns = Dns {
+        enabled: true,
+        addresses: vec![],
+    };
+    is_err!(
+        validate_peer_dns(&dns),
+        ValidationError::EmptyDns()
+    );
+
+    // Enabled dns with valid addresses should succeed
+    let dns = Dns {
+        enabled: true,
+        addresses: vec!["8.8.8.8".parse().unwrap(), "1.1.1.1".parse().unwrap()],
+    };
+    ok!(validate_peer_dns(&dns));
 }
 
 #[test]
@@ -300,6 +406,40 @@ fn test_validate_peer_mtu() {
 }
 
 #[test]
+fn test_validate_mtu_struct() {
+    // Disabled mtu should always be valid (even with invalid value)
+    let mtu = Mtu {
+        enabled: false,
+        value: 65535, // Max u16 but > 10000 MTU limit
+    };
+    ok!(validate_peer_mtu(&mtu));
+
+    // Enabled mtu with invalid value (> 10000) should fail
+    let mtu = Mtu {
+        enabled: true,
+        value: 10001,
+    };
+    is_err!(
+        validate_peer_mtu(&mtu),
+        ValidationError::InvalidMtu()
+    );
+
+    // Enabled mtu with a valid value should succeed
+    let mtu = Mtu {
+        enabled: true,
+        value: 1500,
+    };
+    ok!(validate_peer_mtu(&mtu));
+
+    // Enabled mtu with max valid value should succeed
+    let mtu = Mtu {
+        enabled: true,
+        value: 10000,
+    };
+    ok!(validate_peer_mtu(&mtu));
+}
+
+#[test]
 fn test_validate_peer_script() {
     ok!(parse_and_validate_peer_script("echo ok;"));
     is_err!(
@@ -309,6 +449,93 @@ fn test_validate_peer_script() {
     is_err!(
         parse_and_validate_peer_script("echo missing_semicolon"),
         ValidationError::ScriptMissingSemicolon()
+    );
+}
+
+#[test]
+fn test_validate_script_struct() {
+    // Disabled script should always be valid (even with invalid script)
+    let script = Script {
+        enabled: false,
+        script: "echo missing_semicolon".to_string(),
+    };
+    ok!(validate_peer_script(&script));
+
+    // Enabled script without semicolon should fail
+    let script = Script {
+        enabled: true,
+        script: "echo missing_semicolon".to_string(),
+    };
+    is_err!(
+        validate_peer_script(&script),
+        ValidationError::ScriptMissingSemicolon()
+    );
+
+    // Enabled script with semicolon should succeed
+    let script = Script {
+        enabled: true,
+        script: "echo ok;".to_string(),
+    };
+    ok!(validate_peer_script(&script));
+
+    // Enabled script with trailing whitespace and semicolon should succeed
+    let script = Script {
+        enabled: true,
+        script: "echo ok;  ".to_string(),
+    };
+    ok!(validate_peer_script(&script));
+}
+
+#[test]
+fn test_validate_scripts_vec() {
+    // Empty scripts vector should succeed
+    let scripts = vec![];
+    ok!(validate_peer_scripts(&scripts));
+
+    // All valid scripts should succeed
+    let scripts = vec![
+        Script {
+            enabled: true,
+            script: "echo first;".to_string(),
+        },
+        Script {
+            enabled: true,
+            script: "echo second;".to_string(),
+        },
+    ];
+    ok!(validate_peer_scripts(&scripts));
+
+    // Scripts with disabled invalid script should succeed
+    let scripts = vec![
+        Script {
+            enabled: true,
+            script: "echo valid;".to_string(),
+        },
+        Script {
+            enabled: false,
+            script: "echo invalid".to_string(),
+        },
+    ];
+    ok!(validate_peer_scripts(&scripts));
+
+    // Scripts with one invalid enabled script should fail with index
+    let scripts = vec![
+        Script {
+            enabled: true,
+            script: "echo first;".to_string(),
+        },
+        Script {
+            enabled: true,
+            script: "echo missing".to_string(),
+        },
+        Script {
+            enabled: true,
+            script: "echo third;".to_string(),
+        },
+    ];
+    is_err!(
+        validate_peer_scripts(&scripts),
+        ValidationError::ScriptMissingSemicolonAt(1)
     );
 }
 
@@ -356,6 +583,40 @@ fn test_validate_conn_persistent_keepalive() {
         parse_and_validate_conn_persistent_keepalive_period("notnum"),
         ValidationError::InvalidPersistentKeepalivePeriod()
     );
+}
+
+#[test]
+fn test_validate_persistent_keepalive_struct() {
+    // Disabled persistent_keepalive should always be valid (even with 0 period)
+    let pk = PersistentKeepalive {
+        enabled: false,
+        period: 0,
+    };
+    ok!(validate_conn_persistent_keepalive_period(&pk));
+
+    // Enabled persistent_keepalive with 0 period should fail
+    let pk = PersistentKeepalive {
+        enabled: true,
+        period: 0,
+    };
+    is_err!(
+        validate_conn_persistent_keepalive_period(&pk),
+        ValidationError::InvalidPersistentKeepalivePeriod()
+    );
+
+    // Enabled persistent_keepalive with valid period should succeed
+    let pk = PersistentKeepalive {
+        enabled: true,
+        period: 25,
+    };
+    ok!(validate_conn_persistent_keepalive_period(&pk));
+
+    // Enabled persistent_keepalive with max valid period should succeed
+    let pk = PersistentKeepalive {
+        enabled: true,
+        period: 65535,
+    };
+    ok!(validate_conn_persistent_keepalive_period(&pk));
 }
 
 #[test]
