@@ -1,6 +1,7 @@
 from tests.pytest.conftest import setup_wg_quickrs_agent
 from tests.pytest.helpers import get_this_peer_id, get_test_peer_data, get_test_connection_data, get_paths
 import requests
+import uuid
 from ruamel.yaml import YAML
 yaml = YAML()
 yaml.preserve_quotes = True
@@ -49,7 +50,7 @@ def test_patch_peer_not_found(setup_wg_quickrs_agent):
     change_sum = {
         "changed_fields": {
             "peers": {
-                "e06dfa34-f9de-4aa6-bfe8-e90d5361294e": {  # non-existent-peer-id
+                uuid.uuid4().hex: {  # non-existent-peer-id
                     "name": "should-fail"
                 }
             }
@@ -152,7 +153,7 @@ def test_connection_not_found(setup_wg_quickrs_agent):
     change_sum = {
         "changed_fields": {
             "connections": {
-                "e06dfa34-f9de-4aa6-bfe8-e90d5361294e*e868efc8-251f-4663-b615-a12f5ff15723": {  # non-existent-connection
+                f"{uuid.uuid4().hex}*{uuid.uuid4().hex}": {  # non-existent-connection
                     "enabled": False
                 }
             }
@@ -246,4 +247,112 @@ def test_change_peer_address_with_conflicting_address(setup_wg_quickrs_agent):
     # with open(wg_quickrs_config_file) as stream:
     #     new_conf = yaml.load(stream)
     # assert old_conf == new_conf  # TODO: fix equals fail
+
+
+def test_patch_with_malformed_json(setup_wg_quickrs_agent):
+    """Test PATCH with various malformed JSON payloads."""
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+
+    # Test with completely invalid JSON
+    response = requests.patch(
+        f"{base_url}/api/network/config",
+        data="this is not json",
+        headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == 400
+
+
+def test_add_peer_with_duplicate_address(setup_wg_quickrs_agent):
+    """Test adding a peer with an address that's already in use."""
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+
+    peer_id = "b2c11ade-dd1a-4f5a-a6f9-3b6c6d10f417"
+    peer_data = get_test_peer_data()
+    peer_data["address"] = "10.0.34.1"  # This address is already used by the existing peer
+
+    change_sum = {
+        "added_peers": {
+            peer_id: peer_data
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == 400
+    assert "address" in response.json()["message"].lower()
+
+
+def test_add_peer_with_duplicate_id(setup_wg_quickrs_agent):
+    """Test adding a peer with an ID that already exists."""
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+
+    this_peer_id = get_this_peer_id(base_url)
+    peer_data = get_test_peer_data()
+    peer_data["address"] = "10.0.34.100"
+
+    change_sum = {
+        "added_peers": {
+            this_peer_id: peer_data  # Using existing peer ID
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == 403
+    assert "already exists" in response.json()["message"]
+
+
+def test_change_nonexistent_field(setup_wg_quickrs_agent):
+    """Test changing a field structure that doesn't match expected format."""
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+
+    this_peer_id = get_this_peer_id(base_url)
+
+    change_sum = {
+        "changed_fields": {
+            "invalid_section": {
+                this_peer_id: {
+                    "name": "test"
+                }
+            }
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == 400
+
+
+def test_add_connection_between_same_peer(setup_wg_quickrs_agent):
+    """Test adding a connection where both peers are the same."""
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+
+    this_peer_id = get_this_peer_id(base_url)
+    connection_id = f"{this_peer_id}*{this_peer_id}"
+
+    change_sum = {
+        "added_connections": {
+            connection_id: get_test_connection_data()
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == 403
+    assert "loopback" in response.json()["message"]
+
+
+def test_add_duplicate_connection(setup_wg_quickrs_agent):
+    """Test adding a connection that already exists."""
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+
+    this_peer = "0ed989c6-6dba-4e3c-8034-08adf4262d9e"
+    other_peer1 = "6e9a8440-f884-4b54-bfe7-b982f15e40fd"
+    existing_connection_id = f"{other_peer1}*{this_peer}"
+
+    change_sum = {
+        "added_connections": {
+            existing_connection_id: get_test_connection_data()
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == 403
+    assert "already exists" in response.json()["message"].lower()
 

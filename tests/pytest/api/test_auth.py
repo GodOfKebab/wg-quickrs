@@ -102,3 +102,70 @@ def test_get_index_html(setup_wg_quickrs_agent):
     response = requests.get(f"{base_url}/index.html",
                             verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
     assert response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "json_data,expected_status",
+    [
+        ({"client_id": "test"}, 400),  # missing password field
+        ({"password": "test"}, 400),  # missing client_id field
+        ({}, 400),  # empty object
+    ],
+)
+def test_api_token_missing_fields(setup_wg_quickrs_agent, json_data, expected_status):
+    """Test POST /api/token with missing or invalid fields."""
+    base_url = setup_wg_quickrs_agent("test_pwd_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    response = requests.post(f"{base_url}/api/token",
+                             json=json_data,
+                             verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
+    assert response.status_code == expected_status
+
+
+def test_api_token_invalid_json(setup_wg_quickrs_agent):
+    """Test POST /api/token with invalid JSON."""
+    base_url = setup_wg_quickrs_agent("test_pwd_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    response = requests.post(f"{base_url}/api/token",
+                             data="invalid json",
+                             verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize(
+    "auth_header,expected_status",
+    [
+        ("", 401),  # empty auth header
+        ("Bearer", 401),  # malformed bearer token (no token)
+        ("Bearer invalid-token", 401),  # invalid token format
+        ("Basic dGVzdDp0ZXN0", 401),  # wrong auth type (Basic instead of Bearer)
+        ("bearer valid-looking-token-xyz", 401),  # lowercase bearer
+    ],
+)
+def test_api_protected_malformed_auth(setup_wg_quickrs_agent, auth_header, expected_status):
+    """Test protected API endpoints with malformed authorization headers."""
+    base_url = setup_wg_quickrs_agent("test_pwd_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    headers = {}
+    if auth_header:
+        headers["Authorization"] = auth_header
+
+    response = requests.get(f"{base_url}/api/network/summary?only_digest=false",
+                            headers=headers,
+                            verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
+    assert response.status_code == expected_status
+
+
+def test_api_auth_endpoint_without_password(setup_wg_quickrs_agent):
+    """Test that non-auth endpoints work without authentication when no password is set."""
+    base_url = setup_wg_quickrs_agent("test_pwd_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Get index.html without auth
+    response = requests.get(f"{base_url}/",
+                            verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
+    assert response.status_code == 200
+

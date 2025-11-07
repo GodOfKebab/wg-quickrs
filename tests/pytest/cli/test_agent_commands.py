@@ -167,3 +167,72 @@ def test_agent_toggle_w_pwd(setup_wg_quickrs_folder):
         ("enable-web-https", ('agent', 'web', 'https', 'enabled'), True, False),
     ]:
         run_and_check_success([command], path, value, success)
+
+
+def test_agent_commands_without_config(setup_wg_quickrs_folder):
+    """Test that agent commands fail when config file doesn't exist."""
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    setup_wg_quickrs_folder(None)
+
+    # Remove config file if it exists
+    if os.path.exists(wg_quickrs_config_file):
+        os.remove(wg_quickrs_config_file)
+
+    commands_to_test = [
+        ["set-web-address", "192.168.1.1"],
+        ["set-web-http-port", "8080"],
+        ["set-vpn-port", "51821"],
+        ["enable-web-http"],
+        ["disable-web-http"],
+        ["enable-vpn"],
+        ["disable-vpn"],
+    ]
+
+    for command in commands_to_test:
+        result = subprocess.run(
+            get_wg_quickrs_command() + ['agent'] + command,
+            capture_output=True,
+            text=True
+        )
+        assert result.returncode != 0
+
+
+@pytest.mark.parametrize(
+    "command,args",
+    [
+        ("set-web-address", []),  # missing argument
+        ("set-web-http-port", []),  # missing argument
+        ("set-vpn-port", []),  # missing argument
+        ("set-firewall-utility", []),  # missing argument
+        ("set-firewall-gateway", []),  # missing argument
+    ],
+)
+def test_agent_commands_missing_arguments(setup_wg_quickrs_folder, command, args):
+    """Test that agent commands fail when required arguments are missing."""
+    setup_wg_quickrs_folder("no_auth_single_peer")
+
+    result = subprocess.run(
+        get_wg_quickrs_command() + ['agent', command] + args,
+        capture_output=True,
+        text=True
+    )
+    assert result.returncode != 0
+
+
+def test_agent_run_command(setup_wg_quickrs_folder):
+    """Test that agent run command works (just starting, not full execution)."""
+    setup_wg_quickrs_folder("no_auth_single_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Test that run command with invalid config fails appropriately
+    # Corrupt the config file
+    with open(wg_quickrs_config_file, 'w') as f:
+        f.write("invalid: yaml: content: [")
+
+    result = subprocess.run(
+        get_wg_quickrs_command() + ['agent', 'run'],
+        capture_output=True,
+        text=True,
+        timeout=2
+    )
+    assert result.returncode != 0

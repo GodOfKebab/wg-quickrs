@@ -61,7 +61,6 @@ def test_add_peer_with_reserved_address(setup_wg_quickrs_agent):
         }
     }
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum_w_another_peer_id)
-    print(response.json())
     assert response.status_code == 403
     assert "reserved for another" in response.json()["message"]
 
@@ -113,4 +112,22 @@ def test_change_peer_address_with_conflicting_reserved_address(setup_wg_quickrs_
     # with open(wg_quickrs_config_file) as stream:
     #     new_conf = yaml.load(stream)
     # assert old_conf == new_conf  # TODO: fix equals fail
+
+
+def test_add_peer_with_unreserved_address(setup_wg_quickrs_agent):
+    """Test adding a peer with an unreserved address (should succeed)."""
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+
+    peer_id = "b2c11ade-dd1a-4f5a-a6f9-3b6c6d10f417"
+    peer_data = get_test_peer_data()
+    peer_data["address"] = "10.0.34.200"  # unreserved address
+
+    change_sum = {
+        "added_peers": {
+            peer_id: peer_data
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == 200
 

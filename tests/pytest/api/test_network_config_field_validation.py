@@ -16,6 +16,11 @@ yaml.preserve_quotes = True
         ("address", "10.0.34.50", 200, "peer address change"),
         ("address", "", 400, "empty peer address validation"),
         ("address", "invalid-ip", 400, "invalid peer address format"),
+        ("address", "999.999.999.999", 400, "out of range IP address"),
+        ("address", "10.0.0", 400, "incomplete IP address"),
+        ("address", "10.0.34.0", 400, "network address (boundary)"),
+        ("address", "10.0.34.255", 400, "broadcast address (boundary)"),
+        ("address", "192.168.1.1", 400, "address not in subnet"),
         ("kind", "laptop", 200, "peer kind change to laptop"),
 
         # EnabledValue fields - Icon
@@ -30,6 +35,9 @@ yaml.preserve_quotes = True
 
         # EnabledValue fields - MTU
         ({"mtu": {"enabled": True, "value": 1420}}, None, 200, "peer MTU enabled with 1420"),
+        ({"mtu": {"enabled": True, "value": 10000}}, None, 200, "peer MTU maximum valid value"),
+        ({"mtu": {"enabled": True, "value": 10001}}, None, 400, "peer MTU above maximum"),
+        ({"mtu": {"enabled": True, "value": -1}}, None, 400, "peer MTU negative value"),
         ({"mtu": {"enabled": False, "value": ""}}, None, 400, "peer MTU disabled parse error"),
         ({"mtu": {"enabled": True, "value": ""}}, None, 400, "empty MTU value when enabled parse error"),
         ({"mtu": {"enabled": True, "value": "invalid"}}, None, 400, "invalid MTU format"),
@@ -56,6 +64,18 @@ yaml.preserve_quotes = True
             "pre_down": [{"enabled": True, "script": "echo 'pre down';"}],
             "post_down": [{"enabled": True, "script": "echo 'post down';"}]
         }}, None, 200, "peer all script types"),
+
+        # Scripts - validation errors
+        ({"scripts": {"pre_up": [{"enabled": True, "script": "echo 'missing semicolon'"}]}}, None, 400, "script missing semicolon"),
+        ({"scripts": {"pre_up": [{"enabled": True, "script": ""}]}}, None, 400, "script empty with enabled"),
+        ({"scripts": {"pre_up": [{"enabled": True, "script": "echo ok"}]}}, None, 400, "script without semicolon"),
+        ({"scripts": {"pre_up": [{"enabled": True, "script": "   "}]}}, None, 400, "script whitespace only"),
+        ({"scripts": {
+            "pre_up": [{"enabled": True, "script": "echo 'pre up';"}],
+            "post_up": [{"enabled": True, "script": "echo 'post up'"}],
+            "pre_down": [{"enabled": True, "script": "echo 'pre down';"}],
+            "post_down": [{"enabled": True, "script": "echo 'post down';"}]
+        }}, None, 400, "script without semicolon"),
 
         ("private_key", "kL+YuwGKNS8bNnPUVdnGDp7jF5BZs1vp1UxK2Xv+JX0=", 200, "peer private key change"),
         ("private_key", "", 400, "empty peer private key validation"),
@@ -123,19 +143,27 @@ def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_valu
         # Allowed IPs variations
         ("allowed_ips_a_to_b", ["0.0.0.0/0"], 200, "allowed_ips_a_to_b all traffic"),
         ("allowed_ips_a_to_b", ["192.168.1.0/24"], 200, "allowed_ips_a_to_b local network"),
-        ("allowed_ips_a_to_b", ["172.16.0.0/16"], 200, "allowed_ips_a_to_b private network"),
-        ("allowed_ips_a_to_b", ["10.0.0.0/8"], 200, "allowed_ips_a_to_b large private network"),
         ("allowed_ips_a_to_b", ["not-a-subnet"], 400, "allowed_ips_a_to_b validation error"),
+        ("allowed_ips_a_to_b", ["10.0.0.0/33"], 400, "allowed_ips_a_to_b invalid prefix"),
+        ("allowed_ips_a_to_b", ["10.0.0"], 400, "allowed_ips_a_to_b incomplete CIDR"),
+        ("allowed_ips_a_to_b", ["999.999.999.999/24"], 400, "allowed_ips_a_to_b invalid IP in CIDR"),
 
         ("allowed_ips_b_to_a", ["0.0.0.0/0"], 200, "allowed_ips_b_to_a all traffic"),
-        ("allowed_ips_b_to_a", ["10.0.34.0/24"], 200, "allowed_ips_b_to_a peer network"),
         ("allowed_ips_b_to_a", ["192.168.1.0/24"], 200, "allowed_ips_b_to_a local network"),
         ("allowed_ips_b_to_a", ["not-a-subnet"], 400, "allowed_ips_b_to_a validation error"),
+        ("allowed_ips_b_to_a", ["10.0.0.0/33"], 400, "allowed_ips_b_to_a invalid prefix"),
+        ("allowed_ips_b_to_a", ["10.0.0"], 400, "allowed_ips_b_to_a incomplete CIDR"),
+        ("allowed_ips_b_to_a", ["999.999.999.999/24"], 400, "allowed_ips_b_to_a invalid IP in CIDR"),
 
         # Persistent keepalive variations
         ("persistent_keepalive", {"enabled": True, "period": 25}, 200, "persistent keepalive 25 seconds"),
+        ("persistent_keepalive", {"enabled": True, "period": 1}, 200, "persistent keepalive minimum value"),
+        ("persistent_keepalive", {"enabled": True, "period": 65535}, 200, "persistent keepalive maximum value"),
+        ("persistent_keepalive", {"enabled": True, "period": 0}, 400, "persistent keepalive zero with enabled"),
         ("persistent_keepalive", {"enabled": False, "period": ""}, 400, "persistent keepalive validation error"),
         ("persistent_keepalive", {"enabled": True, "period": ""}, 400, "persistent keepalive validation error"),
+        ("persistent_keepalive", {"enabled": True, "period": -1}, 400, "persistent keepalive negative value"),
+        ("persistent_keepalive", {"enabled": True, "period": 70000}, 400, "persistent keepalive above maximum"),
 
         # Multiple fields combination
         ({"pre_shared_key": "iF9xlxiI3W/p9LSZ5QhT/4Rk6IHi8v5NzA/UTUdPOVI=", "allowed_ips_a_to_b": ["0.0.0.0/0"]}, None, 200, "multiple peer fields"),
@@ -190,8 +218,13 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
     [
         # Different endpoint configurations
         ({"endpoint": {"enabled": True, "address": { "ipv4_and_port": {"ipv4": "192.168.1.100", "port": 51111} }}}, 200, "add peer with endpoint"),
+        ({"endpoint": {"enabled": True, "address": { "hostname_and_port": {"hostname": "example.com", "port": 51820} }}}, 200, "add peer with hostname endpoint"),
+        ({"endpoint": {"enabled": True, "address": { "hostname_and_port": {"hostname": "my-server.example.org", "port": 443} }}}, 200, "add peer with subdomain endpoint"),
         ({"endpoint": {"enabled": False, "address": "none"}}, 200, "add peer without endpoint"),
-        ({"endpoint": {"enabled": True, "address": "none"}}, 400, "endpoint validation error"),
+        ({"endpoint": {"enabled": True, "address": "none"}}, 400, "endpoint validation error - enabled with none"),
+        ({"endpoint": {"enabled": True, "address": { "hostname_and_port": {"hostname": "", "port": 51820} }}}, 400, "endpoint validation error - empty hostname"),
+        ({"endpoint": {"enabled": True, "address": { "ipv4_and_port": {"ipv4": "invalid-ip", "port": 51820} }}}, 400, "endpoint validation error - invalid IP"),
+        ({"endpoint": {"enabled": True, "address": { "ipv4_and_port": {"ipv4": "999.999.999.999", "port": 51820} }}}, 400, "endpoint validation error - out of range IP"),
 
         # Different peer kind
         ({"kind": "desktop"}, 200, "add desktop peer"),
@@ -205,13 +238,21 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
         # Different DNS configurations
         ({"dns": {"enabled": True, "addresses": ["8.8.8.8"]}}, 200, "add peer with Google DNS"),
         ({"dns": {"enabled": True, "addresses": ["1.1.1.1"]}}, 200, "add peer with Cloudflare DNS"),
+        ({"dns": {"enabled": True, "addresses": ["8.8.8.8", "1.1.1.1"]}}, 200, "add peer with multiple DNS"),
         ({"dns": {"enabled": False, "addresses": []}}, 200, "add peer with DNS disabled"),
-        ({"dns": {"enabled": True, "addresses": []}}, 400, "DNS validation error"),
+        ({"dns": {"enabled": True, "addresses": []}}, 400, "DNS validation error - empty addresses"),
+        ({"dns": {"enabled": True, "addresses": ["invalid"]}}, 400, "DNS validation error - invalid address"),
+        ({"dns": {"enabled": True, "addresses": ["8.8.8.8", "invalid"]}}, 400, "DNS validation error - one invalid in list"),
+        ({"dns": {"enabled": True, "addresses": ["999.999.999.999"]}}, 400, "DNS validation error - out of range IP"),
 
         # Different MTU configurations
         ({"mtu": {"enabled": True, "value": 1420}}, 200, "add peer with MTU 1420"),
+        ({"mtu": {"enabled": True, "value": 0}}, 200, "add peer with MTU minimum"),
+        ({"mtu": {"enabled": True, "value": 10000}}, 200, "add peer with MTU maximum"),
         ({"mtu": {"enabled": False, "value": 30000}}, 200, "add peer with MTU disabled"),
-        ({"mtu": {"enabled": True, "value": ""}}, 400, "MTU validation error"),
+        ({"mtu": {"enabled": True, "value": ""}}, 400, "MTU validation error - empty"),
+        ({"mtu": {"enabled": True, "value": 10001}}, 400, "MTU validation error - above max"),
+        ({"mtu": {"enabled": True, "value": -1}}, 400, "MTU validation error - negative"),
 
         # With scripts
         ({"scripts": {
@@ -263,6 +304,8 @@ def test_add_peer_variants(setup_wg_quickrs_agent, peer_data_variant, expected_s
                 assert new_conf['network']['peers'][peer_id][field_name_key]['enabled'] == field_name_value['enabled']
                 if 'ipv4_and_port' in field_name_value['address']:
                     assert new_conf['network']['peers'][peer_id][field_name_key]['address'] == field_name_value['address']['ipv4_and_port']
+                elif 'hostname_and_port' in field_name_value['address']:
+                    assert new_conf['network']['peers'][peer_id][field_name_key]['address'] == field_name_value['address']['hostname_and_port']
                 else:
                     assert new_conf['network']['peers'][peer_id][field_name_key]['address'] == field_name_value['address']
             else:

@@ -207,6 +207,9 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     if let Some(added_peers) = change_sum.added_peers {
         for (peer_id, peer_details) in added_peers {
             {
+                if c.network_w_digest.network.peers.contains_key(&peer_id) {
+                    return Err(forbidden!("peer '{}' already exists", peer_id));
+                }
                 if let Some(value) = c.network_w_digest.network.reservations.get(&peer_details.address)
                     && value.peer_id != peer_id {
                     return Err(forbidden!("address '{}' is reserved for another peer_id", peer_details.address));
@@ -286,6 +289,13 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 if !c.network_w_digest.network.peers.contains_key(&connection_id.b) {
                     return Err(bad_request!("added_connections.{}: 'peer_id' doesn't exist", connection_id.b));
                 }
+                if c.network_w_digest.network.connections.contains_key(&connection_id) {
+                    return Err(forbidden!("connection '{}' already exists", connection_id));
+                }
+                if connection_id.a == connection_id.b {
+                    return Err(forbidden!("loopback connection detected: {}", connection_id));
+                }
+
                 // If deserialization succeeds, pre_shared_key is already validated.
                 // If deserialization succeeds, allowed_ips_a_to_b is already validated.
                 // If deserialization succeeds, allowed_ips_b_to_a is already validated.

@@ -193,14 +193,14 @@ def test_init_no_prompt_firewall(setup_wg_quickrs_folder):
     """Test firewall initialization with various configurations"""
     utilities = get_available_firewall_utilities()
     interfaces = get_available_network_interfaces()
-    
+
     if not utilities or not interfaces:
         pytest.skip("No firewall utilities or network interfaces available on this system")
-    
+
     utility = utilities[0]
     gateway = interfaces[0]
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
-    
+
     for opt_val, success in [
         (f"--agent-firewall-enabled true --agent-firewall-utility not-a-utility --agent-firewall-gateway {gateway}", False),
         (f"--agent-firewall-enabled true --agent-firewall-utility {utility} --agent-firewall-gateway not-a-gateway", False),
@@ -213,3 +213,51 @@ def test_init_no_prompt_firewall(setup_wg_quickrs_folder):
         assert (ret == 0) == success
         if os.path.exists(wg_quickrs_config_file):
             os.remove(wg_quickrs_config_file)
+
+
+def test_init_with_existing_config(setup_wg_quickrs_folder):
+    """Test that init fails when a config file already exists."""
+    setup_wg_quickrs_folder("no_auth_single_peer")
+
+    # Config already exists, init should fail
+    ret = init_no_prompt(generate_init_no_prompt_opts())
+    assert ret != 0
+
+
+@pytest.mark.parametrize(
+    "invalid_flag",
+    [
+        "--network-name",  # missing value
+        "--network-subnet",  # missing value
+        "--invalid-flag test",  # unknown flag
+    ],
+)
+def test_init_invalid_flags(setup_wg_quickrs_folder, invalid_flag):
+    """Test init command with invalid flags."""
+    setup_wg_quickrs_folder(None)
+
+    command = " ".join(get_wg_quickrs_command()) + f" init --no-prompt true {invalid_flag}"
+    result = subprocess.run(
+        command,
+        shell=True,
+        capture_output=True,
+        text=True
+    )
+    assert result.returncode != 0
+
+
+def test_init_conflicting_options(setup_wg_quickrs_folder):
+    """Test init with conflicting options (e.g., enabling something without required params)."""
+    setup_wg_quickrs_folder(None)
+
+    # Enable web password without providing a password
+    ret = init_no_prompt(generate_init_no_prompt_opts(
+        agent_web_password="--agent-web-password-enabled true"
+    ))
+    assert ret != 0
+
+    # Enable VPN without providing a port
+    ret = init_no_prompt(generate_init_no_prompt_opts(
+        agent_vpn="--agent-vpn-enabled true"
+    ))
+    assert ret != 0
