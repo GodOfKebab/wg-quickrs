@@ -135,32 +135,32 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Enable PreUp script for agent")]
     pub agent_peer_script_pre_up_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set PreUp script line for agent"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set PreUp script line(s) for agent. Can be specified multiple times for multiple script lines."
     )]
-    pub agent_peer_script_pre_up_line: Option<String>,
+    pub agent_peer_script_pre_up_line: Vec<String>,
 
     #[arg(long, default_value = None, long_help = "Enable PostUp script for agent")]
     pub agent_peer_script_post_up_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set PostUp script line for agent"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set PostUp script line(s) for agent. Can be specified multiple times for multiple script lines."
     )]
-    pub agent_peer_script_post_up_line: Option<String>,
+    pub agent_peer_script_post_up_line: Vec<String>,
 
     #[arg(long, default_value = None, long_help = "Enable PreDown script for agent"
     )]
     pub agent_peer_script_pre_down_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set PreDown script line for agent"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set PreDown script line(s) for agent. Can be specified multiple times for multiple script lines."
     )]
-    pub agent_peer_script_pre_down_line: Option<String>,
+    pub agent_peer_script_pre_down_line: Vec<String>,
 
     #[arg(long, default_value = None, long_help = "Enable PostDown script for agent"
     )]
     pub agent_peer_script_post_down_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set PostDown script line for agent"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set PostDown script line(s) for agent. Can be specified multiple times for multiple script lines."
     )]
-    pub agent_peer_script_post_down_line: Option<String>,
+    pub agent_peer_script_post_down_line: Vec<String>,
 
     // default settings for new peers/connections
     #[arg(long, default_value = None, long_help = "Set peer kind for new peers by default"
@@ -193,33 +193,33 @@ pub struct InitOptions {
     )]
     pub default_peer_script_pre_up_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set default PreUp script line for new peers"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set default PreUp script line(s) for new peers. Can be specified multiple times for multiple script lines."
     )]
-    pub default_peer_script_pre_up_line: Option<String>,
+    pub default_peer_script_pre_up_line: Vec<String>,
 
     #[arg(long, default_value = None, long_help = "Enable PostUp script for new peers by default"
     )]
     pub default_peer_script_post_up_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set default PostUp script line for new peers"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set default PostUp script line(s) for new peers. Can be specified multiple times for multiple script lines."
     )]
-    pub default_peer_script_post_up_line: Option<String>,
+    pub default_peer_script_post_up_line: Vec<String>,
 
     #[arg(long, default_value = None, long_help = "Enable PreDown script for new peers by default"
     )]
     pub default_peer_script_pre_down_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set default PreDown script line for new peers"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set default PreDown script line(s) for new peers. Can be specified multiple times for multiple script lines."
     )]
-    pub default_peer_script_pre_down_line: Option<String>,
+    pub default_peer_script_pre_down_line: Vec<String>,
 
     #[arg(long, default_value = None, long_help = "Enable PostDown script for new peers by default"
     )]
     pub default_peer_script_post_down_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set default PostDown script line for new peers"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set default PostDown script line(s) for new peers. Can be specified multiple times for multiple script lines."
     )]
-    pub default_peer_script_post_down_line: Option<String>,
+    pub default_peer_script_post_down_line: Vec<String>,
 
     #[arg(long, default_value = None, long_help = "Enable PersistentKeepalive for new connections by default"
     )]

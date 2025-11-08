@@ -261,3 +261,194 @@ def test_init_conflicting_options(setup_wg_quickrs_folder):
         agent_vpn="--agent-vpn-enabled true"
     ))
     assert ret != 0
+
+
+@pytest.mark.parametrize(
+    "script_type,script_lines,expected_count",
+    [
+        # Agent peer scripts with multiple lines
+        ("agent_peer_script_pre_up",
+         "--agent-peer-script-pre-up-enabled true --agent-peer-script-pre-up-line 'echo first;' --agent-peer-script-pre-up-line 'echo second;' --agent-peer-script-pre-up-line 'echo third;'",
+         3),
+        ("agent_peer_script_post_up",
+         "--agent-peer-script-post-up-enabled true --agent-peer-script-post-up-line 'echo one;' --agent-peer-script-post-up-line 'echo two;'",
+         2),
+        ("agent_peer_script_pre_down",
+         "--agent-peer-script-pre-down-enabled true --agent-peer-script-pre-down-line 'echo alpha;' --agent-peer-script-pre-down-line 'echo beta;' --agent-peer-script-pre-down-line 'echo gamma;' --agent-peer-script-pre-down-line 'echo delta;'",
+         4),
+        ("agent_peer_script_post_down",
+         "--agent-peer-script-post-down-enabled true --agent-peer-script-post-down-line 'echo single;'",
+         1),
+        # Default peer scripts with multiple lines
+        ("default_peer_script_pre_up",
+         "--default-peer-script-pre-up-enabled true --default-peer-script-pre-up-line 'echo A;' --default-peer-script-pre-up-line 'echo B;'",
+         2),
+        ("default_peer_script_post_up",
+         "--default-peer-script-post-up-enabled true --default-peer-script-post-up-line 'echo 1;' --default-peer-script-post-up-line 'echo 2;' --default-peer-script-post-up-line 'echo 3;'",
+         3),
+        ("default_peer_script_pre_down",
+         "--default-peer-script-pre-down-enabled true --default-peer-script-pre-down-line 'echo x;'",
+         1),
+        ("default_peer_script_post_down",
+         "--default-peer-script-post-down-enabled true --default-peer-script-post-down-line 'echo p;' --default-peer-script-post-down-line 'echo q;' --default-peer-script-post-down-line 'echo r;' --default-peer-script-post-down-line 'echo s;' --default-peer-script-post-down-line 'echo t;'",
+         5),
+    ],
+)
+def test_init_multiple_scripts(setup_wg_quickrs_folder, script_type, script_lines, expected_count):
+    """Test that multiple script lines can be specified via CLI."""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Run init with multiple script lines
+    ret = init_no_prompt(generate_init_no_prompt_opts(**{script_type: script_lines}))
+    assert ret == 0
+
+    # Load and verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    # Determine the path based on script type
+    if script_type.startswith("agent_peer_script_"):
+        script_kind = script_type.replace("agent_peer_script_", "")
+        this_peer_id = conf["network"]["this_peer"]
+        scripts_list = conf["network"]["peers"][this_peer_id]["scripts"][script_kind]
+    else:  # default_peer_script_*
+        script_kind = script_type.replace("default_peer_script_", "")
+        scripts_list = conf["network"]["defaults"]["peer"]["scripts"][script_kind]
+
+    # Verify the correct number of scripts
+    assert len(scripts_list) == expected_count
+
+    # Verify all scripts are enabled
+    for script in scripts_list:
+        assert script["enabled"] is True
+        assert script["script"].endswith(";")
+
+
+@pytest.mark.parametrize(
+    "disabled_script_type",
+    [
+        "agent_peer_script_pre_up",
+        "agent_peer_script_post_up",
+        "agent_peer_script_pre_down",
+        "agent_peer_script_post_down",
+        "default_peer_script_pre_up",
+        "default_peer_script_post_up",
+        "default_peer_script_pre_down",
+        "default_peer_script_post_down",
+    ],
+)
+def test_init_disabled_scripts_empty_array(setup_wg_quickrs_folder, disabled_script_type):
+    """Test that disabled scripts result in empty arrays, not arrays with empty strings."""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Run init with script disabled (default behavior)
+    ret = init_no_prompt(generate_init_no_prompt_opts(**{disabled_script_type: f"--{disabled_script_type.replace('_', '-')}-enabled false"}))
+    assert ret == 0
+
+    # Load and verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    # Determine the path based on the script type
+    if disabled_script_type.startswith("agent_peer_script_"):
+        script_kind = disabled_script_type.replace("agent_peer_script_", "")
+        this_peer_id = conf["network"]["this_peer"]
+        scripts_list = conf["network"]["peers"][this_peer_id]["scripts"][script_kind]
+    else:  # default_peer_script_*
+        script_kind = disabled_script_type.replace("default_peer_script_", "")
+        scripts_list = conf["network"]["defaults"]["peer"]["scripts"][script_kind]
+
+    # Verify it's an empty array
+    assert scripts_list == []
+    assert len(scripts_list) == 0
+
+
+def test_init_mixed_scripts(setup_wg_quickrs_folder):
+    """Test mixed scenario with some scripts having multiple lines and others disabled."""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Run init with mixed script configuration
+    ret = init_no_prompt(generate_init_no_prompt_opts(
+        agent_peer_script_pre_up="--agent-peer-script-pre-up-enabled true --agent-peer-script-pre-up-line 'echo start;' --agent-peer-script-pre-up-line 'echo middle;' --agent-peer-script-pre-up-line 'echo end;'",
+        agent_peer_script_post_up="--agent-peer-script-post-up-enabled false",
+        agent_peer_script_pre_down="--agent-peer-script-pre-down-enabled true --agent-peer-script-pre-down-line 'echo cleanup;'",
+        agent_peer_script_post_down="--agent-peer-script-post-down-enabled false",
+        default_peer_script_pre_up="--default-peer-script-pre-up-enabled true --default-peer-script-pre-up-line 'echo default1;' --default-peer-script-pre-up-line 'echo default2;'",
+        default_peer_script_post_up="--default-peer-script-post-up-enabled false",
+        default_peer_script_pre_down="--default-peer-script-pre-down-enabled false",
+        default_peer_script_post_down="--default-peer-script-post-down-enabled true --default-peer-script-post-down-line 'echo done;'"
+    ))
+    assert ret == 0
+
+    # Load and verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    this_peer_id = conf["network"]["this_peer"]
+
+    # Verify agent peer scripts
+    assert len(conf["network"]["peers"][this_peer_id]["scripts"]["pre_up"]) == 3
+    assert len(conf["network"]["peers"][this_peer_id]["scripts"]["post_up"]) == 0
+    assert len(conf["network"]["peers"][this_peer_id]["scripts"]["pre_down"]) == 1
+    assert len(conf["network"]["peers"][this_peer_id]["scripts"]["post_down"]) == 0
+
+    # Verify default peer scripts
+    assert len(conf["network"]["defaults"]["peer"]["scripts"]["pre_up"]) == 2
+    assert len(conf["network"]["defaults"]["peer"]["scripts"]["post_up"]) == 0
+    assert len(conf["network"]["defaults"]["peer"]["scripts"]["pre_down"]) == 0
+    assert len(conf["network"]["defaults"]["peer"]["scripts"]["post_down"]) == 1
+
+    # Verify content of specific scripts
+    assert conf["network"]["peers"][this_peer_id]["scripts"]["pre_up"][0]["script"] == "echo start;"
+    assert conf["network"]["peers"][this_peer_id]["scripts"]["pre_up"][1]["script"] == "echo middle;"
+    assert conf["network"]["peers"][this_peer_id]["scripts"]["pre_up"][2]["script"] == "echo end;"
+    assert conf["network"]["peers"][this_peer_id]["scripts"]["pre_down"][0]["script"] == "echo cleanup;"
+    assert conf["network"]["defaults"]["peer"]["scripts"]["pre_up"][0]["script"] == "echo default1;"
+    assert conf["network"]["defaults"]["peer"]["scripts"]["pre_up"][1]["script"] == "echo default2;"
+    assert conf["network"]["defaults"]["peer"]["scripts"]["post_down"][0]["script"] == "echo done;"
+
+
+def test_init_script_order_preserved(setup_wg_quickrs_folder):
+    """Test that script order is preserved when multiple scripts are specified."""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Run init with scripts in a specific order
+    ret = init_no_prompt(generate_init_no_prompt_opts(
+        agent_peer_script_pre_up="--agent-peer-script-pre-up-enabled true --agent-peer-script-pre-up-line 'echo FIRST;' --agent-peer-script-pre-up-line 'echo SECOND;' --agent-peer-script-pre-up-line 'echo THIRD;' --agent-peer-script-pre-up-line 'echo FOURTH;' --agent-peer-script-pre-up-line 'echo FIFTH;'"
+    ))
+    assert ret == 0
+
+    # Load and verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    this_peer_id = conf["network"]["this_peer"]
+    scripts = conf["network"]["peers"][this_peer_id]["scripts"]["pre_up"]
+
+    # Verify order is preserved
+    assert len(scripts) == 5
+    assert scripts[0]["script"] == "echo FIRST;"
+    assert scripts[1]["script"] == "echo SECOND;"
+    assert scripts[2]["script"] == "echo THIRD;"
+    assert scripts[3]["script"] == "echo FOURTH;"
+    assert scripts[4]["script"] == "echo FIFTH;"

@@ -201,7 +201,7 @@ fn get_init_scripts(
     cli_no_prompt: Option<bool>,
     step: usize,
     cli_enabled: Option<bool>,
-    cli_line: Option<String>,
+    cli_lines: Vec<String>,
     enabled_flag: &str,
     line_flag: &str,
     enabled_help: &str,
@@ -231,15 +231,17 @@ fn get_init_scripts(
         return scripts;
     }
 
-    // If a CLI line was provided, add it and return
-    if let Some(line) = cli_line {
-        println!("{} Using script from CLI option '{}': {}", step_str, line_flag, line);
-        let validated_script = parse_and_validate_peer_script(&line)
-            .unwrap_or_else(|e| panic!("Error: {}", e));
-        scripts.push(Script {
-            enabled: true,
-            script: validated_script,
-        });
+    // If CLI lines were provided, add them all and return
+    if !cli_lines.is_empty() {
+        println!("{} Using {} script line(s) from CLI option '{}'", step_str, cli_lines.len(), line_flag);
+        for line in cli_lines {
+            let validated_script = parse_and_validate_peer_script(&line)
+                .unwrap_or_else(|e| panic!("Error: {}", e));
+            scripts.push(Script {
+                enabled: true,
+                script: validated_script,
+            });
+        }
         return scripts;
     }
 
@@ -668,7 +670,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_pre_up_enabled,
-        init_opts.agent_peer_script_pre_up_line.clone().map(|o| o.to_string()),
+        init_opts.agent_peer_script_pre_up_line.clone(),
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
@@ -681,7 +683,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_post_up_enabled,
-        init_opts.agent_peer_script_post_up_line.clone().map(|o| o.to_string()),
+        init_opts.agent_peer_script_post_up_line.clone(),
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
@@ -694,7 +696,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_pre_down_enabled,
-        init_opts.agent_peer_script_pre_down_line.clone().map(|o| o.to_string()),
+        init_opts.agent_peer_script_pre_down_line.clone(),
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
@@ -707,7 +709,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_post_down_enabled,
-        init_opts.agent_peer_script_post_down_line.clone().map(|o| o.to_string()),
+        init_opts.agent_peer_script_post_down_line.clone(),
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
@@ -810,7 +812,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_pre_up_enabled,
-        init_opts.default_peer_script_pre_up_line.clone().map(|o| o.to_string()),
+        init_opts.default_peer_script_pre_up_line.clone(),
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
@@ -823,7 +825,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_post_up_enabled,
-        init_opts.default_peer_script_post_up_line.clone().map(|o| o.to_string()),
+        init_opts.default_peer_script_post_up_line.clone(),
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
@@ -836,7 +838,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_pre_down_enabled,
-        init_opts.default_peer_script_pre_down_line.clone().map(|o| o.to_string()),
+        init_opts.default_peer_script_pre_down_line.clone(),
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
@@ -849,7 +851,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_post_down_enabled,
-        init_opts.default_peer_script_post_down_line.clone().map(|o| o.to_string()),
+        init_opts.default_peer_script_post_down_line.clone(),
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
