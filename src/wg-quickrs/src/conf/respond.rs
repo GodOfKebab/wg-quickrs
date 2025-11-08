@@ -85,7 +85,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     log::info!("update_config with the change_sum = \n{:?}", change_sum);
 
     let mut c = get_mg_config_w_digest!();
-    let this_peer = c.network_w_digest.network.this_peer.clone();
     let mut changed_config = false;
 
     remove_expired_reservations(&mut c.network_w_digest.network);
@@ -96,11 +95,6 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
             for (peer_id, peer_details) in changed_fields_peers {
                 let mut network_copy = c.network_w_digest.network.clone();
                 if let Some(peer_config) = c.network_w_digest.network.peers.get_mut(&peer_id) {
-                    if peer_id == this_peer && peer_details.endpoint.is_some() {
-                        log::info!("A client tried to change the host's endpoint! (forbidden)");
-                        return Err(forbidden!("can't change the host's endpoint"))
-                    }
-
                     if let Some(name) = &peer_details.name {
                         peer_config.name = parse_and_validate_peer_name(&name).map_err(|e| {
                             bad_request!("changed_fields.peers.{}.name: {}", peer_id, e)

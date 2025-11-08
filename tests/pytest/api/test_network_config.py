@@ -7,35 +7,6 @@ yaml = YAML()
 yaml.preserve_quotes = True
 
 
-def test_patch_forbidden_endpoint_change(setup_wg_quickrs_agent):
-    """Test that changing host peer's endpoint is forbidden."""
-    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
-    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
-    with open(wg_quickrs_config_file) as stream:
-        old_conf = yaml.load(stream)
-
-    this_peer_id = get_this_peer_id(base_url)
-
-    change_sum = {
-        "changed_fields": {
-            "peers": {
-                this_peer_id: {
-                    "endpoint": {
-                        "enabled": True,
-                        "address": { "ipv4_and_port": {"ipv4": "192.168.1.100", "port": 51111} },
-                    }
-                }
-            }
-        }
-    }
-
-    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
-    assert response.status_code == 403
-    data = response.json()
-    assert data["status"] == "forbidden"
-    assert "can't change the host's endpoint" in data["message"]
-
-
 def test_patch_peer_not_found(setup_wg_quickrs_agent):
     """Test changing a peer that doesn't exist."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer")
