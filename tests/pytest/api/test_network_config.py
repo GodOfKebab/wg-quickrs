@@ -138,6 +138,20 @@ def test_remove_peer(setup_wg_quickrs_agent):
     assert this_peer in new_conf["network"]["peers"] and other_peer2 in new_conf["network"]["peers"]
     assert other_peer1_this_peer_connection_id not in new_conf["network"]["connections"]
 
+def test_remove_this_peer(setup_wg_quickrs_agent):
+    """Test deleting a peer."""
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    this_peer = "0ed989c6-6dba-4e3c-8034-08adf4262d9e"
+
+    # Test: Remove a peer
+    removed_peers_change_sum = {
+        "removed_peers": [this_peer]
+    }
+    response = requests.patch(f"{base_url}/api/network/config", json=removed_peers_change_sum)
+    assert response.status_code == 403
+
 
 def test_remove_connection(setup_wg_quickrs_agent):
     """Test deleting a connection."""

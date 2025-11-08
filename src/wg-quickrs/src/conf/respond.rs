@@ -85,6 +85,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     log::info!("update_config with the change_sum = \n{:?}", change_sum);
 
     let mut c = get_mg_config_w_digest!();
+    let this_peer_id = c.network_w_digest.network.this_peer;
     let mut changed_config = false;
 
     remove_expired_reservations(&mut c.network_w_digest.network);
@@ -263,6 +264,9 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     if let Some(removed_peers) = change_sum.removed_peers {
         for peer_id in removed_peers {
             {
+                if peer_id == this_peer_id {
+                    return Err(forbidden!("can't remove this peer"));
+                }
                 c.network_w_digest.network.peers.remove(&peer_id);
                 // automatically remove connections
                 for connection_id in c.network_w_digest.network.connections.clone().keys().filter(|&x| x.contains(&peer_id)) {
