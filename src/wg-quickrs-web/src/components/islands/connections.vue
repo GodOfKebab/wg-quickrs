@@ -87,7 +87,7 @@
       </div>
 
       <!-- Undo Button -->
-      <undo-button v-if="field_color.attached_peers_box !== DIV_COLOR_LOOKUP.unchanged && !isNewPeer"
+      <undo-button v-if="field_color.attached_peers_box !== EXISTING_DIV_COLOR_LOOKUP.unchanged && !isNewPeer"
                    alignment-classes="right-[6px] top-[6px]"
                    image-classes="h-7"
                    @click="attached_static_peer_ids_local = attached_static_peer_ids; attached_roaming_peer_ids_local = attached_roaming_peer_ids;">
@@ -169,13 +169,13 @@
                        class="rounded pl-1.5 pt-[2px] pb-[1px] mb-[3px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500">
                 <!-- Undo Button -->
                 <undo-button
-                    v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_a_to_b[otherPeerId] !== FIELD_COLOR_LOOKUP.unchanged && !isNewPeer"
+                    v-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_a_to_b[otherPeerId] !== EXISTING_FIELD_COLOR_LOOKUP.unchanged && Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId))"
                     alignment-classes="right-[5px] top-[2px]"
                     image-classes="h-5"
                     @click="connections_local.allowed_ips_a_to_b[otherPeerId] = stringify_allowed_ips(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b);">
                 </undo-button>
                 <undo-button
-                    v-else-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_b_to_a[otherPeerId] !== FIELD_COLOR_LOOKUP.unchanged && !isNewPeer"
+                    v-else-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_b_to_a[otherPeerId] !== EXISTING_FIELD_COLOR_LOOKUP.unchanged && Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId))"
                     alignment-classes="right-[5px] top-[2px]"
                     image-classes="h-5"
                     @click="connections_local.allowed_ips_b_to_a[otherPeerId] = stringify_allowed_ips(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a);">
@@ -201,13 +201,13 @@
                        class="rounded pl-1.5 pt-[2px] pb-[1px] focus:outline-none focus:ring-0 border-1 border-gray-200 focus:border-gray-400 outline-none w-64 text-lg text-gray-500 grow">
                 <!-- Undo Button -->
                 <undo-button
-                    v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_a_to_b[otherPeerId] !== FIELD_COLOR_LOOKUP.unchanged && !isNewPeer"
+                    v-if="!_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_a_to_b[otherPeerId] !== EXISTING_FIELD_COLOR_LOOKUP.unchanged && Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId))"
                     alignment-classes="right-[5px] top-[2px]"
                     image-classes="h-5"
                     @click="connections_local.allowed_ips_a_to_b[otherPeerId] = stringify_allowed_ips(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_a_to_b);">
                 </undo-button>
                 <undo-button
-                    v-else-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_b_to_a[otherPeerId] !== FIELD_COLOR_LOOKUP.unchanged && !isNewPeer"
+                    v-else-if="_WireGuardHelper_getConnectionId(otherPeerId).startsWith(peerId) && field_color.allowed_ips_b_to_a[otherPeerId] !== EXISTING_FIELD_COLOR_LOOKUP.unchanged && Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId))"
                     alignment-classes="right-[5px] top-[2px]"
                     image-classes="h-5"
                     @click="connections_local.allowed_ips_b_to_a[otherPeerId] = stringify_allowed_ips(network.connections[_WireGuardHelper_getConnectionId(otherPeerId)].allowed_ips_b_to_a);">
@@ -237,7 +237,7 @@
         </div>
 
         <!-- Undo Button -->
-        <undo-button v-if="field_color.peer_box[otherPeerId] !== DIV_COLOR_LOOKUP.unchanged && !isNewPeer"
+        <undo-button v-if="field_color.peer_box[otherPeerId] !== EXISTING_DIV_COLOR_LOOKUP.unchanged && Object.keys(network.connections).includes(_WireGuardHelper_getConnectionId(otherPeerId))"
                      alignment-classes="right-[7px] top-[7px]"
                      image-classes="h-7"
                      @click="undo_connection_changes(otherPeerId);">
@@ -303,17 +303,10 @@ export default {
         removed_connections: {},
         errors: {},
       },
-      FIELD_COLOR_LOOKUP: {
-        unchanged: 'bg-white',
-        changed: 'enabled:bg-green-200',
-        error: 'enabled:bg-red-200',
-      },
-      DIV_COLOR_LOOKUP: {
-        unchanged: 'bg-green-50',
-        changed: 'bg-blue-50',
-        error: 'bg-red-50',
-        new: 'bg-green-100',
-      },
+      EXISTING_FIELD_COLOR_LOOKUP: null,
+      NEW_FIELD_COLOR_LOOKUP: null,
+      EXISTING_DIV_COLOR_LOOKUP: null,
+      NEW_DIV_COLOR_LOOKUP: null,
       field_color: {
         attached_peers_box: null,
         peer_box: {},
@@ -340,6 +333,11 @@ export default {
       this.attached_static_peer_ids_local = [this.network.this_peer];
       this.toggleConnection(this.network.this_peer, true);
     }
+
+    this.EXISTING_FIELD_COLOR_LOOKUP = WireGuardHelper.get_field_colors(this.isNewPeer);
+    this.NEW_FIELD_COLOR_LOOKUP = WireGuardHelper.get_field_colors(true);
+    this.EXISTING_DIV_COLOR_LOOKUP = WireGuardHelper.get_div_colors(this.isNewPeer);
+    this.NEW_DIV_COLOR_LOOKUP = WireGuardHelper.get_div_colors(true);
   },
   methods: {
     stringify_allowed_ips(allowed_ips) {
@@ -481,7 +479,7 @@ export default {
   },
   watch: {
     all_attached_peer_ids_local() {
-      this.field_color.attached_peers_box = FastEqual(this.all_attached_peer_ids_local, this.all_attached_peer_ids) ? this.DIV_COLOR_LOOKUP.unchanged : this.DIV_COLOR_LOOKUP.new;
+      this.field_color.attached_peers_box = FastEqual(this.all_attached_peer_ids_local, this.all_attached_peer_ids) ? this.EXISTING_DIV_COLOR_LOOKUP.unchanged : this.EXISTING_DIV_COLOR_LOOKUP.changed;
     },
     connections_local: {
       handler() {
@@ -505,8 +503,12 @@ export default {
             allowed_ips_a_to_b: null,
             allowed_ips_b_to_a: null,
           }
+          let FIELD_COLOR_LOOKUP = this.NEW_FIELD_COLOR_LOOKUP;
+          let DIV_COLOR_LOOKUP = this.NEW_DIV_COLOR_LOOKUP;
           if (this.network.connections[connection_id]) {
             connection_orig_details = this.network.connections[connection_id];
+            FIELD_COLOR_LOOKUP = this.EXISTING_FIELD_COLOR_LOOKUP;
+            DIV_COLOR_LOOKUP = this.EXISTING_DIV_COLOR_LOOKUP;
           }
 
           // Initialize the change sum object
@@ -529,7 +531,7 @@ export default {
               validate_conn_persistent_keepalive_wasm,
               connection_orig_details.persistent_keepalive,
               connection_change_sum,
-              this.FIELD_COLOR_LOOKUP,
+              FIELD_COLOR_LOOKUP,
               connection_local_details.persistent_keepalive.enabled,  // validator arg
               connection_local_details.persistent_keepalive.period    // validator arg
           );
@@ -540,7 +542,7 @@ export default {
               validate_conn_allowed_ips_wasm,
               connection_orig_details.allowed_ips_a_to_b,
               connection_change_sum,
-              this.FIELD_COLOR_LOOKUP,
+              FIELD_COLOR_LOOKUP,
               connection_local_details.allowed_ips_a_to_b,  // validator arg
           );
 
@@ -550,7 +552,7 @@ export default {
               validate_conn_allowed_ips_wasm,
               connection_orig_details.allowed_ips_b_to_a,
               connection_change_sum,
-              this.FIELD_COLOR_LOOKUP,
+              FIELD_COLOR_LOOKUP,
               connection_local_details.allowed_ips_b_to_a,  // validator arg
           );
 
@@ -559,7 +561,7 @@ export default {
           );
           if (Object.keys(connection_change_sum.errors).length > 0) {
             errors[connection_id] = connection_change_sum.errors;
-            this.field_color.peer_box[other_peer_id] = this.DIV_COLOR_LOOKUP.error;
+            this.field_color.peer_box[other_peer_id] = DIV_COLOR_LOOKUP.error;
             continue;
           }
           connection_change_sum.changed_fields = Object.fromEntries(
@@ -571,10 +573,10 @@ export default {
             } else {
               changed_fields[connection_id] = connection_change_sum.changed_fields;
             }
-            this.field_color.peer_box[other_peer_id] = this.network.connections[connection_id] ? this.DIV_COLOR_LOOKUP.changed : this.DIV_COLOR_LOOKUP.new;
+            this.field_color.peer_box[other_peer_id] = DIV_COLOR_LOOKUP.changed;
             continue;
           }
-          this.field_color.peer_box[other_peer_id] = this.DIV_COLOR_LOOKUP.unchanged;
+          this.field_color.peer_box[other_peer_id] = DIV_COLOR_LOOKUP.unchanged;
         }
 
         const removed_connections = {};
