@@ -196,6 +196,84 @@ where
     }
 }
 
+/// Helper to prompt for multiple scripts
+fn get_init_scripts(
+    cli_no_prompt: Option<bool>,
+    step: usize,
+    cli_enabled: Option<bool>,
+    cli_line: Option<String>,
+    enabled_flag: &str,
+    line_flag: &str,
+    enabled_help: &str,
+    _line_help: &str,
+) -> Vec<Script> {
+    let step_str = step_str(step);
+    let mut scripts = Vec::new();
+
+    // Check if scripts are enabled at all
+    let scripts_enabled = if let Some(v) = cli_enabled {
+        println!(
+            "{} {} is {} from CLI option '{}'",
+            step_str, enabled_help, if v { "enabled" } else { "disabled" }, enabled_flag
+        );
+        v
+    } else if cli_no_prompt == Some(true) {
+        panic!("Error: CLI option '{}' is not set", enabled_flag);
+    } else {
+        dialoguer::Confirm::new()
+            .with_prompt(format!("{} {} (CLI option '{}')?", step_str, enabled_help, line_flag))
+            .default(false)
+            .interact()
+            .unwrap()
+    };
+
+    if !scripts_enabled {
+        return scripts;
+    }
+
+    // If a CLI line was provided, add it and return
+    if let Some(line) = cli_line {
+        println!("{} Using script from CLI option '{}': {}", step_str, line_flag, line);
+        let validated_script = parse_and_validate_peer_script(&line)
+            .unwrap_or_else(|e| panic!("Error: {}", e));
+        scripts.push(Script {
+            enabled: true,
+            script: validated_script,
+        });
+        return scripts;
+    }
+
+    if cli_no_prompt == Some(true) {
+        panic!("Error: CLI option '{}' is not set", line_flag);
+    }
+
+    // Prompt for scripts in a loop
+    loop {
+        let script_line = prompt(
+            &format!("\t{} Enter script line (CLI option '{}')", step_str, line_flag),
+            None,
+            parse_and_validate_peer_script,
+        );
+
+        scripts.push(Script {
+            enabled: true,
+            script: script_line,
+        });
+
+        let add_more = dialoguer::Confirm::new()
+            .with_prompt(format!("\t{} Add another script?", step_str))
+            .default(false)
+            .interact()
+            .unwrap();
+
+        if !add_more {
+            break;
+        }
+    }
+
+    scripts
+}
+
 /// Handle other options
 fn get_init_password(
     cli_no_prompt: Option<bool>,
@@ -586,103 +664,55 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     step_counter += 1;
 
     // [16/28] --agent-peer-script-pre-up-enabled & --agent-peer-script-pre-up-line
-    let agent_peer_script_pre_up_enabled = get_init_bool(
+    let agent_peer_script_pre_up = get_init_scripts(
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_pre_up_enabled,
+        init_opts.agent_peer_script_pre_up_line.clone().map(|o| o.to_string()),
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
+        INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
-        false,
+        INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_HELP,
     );
-    let agent_peer_script_pre_up_line = if agent_peer_script_pre_up_enabled {
-        get_init_value(
-            init_opts.no_prompt,
-            step_counter,
-            init_opts.agent_peer_script_pre_up_line.clone().map(|o| o.to_string()),
-            INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
-            format!("\t{}", INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_HELP).as_str(),
-            None,
-            parse_and_validate_peer_script,
-        )
-    } else {
-        // if disabled, default to an empty list
-        "".into()
-    };
     step_counter += 1;
 
     // [17/28] --agent-peer-script-post-up-enabled & --agent-peer-script-post-up-line
-    let agent_peer_script_post_up_enabled = get_init_bool(
+    let agent_peer_script_post_up = get_init_scripts(
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_post_up_enabled,
+        init_opts.agent_peer_script_post_up_line.clone().map(|o| o.to_string()),
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
+        INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
-        false,
+        INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_HELP,
     );
-    let agent_peer_script_post_up_line = if agent_peer_script_post_up_enabled {
-        get_init_value(
-            init_opts.no_prompt,
-            step_counter,
-            init_opts.agent_peer_script_post_up_line.clone().map(|o| o.to_string()),
-            INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_FLAG,
-            format!("\t{}", INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_HELP).as_str(),
-            None,
-            parse_and_validate_peer_script,
-        )
-    } else {
-        // if disabled, default to an empty list
-        "".into()
-    };
     step_counter += 1;
 
     // [18/28] --agent-peer-script-pre-down-enabled & --agent-peer-script-pre-down-line
-    let agent_peer_script_pre_down_enabled = get_init_bool(
+    let agent_peer_script_pre_down = get_init_scripts(
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_pre_down_enabled,
+        init_opts.agent_peer_script_pre_down_line.clone().map(|o| o.to_string()),
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
+        INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
-        false,
+        INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_HELP,
     );
-    let agent_peer_script_pre_down_line = if agent_peer_script_pre_down_enabled {
-        get_init_value(
-            init_opts.no_prompt,
-            step_counter,
-            init_opts.agent_peer_script_pre_down_line.clone().map(|o| o.to_string()),
-            INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
-            format!("\t{}", INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_HELP).as_str(),
-            None,
-            parse_and_validate_peer_script,
-        )
-    } else {
-        // if disabled, default to an empty list
-        "".into()
-    };
     step_counter += 1;
 
     // [19/28] --agent-peer-script-post-down-enabled & --agent-peer-script-post-down-line
-    let agent_peer_script_post_down_enabled = get_init_bool(
+    let agent_peer_script_post_down = get_init_scripts(
         init_opts.no_prompt,
         step_counter,
         init_opts.agent_peer_script_post_down_enabled,
+        init_opts.agent_peer_script_post_down_line.clone().map(|o| o.to_string()),
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
+        INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
-        false,
+        INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_HELP,
     );
-    let agent_peer_script_post_down_line = if agent_peer_script_post_down_enabled {
-        get_init_value(
-            init_opts.no_prompt,
-            step_counter,
-            init_opts.agent_peer_script_post_down_line.clone().map(|o| o.to_string()),
-            INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
-            format!("\t{}", INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_HELP).as_str(),
-            None,
-            parse_and_validate_peer_script,
-        )
-    } else {
-        // if disabled, default to an empty list
-        "".into()
-    };
     step_counter += 1;
 
     println!("[peer settings complete]");
@@ -776,103 +806,55 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     step_counter += 1;
 
     // [24/28] --default-peer-script-pre-up-enabled & --default-peer-script-pre-up-line
-    let default_peer_script_pre_up_enabled = get_init_bool(
+    let default_peer_script_pre_up = get_init_scripts(
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_pre_up_enabled,
+        init_opts.default_peer_script_pre_up_line.clone().map(|o| o.to_string()),
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
-        false,
+        INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_HELP,
     );
-    let default_peer_script_pre_up_line = if default_peer_script_pre_up_enabled {
-        get_init_value(
-            init_opts.no_prompt,
-            step_counter,
-            init_opts.default_peer_script_pre_up_line.clone().map(|o| o.to_string()),
-            INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
-            format!("\t{}", INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_HELP).as_str(),
-            None,
-            parse_and_validate_peer_script,
-        )
-    } else {
-        // if disabled, default to an empty list
-        "".into()
-    };
     step_counter += 1;
 
     // [25/28] --default-peer-script-post-up-enabled & --default-peer-script-post-up-line
-    let default_peer_script_post_up_enabled = get_init_bool(
+    let default_peer_script_post_up = get_init_scripts(
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_post_up_enabled,
+        init_opts.default_peer_script_post_up_line.clone().map(|o| o.to_string()),
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
-        false,
+        INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_HELP,
     );
-    let default_peer_script_post_up_line = if default_peer_script_post_up_enabled {
-        get_init_value(
-            init_opts.no_prompt,
-            step_counter,
-            init_opts.default_peer_script_post_up_line.clone().map(|o| o.to_string()),
-            INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_FLAG,
-            format!("\t{}", INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_HELP).as_str(),
-            None,
-            parse_and_validate_peer_script,
-        )
-    } else {
-        // if disabled, default to an empty list
-        "".into()
-    };
     step_counter += 1;
 
     // [26/28] --default-peer-script-pre-down-enabled & --default-peer-script-pre-down-line
-    let default_peer_script_pre_down_enabled = get_init_bool(
+    let default_peer_script_pre_down = get_init_scripts(
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_pre_down_enabled,
+        init_opts.default_peer_script_pre_down_line.clone().map(|o| o.to_string()),
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
-        false,
+        INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_HELP,
     );
-    let default_peer_script_pre_down_line = if default_peer_script_pre_down_enabled {
-        get_init_value(
-            init_opts.no_prompt,
-            step_counter,
-            init_opts.default_peer_script_pre_down_line.clone().map(|o| o.to_string()),
-            INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
-            format!("\t{}", INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_HELP).as_str(),
-            None,
-            parse_and_validate_peer_script,
-        )
-    } else {
-        // if disabled, default to an empty list
-        "".into()
-    };
     step_counter += 1;
 
     // [27/28] --default-peer-script-post-down-enabled & --default-peer-script-post-down-line
-    let default_peer_script_post_down_enabled = get_init_bool(
+    let default_peer_script_post_down = get_init_scripts(
         init_opts.no_prompt,
         step_counter,
         init_opts.default_peer_script_post_down_enabled,
+        init_opts.default_peer_script_post_down_line.clone().map(|o| o.to_string()),
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
-        false,
+        INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_HELP,
     );
-    let default_peer_script_post_down_line = if default_peer_script_post_down_enabled {
-        get_init_value(
-            init_opts.no_prompt,
-            step_counter,
-            init_opts.default_peer_script_post_down_line.clone().map(|o| o.to_string()),
-            INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
-            format!("\t{}", INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_HELP).as_str(),
-            None,
-            parse_and_validate_peer_script,
-        )
-    } else {
-        // if disabled, default to an empty list
-        "".into()
-    };
     step_counter += 1;
 
     // [28/28] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
@@ -967,10 +949,10 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
                         value: agent_peer_mtu_value,
                     },
                     scripts: Scripts {
-                        pre_up: vec![Script{ enabled: agent_peer_script_pre_up_enabled, script: agent_peer_script_pre_up_line }],
-                        post_up: vec![Script{ enabled: agent_peer_script_post_up_enabled, script: agent_peer_script_post_up_line }],
-                        pre_down: vec![Script{ enabled: agent_peer_script_pre_down_enabled, script: agent_peer_script_pre_down_line }],
-                        post_down: vec![Script{ enabled: agent_peer_script_post_down_enabled, script: agent_peer_script_post_down_line }],
+                        pre_up: agent_peer_script_pre_up,
+                        post_up: agent_peer_script_post_up,
+                        pre_down: agent_peer_script_pre_down,
+                        post_down: agent_peer_script_post_down,
                     },
                 });
                 map
@@ -998,10 +980,10 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
                         value: default_peer_mtu_value,
                     },
                     scripts: Scripts {
-                        pre_up: vec![Script{ enabled: default_peer_script_pre_up_enabled, script: default_peer_script_pre_up_line }],
-                        post_up: vec![Script{ enabled: default_peer_script_post_up_enabled, script: default_peer_script_post_up_line }],
-                        pre_down: vec![Script{ enabled: default_peer_script_pre_down_enabled, script: default_peer_script_pre_down_line }],
-                        post_down: vec![Script{ enabled: default_peer_script_post_down_enabled, script: default_peer_script_post_down_line }],
+                        pre_up: default_peer_script_pre_up,
+                        post_up: default_peer_script_post_up,
+                        pre_down: default_peer_script_pre_down,
+                        post_down: default_peer_script_post_down,
                     },
                 },
                 connection: DefaultConnection {
