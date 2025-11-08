@@ -76,13 +76,13 @@
         </div>
       </div>
 
-      <!--  Network identifier and host info line(s)  -->
+      <!--  Network name and host info line(s)  -->
       <div class="flex items-center opacity-50">
 
-        <!-- Network Identifier -->
+        <!-- Network Name -->
         <div v-if="network.this_peer"
              class="inline-block text-gray-800 text-xs ml-3 text-left">
-          <span>Network Identifier: <strong class="inline-block">{{ network.identifier }}</strong></span>
+          <span>Network Name: <strong class="inline-block">{{ network.name }}</strong></span>
         </div>
 
         <div v-if="network.this_peer"
@@ -96,7 +96,7 @@
           <span class="inline-block whitespace-pre-wrap">
             @
             {{ network.peers[network.this_peer].address }} /
-            {{ network.peers[network.this_peer].endpoint.value }}
+            {{ stringify_endpoint(network.peers[network.this_peer].endpoint) }}
           </span>
         </div>
       </div>
@@ -234,6 +234,7 @@ import PeerCreateDialog from "@/src/components/dialogs/peer-create-dialog.vue";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import init from '@/pkg/wg_quickrs_lib.js';
+import WireGuardHelper from "@/src/js/wg-helper.js";
 
 dayjs.extend(relativeTime);
 
@@ -293,6 +294,9 @@ export default {
   },
   computed: {},
   methods: {
+    stringify_endpoint(endpoint) {
+      return WireGuardHelper.stringify_endpoint(endpoint);
+    },
     async refresh() {
       this.last_fetch.since = this.last_fetch.rfc3339 ? new Date() - new Date(this.last_fetch.rfc3339) : -1;
 

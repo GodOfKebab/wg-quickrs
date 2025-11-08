@@ -38,4 +38,17 @@ export default class WireGuardHelper {
         }
     }
 
+    static stringify_endpoint(endpoint) {
+        if (endpoint.address === "none") {
+            return "";
+        }
+        if ('ipv4_and_port' in endpoint.address) {
+            return `${endpoint.address.ipv4_and_port.ipv4}:${endpoint.address.ipv4_and_port.port}`;
+        }
+        if ('hostname_and_port' in endpoint.address) {
+            return `${endpoint.address.hostname_and_port.hostname}:${endpoint.address.hostname_and_port.port}`;
+        }
+        return "";
+    }
+
 }
