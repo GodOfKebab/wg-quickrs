@@ -148,7 +148,7 @@ export default {
                 ctx.fill();
 
                 const img = new Image();
-                if (node.icon.enabled) img.src = node.icon.value;
+                if (node.icon.enabled) img.src = node.icon.src;
                 img.src = img.src || nodeKindIconMap[node.kind] || nodeKindIconMap['other'];
                 const cis = this.getGraphNodeIcon(img, 500);
                 ctx.drawImage(cis, node.x - node.size / 2, node.y - node.size / 2, node.size, node.size);

@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <!-- enabled value lists -->
+    <!-- scripts -->
     <div v-for="field in Object.keys(SCRIPTS_KEY_LOOKUP)" :key="field">
       <div v-for="i in peer_local_scripts[field].length" :key="i" class="flex">
         <div class="inline-block my-auto flex-none pl-2">

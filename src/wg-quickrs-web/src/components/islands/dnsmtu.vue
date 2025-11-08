@@ -3,7 +3,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
       <!-- DNS -->
       <input-field v-model="peer_local_str.dns"
-                   :placeholder="defaultDnsmtu.dns.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
+                   :placeholder="defaultDnsmtu.dns.addresses ? 'Click to see recommendations' : 'No recommendations'"
                    :input-color="colors.dns"
                    value-field="addresses"
                    :value-prev="peer_str.dns"
@@ -17,7 +17,7 @@
 
       <!-- MTU -->
       <input-field v-model="peer_local_str.mtu"
-                   :placeholder="defaultDnsmtu.mtu.value !== '' ? 'Click to see recommendations' : 'No recommendations'"
+                   :placeholder="defaultDnsmtu.mtu.value ? 'Click to see recommendations' : 'No recommendations'"
                    :input-color="colors.mtu"
                    value-field="value"
                    :value-prev="peer_str.mtu"
@@ -52,7 +52,7 @@ export default {
     defaultDnsmtu: {
       type: Object,
       default: {
-        dns: {enabled: false, value: []},
+        dns: {enabled: false, addresses: []},
         mtu: {enabled: false, value: 0},
       },
     },
