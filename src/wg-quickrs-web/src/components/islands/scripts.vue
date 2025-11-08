@@ -88,7 +88,8 @@ export default {
         pre_down: 'PreDown',
         post_down: 'PostDown',
       },
-      FIELD_COLOR_LOOKUP: null,
+      EXISTING_FIELD_COLOR_LOOKUP: null,
+      NEW_FIELD_COLOR_LOOKUP: null,
       DIV_COLOR_LOOKUP: null,
       colors: {pre_up: [], post_up: [], pre_down: [], post_down: [], div: null},
     };
@@ -103,7 +104,8 @@ export default {
     this.peer_local_scripts.deleted.post_up = new Set();
     this.peer_local_scripts.deleted.pre_down = new Set();
     this.peer_local_scripts.deleted.post_down = new Set();
-    this.FIELD_COLOR_LOOKUP = WireGuardHelper.get_field_colors(this.isNewPeer);
+    this.EXISTING_FIELD_COLOR_LOOKUP = WireGuardHelper.get_field_colors(this.isNewPeer);
+    this.NEW_FIELD_COLOR_LOOKUP = WireGuardHelper.get_field_colors(true);
     this.DIV_COLOR_LOOKUP = WireGuardHelper.get_div_colors(this.isNewPeer);
   },
   emits: ['updated-change-sum'],
@@ -150,19 +152,24 @@ export default {
 
           // Validate scripts
           for (let i = 0; i < this.peer_local_scripts[field].length; i++) {
+            const is_new_script = i >= this.peer.scripts[field].length;
             if (this.peer_local_scripts.deleted[field].has(i)) {
-              changeDetectedField = true;
+              if (!is_new_script) {
+                changeDetectedField = true;
+              }
               continue;
             }
 
             let script_change_sum = {errors: {}, changed_fields: {}};
+
+            const FIELD_COLOR_LOOKUP = is_new_script ? this.NEW_FIELD_COLOR_LOOKUP : this.EXISTING_FIELD_COLOR_LOOKUP;
 
             [this.colors[field][i], script_change_sum] = WireGuardHelper.validateField(
                 field,
                 validate_peer_script_wasm,
                 this.peer.scripts[field][i] || null,
                 script_change_sum,
-                this.FIELD_COLOR_LOOKUP,
+                FIELD_COLOR_LOOKUP,
                 this.peer_local_scripts[field][i].enabled,
                 this.peer_local_scripts[field][i].script
             );
