@@ -40,6 +40,77 @@ macro_rules! impl_toggle {
     };
 }
 
+/// Macro for peer-specific toggle functions
+macro_rules! impl_peer_toggle {
+    ($enable_fn:ident, $disable_fn:ident, $($field:ident).+, $field_name:expr) => {
+        pub fn $enable_fn(id: &Uuid) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
+            peer.$($field).+.enabled = true;
+            log::info!("Enabled peer {} {}", id, $field_name);
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+
+        pub fn $disable_fn(id: &Uuid) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
+            peer.$($field).+.enabled = false;
+            log::info!("Disabled peer {} {}", id, $field_name);
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+}
+
+/// Macro for defaults-specific toggle functions
+macro_rules! impl_defaults_toggle {
+    ($enable_fn:ident, $disable_fn:ident, $($field:ident).+, $field_name:expr) => {
+        pub fn $enable_fn() -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            config.network.defaults.$($field).+.enabled = true;
+            log::info!("Enabled default {}", $field_name);
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+
+        pub fn $disable_fn() -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            config.network.defaults.$($field).+.enabled = false;
+            log::info!("Disabled default {}", $field_name);
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+}
+
+/// Macro for connection-specific toggle functions
+macro_rules! impl_connection_toggle {
+    ($enable_fn:ident, $disable_fn:ident) => {
+        pub fn $enable_fn(id_str: &str) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            let conn_id = parse_connection_id(id_str)?;
+            let connection = config.network.connections.get_mut(&conn_id)
+                .ok_or_else(|| ConfigCommandError::ConnectionNotFound(id_str.to_string()))?;
+            connection.enabled = true;
+            log::info!("Enabled connection {}", id_str);
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+
+        pub fn $disable_fn(id_str: &str) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            let conn_id = parse_connection_id(id_str)?;
+            let connection = config.network.connections.get_mut(&conn_id)
+                .ok_or_else(|| ConfigCommandError::ConnectionNotFound(id_str.to_string()))?;
+            connection.enabled = false;
+            log::info!("Disabled connection {}", id_str);
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+}
+
 impl_toggle!(
     toggle_agent_web_http,
     agent.web.http =>
@@ -95,197 +166,21 @@ impl_toggle!(
     }
 );
 
-/// Enable peer endpoint
-pub fn enable_peer_endpoint(id: &Uuid) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
-    peer.endpoint.enabled = true;
-    log::info!("Enabled peer {} endpoint", id);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+// Peer toggles
+impl_peer_toggle!(enable_peer_endpoint, disable_peer_endpoint, endpoint, "endpoint");
+impl_peer_toggle!(enable_peer_icon, disable_peer_icon, icon, "icon");
+impl_peer_toggle!(enable_peer_dns, disable_peer_dns, dns, "DNS");
+impl_peer_toggle!(enable_peer_mtu, disable_peer_mtu, mtu, "MTU");
 
-/// Disable peer endpoint
-pub fn disable_peer_endpoint(id: &Uuid) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
-    peer.endpoint.enabled = false;
-    log::info!("Disabled peer {} endpoint", id);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+// Connection toggles
+impl_connection_toggle!(enable_connection, disable_connection);
 
-/// Enable peer icon
-pub fn enable_peer_icon(id: &Uuid) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
-    peer.icon.enabled = true;
-    log::info!("Enabled peer {} icon", id);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+// Defaults peer toggles
+impl_defaults_toggle!(enable_defaults_peer_endpoint, disable_defaults_peer_endpoint, peer.endpoint, "peer endpoint");
+impl_defaults_toggle!(enable_defaults_peer_icon, disable_defaults_peer_icon, peer.icon, "peer icon");
+impl_defaults_toggle!(enable_defaults_peer_dns, disable_defaults_peer_dns, peer.dns, "peer DNS");
+impl_defaults_toggle!(enable_defaults_peer_mtu, disable_defaults_peer_mtu, peer.mtu, "peer MTU");
 
-/// Disable peer icon
-pub fn disable_peer_icon(id: &Uuid) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
-    peer.icon.enabled = false;
-    log::info!("Disabled peer {} icon", id);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Enable peer DNS
-pub fn enable_peer_dns(id: &Uuid) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
-    peer.dns.enabled = true;
-    log::info!("Enabled peer {} DNS", id);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Disable peer DNS
-pub fn disable_peer_dns(id: &Uuid) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
-    peer.dns.enabled = false;
-    log::info!("Disabled peer {} DNS", id);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Enable peer MTU
-pub fn enable_peer_mtu(id: &Uuid) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
-    peer.mtu.enabled = true;
-    log::info!("Enabled peer {} MTU", id);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Disable peer MTU
-pub fn disable_peer_mtu(id: &Uuid) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
-    peer.mtu.enabled = false;
-    log::info!("Disabled peer {} MTU", id);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Enable connection
-pub fn enable_connection(id_str: &str) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let conn_id = parse_connection_id(id_str)?;
-    let connection = config.network.connections.get_mut(&conn_id)
-        .ok_or_else(|| ConfigCommandError::ConnectionNotFound(id_str.to_string()))?;
-    connection.enabled = true;
-    log::info!("Enabled connection {}", id_str);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Disable connection
-pub fn disable_connection(id_str: &str) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let conn_id = parse_connection_id(id_str)?;
-    let connection = config.network.connections.get_mut(&conn_id)
-        .ok_or_else(|| ConfigCommandError::ConnectionNotFound(id_str.to_string()))?;
-    connection.enabled = false;
-    log::info!("Disabled connection {}", id_str);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Enable default peer endpoint
-pub fn enable_defaults_peer_endpoint() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.peer.endpoint.enabled = true;
-    log::info!("Enabled default peer endpoint");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Disable default peer endpoint
-pub fn disable_defaults_peer_endpoint() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.peer.endpoint.enabled = false;
-    log::info!("Disabled default peer endpoint");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Enable default peer icon
-pub fn enable_defaults_peer_icon() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.peer.icon.enabled = true;
-    log::info!("Enabled default peer icon");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Disable default peer icon
-pub fn disable_defaults_peer_icon() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.peer.icon.enabled = false;
-    log::info!("Disabled default peer icon");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Enable default peer DNS
-pub fn enable_defaults_peer_dns() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.peer.dns.enabled = true;
-    log::info!("Enabled default peer DNS");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Disable default peer DNS
-pub fn disable_defaults_peer_dns() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.peer.dns.enabled = false;
-    log::info!("Disabled default peer DNS");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Enable default peer MTU
-pub fn enable_defaults_peer_mtu() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.peer.mtu.enabled = true;
-    log::info!("Enabled default peer MTU");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Disable default peer MTU
-pub fn disable_defaults_peer_mtu() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.peer.mtu.enabled = false;
-    log::info!("Disabled default peer MTU");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Enable default connection persistent keepalive
-pub fn enable_defaults_connection_persistent_keepalive() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.connection.persistent_keepalive.enabled = true;
-    log::info!("Enabled default connection persistent keepalive");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-/// Disable default connection persistent keepalive
-pub fn disable_defaults_connection_persistent_keepalive() -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.network.defaults.connection.persistent_keepalive.enabled = false;
-    log::info!("Disabled default connection persistent keepalive");
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+// Defaults connection toggles
+impl_defaults_toggle!(enable_defaults_connection_persistent_keepalive, disable_defaults_connection_persistent_keepalive, connection.persistent_keepalive, "connection persistent keepalive");
 
