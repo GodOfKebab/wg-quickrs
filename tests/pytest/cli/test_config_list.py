@@ -1,14 +1,15 @@
 import subprocess
 import pytest
 from tests.pytest.helpers import get_wg_quickrs_command
+from tests.pytest.conftest import setup_wg_quickrs_folder
 
 
-def test_config_ls_peers_single_peer(setup_wg_quickrs_folder):
+def test_config_list_peers_single_peer(setup_wg_quickrs_folder):
     """Test listing a single peer with endpoint enabled."""
     setup_wg_quickrs_folder("no_auth_single_peer")
 
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "peers"],
+        get_wg_quickrs_command() + ["config", "list", "peers"],
         capture_output=True,
         text=True
     )
@@ -40,12 +41,12 @@ def test_config_ls_peers_single_peer(setup_wg_quickrs_folder):
         "127.0.0.1:51820",  # Endpoint
     ],
 )
-def test_config_ls_peers_contains_expected_data(setup_wg_quickrs_folder, expected_substring):
+def test_config_list_peers_contains_expected_data(setup_wg_quickrs_folder, expected_substring):
     """Test that peer listing contains all expected data elements."""
     setup_wg_quickrs_folder("no_auth_single_peer")
 
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "peers"],
+        get_wg_quickrs_command() + ["config", "list", "peers"],
         capture_output=True,
         text=True
     )
@@ -54,12 +55,12 @@ def test_config_ls_peers_contains_expected_data(setup_wg_quickrs_folder, expecte
     assert expected_substring in result.stdout
 
 
-def test_config_ls_connections_empty(setup_wg_quickrs_folder):
+def test_config_list_connections_empty(setup_wg_quickrs_folder):
     """Test listing connections when there are none."""
     setup_wg_quickrs_folder("no_auth_single_peer")
 
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "connections"],
+        get_wg_quickrs_command() + ["config", "list", "connections"],
         capture_output=True,
         text=True
     )
@@ -70,12 +71,12 @@ def test_config_ls_connections_empty(setup_wg_quickrs_folder):
     assert "No connections found" in result.stdout
 
 
-def test_config_ls_with_different_config(setup_wg_quickrs_folder):
-    """Test ls commands with a different configuration file."""
+def test_config_list_with_different_config(setup_wg_quickrs_folder):
+    """Test list commands with a different configuration file."""
     setup_wg_quickrs_folder("no_auth_multi_peer")
 
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "peers"],
+        get_wg_quickrs_command() + ["config", "list", "peers"],
         capture_output=True,
         text=True
     )
@@ -87,7 +88,7 @@ def test_config_ls_with_different_config(setup_wg_quickrs_folder):
     assert len(output_lines) == 3
 
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "connections"],
+        get_wg_quickrs_command() + ["config", "list", "connections"],
         capture_output=True,
         text=True
     )
@@ -99,12 +100,12 @@ def test_config_ls_with_different_config(setup_wg_quickrs_folder):
     assert len(output_lines) == 2
 
 
-def test_config_ls_reservations_empty(setup_wg_quickrs_folder):
+def test_config_list_reservations_empty(setup_wg_quickrs_folder):
     """Test listing reservations when there are none."""
     setup_wg_quickrs_folder("no_auth_single_peer")
 
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "reservations"],
+        get_wg_quickrs_command() + ["config", "list", "reservations"],
         capture_output=True,
         text=True
     )

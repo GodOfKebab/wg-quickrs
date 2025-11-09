@@ -1,6 +1,7 @@
 import subprocess
 import pytest
 from tests.pytest.helpers import get_wg_quickrs_command
+from tests.pytest.conftest import setup_wg_quickrs_folder
 
 
 def test_config_remove_peer_success(setup_wg_quickrs_folder):
@@ -17,7 +18,7 @@ def test_config_remove_peer_success(setup_wg_quickrs_folder):
 
     # Verify initial peer count
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "peers"],
+        get_wg_quickrs_command() + ["config", "list", "peers"],
         capture_output=True,
         text=True
     )
@@ -35,7 +36,7 @@ def test_config_remove_peer_success(setup_wg_quickrs_folder):
 
     # Verify peer is removed
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "peers"],
+        get_wg_quickrs_command() + ["config", "list", "peers"],
         capture_output=True,
         text=True
     )
@@ -78,7 +79,7 @@ def test_config_remove_peer_cascades_to_connections(setup_wg_quickrs_folder):
 
     # Verify connections exist first
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "connections"],
+        get_wg_quickrs_command() + ["config", "list", "connections"],
         capture_output=True,
         text=True
     )
@@ -96,7 +97,7 @@ def test_config_remove_peer_cascades_to_connections(setup_wg_quickrs_folder):
 
     # Verify connections involving this peer are removed
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "connections"],
+        get_wg_quickrs_command() + ["config", "list", "connections"],
         capture_output=True,
         text=True
     )
@@ -112,7 +113,7 @@ def test_config_remove_connection_success(setup_wg_quickrs_folder):
 
     # Get a connection ID first
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "connections"],
+        get_wg_quickrs_command() + ["config", "list", "connections"],
         capture_output=True,
         text=True
     )
@@ -136,7 +137,7 @@ def test_config_remove_connection_success(setup_wg_quickrs_folder):
 
     # Verify connection is removed
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "connections"],
+        get_wg_quickrs_command() + ["config", "list", "connections"],
         capture_output=True,
         text=True
     )
