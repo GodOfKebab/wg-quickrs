@@ -1,6 +1,6 @@
 use crate::commands::config::{ConfigCommandError};
 use log::{LevelFilter};
-use wg_quickrs_cli::{AgentCommands, Cli};
+use wg_quickrs_cli::Cli;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -90,51 +90,103 @@ async fn entrypoint(args: Cli) -> Result<(), CommandError> {
     log::info!("using the wg-quickrs config file at \"{}\"", wg_quickrs_config_file.display());
 
     match &args.command {
-        wg_quickrs_cli::Commands::Init(init_opts) => commands::init::initialize_agent(init_opts)?,
-        wg_quickrs_cli::Commands::Agent {
-            commands,
-        } => match commands {
-            // wg-quickrs agent run
-            AgentCommands::Run => commands::agent::run_agent().await?,
-            // wg-quickrs agent set-web-address
-            AgentCommands::SetWebAddress(v) => commands::config::set_agent_web_address(&v.address)?,
-            // wg-quickrs agent enable-web-http
-            AgentCommands::EnableWebHttp => commands::config::toggle_agent_web_http(true)?,
-            // wg-quickrs agent disable-web-http
-            AgentCommands::DisableWebHttp => commands::config::toggle_agent_web_http(false)?,
-            // wg-quickrs agent set-http-web-port
-            AgentCommands::SetWebHttpPort(v) => commands::config::set_agent_web_http_port(v.port)?,
-            // wg-quickrs agent enable-web-https
-            AgentCommands::EnableWebHttps => commands::config::toggle_agent_web_https(true)?,
-            // wg-quickrs agent disable-web-https
-            AgentCommands::DisableWebHttps => commands::config::toggle_agent_web_https(false)?,
-            // wg-quickrs agent set-web-https-port
-            AgentCommands::SetWebHttpsPort(v) => commands::config::set_agent_web_https_port(v.port)?,
-            // wg-quickrs agent set-web-https-tls-cert
-            AgentCommands::SetWebHttpsTlsCert(v) => commands::config::set_agent_web_http_tls_cert(&v.path)?,
-            // wg-quickrs agent set-web-https-tls-key
-            AgentCommands::SetWebHttpsTlsKey(v) => commands::config::set_agent_web_http_tls_key(&v.path)?,
-            // wg-quickrs agent enable-web-password
-            AgentCommands::EnableWebPassword => commands::config::toggle_agent_web_password(true)?,
-            // wg-quickrs agent disable-web-password
-            AgentCommands::DisableWebPassword => commands::config::toggle_agent_web_password(false)?,
-            // wg-quickrs agent reset-web-password
-            AgentCommands::ResetWebPassword(reset_web_password_opts) => commands::config::reset_web_password(reset_web_password_opts)?,
-            // wg-quickrs agent enable-vpn
-            AgentCommands::EnableVpn => commands::config::toggle_agent_vpn(true)?,
-            // wg-quickrs agent disable-vpn
-            AgentCommands::DisableVpn => commands::config::toggle_agent_vpn(false)?,
-            // wg-quickrs agent set-vpn-port
-            AgentCommands::SetVpnPort(v) => commands::config::set_agent_vpn_port(v.port)?,
-            // wg-quickrs agent enable-firewall
-            AgentCommands::EnableFirewall => commands::config::toggle_agent_firewall(true)?,
-            // wg-quickrs agent disable-firewall
-            AgentCommands::DisableFirewall => commands::config::toggle_agent_firewall(false)?,
-            // wg-quickrs agent set-firewall-utility
-            AgentCommands::SetFirewallUtility(v) => commands::config::set_agent_firewall_utility(&v.utility)?,
-            // wg-quickrs agent set-firewall-gateway
-            AgentCommands::SetFirewallGateway(v) => commands::config::set_agent_firewall_gateway(&v.interface)?,
+        wg_quickrs_cli::Commands::Agent { target } => {
+            match target {
+                wg_quickrs_cli::AgentCommands::Init(init_opts) => commands::init::initialize_agent(init_opts)?,
+                wg_quickrs_cli::AgentCommands::Run => commands::agent::run_agent().await?,
+            }
         },
+        wg_quickrs_cli::Commands::Config { target } => {
+            match target {
+                wg_quickrs_cli::ConfigCommands::Enable { target } => {
+                    match target {
+                        wg_quickrs_cli::EnableCommands::Agent { target } => {
+                            match target {
+                                wg_quickrs_cli::EnableAgentCommands::Web { target } => {
+                                    match target {
+                                        wg_quickrs_cli::EnableAgentWebCommands::Http => commands::config::toggle_agent_web_http(true)?,
+                                        wg_quickrs_cli::EnableAgentWebCommands::Https => commands::config::toggle_agent_web_https(true)?,
+                                        wg_quickrs_cli::EnableAgentWebCommands::Password => commands::config::toggle_agent_web_password(true)?,
+                                    }
+                                },
+                                wg_quickrs_cli::EnableAgentCommands::Vpn => commands::config::toggle_agent_vpn(true)?,
+                                wg_quickrs_cli::EnableAgentCommands::Firewall => commands::config::toggle_agent_firewall(true)?,
+                            }
+                        },
+                    }
+                },
+                wg_quickrs_cli::ConfigCommands::Disable { target } => {
+                    match target {
+                        wg_quickrs_cli::DisableCommands::Agent { target } => {
+                            match target {
+                                wg_quickrs_cli::DisableAgentCommands::Web { target } => {
+                                    match target {
+                                        wg_quickrs_cli::DisableAgentWebCommands::Http => commands::config::toggle_agent_web_http(false)?,
+                                        wg_quickrs_cli::DisableAgentWebCommands::Https => commands::config::toggle_agent_web_https(false)?,
+                                        wg_quickrs_cli::DisableAgentWebCommands::Password => commands::config::toggle_agent_web_password(false)?,
+                                    }
+                                },
+                                wg_quickrs_cli::DisableAgentCommands::Vpn => commands::config::toggle_agent_vpn(false)?,
+                                wg_quickrs_cli::DisableAgentCommands::Firewall => commands::config::toggle_agent_firewall(false)?,
+                            }
+                        },
+                    }
+                },
+                wg_quickrs_cli::ConfigCommands::Set { target } => {
+                    match target {
+                        wg_quickrs_cli::SetCommands::Agent { target } => {
+                            match target {
+                                wg_quickrs_cli::SetAgentCommands::Web { target } => {
+                                    match target {
+                                        wg_quickrs_cli::SetAgentWebCommands::Address { value } => commands::config::set_agent_web_address(value)?,
+                                        wg_quickrs_cli::SetAgentWebCommands::Http { target } => {
+                                            match target {
+                                                wg_quickrs_cli::SetAgentWebHttpCommands::Port { value } => commands::config::set_agent_web_http_port(*value)?,
+                                            }
+                                        },
+                                        wg_quickrs_cli::SetAgentWebCommands::Https { target } => {
+                                            match target {
+                                                wg_quickrs_cli::SetAgentWebHttpsCommands::Port { value } => commands::config::set_agent_web_https_port(*value)?,
+                                                wg_quickrs_cli::SetAgentWebHttpsCommands::TlsCert { value } => commands::config::set_agent_web_http_tls_cert(value)?,
+                                                wg_quickrs_cli::SetAgentWebHttpsCommands::TlsKey { value } => commands::config::set_agent_web_http_tls_key(value)?,
+                                            }
+                                        },
+                                    }
+                                },
+                                wg_quickrs_cli::SetAgentCommands::Vpn { target } => {
+                                    match target {
+                                        wg_quickrs_cli::SetAgentVpnCommands::Port { value } => commands::config::set_agent_vpn_port(*value)?,
+                                    }
+                                },
+                                wg_quickrs_cli::SetAgentCommands::Firewall { target } => {
+                                    match target {
+                                        wg_quickrs_cli::SetAgentFirewallCommands::Utility { value } => commands::config::set_agent_firewall_utility(value)?,
+                                        wg_quickrs_cli::SetAgentFirewallCommands::Gateway { value } => commands::config::set_agent_firewall_gateway(value)?,
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+                wg_quickrs_cli::ConfigCommands::Reset { target } => {
+                    match target {
+                        wg_quickrs_cli::ResetCommands::Agent { target } => {
+                            match target {
+                                wg_quickrs_cli::ResetAgentCommands::Web { target } => {
+                                    match target {
+                                        wg_quickrs_cli::ResetAgentWebCommands::Password { password } => {
+                                            commands::config::reset_web_password(&wg_quickrs_cli::ResetWebPasswordOptions {
+                                                password: password.clone(),
+                                            })?;
+                                        },
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+            }
+        }
     };
 
     Ok(())

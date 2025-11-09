@@ -11,7 +11,7 @@ import os
 
 
 def init_no_prompt(opts):
-    command = " ".join(get_wg_quickrs_command()) + " init --no-prompt true \\"
+    command = " ".join(get_wg_quickrs_command()) + " agent init --no-prompt true \\"
     command += opts
 
     result = subprocess.run(

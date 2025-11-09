@@ -22,14 +22,238 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    #[command(about = "Run agent commands")]
+    Agent {
+        #[command(subcommand)]
+        target: AgentCommands,
+    },
+    #[command(about = "Edit agent configuration options")]
+    Config {
+        #[command(subcommand)]
+        target: ConfigCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum AgentCommands {
     #[command(
         about = "Initialize the wg-quickrs agent.\nConfiguration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command"
     )]
     Init(Box<InitOptions>),
-    #[command(about = "Configure and run the wg-quickrs agent")]
+    #[command(about = "Run the wg-quickrs agent")]
+    Run,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ConfigCommands {
+    #[command(about = "Enable a configuration option")]
+    Enable {
+        #[command(subcommand)]
+        target: EnableCommands,
+    },
+    #[command(about = "Disable a configuration option")]
+    Disable {
+        #[command(subcommand)]
+        target: DisableCommands,
+    },
+    #[command(about = "Set a configuration value")]
+    Set {
+        #[command(subcommand)]
+        target: SetCommands,
+    },
+    #[command(about = "Reset a configuration option")]
+    Reset {
+        #[command(subcommand)]
+        target: ResetCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum EnableCommands {
+    #[command(about = "Enable agent configuration options")]
     Agent {
         #[command(subcommand)]
-        commands: AgentCommands,
+        target: EnableAgentCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum EnableAgentCommands {
+    #[command(about = "Enable web server options")]
+    Web {
+        #[command(subcommand)]
+        target: EnableAgentWebCommands,
+    },
+    #[command(about = "Enable VPN server")]
+    Vpn,
+    #[command(about = "Enable firewall configuration")]
+    Firewall,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum EnableAgentWebCommands {
+    #[command(about = "Enable HTTP on web server")]
+    Http,
+    #[command(about = "Enable HTTPS on web server")]
+    Https,
+    #[command(about = "Enable password authentication for web server")]
+    Password,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum DisableCommands {
+    #[command(about = "Disable agent configuration options")]
+    Agent {
+        #[command(subcommand)]
+        target: DisableAgentCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum DisableAgentCommands {
+    #[command(about = "Disable web server options")]
+    Web {
+        #[command(subcommand)]
+        target: DisableAgentWebCommands,
+    },
+    #[command(about = "Disable VPN server")]
+    Vpn,
+    #[command(about = "Disable firewall configuration")]
+    Firewall,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum DisableAgentWebCommands {
+    #[command(about = "Disable HTTP on web server")]
+    Http,
+    #[command(about = "Disable HTTPS on web server")]
+    Https,
+    #[command(about = "Disable password authentication for web server")]
+    Password,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetCommands {
+    #[command(about = "Set agent configuration values")]
+    Agent {
+        #[command(subcommand)]
+        target: SetAgentCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetAgentCommands {
+    #[command(about = "Set web server configuration")]
+    Web {
+        #[command(subcommand)]
+        target: SetAgentWebCommands,
+    },
+    #[command(about = "Set VPN configuration")]
+    Vpn {
+        #[command(subcommand)]
+        target: SetAgentVpnCommands,
+    },
+    #[command(about = "Set firewall configuration")]
+    Firewall {
+        #[command(subcommand)]
+        target: SetAgentFirewallCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetAgentWebCommands {
+    #[command(about = "Set agent web server bind IPv4 address")]
+    Address {
+        #[arg(help = "IPv4 address")]
+        value: Ipv4Addr,
+    },
+    #[command(about = "Set HTTP configuration")]
+    Http {
+        #[command(subcommand)]
+        target: SetAgentWebHttpCommands,
+    },
+    #[command(about = "Set HTTPS configuration")]
+    Https {
+        #[command(subcommand)]
+        target: SetAgentWebHttpsCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetAgentWebHttpCommands {
+    #[command(about = "Set web server HTTP port")]
+    Port {
+        #[arg(help = "Port number (0-65535)")]
+        value: u16,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetAgentWebHttpsCommands {
+    #[command(about = "Set web server HTTPS port")]
+    Port {
+        #[arg(help = "Port number (0-65535)")]
+        value: u16,
+    },
+    #[command(about = "Set path (relative to the wg-quickrs config folder) to TLS certificate file for HTTPS")]
+    TlsCert {
+        #[arg(help = "File path")]
+        value: PathBuf,
+    },
+    #[command(about = "Set path (relative to the wg-quickrs config folder) to TLS private key file for HTTPS")]
+    TlsKey {
+        #[arg(help = "File path")]
+        value: PathBuf,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetAgentVpnCommands {
+    #[command(about = "Set VPN server listening port")]
+    Port {
+        #[arg(help = "Port number (0-65535)")]
+        value: u16,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetAgentFirewallCommands {
+    #[command(about = "Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)")]
+    Utility {
+        #[arg(help = "Utility binary path or name")]
+        value: PathBuf,
+    },
+    #[command(about = "Set the gateway used to configure firewall NAT and input rules (e.g. en0, eth0, etc.)")]
+    Gateway {
+        #[arg(help = "Internet interface name")]
+        value: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ResetCommands {
+    #[command(about = "Reset agent configuration options")]
+    Agent {
+        #[command(subcommand)]
+        target: ResetAgentCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ResetAgentCommands {
+    #[command(about = "Reset web server configuration")]
+    Web {
+        #[command(subcommand)]
+        target: ResetAgentWebCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ResetAgentWebCommands {
+    #[command(about = "Reset password for web server access")]
+    Password {
+        #[arg(long, help = "The use of this option is HIGHLY DISCOURAGED because the plaintext password might show up in the shell history! THIS IS HIGHLY INSECURE! Please set the password without the --password flag, and the script will prompt for the password.")]
+        password: Option<String>,
     },
 }
 
@@ -231,94 +455,6 @@ pub struct InitOptions {
 
     #[arg(long, default_value = None, long_help = "Disable interactive setup prompts")]
     pub no_prompt: Option<bool>,
-}
-
-#[derive(Subcommand, Debug)]
-pub enum AgentCommands {
-    #[command(about = "Runs the wg-quickrs")]
-    Run,
-    // setting: address
-    #[command(about = "Set agent web server bind IPv4 address")]
-    SetWebAddress(AddressArg),
-    // settings: http
-    #[command(about = "Enable HTTP on web server")]
-    EnableWebHttp,
-    #[command(about = "Disable HTTP on web server")]
-    DisableWebHttp,
-    #[command(about = "Set web server HTTP port")]
-    SetWebHttpPort(PortArg),
-    // settings: https
-    #[command(about = "Enable HTTPS on web server")]
-    EnableWebHttps,
-    #[command(about = "Disable HTTPS on web server")]
-    DisableWebHttps,
-    #[command(about = "Set port for the HTTPS web server")]
-    SetWebHttpsPort(PortArg),
-    #[command(
-        about = "Set path (relative to the wg-quickrs config folder) to TLS certificate file for HTTPS"
-    )]
-    SetWebHttpsTlsCert(PathArg),
-    #[command(
-        about = "Set path (relative to the wg-quickrs config folder) to TLS private key file for HTTPS"
-    )]
-    SetWebHttpsTlsKey(PathArg),
-    // settings: password
-    #[command(about = "Enable password authentication for web server")]
-    EnableWebPassword,
-    #[command(about = "Disable password authentication for web server")]
-    DisableWebPassword,
-    #[command(about = "Set password for web server access")]
-    ResetWebPassword(ResetWebPasswordOptions),
-    // setting: VPN
-    #[command(about = "Enable VPN server")]
-    EnableVpn,
-    #[command(about = "Disable VPN server")]
-    DisableVpn,
-    #[command(about = "Set VPN server listening port")]
-    SetVpnPort(PortArg),
-    // setting: Firewall
-    #[command(about = "Enable running firewall commands for setting up NAT and input rules")]
-    EnableFirewall,
-    #[command(about = "Disable running firewall commands for setting up NAT and input rules")]
-    DisableFirewall,
-    #[command(
-        about = "Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)"
-    )]
-    SetFirewallUtility(UtilityArg),
-    #[command(
-        about = "Set the gateway used to configure firewall NAT and input rules (e.g. en0, eth0, etc.)"
-    )]
-    SetFirewallGateway(InterfaceArg),
-}
-
-#[derive(Debug, Args)]
-pub struct AddressArg {
-    #[arg(help = "IPv4 address")]
-    pub address: Ipv4Addr,
-}
-
-#[derive(Debug, Args)]
-pub struct PortArg {
-    #[arg(help = "Port number(0-65535)")]
-    pub port: u16,
-}
-
-#[derive(Debug, Args)]
-pub struct PathArg {
-    #[arg(help = "File path")]
-    pub path: PathBuf,
-}
-
-#[derive(Debug, Args)]
-pub struct UtilityArg {
-    #[arg(help = "Utility binary path or name")]
-    pub utility: PathBuf,
-}
-
-#[derive(Debug, Args)]
-pub struct InterfaceArg {
-    #[arg(help = "Internet interface name")]
-    pub interface: String,
 }
 
 #[derive(Args, Debug)]
