@@ -38,7 +38,6 @@ pub enum CommandError {
 #[actix_web::main]
 async fn main() -> ExitCode {
     let args = cli::parse();
-    println!(full_version!());
 
     // start logger
     SimpleLogger::new()
@@ -51,6 +50,7 @@ async fn main() -> ExitCode {
         .unwrap_or_else(|e| {
             eprintln!("Logger init failed: {e}");
         });
+    log::debug!(full_version!());
 
     match entrypoint(args).await {
         Ok(_) => ExitCode::SUCCESS,
@@ -87,7 +87,7 @@ async fn entrypoint(args: Cli) -> Result<(), CommandError> {
     wg_quickrs_config_file.push("conf.yml");
     WG_QUICKRS_CONFIG_FILE.set(wg_quickrs_config_file.clone())
         .map_err(|_| CommandError::Path(format!("Could not set the wg-quickrs config file to \"{}\"", wg_quickrs_config_file.display())))?;
-    log::info!("using the wg-quickrs config file at \"{}\"", wg_quickrs_config_file.display());
+    log::debug!("using the wg-quickrs config file at \"{}\"", wg_quickrs_config_file.display());
 
     match &args.command {
         wg_quickrs_cli::Commands::Agent { target } => {

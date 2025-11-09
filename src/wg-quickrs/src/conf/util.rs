@@ -96,7 +96,7 @@ fn get_config_w_digest() -> Result<ConfigWNetworkDigest, ConfUtilError> {
 
     let config_w_digest = ConfigWNetworkDigest::from_config(Config::from(&config_file))?;
     set_or_init_config_w_digest(config_w_digest.clone())?;
-    log::info!("loaded config file");
+    log::debug!("loaded config file");
     Ok(config_w_digest)
 }
 
