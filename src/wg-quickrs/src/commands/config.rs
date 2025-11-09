@@ -35,92 +35,172 @@ impl From<argon2::password_hash::Error> for ConfigCommandError {
     }
 }
 
-pub fn set_agent_web_address(address: &Ipv4Addr) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!("Setting agent address to {}", &address);
-    config.agent.web.address = address.clone();
-    conf::util::set_config(&mut config)?;
-    Ok(())
+// ============================================================================
+// Macros for reducing boilerplate
+// ============================================================================
+
+/// Macro for implementing toggle (enable/disable) functions
+macro_rules! impl_toggle {
+    // Without validation
+    ($fn_name:ident, $($field:ident).+ => $log_format:expr) => {
+        pub fn $fn_name(status: bool) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            log::info!(
+                "{} {}",
+                if status { "Enabling" } else { "Disabling" },
+                $log_format(&config)
+            );
+            config.$($field).+.enabled = status;
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+    // With validation
+    ($fn_name:ident, $($field:ident).+ => $log_format:expr, validate: $validator:expr) => {
+        pub fn $fn_name(status: bool) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            log::info!(
+                "{} {}",
+                if status { "Enabling" } else { "Disabling" },
+                $log_format(&config)
+            );
+            if status {
+                $validator(&config)?;
+            }
+            config.$($field).+.enabled = status;
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
 }
 
-pub fn toggle_agent_web_http(status: bool) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!(
-        "{} HTTP web server (port={})...",
-        if status { "Enabling" } else { "Disabling" },
-        config.agent.web.http.port
-    );
-    config.agent.web.http.enabled = status;
-    conf::util::set_config(&mut config)?;
-    Ok(())
+/// Macro for implementing port setter functions
+macro_rules! impl_port_setter {
+    ($fn_name:ident, $($field:ident).+, $port_name:expr) => {
+        pub fn $fn_name(port: u16) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            config.$($field).+.port = port;
+            log::info!("Setting {} port to {}", $port_name, port);
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
 }
 
-pub fn set_agent_web_http_port(port: u16) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.agent.web.http.port = port;
-    log::info!("Setting HTTP port to {}", config.agent.web.http.port);
-    conf::util::set_config(&mut config)?;
-    Ok(())
+/// Macro for implementing generic setter functions
+macro_rules! impl_setter {
+    // Simple setter with Display
+    ($fn_name:ident, $value_type:ty, $($field:ident).+, $field_name:expr) => {
+        pub fn $fn_name(value: &$value_type) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            log::info!("Setting {} to {}", $field_name, value);
+            config.$($field).+ = value.clone();
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+    // Setter with custom display format
+    ($fn_name:ident, $value_type:ty, $($field:ident).+, $field_name:expr, display: $display_fn:expr) => {
+        pub fn $fn_name(value: &$value_type) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            log::info!("Setting {} to {}", $field_name, $display_fn(value));
+            config.$($field).+ = value.clone();
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+    // Setter with transformation/validation
+    ($fn_name:ident, $value_type:ty, $($field:ident).+, $field_name:expr, transform: $transformer:expr) => {
+        pub fn $fn_name(value: &$value_type) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            log::info!("Setting {} to {}", $field_name, value);
+            config.$($field).+ = $transformer(value)?;
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+    // Setter with transformation and custom display
+    ($fn_name:ident, $value_type:ty, $($field:ident).+, $field_name:expr, display: $display_fn:expr, transform: $transformer:expr) => {
+        pub fn $fn_name(value: &$value_type) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            log::info!("Setting {} to {}", $field_name, $display_fn(value));
+            config.$($field).+ = $transformer(value)?;
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
 }
 
-pub fn set_agent_web_http_tls_cert(tls_cert: &PathBuf) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!("Setting TLS certificate to {}", &tls_cert.display());
-    let wg_quickrs_conf_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
-    config.agent.web.https.tls_cert = validate_tls_file(wg_quickrs_conf_folder, &tls_cert)?;
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+// ============================================================================
+// Agent Web Configuration Functions
+// ============================================================================
 
-pub fn set_agent_web_http_tls_key(tls_key: &PathBuf) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!("Setting TLS key to {}", &tls_key.display());
-    let wg_quickrs_conf_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
-    config.agent.web.https.tls_key = validate_tls_file(wg_quickrs_conf_folder, &tls_key)?;
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+impl_setter!(set_agent_web_address, Ipv4Addr, agent.web.address, "agent address");
 
-pub fn toggle_agent_web_https(status: bool) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!(
-        "{} HTTPS web server (port={}, tls_cert={}, tls_key={})...",
-        if status { "Enabling" } else { "Disabling" },
-        config.agent.web.https.port,
-        config.agent.web.https.tls_cert.display(),
-        config.agent.web.https.tls_key.display()
-    );
-    if status {
+impl_toggle!(
+    toggle_agent_web_http,
+    agent.web.http =>
+    |c: &wg_quickrs_lib::types::config::Config| format!("HTTP web server (port={})...", c.agent.web.http.port)
+);
+
+impl_port_setter!(set_agent_web_http_port, agent.web.http, "HTTP");
+
+impl_setter!(
+    set_agent_web_http_tls_cert,
+    PathBuf,
+    agent.web.https.tls_cert,
+    "TLS certificate",
+    display: |p: &PathBuf| format!("{}", p.display()),
+    transform: |tls_cert: &PathBuf| {
         let wg_quickrs_conf_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
-        let _  = validate_tls_file(wg_quickrs_conf_folder, &config.agent.web.https.tls_cert)?;
-        let _  = validate_tls_file(wg_quickrs_conf_folder, &config.agent.web.https.tls_key)?;
+        validate_tls_file(wg_quickrs_conf_folder, tls_cert)
     }
-    config.agent.web.https.enabled = status;
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+);
 
-pub fn set_agent_web_https_port(port: u16) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.agent.web.https.port = port;
-    log::info!("Setting HTTPS port to {}", config.agent.web.https.port);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
-pub fn toggle_agent_web_password(status: bool) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!(
-        "{} password for the web server...",
-        if status { "Enabling" } else { "Disabling" }
-    );
-    if status {
-        let _ = PasswordHash::new(&config.agent.web.password.hash)?;
+impl_setter!(
+    set_agent_web_http_tls_key,
+    PathBuf,
+    agent.web.https.tls_key,
+    "TLS key",
+    display: |p: &PathBuf| format!("{}", p.display()),
+    transform: |tls_key: &PathBuf| {
+        let wg_quickrs_conf_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
+        validate_tls_file(wg_quickrs_conf_folder, tls_key)
     }
-    config.agent.web.password.enabled = status;
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+);
+
+impl_toggle!(
+    toggle_agent_web_https,
+    agent.web.https =>
+    |c: &wg_quickrs_lib::types::config::Config| format!(
+        "HTTPS web server (port={}, tls_cert={}, tls_key={})...",
+        c.agent.web.https.port,
+        c.agent.web.https.tls_cert.display(),
+        c.agent.web.https.tls_key.display()
+    ),
+    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
+        let wg_quickrs_conf_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
+        validate_tls_file(wg_quickrs_conf_folder, &c.agent.web.https.tls_cert)?;
+        validate_tls_file(wg_quickrs_conf_folder, &c.agent.web.https.tls_key)?;
+        Ok(())
+    }
+);
+
+impl_port_setter!(set_agent_web_https_port, agent.web.https, "HTTPS");
+
+impl_toggle!(
+    toggle_agent_web_password,
+    agent.web.password =>
+    |_: &wg_quickrs_lib::types::config::Config| "password for the web server...".to_string(),
+    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
+        PasswordHash::new(&c.agent.web.password.hash)?;
+        Ok(())
+    }
+);
+
+// ============================================================================
+// Special Configuration Functions (not macro-generated)
+// ============================================================================
 
 pub fn reset_web_password(reset_web_password_opts: &ResetWebPasswordOptions) -> Result<(), ConfigCommandError> {
     // get the wireguard config a file path
@@ -150,60 +230,58 @@ pub fn reset_web_password(reset_web_password_opts: &ResetWebPasswordOptions) -> 
     Ok(())
 }
 
-pub fn toggle_agent_vpn(status: bool) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!(
-        "{} VPN server (port={})...",
-        if status { "Enabling" } else { "Disabling" },
-        config.agent.vpn.port
-    );
-    config.agent.vpn.enabled = status;
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+// ============================================================================
+// Agent VPN Configuration Functions
+// ============================================================================
 
-pub fn set_agent_vpn_port(port: u16) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    config.agent.vpn.port = port;
-    log::info!("Setting VPN port to {}", config.agent.vpn.port);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+impl_toggle!(
+    toggle_agent_vpn,
+    agent.vpn =>
+    |c: &wg_quickrs_lib::types::config::Config| format!("VPN server (port={})...", c.agent.vpn.port)
+);
 
-pub fn toggle_agent_firewall(status: bool) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!(
-        "{} firewall setting up NAT and input rules (utility={})...",
-        if status { "Enabling" } else { "Disabling" },
-        config.agent.firewall.utility.display()
-    );
+impl_port_setter!(set_agent_vpn_port, agent.vpn, "VPN");
 
-    if status {
-        if config.agent.firewall.gateway.is_empty() {
-            return Err(ConfigCommandError::GatewayNotSet())
+// ============================================================================
+// Agent Firewall Configuration Functions
+// ============================================================================
+
+impl_toggle!(
+    toggle_agent_firewall,
+    agent.firewall =>
+    |c: &wg_quickrs_lib::types::config::Config| format!(
+        "firewall setting up NAT and input rules (utility={})...",
+        c.agent.firewall.utility.display()
+    ),
+    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
+        if c.agent.firewall.gateway.is_empty() {
+            return Err(ConfigCommandError::GatewayNotSet());
         }
-        let _  = validate_fw_utility(&config.agent.firewall.utility)?;
+        validate_fw_utility(&c.agent.firewall.utility)?;
+        Ok(())
     }
-    config.agent.firewall.enabled = status;
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+);
 
-pub fn set_agent_firewall_utility(utility: &PathBuf) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!("Setting firewall utility to {}", &utility.display());
-    config.agent.firewall.utility = validate_fw_utility(&utility)?;
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+impl_setter!(
+    set_agent_firewall_utility,
+    PathBuf,
+    agent.firewall.utility,
+    "firewall utility",
+    display: |p: &PathBuf| format!("{}", p.display()),
+    transform: |utility: &PathBuf| validate_fw_utility(utility)
+);
 
-pub fn set_agent_firewall_gateway(gateway: &str) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    log::info!("Setting firewall gateway to {}", &gateway);
-    config.agent.firewall.gateway = parse_and_validate_fw_gateway(&gateway)?;
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
+impl_setter!(
+    set_agent_firewall_gateway,
+    str,
+    agent.firewall.gateway,
+    "firewall gateway",
+    transform: |gateway: &str| parse_and_validate_fw_gateway(gateway)
+);
+
+// ============================================================================
+// Configuration Getter Functions
+// ============================================================================
 
 // Helper function to print any serializable struct as YAML
 fn print_as_yaml<T: Serialize>(value: &T) -> Result<(), ConfigCommandError> {
