@@ -571,6 +571,8 @@ pub enum LsCommands {
     Peers,
     #[command(about = "List all connections in human-readable format")]
     Connections,
+    #[command(about = "List all reservations in human-readable format")]
+    Reservations,
 }
 
 #[derive(Subcommand, Debug)]

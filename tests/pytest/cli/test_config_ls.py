@@ -98,3 +98,20 @@ def test_config_ls_with_different_config(setup_wg_quickrs_folder):
     output_lines = [line for line in result.stdout.strip().split('\n') if line]
     assert len(output_lines) == 2
 
+
+def test_config_ls_reservations_empty(setup_wg_quickrs_folder):
+    """Test listing reservations when there are none."""
+    setup_wg_quickrs_folder("no_auth_single_peer")
+
+    result = subprocess.run(
+        get_wg_quickrs_command() + ["config", "ls", "reservations"],
+        capture_output=True,
+        text=True
+    )
+    print(result.stdout)
+    print(result.stderr)
+
+    assert result.returncode == 0
+    assert "No reservations found" in result.stdout
+
+# TODO: add tests for reservations

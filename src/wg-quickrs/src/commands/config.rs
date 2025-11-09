@@ -579,6 +579,23 @@ pub fn list_network_connections() -> Result<(), ConfigCommandError> {
     Ok(())
 }
 
+/// List all reservations in human-readable format
+/// Format: "address (peerid) valid until: {valid_until}"
+pub fn list_network_reservations() -> Result<(), ConfigCommandError> {
+    let config = conf::util::get_config()?;
+
+    if config.network.reservations.is_empty() {
+        println!("No reservations found.");
+        return Ok(());
+    }
+
+    for (address, reservation) in &config.network.reservations {
+        println!("{} ({}) valid until: {}", address, reservation.peer_id, reservation.valid_until);
+    }
+
+    Ok(())
+}
+
 // ============================================================================
 // Remove Functions - Delete network entities
 // ============================================================================
@@ -965,6 +982,7 @@ pub fn handle_config_command(target: &wg_quickrs_cli::ConfigCommands) -> Result<
         ConfigCommands::Ls { target } => match target {
             LsCommands::Peers => list_network_peers(),
             LsCommands::Connections => list_network_connections(),
+            LsCommands::Reservations => list_network_reservations(),
         },
         ConfigCommands::Remove { target } => match target {
             RemoveCommands::Peer { id } => remove_network_peer(id),
