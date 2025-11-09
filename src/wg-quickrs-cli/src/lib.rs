@@ -267,7 +267,7 @@ pub enum GetCommands {
     #[command(about = "Get agent configuration values")]
     Agent {
         #[command(subcommand)]
-        target: GetAgentCommands,
+        target: Option<GetAgentCommands>,
     },
 }
 
@@ -276,17 +276,17 @@ pub enum GetAgentCommands {
     #[command(about = "Get web server configuration")]
     Web {
         #[command(subcommand)]
-        target: GetAgentWebCommands,
+        target: Option<GetAgentWebCommands>,
     },
     #[command(about = "Get VPN configuration")]
     Vpn {
         #[command(subcommand)]
-        target: GetAgentVpnCommands,
+        target: Option<GetAgentVpnCommands>,
     },
     #[command(about = "Get firewall configuration")]
     Firewall {
         #[command(subcommand)]
-        target: GetAgentFirewallCommands,
+        target: Option<GetAgentFirewallCommands>,
     },
 }
 
@@ -297,17 +297,17 @@ pub enum GetAgentWebCommands {
     #[command(about = "Get HTTP configuration")]
     Http {
         #[command(subcommand)]
-        target: GetAgentWebHttpCommands,
+        target: Option<GetAgentWebHttpCommands>,
     },
     #[command(about = "Get HTTPS configuration")]
     Https {
         #[command(subcommand)]
-        target: GetAgentWebHttpsCommands,
+        target: Option<GetAgentWebHttpsCommands>,
     },
     #[command(about = "Get password authentication configuration")]
     Password {
         #[command(subcommand)]
-        target: GetAgentWebPasswordCommands,
+        target: Option<GetAgentWebPasswordCommands>,
     },
 }
 

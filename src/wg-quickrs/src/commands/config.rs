@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 use crate::conf::util::ConfUtilError;
 use crate::WG_QUICKRS_CONFIG_FOLDER;
+use serde::Serialize;
 
 #[derive(Error, Debug)]
 pub enum ConfigCommandError {
@@ -24,6 +25,8 @@ pub enum ConfigCommandError {
     GatewayNotSet(),
     #[error("Failed to read input: {0}")]
     ReadFailed(#[from] io::Error),
+    #[error("Failed to serialize to YAML: {0}")]
+    YamlSerialization(#[from] serde_yml::Error),
 }
 
 impl From<argon2::password_hash::Error> for ConfigCommandError {
@@ -202,6 +205,13 @@ pub fn set_agent_firewall_gateway(gateway: &str) -> Result<(), ConfigCommandErro
     Ok(())
 }
 
+// Helper function to print any serializable struct as YAML
+fn print_as_yaml<T: Serialize>(value: &T) -> Result<(), ConfigCommandError> {
+    let yaml = serde_yml::to_string(value)?;
+    print!("{}", yaml);
+    Ok(())
+}
+
 // Macro to generate get functions for config fields
 macro_rules! impl_config_getter {
     // For simple types that implement Display
@@ -220,9 +230,26 @@ macro_rules! impl_config_getter {
             Ok(())
         }
     };
+    // For structs that should be serialized as YAML
+    ($fn_name:ident, $($field:ident).+, yaml) => {
+        pub fn $fn_name() -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            print_as_yaml(&config.$($field).+)
+        }
+    };
 }
 
 // Get functions - generated using macro
+// Full struct getters
+impl_config_getter!(get_agent, agent, yaml);
+impl_config_getter!(get_agent_web, agent.web, yaml);
+impl_config_getter!(get_agent_web_http, agent.web.http, yaml);
+impl_config_getter!(get_agent_web_https, agent.web.https, yaml);
+impl_config_getter!(get_agent_web_password, agent.web.password, yaml);
+impl_config_getter!(get_agent_vpn, agent.vpn, yaml);
+impl_config_getter!(get_agent_firewall, agent.firewall, yaml);
+
+// Individual field getters
 impl_config_getter!(get_agent_web_address, agent.web.address);
 impl_config_getter!(get_agent_web_http_enabled, agent.web.http.enabled);
 impl_config_getter!(get_agent_web_http_port, agent.web.http.port);
@@ -300,31 +327,52 @@ pub fn handle_config_command(target: &wg_quickrs_cli::ConfigCommands) -> Result<
         },
         ConfigCommands::Get { target } => match target {
             GetCommands::Agent { target } => match target {
-                GetAgentCommands::Web { target } => match target {
-                    GetAgentWebCommands::Address => get_agent_web_address(),
-                    GetAgentWebCommands::Http { target } => match target {
-                        GetAgentWebHttpCommands::Enabled => get_agent_web_http_enabled(),
-                        GetAgentWebHttpCommands::Port => get_agent_web_http_port(),
+                None => get_agent(),
+                Some(agent_cmd) => match agent_cmd {
+                    GetAgentCommands::Web { target } => match target {
+                        None => get_agent_web(),
+                        Some(web_cmd) => match web_cmd {
+                            GetAgentWebCommands::Address => get_agent_web_address(),
+                            GetAgentWebCommands::Http { target } => match target {
+                                None => get_agent_web_http(),
+                                Some(http_cmd) => match http_cmd {
+                                    GetAgentWebHttpCommands::Enabled => get_agent_web_http_enabled(),
+                                    GetAgentWebHttpCommands::Port => get_agent_web_http_port(),
+                                },
+                            },
+                            GetAgentWebCommands::Https { target } => match target {
+                                None => get_agent_web_https(),
+                                Some(https_cmd) => match https_cmd {
+                                    GetAgentWebHttpsCommands::Enabled => get_agent_web_https_enabled(),
+                                    GetAgentWebHttpsCommands::Port => get_agent_web_https_port(),
+                                    GetAgentWebHttpsCommands::TlsCert => get_agent_web_https_tls_cert(),
+                                    GetAgentWebHttpsCommands::TlsKey => get_agent_web_https_tls_key(),
+                                },
+                            },
+                            GetAgentWebCommands::Password { target } => match target {
+                                None => get_agent_web_password(),
+                                Some(pwd_cmd) => match pwd_cmd {
+                                    GetAgentWebPasswordCommands::Enabled => get_agent_web_password_enabled(),
+                                    GetAgentWebPasswordCommands::Hash => get_agent_web_password_hash(),
+                                },
+                            },
+                        },
                     },
-                    GetAgentWebCommands::Https { target } => match target {
-                        GetAgentWebHttpsCommands::Enabled => get_agent_web_https_enabled(),
-                        GetAgentWebHttpsCommands::Port => get_agent_web_https_port(),
-                        GetAgentWebHttpsCommands::TlsCert => get_agent_web_https_tls_cert(),
-                        GetAgentWebHttpsCommands::TlsKey => get_agent_web_https_tls_key(),
+                    GetAgentCommands::Vpn { target } => match target {
+                        None => get_agent_vpn(),
+                        Some(vpn_cmd) => match vpn_cmd {
+                            GetAgentVpnCommands::Enabled => get_agent_vpn_enabled(),
+                            GetAgentVpnCommands::Port => get_agent_vpn_port(),
+                        },
                     },
-                    GetAgentWebCommands::Password { target } => match target {
-                        GetAgentWebPasswordCommands::Enabled => get_agent_web_password_enabled(),
-                        GetAgentWebPasswordCommands::Hash => get_agent_web_password_hash(),
+                    GetAgentCommands::Firewall { target } => match target {
+                        None => get_agent_firewall(),
+                        Some(fw_cmd) => match fw_cmd {
+                            GetAgentFirewallCommands::Enabled => get_agent_firewall_enabled(),
+                            GetAgentFirewallCommands::Utility => get_agent_firewall_utility(),
+                            GetAgentFirewallCommands::Gateway => get_agent_firewall_gateway(),
+                        },
                     },
-                },
-                GetAgentCommands::Vpn { target } => match target {
-                    GetAgentVpnCommands::Enabled => get_agent_vpn_enabled(),
-                    GetAgentVpnCommands::Port => get_agent_vpn_port(),
-                },
-                GetAgentCommands::Firewall { target } => match target {
-                    GetAgentFirewallCommands::Enabled => get_agent_firewall_enabled(),
-                    GetAgentFirewallCommands::Utility => get_agent_firewall_utility(),
-                    GetAgentFirewallCommands::Gateway => get_agent_firewall_gateway(),
                 },
             },
         },
