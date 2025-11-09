@@ -72,6 +72,11 @@ pub enum ConfigCommands {
         #[command(subcommand)]
         target: GetCommands,
     },
+    #[command(about = "List network entities in human-readable format")]
+    Ls {
+        #[command(subcommand)]
+        target: LsCommands,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -553,6 +558,14 @@ pub enum GetNetworkReservationsCommands {
     PeerId,
     #[command(about = "Get reservation validity timestamp")]
     ValidUntil,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum LsCommands {
+    #[command(about = "List all peers in human-readable format")]
+    Peers,
+    #[command(about = "List all connections in human-readable format")]
+    Connections,
 }
 
 #[derive(Debug, Args)]
