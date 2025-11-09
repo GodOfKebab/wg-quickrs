@@ -4,11 +4,14 @@ use argon2::PasswordHash;
 use wg_quickrs_cli::ResetWebPasswordOptions;
 use wg_quickrs_lib::validation::agent::*;
 use wg_quickrs_lib::validation::error::*;
+use wg_quickrs_lib::types::network::ConnectionId;
 use std::io;
 use std::io::Write;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
+use std::str::FromStr;
 use thiserror::Error;
+use uuid::Uuid;
 use crate::conf::util::ConfUtilError;
 use crate::WG_QUICKRS_CONFIG_FOLDER;
 use serde::Serialize;
@@ -27,6 +30,18 @@ pub enum ConfigCommandError {
     ReadFailed(#[from] io::Error),
     #[error("Failed to serialize to YAML: {0}")]
     YamlSerialization(#[from] serde_yml::Error),
+    #[error("Peer not found: {0}")]
+    PeerNotFound(Uuid),
+    #[error("Connection not found: {0}")]
+    ConnectionNotFound(String),
+    #[error("Reservation not found: {0}")]
+    ReservationNotFound(Ipv4Addr),
+    #[error("Invalid connection ID format: {0}")]
+    InvalidConnectionId(String),
+    #[error("Invalid UUID format: {0}")]
+    InvalidUuid(#[from] uuid::Error),
+    #[error("Missing required argument: {0}")]
+    MissingArgument(String),
 }
 
 impl From<argon2::password_hash::Error> for ConfigCommandError {
@@ -126,6 +141,96 @@ macro_rules! impl_setter {
             log::info!("Setting {} to {}", $field_name, $display_fn(value));
             config.$($field).+ = $transformer(value)?;
             conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+}
+
+/// Macro for implementing indexed peer getters
+macro_rules! impl_peer_getter {
+    // Get entire peer struct as YAML
+    ($fn_name:ident) => {
+        pub fn $fn_name(id: &Uuid) -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            let peer = config.network.peers.get(id)
+                .ok_or_else(|| ConfigCommandError::PeerNotFound(*id))?;
+            print_as_yaml(peer)
+        }
+    };
+    // Get peer field as YAML
+    ($fn_name:ident, $($field:ident).+, yaml) => {
+        pub fn $fn_name(id: &Uuid) -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            let peer = config.network.peers.get(id)
+                .ok_or_else(|| ConfigCommandError::PeerNotFound(*id))?;
+            print_as_yaml(&peer.$($field).+)
+        }
+    };
+    // Get peer field as plain value
+    ($fn_name:ident, $($field:ident).+) => {
+        pub fn $fn_name(id: &Uuid) -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            let peer = config.network.peers.get(id)
+                .ok_or_else(|| ConfigCommandError::PeerNotFound(*id))?;
+            println!("{}", peer.$($field).+);
+            Ok(())
+        }
+    };
+}
+
+/// Macro for implementing indexed connection getters
+macro_rules! impl_connection_getter {
+    // Get entire connection struct as YAML
+    ($fn_name:ident) => {
+        pub fn $fn_name(id_str: &str) -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            let conn_id = parse_connection_id(id_str)?;
+            let connection = config.network.connections.get(&conn_id)
+                .ok_or_else(|| ConfigCommandError::ConnectionNotFound(id_str.to_string()))?;
+            print_as_yaml(connection)
+        }
+    };
+    // Get connection field as YAML
+    ($fn_name:ident, $($field:ident).+, yaml) => {
+        pub fn $fn_name(id_str: &str) -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            let conn_id = parse_connection_id(id_str)?;
+            let connection = config.network.connections.get(&conn_id)
+                .ok_or_else(|| ConfigCommandError::ConnectionNotFound(id_str.to_string()))?;
+            print_as_yaml(&connection.$($field).+)
+        }
+    };
+    // Get connection field as plain value
+    ($fn_name:ident, $($field:ident).+) => {
+        pub fn $fn_name(id_str: &str) -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            let conn_id = parse_connection_id(id_str)?;
+            let connection = config.network.connections.get(&conn_id)
+                .ok_or_else(|| ConfigCommandError::ConnectionNotFound(id_str.to_string()))?;
+            println!("{}", connection.$($field).+);
+            Ok(())
+        }
+    };
+}
+
+/// Macro for implementing indexed reservation getters
+macro_rules! impl_reservation_getter {
+    // Get entire reservation struct as YAML
+    ($fn_name:ident) => {
+        pub fn $fn_name(ip: &Ipv4Addr) -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            let reservation = config.network.reservations.get(ip)
+                .ok_or_else(|| ConfigCommandError::ReservationNotFound(*ip))?;
+            print_as_yaml(reservation)
+        }
+    };
+    // Get reservation field as plain value
+    ($fn_name:ident, $($field:ident).+) => {
+        pub fn $fn_name(ip: &Ipv4Addr) -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            let reservation = config.network.reservations.get(ip)
+                .ok_or_else(|| ConfigCommandError::ReservationNotFound(*ip))?;
+            println!("{}", reservation.$($field).+);
             Ok(())
         }
     };
@@ -318,7 +423,7 @@ macro_rules! impl_config_getter {
 }
 
 // Get functions - generated using macro
-// Full struct getters
+// Agent struct getters
 impl_config_getter!(get_agent, agent, yaml);
 impl_config_getter!(get_agent_web, agent.web, yaml);
 impl_config_getter!(get_agent_web_http, agent.web.http, yaml);
@@ -327,7 +432,7 @@ impl_config_getter!(get_agent_web_password, agent.web.password, yaml);
 impl_config_getter!(get_agent_vpn, agent.vpn, yaml);
 impl_config_getter!(get_agent_firewall, agent.firewall, yaml);
 
-// Individual field getters
+// Agent individual field getters
 impl_config_getter!(get_agent_web_address, agent.web.address);
 impl_config_getter!(get_agent_web_http_enabled, agent.web.http.enabled);
 impl_config_getter!(get_agent_web_http_port, agent.web.http.port);
@@ -342,6 +447,73 @@ impl_config_getter!(get_agent_vpn_port, agent.vpn.port);
 impl_config_getter!(get_agent_firewall_enabled, agent.firewall.enabled);
 impl_config_getter!(get_agent_firewall_utility, agent.firewall.utility, display);
 impl_config_getter!(get_agent_firewall_gateway, agent.firewall.gateway);
+
+// Network struct getter
+impl_config_getter!(get_network, network, yaml);
+
+// Network individual field getters
+impl_config_getter!(get_network_name, network.name);
+impl_config_getter!(get_network_subnet, network.subnet);
+impl_config_getter!(get_network_this_peer, network.this_peer);
+impl_config_getter!(get_network_peers, network.peers, yaml);
+impl_config_getter!(get_network_connections, network.connections, yaml);
+impl_config_getter!(get_network_defaults, network.defaults, yaml);
+impl_config_getter!(get_network_reservations, network.reservations, yaml);
+impl_config_getter!(get_network_updated_at, network.updated_at);
+
+// Network defaults field getters
+impl_config_getter!(get_network_defaults_peer, network.defaults.peer, yaml);
+impl_config_getter!(get_network_defaults_connection, network.defaults.connection, yaml);
+
+// Helper function to parse ConnectionId from string
+fn parse_connection_id(id_str: &str) -> Result<ConnectionId, ConfigCommandError> {
+    let parts: Vec<&str> = id_str.split('*').collect();
+    if parts.len() != 2 {
+        return Err(ConfigCommandError::InvalidConnectionId(id_str.to_string()));
+    }
+
+    let a = Uuid::from_str(parts[0])?;
+    let b = Uuid::from_str(parts[1])?;
+
+    Ok(ConnectionId { a, b })
+}
+
+// Network indexed getters for peers (using macros)
+impl_peer_getter!(get_network_peer);
+impl_peer_getter!(get_network_peer_name, name);
+impl_peer_getter!(get_network_peer_address, address);
+impl_peer_getter!(get_network_peer_endpoint, endpoint, yaml);
+impl_peer_getter!(get_network_peer_endpoint_enabled, endpoint.enabled);
+impl_peer_getter!(get_network_peer_endpoint_address, endpoint.address, yaml);
+impl_peer_getter!(get_network_peer_kind, kind);
+impl_peer_getter!(get_network_peer_icon, icon, yaml);
+impl_peer_getter!(get_network_peer_icon_enabled, icon.enabled);
+impl_peer_getter!(get_network_peer_icon_src, icon.src);
+impl_peer_getter!(get_network_peer_dns, dns, yaml);
+impl_peer_getter!(get_network_peer_dns_enabled, dns.enabled);
+impl_peer_getter!(get_network_peer_dns_addresses, dns.addresses, yaml);
+impl_peer_getter!(get_network_peer_mtu, mtu, yaml);
+impl_peer_getter!(get_network_peer_mtu_enabled, mtu.enabled);
+impl_peer_getter!(get_network_peer_mtu_value, mtu.value);
+impl_peer_getter!(get_network_peer_scripts, scripts, yaml);
+impl_peer_getter!(get_network_peer_private_key, private_key);
+impl_peer_getter!(get_network_peer_created_at, created_at);
+impl_peer_getter!(get_network_peer_updated_at, updated_at);
+
+// Network indexed getters for connections (using macros)
+impl_connection_getter!(get_network_connection);
+impl_connection_getter!(get_network_connection_enabled, enabled);
+impl_connection_getter!(get_network_connection_pre_shared_key, pre_shared_key);
+impl_connection_getter!(get_network_connection_persistent_keepalive, persistent_keepalive, yaml);
+impl_connection_getter!(get_network_connection_persistent_keepalive_enabled, persistent_keepalive.enabled);
+impl_connection_getter!(get_network_connection_persistent_keepalive_period, persistent_keepalive.period);
+impl_connection_getter!(get_network_connection_allowed_ips_a_to_b, allowed_ips_a_to_b, yaml);
+impl_connection_getter!(get_network_connection_allowed_ips_b_to_a, allowed_ips_b_to_a, yaml);
+
+// Network indexed getters for reservations (using macros)
+impl_reservation_getter!(get_network_reservation);
+impl_reservation_getter!(get_network_reservation_peer_id, peer_id);
+impl_reservation_getter!(get_network_reservation_valid_until, valid_until);
 
 // Command handler - dispatches config commands to appropriate functions
 pub fn handle_config_command(target: &wg_quickrs_cli::ConfigCommands) -> Result<(), ConfigCommandError> {
@@ -451,6 +623,193 @@ pub fn handle_config_command(target: &wg_quickrs_cli::ConfigCommands) -> Result<
                             GetAgentFirewallCommands::Gateway => get_agent_firewall_gateway(),
                         },
                     },
+                },
+            },
+            GetCommands::Network { target } => match target {
+                None => get_network(),
+                Some(network_cmd) => match network_cmd {
+                    GetNetworkCommands::Name => get_network_name(),
+                    GetNetworkCommands::Subnet => get_network_subnet(),
+                    GetNetworkCommands::ThisPeer => get_network_this_peer(),
+                    GetNetworkCommands::Peers { id, target } => match (id, target) {
+                        (None, None) => get_network_peers(),
+                        (Some(peer_id), None) => get_network_peer(peer_id),
+                        (Some(peer_id), Some(peer_cmd)) => match peer_cmd {
+                            GetNetworkPeersCommands::Name => get_network_peer_name(peer_id),
+                            GetNetworkPeersCommands::Address => get_network_peer_address(peer_id),
+                            GetNetworkPeersCommands::Endpoint { target } => match target {
+                                None => get_network_peer_endpoint(peer_id),
+                                Some(endpoint_cmd) => match endpoint_cmd {
+                                    GetNetworkPeersEndpointCommands::Enabled => get_network_peer_endpoint_enabled(peer_id),
+                                    GetNetworkPeersEndpointCommands::Address => get_network_peer_endpoint_address(peer_id),
+                                },
+                            },
+                            GetNetworkPeersCommands::Kind => get_network_peer_kind(peer_id),
+                            GetNetworkPeersCommands::Icon { target } => match target {
+                                None => get_network_peer_icon(peer_id),
+                                Some(icon_cmd) => match icon_cmd {
+                                    GetNetworkPeersIconCommands::Enabled => get_network_peer_icon_enabled(peer_id),
+                                    GetNetworkPeersIconCommands::Src => get_network_peer_icon_src(peer_id),
+                                },
+                            },
+                            GetNetworkPeersCommands::Dns { target } => match target {
+                                None => get_network_peer_dns(peer_id),
+                                Some(dns_cmd) => match dns_cmd {
+                                    GetNetworkPeersDnsCommands::Enabled => get_network_peer_dns_enabled(peer_id),
+                                    GetNetworkPeersDnsCommands::Addresses => get_network_peer_dns_addresses(peer_id),
+                                },
+                            },
+                            GetNetworkPeersCommands::Mtu { target } => match target {
+                                None => get_network_peer_mtu(peer_id),
+                                Some(mtu_cmd) => match mtu_cmd {
+                                    GetNetworkPeersMtuCommands::Enabled => get_network_peer_mtu_enabled(peer_id),
+                                    GetNetworkPeersMtuCommands::Value => get_network_peer_mtu_value(peer_id),
+                                },
+                            },
+                            GetNetworkPeersCommands::Scripts => get_network_peer_scripts(peer_id),
+                            GetNetworkPeersCommands::PrivateKey => get_network_peer_private_key(peer_id),
+                            GetNetworkPeersCommands::CreatedAt => get_network_peer_created_at(peer_id),
+                            GetNetworkPeersCommands::UpdatedAt => get_network_peer_updated_at(peer_id),
+                        },
+                        (None, Some(_)) => {
+                            Err(ConfigCommandError::MissingArgument("Peer ID is required when accessing peer fields".to_string()))
+                        }
+                    },
+                    GetNetworkCommands::Connections { id, target } => match (id, target) {
+                        (None, None) => get_network_connections(),
+                        (Some(conn_id), None) => get_network_connection(conn_id),
+                        (Some(conn_id), Some(conn_cmd)) => match conn_cmd {
+                            GetNetworkConnectionsCommands::Enabled => get_network_connection_enabled(conn_id),
+                            GetNetworkConnectionsCommands::PreSharedKey => get_network_connection_pre_shared_key(conn_id),
+                            GetNetworkConnectionsCommands::PersistentKeepalive { target } => match target {
+                                None => get_network_connection_persistent_keepalive(conn_id),
+                                Some(ka_cmd) => match ka_cmd {
+                                    GetNetworkConnectionsPersistentKeepaliveCommands::Enabled => get_network_connection_persistent_keepalive_enabled(conn_id),
+                                    GetNetworkConnectionsPersistentKeepaliveCommands::Period => get_network_connection_persistent_keepalive_period(conn_id),
+                                },
+                            },
+                            GetNetworkConnectionsCommands::AllowedIpsAToB => get_network_connection_allowed_ips_a_to_b(conn_id),
+                            GetNetworkConnectionsCommands::AllowedIpsBToA => get_network_connection_allowed_ips_b_to_a(conn_id),
+                        },
+                        (None, Some(_)) => {
+                            Err(ConfigCommandError::MissingArgument("Connection ID is required when accessing connection fields".to_string()))
+                        }
+                    },
+                    GetNetworkCommands::Defaults { target } => match target {
+                        None => get_network_defaults(),
+                        Some(defaults_cmd) => match defaults_cmd {
+                            GetNetworkDefaultsCommands::Peer { target } => match target {
+                                None => get_network_defaults_peer(),
+                                Some(peer_cmd) => match peer_cmd {
+                                    GetNetworkDefaultsPeerCommands::Endpoint { target } => {
+                                        // For defaults, we don't use indexed access, just direct field access
+                                        let config = conf::util::get_config()?;
+                                        match target {
+                                            None => print_as_yaml(&config.network.defaults.peer.endpoint),
+                                            Some(endpoint_cmd) => match endpoint_cmd {
+                                                GetNetworkPeersEndpointCommands::Enabled => {
+                                                    println!("{}", config.network.defaults.peer.endpoint.enabled);
+                                                    Ok(())
+                                                },
+                                                GetNetworkPeersEndpointCommands::Address => {
+                                                    print_as_yaml(&config.network.defaults.peer.endpoint.address)
+                                                },
+                                            },
+                                        }
+                                    },
+                                    GetNetworkDefaultsPeerCommands::Kind => {
+                                        let config = conf::util::get_config()?;
+                                        println!("{}", config.network.defaults.peer.kind);
+                                        Ok(())
+                                    },
+                                    GetNetworkDefaultsPeerCommands::Icon { target } => {
+                                        let config = conf::util::get_config()?;
+                                        match target {
+                                            None => print_as_yaml(&config.network.defaults.peer.icon),
+                                            Some(icon_cmd) => match icon_cmd {
+                                                GetNetworkPeersIconCommands::Enabled => {
+                                                    println!("{}", config.network.defaults.peer.icon.enabled);
+                                                    Ok(())
+                                                },
+                                                GetNetworkPeersIconCommands::Src => {
+                                                    println!("{}", config.network.defaults.peer.icon.src);
+                                                    Ok(())
+                                                },
+                                            },
+                                        }
+                                    },
+                                    GetNetworkDefaultsPeerCommands::Dns { target } => {
+                                        let config = conf::util::get_config()?;
+                                        match target {
+                                            None => print_as_yaml(&config.network.defaults.peer.dns),
+                                            Some(dns_cmd) => match dns_cmd {
+                                                GetNetworkPeersDnsCommands::Enabled => {
+                                                    println!("{}", config.network.defaults.peer.dns.enabled);
+                                                    Ok(())
+                                                },
+                                                GetNetworkPeersDnsCommands::Addresses => {
+                                                    print_as_yaml(&config.network.defaults.peer.dns.addresses)
+                                                },
+                                            },
+                                        }
+                                    },
+                                    GetNetworkDefaultsPeerCommands::Mtu { target } => {
+                                        let config = conf::util::get_config()?;
+                                        match target {
+                                            None => print_as_yaml(&config.network.defaults.peer.mtu),
+                                            Some(mtu_cmd) => match mtu_cmd {
+                                                GetNetworkPeersMtuCommands::Enabled => {
+                                                    println!("{}", config.network.defaults.peer.mtu.enabled);
+                                                    Ok(())
+                                                },
+                                                GetNetworkPeersMtuCommands::Value => {
+                                                    println!("{}", config.network.defaults.peer.mtu.value);
+                                                    Ok(())
+                                                },
+                                            },
+                                        }
+                                    },
+                                    GetNetworkDefaultsPeerCommands::Scripts => {
+                                        let config = conf::util::get_config()?;
+                                        print_as_yaml(&config.network.defaults.peer.scripts)
+                                    },
+                                },
+                            },
+                            GetNetworkDefaultsCommands::Connection { target } => match target {
+                                None => get_network_defaults_connection(),
+                                Some(conn_cmd) => match conn_cmd {
+                                    GetNetworkDefaultsConnectionCommands::PersistentKeepalive { target } => {
+                                        let config = conf::util::get_config()?;
+                                        match target {
+                                            None => print_as_yaml(&config.network.defaults.connection.persistent_keepalive),
+                                            Some(ka_cmd) => match ka_cmd {
+                                                GetNetworkConnectionsPersistentKeepaliveCommands::Enabled => {
+                                                    println!("{}", config.network.defaults.connection.persistent_keepalive.enabled);
+                                                    Ok(())
+                                                },
+                                                GetNetworkConnectionsPersistentKeepaliveCommands::Period => {
+                                                    println!("{}", config.network.defaults.connection.persistent_keepalive.period);
+                                                    Ok(())
+                                                },
+                                            },
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    GetNetworkCommands::Reservations { ip, target } => match (ip, target) {
+                        (None, None) => get_network_reservations(),
+                        (Some(res_ip), None) => get_network_reservation(res_ip),
+                        (Some(res_ip), Some(res_cmd)) => match res_cmd {
+                            GetNetworkReservationsCommands::PeerId => get_network_reservation_peer_id(res_ip),
+                            GetNetworkReservationsCommands::ValidUntil => get_network_reservation_valid_until(res_ip),
+                        },
+                        (None, Some(_)) => {
+                            Err(ConfigCommandError::MissingArgument("IP address is required when accessing reservation fields".to_string()))
+                        }
+                    },
+                    GetNetworkCommands::UpdatedAt => get_network_updated_at(),
                 },
             },
         },
