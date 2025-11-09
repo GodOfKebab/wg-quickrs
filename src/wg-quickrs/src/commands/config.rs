@@ -202,3 +202,132 @@ pub fn set_agent_firewall_gateway(gateway: &str) -> Result<(), ConfigCommandErro
     Ok(())
 }
 
+// Macro to generate get functions for config fields
+macro_rules! impl_config_getter {
+    // For simple types that implement Display
+    ($fn_name:ident, $($field:ident).+) => {
+        pub fn $fn_name() -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            println!("{}", config.$($field).+);
+            Ok(())
+        }
+    };
+    // For PathBuf types that need .display()
+    ($fn_name:ident, $($field:ident).+, display) => {
+        pub fn $fn_name() -> Result<(), ConfigCommandError> {
+            let config = conf::util::get_config()?;
+            println!("{}", config.$($field).+.display());
+            Ok(())
+        }
+    };
+}
+
+// Get functions - generated using macro
+impl_config_getter!(get_agent_web_address, agent.web.address);
+impl_config_getter!(get_agent_web_http_enabled, agent.web.http.enabled);
+impl_config_getter!(get_agent_web_http_port, agent.web.http.port);
+impl_config_getter!(get_agent_web_https_enabled, agent.web.https.enabled);
+impl_config_getter!(get_agent_web_https_port, agent.web.https.port);
+impl_config_getter!(get_agent_web_https_tls_cert, agent.web.https.tls_cert, display);
+impl_config_getter!(get_agent_web_https_tls_key, agent.web.https.tls_key, display);
+impl_config_getter!(get_agent_web_password_enabled, agent.web.password.enabled);
+impl_config_getter!(get_agent_web_password_hash, agent.web.password.hash);
+impl_config_getter!(get_agent_vpn_enabled, agent.vpn.enabled);
+impl_config_getter!(get_agent_vpn_port, agent.vpn.port);
+impl_config_getter!(get_agent_firewall_enabled, agent.firewall.enabled);
+impl_config_getter!(get_agent_firewall_utility, agent.firewall.utility, display);
+impl_config_getter!(get_agent_firewall_gateway, agent.firewall.gateway);
+
+// Command handler - dispatches config commands to appropriate functions
+pub fn handle_config_command(target: &wg_quickrs_cli::ConfigCommands) -> Result<(), ConfigCommandError> {
+    use wg_quickrs_cli::*;
+
+    match target {
+        ConfigCommands::Enable { target } => match target {
+            EnableCommands::Agent { target } => match target {
+                EnableAgentCommands::Web { target } => match target {
+                    EnableAgentWebCommands::Http => toggle_agent_web_http(true),
+                    EnableAgentWebCommands::Https => toggle_agent_web_https(true),
+                    EnableAgentWebCommands::Password => toggle_agent_web_password(true),
+                },
+                EnableAgentCommands::Vpn => toggle_agent_vpn(true),
+                EnableAgentCommands::Firewall => toggle_agent_firewall(true),
+            },
+        },
+        ConfigCommands::Disable { target } => match target {
+            DisableCommands::Agent { target } => match target {
+                DisableAgentCommands::Web { target } => match target {
+                    DisableAgentWebCommands::Http => toggle_agent_web_http(false),
+                    DisableAgentWebCommands::Https => toggle_agent_web_https(false),
+                    DisableAgentWebCommands::Password => toggle_agent_web_password(false),
+                },
+                DisableAgentCommands::Vpn => toggle_agent_vpn(false),
+                DisableAgentCommands::Firewall => toggle_agent_firewall(false),
+            },
+        },
+        ConfigCommands::Set { target } => match target {
+            SetCommands::Agent { target } => match target {
+                SetAgentCommands::Web { target } => match target {
+                    SetAgentWebCommands::Address { value } => set_agent_web_address(value),
+                    SetAgentWebCommands::Http { target } => match target {
+                        SetAgentWebHttpCommands::Port { value } => set_agent_web_http_port(*value),
+                    },
+                    SetAgentWebCommands::Https { target } => match target {
+                        SetAgentWebHttpsCommands::Port { value } => set_agent_web_https_port(*value),
+                        SetAgentWebHttpsCommands::TlsCert { value } => set_agent_web_http_tls_cert(value),
+                        SetAgentWebHttpsCommands::TlsKey { value } => set_agent_web_http_tls_key(value),
+                    },
+                },
+                SetAgentCommands::Vpn { target } => match target {
+                    SetAgentVpnCommands::Port { value } => set_agent_vpn_port(*value),
+                },
+                SetAgentCommands::Firewall { target } => match target {
+                    SetAgentFirewallCommands::Utility { value } => set_agent_firewall_utility(value),
+                    SetAgentFirewallCommands::Gateway { value } => set_agent_firewall_gateway(value),
+                },
+            },
+        },
+        ConfigCommands::Reset { target } => match target {
+            ResetCommands::Agent { target } => match target {
+                ResetAgentCommands::Web { target } => match target {
+                    ResetAgentWebCommands::Password { password } => {
+                        reset_web_password(&ResetWebPasswordOptions {
+                            password: password.clone(),
+                        })
+                    },
+                },
+            },
+        },
+        ConfigCommands::Get { target } => match target {
+            GetCommands::Agent { target } => match target {
+                GetAgentCommands::Web { target } => match target {
+                    GetAgentWebCommands::Address => get_agent_web_address(),
+                    GetAgentWebCommands::Http { target } => match target {
+                        GetAgentWebHttpCommands::Enabled => get_agent_web_http_enabled(),
+                        GetAgentWebHttpCommands::Port => get_agent_web_http_port(),
+                    },
+                    GetAgentWebCommands::Https { target } => match target {
+                        GetAgentWebHttpsCommands::Enabled => get_agent_web_https_enabled(),
+                        GetAgentWebHttpsCommands::Port => get_agent_web_https_port(),
+                        GetAgentWebHttpsCommands::TlsCert => get_agent_web_https_tls_cert(),
+                        GetAgentWebHttpsCommands::TlsKey => get_agent_web_https_tls_key(),
+                    },
+                    GetAgentWebCommands::Password { target } => match target {
+                        GetAgentWebPasswordCommands::Enabled => get_agent_web_password_enabled(),
+                        GetAgentWebPasswordCommands::Hash => get_agent_web_password_hash(),
+                    },
+                },
+                GetAgentCommands::Vpn { target } => match target {
+                    GetAgentVpnCommands::Enabled => get_agent_vpn_enabled(),
+                    GetAgentVpnCommands::Port => get_agent_vpn_port(),
+                },
+                GetAgentCommands::Firewall { target } => match target {
+                    GetAgentFirewallCommands::Enabled => get_agent_firewall_enabled(),
+                    GetAgentFirewallCommands::Utility => get_agent_firewall_utility(),
+                    GetAgentFirewallCommands::Gateway => get_agent_firewall_gateway(),
+                },
+            },
+        },
+    }
+}
+

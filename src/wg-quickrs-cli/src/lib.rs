@@ -66,6 +66,11 @@ pub enum ConfigCommands {
         #[command(subcommand)]
         target: ResetCommands,
     },
+    #[command(about = "Get a configuration value")]
+    Get {
+        #[command(subcommand)]
+        target: GetCommands,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -255,6 +260,101 @@ pub enum ResetAgentWebCommands {
         #[arg(long, help = "The use of this option is HIGHLY DISCOURAGED because the plaintext password might show up in the shell history! THIS IS HIGHLY INSECURE! Please set the password without the --password flag, and the script will prompt for the password.")]
         password: Option<String>,
     },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum GetCommands {
+    #[command(about = "Get agent configuration values")]
+    Agent {
+        #[command(subcommand)]
+        target: GetAgentCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum GetAgentCommands {
+    #[command(about = "Get web server configuration")]
+    Web {
+        #[command(subcommand)]
+        target: GetAgentWebCommands,
+    },
+    #[command(about = "Get VPN configuration")]
+    Vpn {
+        #[command(subcommand)]
+        target: GetAgentVpnCommands,
+    },
+    #[command(about = "Get firewall configuration")]
+    Firewall {
+        #[command(subcommand)]
+        target: GetAgentFirewallCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum GetAgentWebCommands {
+    #[command(about = "Get agent web server bind IPv4 address")]
+    Address,
+    #[command(about = "Get HTTP configuration")]
+    Http {
+        #[command(subcommand)]
+        target: GetAgentWebHttpCommands,
+    },
+    #[command(about = "Get HTTPS configuration")]
+    Https {
+        #[command(subcommand)]
+        target: GetAgentWebHttpsCommands,
+    },
+    #[command(about = "Get password authentication configuration")]
+    Password {
+        #[command(subcommand)]
+        target: GetAgentWebPasswordCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum GetAgentWebHttpCommands {
+    #[command(about = "Get whether HTTP is enabled")]
+    Enabled,
+    #[command(about = "Get web server HTTP port")]
+    Port,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum GetAgentWebHttpsCommands {
+    #[command(about = "Get whether HTTPS is enabled")]
+    Enabled,
+    #[command(about = "Get web server HTTPS port")]
+    Port,
+    #[command(about = "Get path to TLS certificate file for HTTPS")]
+    TlsCert,
+    #[command(about = "Get path to TLS private key file for HTTPS")]
+    TlsKey,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum GetAgentWebPasswordCommands {
+    #[command(about = "Get whether password authentication is enabled")]
+    Enabled,
+    #[command(about = "Get password hash")]
+    Hash,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum GetAgentVpnCommands {
+    #[command(about = "Get whether VPN server is enabled")]
+    Enabled,
+    #[command(about = "Get VPN server listening port")]
+    Port,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum GetAgentFirewallCommands {
+    #[command(about = "Get whether firewall configuration is enabled")]
+    Enabled,
+    #[command(about = "Get the utility used to configure firewall NAT and input rules")]
+    Utility,
+    #[command(about = "Get the gateway used to configure firewall NAT and input rules")]
+    Gateway,
 }
 
 #[derive(Debug, Args)]
