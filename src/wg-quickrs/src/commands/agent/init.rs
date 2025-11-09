@@ -3,7 +3,7 @@ use crate::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
 use crate::conf;
 use dialoguer;
 use get_if_addrs::{Interface, get_if_addrs};
-use wg_quickrs_cli::InitOptions;
+use wg_quickrs_cli::agent::InitOptions;
 use wg_quickrs_lib::types::config::*;
 use wg_quickrs_lib::types::network::*;
 use wg_quickrs_lib::helpers::wg_generate_key;

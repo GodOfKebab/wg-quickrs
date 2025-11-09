@@ -1,7 +1,7 @@
 // build.rs: generate bash/zsh/... completion scripts
 use clap::{CommandFactory, Parser};
 use clap_complete::generate_to;
-use wg_quickrs_cli::{Cli, InitOptions};
+use wg_quickrs_cli;
 use std::fs;
 use std::path::Path;
 
@@ -10,7 +10,7 @@ fn main() {
     #[derive(Parser, Debug)]
     struct InitOptionsWrapper {
         #[command(flatten)]
-        opts: InitOptions,
+        opts: wg_quickrs_cli::agent::InitOptions,
     }
     let cmd = InitOptionsWrapper::command();
 
@@ -43,7 +43,7 @@ pub const INIT_{}_HELP: &str = "{}";
     fs::write(dest_path, const_content).expect("Could not write init_options_generated.rs");
 
     // Generate completion scripts
-    let cli = Cli::command();
+    let cli = wg_quickrs_cli::Cli::command();
     let mut cmd = cli;
 
     // Create completions directory in OUT_DIR

@@ -1,15 +1,12 @@
-use crate::commands::config::{ConfigCommandError};
-use log::{LevelFilter};
-use wg_quickrs_cli::Cli;
+use log::LevelFilter;
+use wg_quickrs_cli;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use thiserror::Error;
-use wg_quickrs::{WG_QUICKRS_CONFIG_FOLDER, WG_QUICKRS_CONFIG_FILE};
+use wg_quickrs::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
 use wg_quickrs_lib::validation::error::ValidationError;
 use wg_quickrs_lib::macros::full_version;
-use crate::commands::agent::AgentRunError;
-use crate::commands::init::InitError;
 
 
 mod cli;
@@ -28,11 +25,11 @@ pub enum CommandError {
     #[error("{0}")]
     Validation(#[from] ValidationError),
     #[error("{0}")]
-    AgentRun(#[from] AgentRunError),
+    AgentRun(#[from] commands::agent::run::AgentRunError),
     #[error("{0}")]
-    Init(#[from] InitError),
+    Init(#[from] commands::agent::init::InitError),
     #[error("{0}")]
-    ConfigCommand(#[from] ConfigCommandError),
+    ConfigCommand(#[from] commands::config::ConfigCommandError),
 }
 
 #[actix_web::main]
@@ -73,7 +70,7 @@ fn expand_tilde(path: PathBuf) -> PathBuf {
     path
 }
 
-async fn entrypoint(args: Cli) -> Result<(), CommandError> {
+async fn entrypoint(args: wg_quickrs_cli::Cli) -> Result<(), CommandError> {
     // get the wg_quickrs config file path
     let mut config_folder = expand_tilde(args.wg_quickrs_config_folder.clone());
     if !config_folder.exists() {
@@ -92,8 +89,8 @@ async fn entrypoint(args: Cli) -> Result<(), CommandError> {
     match &args.command {
         wg_quickrs_cli::Commands::Agent { target } => {
             match target {
-                wg_quickrs_cli::AgentCommands::Init(init_opts) => commands::init::initialize_agent(init_opts)?,
-                wg_quickrs_cli::AgentCommands::Run => commands::agent::run_agent().await?,
+                wg_quickrs_cli::agent::AgentCommands::Init(init_opts) => commands::agent::init::initialize_agent(init_opts)?,
+                wg_quickrs_cli::agent::AgentCommands::Run => commands::agent::run::run_agent().await?,
             }
         },
         wg_quickrs_cli::Commands::Config { target } => {
