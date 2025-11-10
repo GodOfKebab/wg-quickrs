@@ -15,7 +15,7 @@ use thiserror::Error;
 use uuid::Uuid;
 use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility};
 use wg_quickrs_lib::validation::helpers::firewall_utility_options;
-use wg_quickrs_lib::validation::network::{parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_dns_addresses, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name};
+use wg_quickrs_lib::validation::network::{parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name};
 use crate::commands::helpers::*;
 use crate::conf::network::get_next_available_address;
 use crate::conf::util::ConfUtilError;
@@ -442,29 +442,18 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     };
     step_counter += 1;
 
-    // [14/28] --agent-peer-dns-enabled & --agent-peer-dns-server
-    let agent_peer_dns_enabled = get_bool(
+    // [14/28] --agent-peer-dns-enabled & --agent-peer-dns-addresses
+    let agent_peer_dns_addresses = get_dns_addresses(
         init_opts.no_prompt,
         step_str(step_counter),
         init_opts.agent_peer_dns_enabled,
+        init_opts.agent_peer_dns_addresses.clone(),
         INIT_AGENT_PEER_DNS_ENABLED_FLAG,
+        INIT_AGENT_PEER_DNS_ADDRESSES_FLAG,
         INIT_AGENT_PEER_DNS_ENABLED_HELP,
-        true,
+        INIT_AGENT_PEER_DNS_ADDRESSES_HELP,
     );
-    let agent_peer_dns_addresses = if agent_peer_dns_enabled {
-        get_value(
-            init_opts.no_prompt,
-            step_str(step_counter),
-            init_opts.agent_peer_dns_addresses.clone(),
-            INIT_AGENT_PEER_DNS_ADDRESSES_FLAG,
-            format!("\t{}", INIT_AGENT_PEER_DNS_ADDRESSES_HELP).as_str(),
-            Some("1.1.1.1".into()),
-            parse_and_validate_peer_dns_addresses,
-        )
-    } else {
-        // if disabled, default to an empty list
-        vec![]
-    };
+    let agent_peer_dns_enabled = !agent_peer_dns_addresses.is_empty();
     step_counter += 1;
 
     // [15/28] --agent-peer-mtu-enabled & --agent-peer-mtu-value
@@ -584,29 +573,18 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     };
     step_counter += 1;
 
-    // [22/28] --default-peer-dns-enabled & --default-peer-dns-server
-    let default_peer_dns_enabled = get_bool(
+    // [22/28] --default-peer-dns-enabled & --default-peer-dns-addresses
+    let default_peer_dns_addresses = get_dns_addresses(
         init_opts.no_prompt,
         step_str(step_counter),
         init_opts.default_peer_dns_enabled,
+        init_opts.default_peer_dns_addresses.clone(),
         INIT_DEFAULT_PEER_DNS_ENABLED_FLAG,
+        INIT_DEFAULT_PEER_DNS_ADDRESSES_FLAG,
         INIT_DEFAULT_PEER_DNS_ENABLED_HELP,
-        true,
+        INIT_DEFAULT_PEER_DNS_ADDRESSES_HELP,
     );
-    let default_peer_dns_addresses = if default_peer_dns_enabled {
-        get_value(
-            init_opts.no_prompt,
-            step_str(step_counter),
-            init_opts.default_peer_dns_addresses.clone(),
-            INIT_DEFAULT_PEER_DNS_ADDRESSES_FLAG,
-            format!("\t{}", INIT_DEFAULT_PEER_DNS_ADDRESSES_HELP).as_str(),
-            Some("1.1.1.1".into()),
-            parse_and_validate_peer_dns_addresses,
-        )
-    } else {
-        // if disabled, default to an empty list
-        vec![]
-    };
+    let default_peer_dns_enabled = !default_peer_dns_addresses.is_empty();
     step_counter += 1;
 
     // [23/28] --default-peer-mtu-enabled & --default-peer-mtu-value

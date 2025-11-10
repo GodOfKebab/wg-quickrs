@@ -1,6 +1,7 @@
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
 use rand::{rng, RngCore};
+use std::net::Ipv4Addr;
 use wg_quickrs_lib::types::network::Script;
 use wg_quickrs_lib::validation::error::ValidationResult;
 use wg_quickrs_lib::validation::network::parse_and_validate_peer_script;
@@ -171,6 +172,79 @@ pub fn get_scripts(
     }
 
     scripts
+}
+
+/// Helper to prompt for multiple DNS addresses
+pub fn get_dns_addresses(
+    cli_no_prompt: Option<bool>,
+    step_str: String,
+    cli_enabled: Option<bool>,
+    cli_addresses: Vec<Ipv4Addr>,
+    enabled_flag: &str,
+    addresses_flag: &str,
+    enabled_help: &str,
+    _addresses_help: &str,
+) -> Vec<Ipv4Addr> {
+    let mut addresses = Vec::new();
+
+    // Check if DNS is enabled at all
+    let dns_enabled = if let Some(v) = cli_enabled {
+        println!(
+            "{} {} is {} from CLI option '{}'",
+            step_str, enabled_help, if v { "enabled" } else { "disabled" }, enabled_flag
+        );
+        v
+    } else if cli_no_prompt == Some(true) {
+        panic!("Error: CLI option '{}' is not set", enabled_flag);
+    } else {
+        dialoguer::Confirm::new()
+            .with_prompt(format!("{} {} (CLI option '{}')?", step_str, enabled_help, addresses_flag))
+            .default(true)
+            .interact()
+            .unwrap()
+    };
+
+    if !dns_enabled {
+        return addresses;
+    }
+
+    // If CLI addresses were provided, return them directly
+    if !cli_addresses.is_empty() {
+        let dns_string = cli_addresses.iter()
+            .map(|addr| addr.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        println!("{} Using {} DNS address(es) from CLI option '{}': {}",
+            step_str, cli_addresses.len(), addresses_flag, dns_string);
+        return cli_addresses;
+    }
+
+    if cli_no_prompt == Some(true) {
+        panic!("Error: CLI option '{}' is not set", addresses_flag);
+    }
+
+    // Prompt for DNS addresses in a loop
+    loop {
+        let dns_address: Ipv4Addr = prompt(
+            &format!("\t{} Enter DNS address (CLI option '{}')", step_str, addresses_flag),
+            if addresses.is_empty() { Some("1.1.1.1".to_string()) } else { None },
+            |s: &str| s.trim().parse().map_err(|_| wg_quickrs_lib::validation::error::ValidationError::NotIPv4Address()),
+        );
+
+        addresses.push(dns_address);
+
+        let add_more = dialoguer::Confirm::new()
+            .with_prompt(format!("\t{} Add another DNS address?", step_str))
+            .default(false)
+            .interact()
+            .unwrap();
+
+        if !add_more {
+            break;
+        }
+    }
+
+    addresses
 }
 
 pub(crate) fn calculate_password_hash(password: &str) -> Result<String, argon2::password_hash::Error> {
