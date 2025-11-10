@@ -218,11 +218,6 @@ pub enum SetDefaultsPeerCommands {
         #[arg(help = "Peer kind (e.g., laptop, server, phone)")]
         kind: String,
     },
-    #[command(about = "Set default peer endpoint address")]
-    Endpoint {
-        #[arg(help = "Endpoint address (hostname:port or ipv4:port)")]
-        endpoint: String,
-    },
     #[command(about = "Set default peer icon source")]
     Icon {
         #[arg(help = "Icon source (URL or path)")]

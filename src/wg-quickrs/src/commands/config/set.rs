@@ -298,17 +298,6 @@ pub fn set_defaults_peer_kind(kind: &str) -> Result<(), ConfigCommandError> {
     Ok(())
 }
 
-/// Set default peer endpoint
-pub fn set_defaults_peer_endpoint(endpoint_str: &str) -> Result<(), ConfigCommandError> {
-    let mut config = conf::util::get_config()?;
-    let endpoint_address = wg_quickrs_lib::validation::network::parse_and_validate_peer_endpoint(endpoint_str)?;
-    config.network.defaults.peer.endpoint.address = endpoint_address;
-    config.network.defaults.peer.endpoint.enabled = true;
-    log::info!("Set default peer endpoint to: {}", endpoint_str);
-    conf::util::set_config(&mut config)?;
-    Ok(())
-}
-
 /// Set default peer icon source
 pub fn set_defaults_peer_icon(src: &str) -> Result<(), ConfigCommandError> {
     let mut config = conf::util::get_config()?;

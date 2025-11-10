@@ -95,9 +95,6 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
 
     // Validate defaults
     let defaults_path = "network.defaults";
-    validate_peer_endpoint(&config_file.network.defaults.peer.endpoint).map_err(|e| {
-        ConfigFileValidationError::Validation(format!("{}.peer.endpoint", defaults_path), e)
-    })?;
     parse_and_validate_peer_kind(&config_file.network.defaults.peer.kind).map_err(|e| {
         ConfigFileValidationError::Validation(format!("{}.peer.kind", defaults_path), e)
     })?;

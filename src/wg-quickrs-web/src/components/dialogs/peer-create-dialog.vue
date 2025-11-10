@@ -215,6 +215,10 @@ export default {
       this.default_peer_conf.address = response.address;
       this.peer_id_address_valid_until = response.valid_until;
     });
+    this.default_peer_conf.endpoint = {
+      enabled: false,
+      address: "none",
+    };
 
     this.default_peer_conf.private_key = wg_generate_key_wasm();
   },

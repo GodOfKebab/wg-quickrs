@@ -261,7 +261,6 @@ def test_config_peer_icon_toggle(setup_wg_quickrs_folder):
     "command",
     [
         ["config", "set", "network", "defaults", "peer", "kind", "server"],
-        ["config", "set", "network", "defaults", "peer", "endpoint", "192.168.1.1:51820"],
         ["config", "set", "network", "defaults", "peer", "icon", "https://example.com/default.png"],
         ["config", "set", "network", "defaults", "peer", "dns", "1.1.1.1,1.0.0.1"],
         ["config", "set", "network", "defaults", "peer", "mtu", "1380"],
@@ -300,35 +299,6 @@ def test_config_defaults_peer_field_toggle(setup_wg_quickrs_folder, field):
     # Disable
     result = subprocess.run(
         get_wg_quickrs_command() + ["config", "disable", "network", "defaults", "peer", field],
-        capture_output=True,
-        text=True
-    )
-    assert result.returncode == 0
-
-
-def test_config_defaults_peer_endpoint_toggle(setup_wg_quickrs_folder):
-    """Test enabling/disabling default peer endpoint (requires value to be set first)."""
-    setup_wg_quickrs_folder("no_auth_single_peer")
-
-    # Set endpoint value first
-    result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "set", "network", "defaults", "peer", "endpoint", "192.168.1.1:51820"],
-        capture_output=True,
-        text=True
-    )
-    assert result.returncode == 0
-
-    # Disable (endpoint was auto-enabled when set)
-    result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "disable", "network", "defaults", "peer", "endpoint"],
-        capture_output=True,
-        text=True
-    )
-    assert result.returncode == 0
-
-    # Enable again
-    result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "enable", "network", "defaults", "peer", "endpoint"],
         capture_output=True,
         text=True
     )

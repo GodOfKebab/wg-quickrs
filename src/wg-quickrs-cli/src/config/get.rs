@@ -251,11 +251,6 @@ pub enum GetNetworkDefaultsCommands {
 
 #[derive(Subcommand, Debug)]
 pub enum GetNetworkDefaultsPeerCommands {
-    #[command(about = "Get default peer endpoint")]
-    Endpoint {
-        #[command(subcommand)]
-        target: Option<GetNetworkPeersEndpointCommands>,
-    },
     #[command(about = "Get default peer kind")]
     Kind,
     #[command(about = "Get default peer icon")]

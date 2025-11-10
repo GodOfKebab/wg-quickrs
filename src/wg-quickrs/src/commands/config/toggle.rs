@@ -176,7 +176,6 @@ impl_peer_toggle!(enable_peer_mtu, disable_peer_mtu, mtu, "MTU");
 impl_connection_toggle!(enable_connection, disable_connection);
 
 // Defaults peer toggles
-impl_defaults_toggle!(enable_defaults_peer_endpoint, disable_defaults_peer_endpoint, peer.endpoint, "peer endpoint");
 impl_defaults_toggle!(enable_defaults_peer_icon, disable_defaults_peer_icon, peer.icon, "peer icon");
 impl_defaults_toggle!(enable_defaults_peer_dns, disable_defaults_peer_dns, peer.dns, "peer DNS");
 impl_defaults_toggle!(enable_defaults_peer_mtu, disable_defaults_peer_mtu, peer.mtu, "peer MTU");

@@ -769,7 +769,6 @@ def test_config_get_network_defaults_peer(setup_wg_quickrs_folder):
 
     data = get_yaml_output(["get", "network", "defaults", "peer"])
 
-    assert "endpoint" in data
     assert "kind" in data
     assert "icon" in data
     assert "dns" in data

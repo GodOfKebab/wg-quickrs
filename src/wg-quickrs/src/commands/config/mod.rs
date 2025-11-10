@@ -112,7 +112,6 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                 EnableNetworkCommands::Connection { id } => enable_connection(id),
                 EnableNetworkCommands::Defaults { target } => match target {
                     EnableDefaultsCommands::Peer { target } => match target {
-                        EnableDefaultsPeerCommands::Endpoint => enable_defaults_peer_endpoint(),
                         EnableDefaultsPeerCommands::Icon => enable_defaults_peer_icon(),
                         EnableDefaultsPeerCommands::Dns => enable_defaults_peer_dns(),
                         EnableDefaultsPeerCommands::Mtu => enable_defaults_peer_mtu(),
@@ -143,7 +142,6 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                 DisableNetworkCommands::Connection { id } => disable_connection(id),
                 DisableNetworkCommands::Defaults { target } => match target {
                     DisableDefaultsCommands::Peer { target } => match target {
-                        DisableDefaultsPeerCommands::Endpoint => disable_defaults_peer_endpoint(),
                         DisableDefaultsPeerCommands::Icon => disable_defaults_peer_icon(),
                         DisableDefaultsPeerCommands::Dns => disable_defaults_peer_dns(),
                         DisableDefaultsPeerCommands::Mtu => disable_defaults_peer_mtu(),
@@ -195,7 +193,6 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                 SetNetworkCommands::Defaults { target } => match target {
                     SetDefaultsCommands::Peer { target } => match target {
                         SetDefaultsPeerCommands::Kind { kind } => set_defaults_peer_kind(kind),
-                        SetDefaultsPeerCommands::Endpoint { endpoint } => set_defaults_peer_endpoint(endpoint),
                         SetDefaultsPeerCommands::Icon { src } => set_defaults_peer_icon(src),
                         SetDefaultsPeerCommands::Dns { addresses } => set_defaults_peer_dns(addresses),
                         SetDefaultsPeerCommands::Mtu { value } => set_defaults_peer_mtu(*value),
@@ -349,22 +346,6 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                             GetNetworkDefaultsCommands::Peer { target } => match target {
                                 None => get_network_defaults_peer(),
                                 Some(peer_cmd) => match peer_cmd {
-                                    GetNetworkDefaultsPeerCommands::Endpoint { target } => {
-                                        // For defaults, we don't use indexed access, just direct field access
-                                        let config = conf::util::get_config()?;
-                                        match target {
-                                            None => print_as_yaml(&config.network.defaults.peer.endpoint),
-                                            Some(endpoint_cmd) => match endpoint_cmd {
-                                                GetNetworkPeersEndpointCommands::Enabled => {
-                                                    println!("{}", config.network.defaults.peer.endpoint.enabled);
-                                                    Ok(())
-                                                },
-                                                GetNetworkPeersEndpointCommands::Address => {
-                                                    print_as_yaml(&config.network.defaults.peer.endpoint.address)
-                                                },
-                                            },
-                                        }
-                                    },
                                     GetNetworkDefaultsPeerCommands::Kind => {
                                         let config = conf::util::get_config()?;
                                         println!("{}", config.network.defaults.peer.kind);

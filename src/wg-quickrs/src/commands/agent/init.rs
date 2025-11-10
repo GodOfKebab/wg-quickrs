@@ -769,10 +769,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
             updated_at: now,
             defaults: Defaults {
                 peer: DefaultPeer {
-                    endpoint: Endpoint {
-                        enabled: false,
-                        address: EndpointAddress::None,
-                    },
                     kind: default_peer_kind.to_string(),
                     icon: Icon{
                         enabled: default_peer_icon_enabled,

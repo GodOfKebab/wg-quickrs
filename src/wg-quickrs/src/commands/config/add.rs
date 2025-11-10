@@ -57,7 +57,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
         opts.endpoint_enabled,
         ADD_PEER_ENDPOINT_ENABLED_FLAG,
         ADD_PEER_ENDPOINT_ENABLED_HELP,
-        config.network.defaults.peer.endpoint.enabled,
+        false,
     );
 
     let endpoint_address = if endpoint_enabled {

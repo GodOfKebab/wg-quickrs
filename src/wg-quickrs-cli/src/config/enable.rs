@@ -87,8 +87,6 @@ pub enum EnableDefaultsCommands {
 
 #[derive(Subcommand, Debug)]
 pub enum EnableDefaultsPeerCommands {
-    #[command(about = "Enable default peer endpoint")]
-    Endpoint,
     #[command(about = "Enable default peer icon")]
     Icon,
     #[command(about = "Enable default peer DNS")]

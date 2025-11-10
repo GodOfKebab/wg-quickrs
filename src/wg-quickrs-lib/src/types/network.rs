@@ -255,7 +255,6 @@ pub struct Defaults {
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Debug, Clone)]
 pub struct DefaultPeer {
-    pub endpoint: Endpoint,
     pub kind: String,
     pub icon: Icon,
     pub dns: Dns,

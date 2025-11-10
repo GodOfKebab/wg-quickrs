@@ -55,10 +55,6 @@ network:
   connections: {}
   defaults:
     peer:
-      endpoint:
-        enabled: false
-        address: none
-        port: 51820
       kind: laptop
       icon:
         enabled: false

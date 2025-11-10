@@ -82,7 +82,6 @@ def create_invalid_config_file(wg_quickrs_config_file, field_path, invalid_value
         ("network.connections.9541bbb0-a3c0-4b83-8637-96820cae7983*0ed989c6-6dba-4e3c-8034-08adf4262d9e.persistent_keepalive", {"enabled": True, "period": ""}, ["u16"]),
 
         # Defaults field validation
-        ("network.defaults.peer.endpoint", {"enabled": True, "address": { "ipv4_and_port": {"ipv4": "invalid-address", "port": 51111} }}, ["endpoint.address"]),
         ("network.defaults.peer.icon", {"enabled": True, "src": ""}, ["icon cannot be empty"]),
         ("network.defaults.peer.dns", {"enabled": True, "addresses": "invalid-dns"}, ["invalid type"]),
         ("network.defaults.peer.mtu", {"enabled": True, "value": "invalid"}, ["u16"]),
