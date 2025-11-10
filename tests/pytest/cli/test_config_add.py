@@ -68,16 +68,16 @@ def generate_add_peer_opts(
 def generate_add_connection_opts(
         first_peer="9541bbb0-a3c0-4b83-8637-96820cae7983",
         second_peer="6e9a8440-f884-4b54-bfe7-b982f15e40fd",
-        allowed_ips_a_to_b="10.0.34.1/32",
-        allowed_ips_b_to_a="10.0.34.2/32",
+        allowed_ips_first_to_second="10.0.34.1/32",
+        allowed_ips_second_to_first="10.0.34.2/32",
         persistent_keepalive="--persistent-keepalive-enabled false",
 ):
     """Generate add connection options with defaults."""
     return f"""
     --first-peer {first_peer} \\
     --second-peer {second_peer} \\
-    --allowed-ips-a-to-b {allowed_ips_a_to_b} \\
-    --allowed-ips-b-to-a {allowed_ips_b_to_a} \\
+    --allowed-ips-first-to-second {allowed_ips_first_to_second} \\
+    --allowed-ips-second-to-first {allowed_ips_second_to_first} \\
     {persistent_keepalive}
     """
 
@@ -177,13 +177,13 @@ def test_add_connection_no_prompt_simple(setup_wg_quickrs_folder):
     "opt_key, opt_val, success",
     [
         # Allowed IPs tests
-        ("allowed_ips_a_to_b", "10.0.34.0/24", True),
-        ("allowed_ips_a_to_b", "10.0.34.1/32,10.0.34.2/32", True),
-        ("allowed_ips_a_to_b", "not-a-cidr", False),
+        ("allowed_ips_first_to_second", "10.0.34.0/24", True),
+        ("allowed_ips_first_to_second", "10.0.34.1/32,10.0.34.2/32", True),
+        ("allowed_ips_first_to_second", "not-a-cidr", False),
 
-        ("allowed_ips_b_to_a", "10.0.34.0/24", True),
-        ("allowed_ips_b_to_a", "10.0.34.1/32,10.0.34.2/32", True),
-        ("allowed_ips_b_to_a", "not-a-cidr", False),
+        ("allowed_ips_second_to_first", "10.0.34.0/24", True),
+        ("allowed_ips_second_to_first", "10.0.34.1/32,10.0.34.2/32", True),
+        ("allowed_ips_second_to_first", "not-a-cidr", False),
 
         # Persistent keepalive tests
         ("persistent_keepalive", "--persistent-keepalive-enabled true", False),  # Missing period

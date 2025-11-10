@@ -102,9 +102,9 @@ pub struct AddConnectionOptions {
     #[arg(long, default_value = None, long_help = "Set persistent keepalive period in seconds", value_name = "25")]
     pub persistent_keepalive_period: Option<u16>,
 
-    #[arg(long, default_value = None, long_help = "Set allowed IPs from peer A to B (comma-separated CIDR blocks)", value_name = "10.0.34.0/24")]
-    pub allowed_ips_a_to_b: Option<String>,
+    #[arg(long, default_value = None, long_help = "Set allowed IPs from the first peer to the second peer (comma-separated CIDR blocks)", value_name = "10.0.34.0/24")]
+    pub allowed_ips_first_to_second: Option<String>,
 
-    #[arg(long, default_value = None, long_help = "Set allowed IPs from peer B to A (comma-separated CIDR blocks)", value_name = "10.0.34.0/24")]
-    pub allowed_ips_b_to_a: Option<String>,
+    #[arg(long, default_value = None, long_help = "Set allowed IPs from the second peer to the first peer (comma-separated CIDR blocks)", value_name = "10.0.34.0/24")]
+    pub allowed_ips_second_to_first: Option<String>,
 }

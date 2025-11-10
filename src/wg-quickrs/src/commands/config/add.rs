@@ -107,7 +107,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
             step_str::<ADD_PEER_STEPS>(step_counter),
             opts.icon_src.clone(),
             ADD_PEER_ICON_SRC_FLAG,
-            ADD_PEER_ICON_SRC_HELP,
+            format!("\t{}", ADD_PEER_ICON_SRC_HELP).as_str(),
             config.network.defaults.peer.icon.enabled.then(|| config.network.defaults.peer.icon.src.clone()),
             parse_and_validate_peer_icon_src,
         )
@@ -132,7 +132,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
             step_str::<ADD_PEER_STEPS>(step_counter),
             opts.dns_addresses.clone(),
             ADD_PEER_DNS_ADDRESSES_FLAG,
-            ADD_PEER_DNS_ADDRESSES_HELP,
+            format!("\t{}", ADD_PEER_DNS_ADDRESSES_HELP).as_str(),
             (!config.network.defaults.peer.dns.addresses.is_empty())
                 .then_some(config.network.defaults.peer.dns.addresses.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(",")),
             parse_and_validate_peer_dns_addresses,
@@ -158,7 +158,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
             step_str::<ADD_PEER_STEPS>(step_counter),
             opts.mtu_value.clone().map(|o| o.to_string()),
             ADD_PEER_MTU_VALUE_FLAG,
-            ADD_PEER_MTU_VALUE_HELP,
+            format!("\t{}", ADD_PEER_MTU_VALUE_HELP).as_str(),
             config.network.defaults.peer.mtu.enabled.then(|| config.network.defaults.peer.mtu.value.to_string()),
             parse_and_validate_peer_mtu_value,
         )
@@ -276,12 +276,24 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
             if !want_connections {
                 vec![]
             } else {
+                let defaults: Vec<bool> = config.network.peers.iter()
+                    .map(|(id, _)| *id == config.network.this_peer)
+                    .collect();
+
                 // Ask which peers to connect to
                 let selections = dialoguer::MultiSelect::new()
                     .with_prompt("Select peers to connect to (space to select, enter to confirm)")
                     .items(&peer_items)
+                    .defaults(&defaults)
+                    .report(false)
                     .interact()
                     .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
+
+                // Print the selected items
+                println!("Selected peers:");
+                for &index in &selections {
+                    println!(" ✓ {}", peer_items[index]);
+                }
 
                 selections.iter()
                     .filter_map(|&idx| {
@@ -303,8 +315,8 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
             second_peer: Some(other_peer_id),
             persistent_keepalive_enabled: None,
             persistent_keepalive_period: None,
-            allowed_ips_a_to_b: None,
-            allowed_ips_b_to_a: None,
+            allowed_ips_first_to_second: None,
+            allowed_ips_second_to_first: None,
         })?;
     }
 
@@ -318,9 +330,6 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
 
     // Get first peer
     let first_peer_id = if let Some(peer_id) = opts.first_peer {
-        if !config.network.peers.contains_key(&peer_id) {
-            return Err(ConfigCommandError::PeerNotFound(peer_id.clone()));
-        }
         peer_id
     } else if opts.no_prompt == Some(true) {
         return Err(ConfigCommandError::MissingArgument("first_peer".to_string()));
@@ -342,12 +351,10 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
 
         *config.network.peers.keys().nth(selection).unwrap()
     };
+    let first_peer_name = &config.network.peers.get(&first_peer_id).ok_or(ConfigCommandError::PeerNotFound(first_peer_id.clone()))?.name;
 
     // Get peer B
     let second_peer_id = if let Some(peer_id) = opts.second_peer {
-        if !config.network.peers.contains_key(&peer_id) {
-            return Err(ConfigCommandError::PeerNotFound(peer_id.clone()));
-        }
         if peer_id == first_peer_id {
             return Err(ConfigCommandError::MissingArgument("peer_a and peer_b cannot be the same".to_string()));
         }
@@ -376,6 +383,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
             .nth(selection)
             .unwrap()
     };
+    let second_peer_name = &config.network.peers.get(&second_peer_id).ok_or(ConfigCommandError::PeerNotFound(second_peer_id.clone()))?.name;
 
     // Create connection ID (always store with smaller UUID first)
     let conn_id = get_connection_id(first_peer_id, second_peer_id);
@@ -385,26 +393,29 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
         return Err(ConfigCommandError::MissingArgument(format!("Connection already exists: {}", conn_id)));
     }
 
+    let first_peer_disp = format!("{} ({})", first_peer_name, first_peer_id);
+    let second_peer_disp = format!("{} ({})", second_peer_name, second_peer_id);
+
     // Get allowed IPs A to B
-    let ips_a_to_b = get_value(
+    let ips_first_to_second = get_value(
         opts.no_prompt,
         step_str::<ADD_CONN_STEPS>(step_counter),
-        opts.allowed_ips_a_to_b.clone(),
-        ADD_CONNECTION_ALLOWED_IPS_A_TO_B_FLAG,
-        ADD_CONNECTION_ALLOWED_IPS_A_TO_B_HELP,
-        Some(format!("{}/32", config.network.peers.get(&conn_id.b).unwrap().address)),
+        opts.allowed_ips_first_to_second.clone(),
+        ADD_CONNECTION_ALLOWED_IPS_FIRST_TO_SECOND_FLAG,
+        &ADD_CONNECTION_ALLOWED_IPS_FIRST_TO_SECOND_HELP.replace("the first peer", &first_peer_disp).replace("the second peer", &second_peer_disp),
+        Some(format!("{}/32", config.network.peers.get(&second_peer_id).unwrap().address)),
         parse_and_validate_conn_allowed_ips,
     );
     step_counter += 1;
 
     // Get allowed IPs B to A
-    let ips_b_to_a = get_value(
+    let ips_second_to_first = get_value(
         opts.no_prompt,
         step_str::<ADD_CONN_STEPS>(step_counter),
-        opts.allowed_ips_b_to_a.clone(),
-        ADD_CONNECTION_ALLOWED_IPS_B_TO_A_FLAG,
-        ADD_CONNECTION_ALLOWED_IPS_B_TO_A_HELP,
-        Some(format!("{}/32", config.network.peers.get(&conn_id.a).unwrap().address)),
+        opts.allowed_ips_second_to_first.clone(),
+        ADD_CONNECTION_ALLOWED_IPS_SECOND_TO_FIRST_FLAG,
+        &ADD_CONNECTION_ALLOWED_IPS_SECOND_TO_FIRST_HELP.replace("the first peer", &first_peer_disp).replace("the second peer", &second_peer_disp),
+        Some(format!("{}/32", config.network.peers.get(&first_peer_id).unwrap().address)),
         parse_and_validate_conn_allowed_ips,
     );
     step_counter += 1;
@@ -431,7 +442,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
                 step_str::<ADD_CONN_STEPS>(step_counter),
                 None,
                 ADD_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_FLAG,
-                ADD_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_HELP,
+                format!("\t{}", ADD_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_HELP).as_str(),
                 Some(config.network.defaults.connection.persistent_keepalive.period.to_string()),
                 parse_and_validate_conn_persistent_keepalive_period,
             )
@@ -441,6 +452,12 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
     };
 
     // Create connection
+    let (allowed_ips_a_to_b, allowed_ips_b_to_a) = if conn_id.a == first_peer_id {
+        (ips_first_to_second, ips_second_to_first)
+    } else {
+        (ips_second_to_first, ips_first_to_second)
+    };
+
     let connection = Connection {
         enabled: true,
         pre_shared_key: wg_generate_key(),
@@ -448,8 +465,8 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
             enabled: keepalive_enabled,
             period: keepalive_period,
         },
-        allowed_ips_a_to_b: ips_a_to_b,
-        allowed_ips_b_to_a: ips_b_to_a,
+        allowed_ips_a_to_b,
+        allowed_ips_b_to_a,
     };
 
     config.network.connections.insert(conn_id.clone(), connection);

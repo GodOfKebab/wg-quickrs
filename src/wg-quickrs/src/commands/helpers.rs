@@ -7,7 +7,7 @@ use wg_quickrs_lib::validation::network::parse_and_validate_peer_script;
 
 /// Format step string with padding if single-digit
 pub fn step_str<const TOTAL: u8>(step: u8) -> String {
-    if step < 10 {
+    if step < 10 && TOTAL >= 10 {
         format!("\t[ {}/{}]", step, TOTAL)
     } else {
         format!("\t[{}/{}]", step, TOTAL)
