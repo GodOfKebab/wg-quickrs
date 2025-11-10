@@ -244,7 +244,7 @@ def test_patch_connection_field_changes(setup_wg_quickrs_agent, field_name, fiel
 
         # Different MTU configurations
         ({"mtu": {"enabled": True, "value": 1420}}, 200, "add peer with MTU 1420"),
-        ({"mtu": {"enabled": True, "value": 0}}, 200, "add peer with MTU minimum"),
+        ({"mtu": {"enabled": True, "value": 0}}, 400, "MTU validation error - 0"),
         ({"mtu": {"enabled": True, "value": 10000}}, 200, "add peer with MTU maximum"),
         ({"mtu": {"enabled": False, "value": 30000}}, 200, "add peer with MTU disabled"),
         ({"mtu": {"enabled": True, "value": ""}}, 400, "MTU validation error - empty"),
