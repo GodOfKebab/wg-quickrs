@@ -5,6 +5,7 @@ pub mod reset;
 pub mod get;
 pub mod list;
 pub mod remove;
+pub mod add;
 
 use clap::Subcommand;
 
@@ -44,5 +45,10 @@ pub enum ConfigCommands {
     Remove {
         #[command(subcommand)]
         target: remove::RemoveCommands,
+    },
+    #[command(about = "Add network entities")]
+    Add {
+        #[command(subcommand)]
+        target: add::AddCommands,
     },
 }

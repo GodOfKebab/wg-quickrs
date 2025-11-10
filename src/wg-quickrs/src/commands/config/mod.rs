@@ -4,6 +4,7 @@ mod set;
 mod list;
 mod remove;
 mod reset;
+mod add;
 
 use std::io;
 use std::net::Ipv4Addr;
@@ -19,6 +20,7 @@ use wg_quickrs_cli::config::reset::*;
 use wg_quickrs_cli::config::get::*;
 use wg_quickrs_cli::config::list::*;
 use wg_quickrs_cli::config::remove::*;
+use wg_quickrs_cli::config::add::*;
 use wg_quickrs_lib::types::network::ConnectionId;
 use wg_quickrs_lib::validation::error::ValidationError;
 use crate::commands::config::toggle::*;
@@ -27,6 +29,7 @@ use crate::commands::config::set::*;
 use crate::commands::config::list::*;
 use crate::commands::config::remove::*;
 use crate::commands::config::reset::*;
+use crate::commands::config::add::*;
 use crate::conf;
 use crate::conf::util::ConfUtilError;
 
@@ -467,6 +470,10 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
             RemoveCommands::Peer { id } => remove_network_peer(id),
             RemoveCommands::Connection { id } => remove_network_connection(id),
             RemoveCommands::Reservation { address } => remove_network_reservation(address),
+        },
+        ConfigCommands::Add { target } => match target {
+            AddCommands::Peer { options } => add_peer(options),
+            AddCommands::Connection { options } => add_connection(options),
         },
     }
 }

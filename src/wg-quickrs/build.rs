@@ -6,41 +6,115 @@ use std::fs;
 use std::path::Path;
 
 fn main() {
-    // flag/help generator for cli
-    #[derive(Parser, Debug)]
-    struct InitOptionsWrapper {
-        #[command(flatten)]
-        opts: wg_quickrs_cli::agent::InitOptions,
-    }
-    let cmd = InitOptionsWrapper::command();
+    let out_dir = std::env::var("OUT_DIR").unwrap();
 
-    let mut const_content = String::new();
+    // Generate constants for init options
+    {
+        #[derive(Parser, Debug)]
+        struct InitOptionsWrapper {
+            #[command(flatten)]
+            opts: wg_quickrs_cli::agent::InitOptions,
+        }
+        let cmd = InitOptionsWrapper::command();
 
-    for arg in cmd.get_arguments() {
-        if let Some(long) = arg.get_long() {
-            if long == "no-prompt" {
-                continue
-            }
-            let help = arg.get_long_help().unwrap_or_default().to_string();
-            let const_name = long.replace('-', "_").to_uppercase();
+        let mut const_content = String::new();
 
-            const_content.push_str(&format!(
-                r#"
+        for arg in cmd.get_arguments() {
+            if let Some(long) = arg.get_long() {
+                if long == "no-prompt" {
+                    continue
+                }
+                let help = arg.get_long_help().unwrap_or_default().to_string();
+                let const_name = long.replace('-', "_").to_uppercase();
+
+                const_content.push_str(&format!(
+                    r#"
 pub const INIT_{}_FLAG: &str = "--{}";
 pub const INIT_{}_HELP: &str = "{}";
 "#,
-                const_name,
-                long,
-                const_name,
-                help.replace('"', "\\\"").replace('\n', "\\n")
-            ));
+                    const_name,
+                    long,
+                    const_name,
+                    help.replace('"', "\\\"").replace('\n', "\\n")
+                ));
+            }
         }
+
+        let dest_path = Path::new(&out_dir).join("init_options_generated.rs");
+        fs::write(dest_path, const_content).expect("Could not write init_options_generated.rs");
     }
 
-    let out_dir = std::env::var("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join("init_options_generated.rs");
+    // Generate constants for add peer options
+    {
+        #[derive(Parser, Debug)]
+        struct AddPeerOptionsWrapper {
+            #[command(flatten)]
+            opts: wg_quickrs_cli::config::add::AddPeerOptions,
+        }
+        let cmd = AddPeerOptionsWrapper::command();
 
-    fs::write(dest_path, const_content).expect("Could not write init_options_generated.rs");
+        let mut const_content = String::new();
+
+        for arg in cmd.get_arguments() {
+            if let Some(long) = arg.get_long() {
+                if long == "no-prompt" {
+                    continue
+                }
+                let help = arg.get_long_help().unwrap_or_default().to_string();
+                let const_name = long.replace('-', "_").to_uppercase();
+
+                const_content.push_str(&format!(
+                    r#"
+pub const ADD_PEER_{}_FLAG: &str = "--{}";
+pub const ADD_PEER_{}_HELP: &str = "{}";
+"#,
+                    const_name,
+                    long,
+                    const_name,
+                    help.replace('"', "\\\"").replace('\n', "\\n")
+                ));
+            }
+        }
+
+        let dest_path = Path::new(&out_dir).join("add_peer_options_generated.rs");
+        fs::write(dest_path, const_content).expect("Could not write add_peer_options_generated.rs");
+    }
+
+    // Generate constants for add connection options
+    {
+        #[derive(Parser, Debug)]
+        struct AddConnectionOptionsWrapper {
+            #[command(flatten)]
+            opts: wg_quickrs_cli::config::add::AddConnectionOptions,
+        }
+        let cmd = AddConnectionOptionsWrapper::command();
+
+        let mut const_content = String::new();
+
+        for arg in cmd.get_arguments() {
+            if let Some(long) = arg.get_long() {
+                if long == "no-prompt" || long == "first-peer" || long == "second-peer" {
+                    continue
+                }
+                let help = arg.get_long_help().unwrap_or_default().to_string();
+                let const_name = long.replace('-', "_").to_uppercase();
+
+                const_content.push_str(&format!(
+                    r#"
+pub const ADD_CONNECTION_{}_FLAG: &str = "--{}";
+pub const ADD_CONNECTION_{}_HELP: &str = "{}";
+"#,
+                    const_name,
+                    long,
+                    const_name,
+                    help.replace('"', "\\\"").replace('\n', "\\n")
+                ));
+            }
+        }
+
+        let dest_path = Path::new(&out_dir).join("add_connection_options_generated.rs");
+        fs::write(dest_path, const_content).expect("Could not write add_connection_options_generated.rs");
+    }
 
     // Generate completion scripts
     let cli = wg_quickrs_cli::Cli::command();
