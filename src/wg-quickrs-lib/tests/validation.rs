@@ -596,7 +596,7 @@ fn test_validate_persistent_keepalive_struct() {
         enabled: false,
         period: 0,
     };
-    ok!(validate_conn_persistent_keepalive_period(&pk));
+    ok!(validate_conn_persistent_keepalive(&pk));
 
     // Enabled persistent_keepalive with 0 period should fail
     let pk = PersistentKeepalive {
@@ -604,7 +604,7 @@ fn test_validate_persistent_keepalive_struct() {
         period: 0,
     };
     is_err!(
-        validate_conn_persistent_keepalive_period(&pk),
+        validate_conn_persistent_keepalive(&pk),
         ValidationError::InvalidPersistentKeepalivePeriod()
     );
 
@@ -613,14 +613,14 @@ fn test_validate_persistent_keepalive_struct() {
         enabled: true,
         period: 25,
     };
-    ok!(validate_conn_persistent_keepalive_period(&pk));
+    ok!(validate_conn_persistent_keepalive(&pk));
 
     // Enabled persistent_keepalive with max valid period should succeed
     let pk = PersistentKeepalive {
         enabled: true,
         period: 65535,
     };
-    ok!(validate_conn_persistent_keepalive_period(&pk));
+    ok!(validate_conn_persistent_keepalive(&pk));
 }
 
 #[test]

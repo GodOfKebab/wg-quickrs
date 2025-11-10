@@ -181,15 +181,19 @@ pub fn parse_and_validate_wg_key(key: &str) -> ValidationResult<WireGuardKey> {
 pub fn parse_and_validate_conn_persistent_keepalive_period(persistent_keepalive_period: &str) -> ValidationResult<u16> {
     let period = persistent_keepalive_period.parse::<u16>()
         .map_err(|_| ValidationError::InvalidPersistentKeepalivePeriod())?;
-    if period == 0 {
-        return Err(ValidationError::InvalidPersistentKeepalivePeriod());
-    }
-    Ok(period)
+    validate_conn_persistent_keepalive_period(period)
 }
 
-pub fn validate_conn_persistent_keepalive_period(persistent_keepalive: &PersistentKeepalive) -> ValidationResult<PersistentKeepalive> {
+pub fn validate_conn_persistent_keepalive_period(persistent_keepalive_period: u16) -> ValidationResult<u16> {
+    if persistent_keepalive_period == 0 {
+        return Err(ValidationError::InvalidPersistentKeepalivePeriod());
+    }
+    Ok(persistent_keepalive_period)
+}
+
+pub fn validate_conn_persistent_keepalive(persistent_keepalive: &PersistentKeepalive) -> ValidationResult<PersistentKeepalive> {
     if persistent_keepalive.enabled {
-        parse_and_validate_conn_persistent_keepalive_period(&persistent_keepalive.period.to_string())?;
+        validate_conn_persistent_keepalive_period(persistent_keepalive.period)?;
     }
 
     Ok(persistent_keepalive.clone())

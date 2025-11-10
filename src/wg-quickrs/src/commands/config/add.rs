@@ -7,7 +7,6 @@ use uuid::Uuid;
 use wg_quickrs_lib::helpers::{get_connection_id, wg_generate_key};
 use wg_quickrs_lib::types::network::*;
 use wg_quickrs_lib::validation::network::*;
-use wg_quickrs_lib::validation::error::ValidationError;
 use wg_quickrs_cli::config::add::{AddPeerOptions, AddConnectionOptions};
 use crate::conf::network::get_next_available_address;
 
@@ -432,10 +431,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
 
     let keepalive_period = if keepalive_enabled {
         if let Some(p) = opts.persistent_keepalive_period {
-            if p == 0 {
-                return Err(ConfigCommandError::Validation(ValidationError::InvalidPersistentKeepalivePeriod()));
-            }
-            p
+            validate_conn_persistent_keepalive_period(p)?
         } else {
             get_value(
                 opts.no_prompt,

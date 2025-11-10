@@ -123,7 +123,7 @@ mod wasm {
         let pkp_res = parse_and_validate_conn_persistent_keepalive_period(persistent_keepalive_period);
         let res = match pkp_res {
             Ok(period) => {
-                ValidationResultWasm::from(validate_conn_persistent_keepalive_period(&PersistentKeepalive{ enabled, period }))
+                ValidationResultWasm::from(validate_conn_persistent_keepalive(&PersistentKeepalive{ enabled, period }))
             }
             Err(e) => ValidationResultWasm{ error: e.to_string(), value: None }
         };

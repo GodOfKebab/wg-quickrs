@@ -88,7 +88,7 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
         // skip network.connections.{conn_id}.pre_shared_key because if it can be deserialized, it means it's valid
         // skip network.connections.{conn_id}.allowed_ips_a_to_b because if it can be deserialized, it means it's valid
         // skip network.connections.{conn_id}.allowed_ips_b_to_a because if it can be deserialized, it means it's valid
-        validate_conn_persistent_keepalive_period(&connection.persistent_keepalive).map_err(|e| {
+        validate_conn_persistent_keepalive(&connection.persistent_keepalive).map_err(|e| {
             ConfigFileValidationError::Validation(format!("{}.persistent_keepalive", conn_path), e)
         })?;
     }
@@ -116,7 +116,7 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
         })?;
     }
 
-    validate_conn_persistent_keepalive_period(&config_file.network.defaults.connection.persistent_keepalive).map_err(|e| {
+    validate_conn_persistent_keepalive(&config_file.network.defaults.connection.persistent_keepalive).map_err(|e| {
         ConfigFileValidationError::Validation(format!("{}.connection.persistent_keepalive", defaults_path), e)
     })?;
 

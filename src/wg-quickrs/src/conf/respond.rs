@@ -186,7 +186,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                         // If deserialization succeeds, allowed_ips_b_to_a is already validated.
                     }
                     if let Some(persistent_keepalive) = connection_details.persistent_keepalive {
-                        connection_config.persistent_keepalive = validate_conn_persistent_keepalive_period(&persistent_keepalive).map_err(|e| {
+                        connection_config.persistent_keepalive = validate_conn_persistent_keepalive(&persistent_keepalive).map_err(|e| {
                             bad_request!("changed_fields.connections.{}.persistent_keepalive: {}", connection_id, e)
                         })?;
                     }
@@ -297,7 +297,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 // If deserialization succeeds, pre_shared_key is already validated.
                 // If deserialization succeeds, allowed_ips_a_to_b is already validated.
                 // If deserialization succeeds, allowed_ips_b_to_a is already validated.
-                validate_conn_persistent_keepalive_period(&connection_details.persistent_keepalive).map_err(|e| {
+                validate_conn_persistent_keepalive(&connection_details.persistent_keepalive).map_err(|e| {
                     bad_request!("added_connections.{}.persistent_keepalive: {}", connection_id, e)
                 })?;
 
