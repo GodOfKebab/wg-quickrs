@@ -178,11 +178,11 @@ def test_add_connection_no_prompt_simple(setup_wg_quickrs_folder):
     [
         # Allowed IPs tests
         ("allowed_ips_first_to_second", "10.0.34.0/24", True),
-        ("allowed_ips_first_to_second", "10.0.34.1/32,10.0.34.2/32", True),
+        ("allowed_ips_first_to_second", "10.0.34.1/32 --allowed-ips-first-to-second 10.0.34.0/24", True),
         ("allowed_ips_first_to_second", "not-a-cidr", False),
 
         ("allowed_ips_second_to_first", "10.0.34.0/24", True),
-        ("allowed_ips_second_to_first", "10.0.34.1/32,10.0.34.2/32", True),
+        ("allowed_ips_second_to_first", "10.0.34.1/32 --allowed-ips-second-to-first 10.0.34.0/24", True),
         ("allowed_ips_second_to_first", "not-a-cidr", False),
 
         # Persistent keepalive tests

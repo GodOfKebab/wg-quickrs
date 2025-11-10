@@ -302,8 +302,8 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
             second_peer: Some(other_peer_id.clone()),
             persistent_keepalive_enabled: None,
             persistent_keepalive_period: None,
-            allowed_ips_first_to_second: None,
-            allowed_ips_second_to_first: None,
+            allowed_ips_first_to_second: Vec::new(),
+            allowed_ips_second_to_first: Vec::new(),
         })?;
     }
 
@@ -399,26 +399,26 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
     let second_peer_disp = format!("{} ({})", second_peer_name, second_peer_id);
 
     // Get allowed IPs A to B
-    let ips_first_to_second = get_value(
+    let default_first_to_second = vec![format!("{}/32", config.network.peers.get(&second_peer_id).unwrap().address).parse().unwrap()];
+    let ips_first_to_second = get_allowed_ips(
         opts.no_prompt,
         step_str(step_counter),
         opts.allowed_ips_first_to_second.clone(),
         ADD_CONNECTION_ALLOWED_IPS_FIRST_TO_SECOND_FLAG,
         &ADD_CONNECTION_ALLOWED_IPS_FIRST_TO_SECOND_HELP.replace("the first peer", &first_peer_disp).replace("the second peer", &second_peer_disp),
-        Some(format!("{}/32", config.network.peers.get(&second_peer_id).unwrap().address)),
-        parse_and_validate_conn_allowed_ips,
+        default_first_to_second,
     );
     step_counter += 1;
 
     // Get allowed IPs B to A
-    let ips_second_to_first = get_value(
+    let default_second_to_first = vec![format!("{}/32", config.network.peers.get(&first_peer_id).unwrap().address).parse().unwrap()];
+    let ips_second_to_first = get_allowed_ips(
         opts.no_prompt,
         step_str(step_counter),
         opts.allowed_ips_second_to_first.clone(),
         ADD_CONNECTION_ALLOWED_IPS_SECOND_TO_FIRST_FLAG,
         &ADD_CONNECTION_ALLOWED_IPS_SECOND_TO_FIRST_HELP.replace("the first peer", &first_peer_disp).replace("the second peer", &second_peer_disp),
-        Some(format!("{}/32", config.network.peers.get(&first_peer_id).unwrap().address)),
-        parse_and_validate_conn_allowed_ips,
+        default_second_to_first,
     );
     step_counter += 1;
 

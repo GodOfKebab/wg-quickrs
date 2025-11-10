@@ -1,4 +1,5 @@
 use clap::{Args, Subcommand};
+use ipnet::Ipv4Net;
 use std::net::Ipv4Addr;
 use uuid::Uuid;
 
@@ -45,7 +46,7 @@ pub struct AddPeerOptions {
     #[arg(long, default_value = None, long_help = "Enable DNS")]
     pub dns_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, num_args = 0.., long_help = "Set DNS address(es). Can be specified multiple times for multiple DNS addresses.", value_name = "1.1.1.1")]
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set DNS address", value_name = "1.1.1.1")]
     pub dns_addresses: Vec<Ipv4Addr>,
 
     #[arg(long, default_value = None, long_help = "Enable MTU")]
@@ -102,9 +103,9 @@ pub struct AddConnectionOptions {
     #[arg(long, default_value = None, long_help = "Set persistent keepalive period in seconds", value_name = "25")]
     pub persistent_keepalive_period: Option<u16>,
 
-    #[arg(long, default_value = None, long_help = "Set allowed IPs from the first peer to the second peer (comma-separated CIDR blocks)", value_name = "10.0.34.0/24")]
-    pub allowed_ips_first_to_second: Option<String>,
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set allowed IPs from the first peer to the second peer", value_name = "10.0.34.0/24")]
+    pub allowed_ips_first_to_second: Vec<Ipv4Net>,
 
-    #[arg(long, default_value = None, long_help = "Set allowed IPs from the second peer to the first peer (comma-separated CIDR blocks)", value_name = "10.0.34.0/24")]
-    pub allowed_ips_second_to_first: Option<String>,
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set allowed IPs from the second peer to the first peer", value_name = "10.0.34.0/24")]
+    pub allowed_ips_second_to_first: Vec<Ipv4Net>,
 }

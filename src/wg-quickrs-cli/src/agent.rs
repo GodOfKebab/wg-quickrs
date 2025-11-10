@@ -102,7 +102,7 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Enable DNS configuration for agent")]
     pub agent_peer_dns_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, num_args = 0.., long_help = "Set DNS address(es) for agent. Can be specified multiple times for multiple DNS addresses.", value_name = "1.1.1.1"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set DNS address for agent", value_name = "1.1.1.1"
     )]
     pub agent_peer_dns_addresses: Vec<Ipv4Addr>,
 
@@ -158,7 +158,7 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Enable DNS for new peers by default")]
     pub default_peer_dns_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, num_args = 0.., long_help = "Set default DNS address(es) for new peers. Can be specified multiple times for multiple DNS addresses.", value_name = "1.1.1.1"
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set default DNS address for new peers", value_name = "1.1.1.1"
     )]
     pub default_peer_dns_addresses: Vec<Ipv4Addr>,
 

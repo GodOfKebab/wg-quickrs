@@ -1,8 +1,9 @@
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
+use ipnet::Ipv4Net;
 use rand::{rng, RngCore};
 use std::net::Ipv4Addr;
-use wg_quickrs_lib::types::network::Script;
+use wg_quickrs_lib::types::network::{AllowedIPs, Script};
 use wg_quickrs_lib::validation::error::ValidationResult;
 use wg_quickrs_lib::validation::network::parse_and_validate_peer_script;
 
@@ -183,7 +184,7 @@ pub fn get_dns_addresses(
     enabled_flag: &str,
     addresses_flag: &str,
     enabled_help: &str,
-    _addresses_help: &str,
+    addresses_help: &str,
 ) -> Vec<Ipv4Addr> {
     get_dns_addresses_with_defaults(
         cli_no_prompt,
@@ -193,7 +194,7 @@ pub fn get_dns_addresses(
         enabled_flag,
         addresses_flag,
         enabled_help,
-        _addresses_help,
+        addresses_help,
         vec!["1.1.1.1".parse().unwrap()],
     )
 }
@@ -207,7 +208,7 @@ pub fn get_dns_addresses_with_defaults(
     enabled_flag: &str,
     addresses_flag: &str,
     enabled_help: &str,
-    _addresses_help: &str,
+    addresses_help: &str,
     default_addresses: Vec<Ipv4Addr>,
 ) -> Vec<Ipv4Addr> {
     let mut addresses = Vec::new();
@@ -252,7 +253,7 @@ pub fn get_dns_addresses_with_defaults(
     let mut dns_address_counter = 0;
     loop {
         let dns_address: Ipv4Addr = prompt(
-            &format!("\t{} Enter DNS address (CLI option '{}')", step_str, addresses_flag),
+            &format!("\t{} {} (CLI option '{}')", step_str, addresses_help, addresses_flag),
             if dns_address_counter < default_addresses.len() { Some(default_addresses[dns_address_counter].to_string()) } else { None },
             |s: &str| s.trim().parse().map_err(|_| wg_quickrs_lib::validation::error::ValidationError::NotIPv4Address()),
         );
@@ -271,6 +272,61 @@ pub fn get_dns_addresses_with_defaults(
     }
 
     addresses
+}
+
+/// Helper to prompt for multiple allowed IPs (CIDR blocks)
+pub fn get_allowed_ips(
+    cli_no_prompt: Option<bool>,
+    step_str: String,
+    cli_allowed_ips: Vec<Ipv4Net>,
+    flag: &str,
+    help: &str,
+    default_allowed_ips: Vec<Ipv4Net>,
+) -> AllowedIPs {
+    let mut allowed_ips = Vec::new();
+
+    // If CLI allowed IPs were provided, return them directly
+    if !cli_allowed_ips.is_empty() {
+        let ips_string = cli_allowed_ips.iter()
+            .map(|ip| ip.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        println!("{} Using {} allowed IPs from CLI option '{}': {}",
+            step_str, cli_allowed_ips.len(), flag, ips_string);
+        return cli_allowed_ips;
+    }
+
+    if cli_no_prompt == Some(true) {
+        panic!("Error: CLI option '{}' is not set", flag);
+    }
+
+    // Prompt for allowed IPs in a loop
+    let mut allowed_ip_counter = 0;
+    loop {
+        let allowed_ip: Ipv4Net = prompt(
+            &format!("\t{} {} (CLI option '{}')", step_str, help, flag),
+            if allowed_ip_counter < default_allowed_ips.len() {
+                Some(default_allowed_ips[allowed_ip_counter].to_string())
+            } else {
+                None
+            },
+            |s: &str| s.trim().parse().map_err(|_| wg_quickrs_lib::validation::error::ValidationError::InvalidAllowedIPs()),
+        );
+        allowed_ips.push(allowed_ip);
+        allowed_ip_counter += 1;
+
+        let add_more = dialoguer::Confirm::new()
+            .with_prompt(format!("\t{} Add another allowed IPs?", step_str))
+            .default(allowed_ip_counter < default_allowed_ips.len())
+            .interact()
+            .unwrap();
+
+        if !add_more {
+            break;
+        }
+    }
+
+    allowed_ips
 }
 
 pub(crate) fn calculate_password_hash(password: &str) -> Result<String, argon2::password_hash::Error> {
