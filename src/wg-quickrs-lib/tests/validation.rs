@@ -388,6 +388,10 @@ fn test_validate_peer_mtu() {
         ValidationError::InvalidMtu()
     );
     is_err!(
+        parse_and_validate_peer_mtu_value("0"),
+        ValidationError::InvalidMtu()
+    );
+    is_err!(
         parse_and_validate_peer_mtu_value("-1"),
         ValidationError::InvalidMtu()
     );

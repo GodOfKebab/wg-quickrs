@@ -43,7 +43,7 @@ pub enum ValidationError {
     EmptyIcon(),
     #[error("dns cannot be empty when enabled")]
     EmptyDns(),
-    #[error("MTU is invalid (1-9999)")]
+    #[error("MTU is invalid (1-10000)")]
     InvalidMtu(),
     #[error("script missing a semicolon")]
     ScriptMissingSemicolon(),

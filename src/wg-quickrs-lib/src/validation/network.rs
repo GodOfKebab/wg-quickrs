@@ -133,7 +133,7 @@ pub fn parse_and_validate_peer_mtu_value(mtu_value: &str) -> ValidationResult<u1
 }
 
 pub fn validate_peer_mtu_value(mtu_value: u16) -> ValidationResult<u16> {
-    if mtu_value > 10000 {
+    if mtu_value == 0 || mtu_value > 10000 {
         return Err(ValidationError::InvalidMtu());
     }
 
