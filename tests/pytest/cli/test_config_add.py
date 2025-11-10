@@ -122,7 +122,7 @@ def test_add_peer_no_prompt_simple(setup_wg_quickrs_folder):
         # DNS tests
         ("dns", "--dns-enabled true", False),  # Missing DNS addresses
         ("dns", "--dns-enabled true --dns-addresses 1.1.1.1", True),
-        ("dns", "--dns-enabled true --dns-addresses 1.1.1.1,8.8.8.8", True),
+        ("dns", "--dns-enabled true --dns-addresses 1.1.1.1 --dns-addresses 8.8.8.8", True),
         ("dns", "--dns-enabled true --dns-addresses not-an-address", False),
 
         # MTU tests

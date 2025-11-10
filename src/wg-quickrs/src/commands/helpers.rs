@@ -185,6 +185,31 @@ pub fn get_dns_addresses(
     enabled_help: &str,
     _addresses_help: &str,
 ) -> Vec<Ipv4Addr> {
+    get_dns_addresses_with_defaults(
+        cli_no_prompt,
+        step_str,
+        cli_enabled,
+        cli_addresses,
+        enabled_flag,
+        addresses_flag,
+        enabled_help,
+        _addresses_help,
+        vec!["1.1.1.1".parse().unwrap()],
+    )
+}
+
+/// Helper to prompt for multiple DNS addresses with default values
+pub fn get_dns_addresses_with_defaults(
+    cli_no_prompt: Option<bool>,
+    step_str: String,
+    cli_enabled: Option<bool>,
+    cli_addresses: Vec<Ipv4Addr>,
+    enabled_flag: &str,
+    addresses_flag: &str,
+    enabled_help: &str,
+    _addresses_help: &str,
+    default_addresses: Vec<Ipv4Addr>,
+) -> Vec<Ipv4Addr> {
     let mut addresses = Vec::new();
 
     // Check if DNS is enabled at all
@@ -224,18 +249,19 @@ pub fn get_dns_addresses(
     }
 
     // Prompt for DNS addresses in a loop
+    let mut dns_address_counter = 0;
     loop {
         let dns_address: Ipv4Addr = prompt(
             &format!("\t{} Enter DNS address (CLI option '{}')", step_str, addresses_flag),
-            if addresses.is_empty() { Some("1.1.1.1".to_string()) } else { None },
+            if dns_address_counter < default_addresses.len() { Some(default_addresses[dns_address_counter].to_string()) } else { None },
             |s: &str| s.trim().parse().map_err(|_| wg_quickrs_lib::validation::error::ValidationError::NotIPv4Address()),
         );
-
         addresses.push(dns_address);
+        dns_address_counter += 1;
 
         let add_more = dialoguer::Confirm::new()
             .with_prompt(format!("\t{} Add another DNS address?", step_str))
-            .default(false)
+            .default(dns_address_counter < default_addresses.len())
             .interact()
             .unwrap();
 

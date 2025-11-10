@@ -113,29 +113,18 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     step_counter += 1;
 
     // Get DNS
-    let dns_enabled = get_bool(
+    let dns_addresses = get_dns_addresses_with_defaults(
         opts.no_prompt,
         step_str(step_counter),
-        opts.dns_enabled,
+        opts.dns_enabled.or(Some(config.network.defaults.peer.dns.enabled)),
+        opts.dns_addresses.clone(),
         ADD_PEER_DNS_ENABLED_FLAG,
+        ADD_PEER_DNS_ADDRESSES_FLAG,
         ADD_PEER_DNS_ENABLED_HELP,
-        config.network.defaults.peer.dns.enabled,
+        ADD_PEER_DNS_ADDRESSES_HELP,
+        config.network.defaults.peer.dns.addresses.clone(),
     );
-
-    let dns_addresses = if dns_enabled {
-        get_value(
-            opts.no_prompt,
-            step_str(step_counter),
-            opts.dns_addresses.clone(),
-            ADD_PEER_DNS_ADDRESSES_FLAG,
-            format!("\t{}", ADD_PEER_DNS_ADDRESSES_HELP).as_str(),
-            (!config.network.defaults.peer.dns.addresses.is_empty())
-                .then_some(config.network.defaults.peer.dns.addresses.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(",")),
-            parse_and_validate_peer_dns_addresses,
-        )
-    } else {
-        config.network.defaults.peer.dns.addresses.clone()
-    };
+    let dns_enabled = !dns_addresses.is_empty();
     step_counter += 1;
 
     // Get MTU

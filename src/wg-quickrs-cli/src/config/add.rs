@@ -45,8 +45,8 @@ pub struct AddPeerOptions {
     #[arg(long, default_value = None, long_help = "Enable DNS")]
     pub dns_enabled: Option<bool>,
 
-    #[arg(long, default_value = None, long_help = "Set comma-separated list of DNS addresses", value_name = "1.1.1.1,8.8.8.8")]
-    pub dns_addresses: Option<String>,
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set DNS address(es). Can be specified multiple times for multiple DNS addresses.", value_name = "1.1.1.1")]
+    pub dns_addresses: Vec<Ipv4Addr>,
 
     #[arg(long, default_value = None, long_help = "Enable MTU")]
     pub mtu_enabled: Option<bool>,
