@@ -333,54 +333,68 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
     } else if opts.no_prompt == Some(true) {
         return Err(ConfigCommandError::MissingArgument("first_peer".to_string()));
     } else {
-        let peer_items: Vec<String> = config.network.peers.iter()
-            .map(|(id, p)| format!("{} ({})", p.name, id))
+        let total_peers = config.network.peers.len();
+        let filtered_peer_ids: Vec<Uuid> = config.network.peers.keys()
+            .filter(|peer_id| {
+                // Count connections for this peer
+                let connection_count = config.network.connections.keys()
+                    .filter(|conn_id| conn_id.a == **peer_id || conn_id.b == **peer_id)
+                    .count();
+                // Include a peer if it's not connected to all other peers
+                connection_count < total_peers - 1
+            }).copied().collect();
+        let filtered_peer_items: Vec<String> = filtered_peer_ids.iter()
+            .map(|peer_id| format!("{} ({})", config.network.peers.get(peer_id).unwrap().name, peer_id))
             .collect();
 
-        if peer_items.is_empty() {
+        if filtered_peer_items.is_empty() {
             return Err(ConfigCommandError::MissingArgument("No peers available".to_string()));
         }
 
         let selection = dialoguer::Select::new()
             .with_prompt("Select first peer")
-            .items(&peer_items)
+            .items(&filtered_peer_items)
             .interact()
             .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
-        // TODO: If more than one peer is in the network, skip ones that are already connected to all other peers
 
-        *config.network.peers.keys().nth(selection).unwrap()
+        filtered_peer_ids[selection]
     };
     let first_peer_name = &config.network.peers.get(&first_peer_id).ok_or(ConfigCommandError::PeerNotFound(first_peer_id.clone()))?.name;
 
-    // Get peer B
+    println!("{}", first_peer_id);
+    // Get second peer
     let second_peer_id = if let Some(peer_id) = opts.second_peer {
         if peer_id == first_peer_id {
-            return Err(ConfigCommandError::MissingArgument("peer_a and peer_b cannot be the same".to_string()));
+            return Err(ConfigCommandError::MissingArgument("first_peer and second_peer cannot be the same".to_string()));
         }
         peer_id.clone()
     } else if opts.no_prompt == Some(true) {
-        return Err(ConfigCommandError::MissingArgument("peer_b".to_string()));
+        return Err(ConfigCommandError::MissingArgument("second_peer".to_string()));
     } else {
-        let peer_items: Vec<String> = config.network.peers.iter()
-            .filter(|(id, _)| **id != first_peer_id)
-            .map(|(id, p)| format!("{} ({})", p.name, id))
+        let filtered_peer_ids: Vec<Uuid> = config.network.peers.keys()
+            .filter(|peer_id| {
+                if **peer_id == first_peer_id {
+                    return false;
+                }
+                // Check if the connection already exists
+                let conn_id = get_connection_id(first_peer_id, (**peer_id).clone());
+                !config.network.connections.contains_key(&conn_id)
+            }).copied().collect();
+        let filtered_peer_items: Vec<String> = filtered_peer_ids.iter()
+            .map(|peer_id| format!("{} ({})", config.network.peers.get(peer_id).unwrap().name, peer_id))
             .collect();
-        // TODO: also filter out if this connection already exists
 
-        if peer_items.is_empty() {
+        if filtered_peer_items.is_empty() {
             return Err(ConfigCommandError::MissingArgument("No other peers available".to_string()));
         }
 
         let selection = dialoguer::Select::new()
             .with_prompt("Select second peer")
-            .items(&peer_items)
+            .items(&filtered_peer_items)
             .interact()
             .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
 
-        *config.network.peers.keys()
-            .filter(|id| **id != first_peer_id)
-            .nth(selection)
-            .unwrap()
+        filtered_peer_ids[selection]
     };
     let second_peer_name = &config.network.peers.get(&second_peer_id).ok_or(ConfigCommandError::PeerNotFound(second_peer_id.clone()))?.name;
 
