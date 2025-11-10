@@ -14,10 +14,6 @@ use crate::conf::network::get_next_available_address;
 include!(concat!(env!("OUT_DIR"), "/add_peer_options_generated.rs"));
 include!(concat!(env!("OUT_DIR"), "/add_connection_options_generated.rs"));
 
-pub const ADD_PEER_STEPS: u8 = 11;
-pub const ADD_CONN_STEPS: u8 = 3;
-
-
 /// Add a new peer to the network
 pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     let mut config = conf::util::get_config()?;
@@ -25,11 +21,12 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     // Generate new peer ID
     let peer_id = Uuid::new_v4();
     let mut step_counter = 1;
+    let step_str = make_step_formatter(11);
 
     // Get peer name
     let peer_name = get_value(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.name.clone(),
         ADD_PEER_NAME_FLAG,
         ADD_PEER_NAME_HELP,
@@ -46,7 +43,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     let network_copy = config.network.clone();
     let peer_address = get_value(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.address.clone().map(|o| o.to_string()),
         ADD_PEER_ADDRESS_FLAG,
         ADD_PEER_ADDRESS_HELP,
@@ -57,7 +54,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     // Get endpoint
     let endpoint_enabled = get_bool(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.endpoint_enabled,
         ADD_PEER_ENDPOINT_ENABLED_FLAG,
         ADD_PEER_ENDPOINT_ENABLED_HELP,
@@ -67,7 +64,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     let endpoint_address = if endpoint_enabled {
         get_value(
             opts.no_prompt,
-            step_str::<ADD_PEER_STEPS>(step_counter),
+            step_str(step_counter),
             opts.endpoint_address.clone(),
             ADD_PEER_ENDPOINT_ADDRESS_FLAG,
             ADD_PEER_ENDPOINT_ADDRESS_HELP,
@@ -82,7 +79,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     // Get peer kind
     let peer_kind = get_value(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.kind.clone(),
         ADD_PEER_KIND_FLAG,
         ADD_PEER_KIND_HELP,
@@ -94,7 +91,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     // Get icon
     let icon_enabled = get_bool(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.icon_enabled,
         ADD_PEER_ICON_ENABLED_FLAG,
         ADD_PEER_ICON_ENABLED_HELP,
@@ -104,7 +101,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     let icon_src = if icon_enabled {
         get_value(
             opts.no_prompt,
-            step_str::<ADD_PEER_STEPS>(step_counter),
+            step_str(step_counter),
             opts.icon_src.clone(),
             ADD_PEER_ICON_SRC_FLAG,
             format!("\t{}", ADD_PEER_ICON_SRC_HELP).as_str(),
@@ -119,7 +116,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     // Get DNS
     let dns_enabled = get_bool(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.dns_enabled,
         ADD_PEER_DNS_ENABLED_FLAG,
         ADD_PEER_DNS_ENABLED_HELP,
@@ -129,7 +126,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     let dns_addresses = if dns_enabled {
         get_value(
             opts.no_prompt,
-            step_str::<ADD_PEER_STEPS>(step_counter),
+            step_str(step_counter),
             opts.dns_addresses.clone(),
             ADD_PEER_DNS_ADDRESSES_FLAG,
             format!("\t{}", ADD_PEER_DNS_ADDRESSES_HELP).as_str(),
@@ -145,7 +142,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     // Get MTU
     let mtu_enabled = get_bool(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.mtu_enabled,
         ADD_PEER_MTU_ENABLED_FLAG,
         ADD_PEER_MTU_ENABLED_HELP,
@@ -155,7 +152,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     let mtu_value = if mtu_enabled {
         get_value(
             opts.no_prompt,
-            step_str::<ADD_PEER_STEPS>(step_counter),
+            step_str(step_counter),
             opts.mtu_value.clone().map(|o| o.to_string()),
             ADD_PEER_MTU_VALUE_FLAG,
             format!("\t{}", ADD_PEER_MTU_VALUE_HELP).as_str(),
@@ -171,7 +168,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     // Get scripts
     let script_pre_up = get_scripts(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.script_pre_up_enabled,
         opts.script_pre_up_line.clone(),
         ADD_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
@@ -183,7 +180,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
 
     let script_post_up = get_scripts(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.script_post_up_enabled,
         opts.script_post_up_line.clone(),
         ADD_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
@@ -195,7 +192,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
 
     let script_pre_down = get_scripts(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.script_pre_down_enabled,
         opts.script_pre_down_line.clone(),
         ADD_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
@@ -207,7 +204,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
 
     let script_post_down = get_scripts(
         opts.no_prompt,
-        step_str::<ADD_PEER_STEPS>(step_counter),
+        step_str(step_counter),
         opts.script_post_down_enabled,
         opts.script_post_down_line.clone(),
         ADD_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
@@ -308,11 +305,13 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     };
 
     // Create connections
-    for other_peer_id in peers_to_connect {
+    let step_str = make_step_formatter(peers_to_connect.len());
+    for (i, other_peer_id) in peers_to_connect.iter().enumerate() {
+        println!("{} Connecting {} ({}) to {} ({})", step_str(i+1).trim(), peer_name, peer_id, config.network.peers.get(other_peer_id).unwrap().name, other_peer_id);
         add_connection(&AddConnectionOptions{
             no_prompt: opts.no_prompt,
             first_peer: Some(peer_id),
-            second_peer: Some(other_peer_id),
+            second_peer: Some(other_peer_id.clone()),
             persistent_keepalive_enabled: None,
             persistent_keepalive_period: None,
             allowed_ips_first_to_second: None,
@@ -327,6 +326,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
 pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandError> {
     let mut config = conf::util::get_config()?;
     let mut step_counter = 1;
+    let step_str = make_step_formatter(3);
 
     // Get first peer
     let first_peer_id = if let Some(peer_id) = opts.first_peer {
@@ -399,7 +399,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
     // Get allowed IPs A to B
     let ips_first_to_second = get_value(
         opts.no_prompt,
-        step_str::<ADD_CONN_STEPS>(step_counter),
+        step_str(step_counter),
         opts.allowed_ips_first_to_second.clone(),
         ADD_CONNECTION_ALLOWED_IPS_FIRST_TO_SECOND_FLAG,
         &ADD_CONNECTION_ALLOWED_IPS_FIRST_TO_SECOND_HELP.replace("the first peer", &first_peer_disp).replace("the second peer", &second_peer_disp),
@@ -411,7 +411,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
     // Get allowed IPs B to A
     let ips_second_to_first = get_value(
         opts.no_prompt,
-        step_str::<ADD_CONN_STEPS>(step_counter),
+        step_str(step_counter),
         opts.allowed_ips_second_to_first.clone(),
         ADD_CONNECTION_ALLOWED_IPS_SECOND_TO_FIRST_FLAG,
         &ADD_CONNECTION_ALLOWED_IPS_SECOND_TO_FIRST_HELP.replace("the first peer", &first_peer_disp).replace("the second peer", &second_peer_disp),
@@ -423,7 +423,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
     // Get persistent keepalive
     let keepalive_enabled = get_bool(
         opts.no_prompt,
-        step_str::<ADD_CONN_STEPS>(step_counter),
+        step_str(step_counter),
         opts.persistent_keepalive_enabled,
         ADD_CONNECTION_PERSISTENT_KEEPALIVE_ENABLED_FLAG,
         ADD_CONNECTION_PERSISTENT_KEEPALIVE_ENABLED_HELP,
@@ -439,7 +439,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
         } else {
             get_value(
                 opts.no_prompt,
-                step_str::<ADD_CONN_STEPS>(step_counter),
+                step_str(step_counter),
                 None,
                 ADD_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_FLAG,
                 format!("\t{}", ADD_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_HELP).as_str(),

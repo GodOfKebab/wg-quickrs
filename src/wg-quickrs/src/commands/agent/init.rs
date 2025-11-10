@@ -22,8 +22,6 @@ use crate::conf::util::ConfUtilError;
 
 include!(concat!(env!("OUT_DIR"), "/init_options_generated.rs"));
 
-pub const INIT_STEPS: u8 = 28;
-
 #[derive(Error, Debug)]
 pub enum InitError {
     #[error("wg-quickrs is already initialized at \"{0}\"")]
@@ -139,14 +137,15 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         return Err(InitError::AlreadyInitialized(file_path.display().to_string()));
     }
     log::info!("Initializing wg-quickrs...");
-
+    
     let mut step_counter = 1;
+    let step_str = make_step_formatter(28);
 
-    println!("[general network settings 1-2/{INIT_STEPS}]");
+    println!("[general network settings 1-2/28]");
     // [1/28] --network-identifier
     let network_name = get_value(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.network_name.clone(),
         INIT_NETWORK_NAME_FLAG,
         INIT_NETWORK_NAME_HELP,
@@ -158,7 +157,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [2/28] --network-subnet
     let network_subnet = get_value(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.network_subnet.clone().map(|o| o.to_string()),
         INIT_NETWORK_SUBNET_FLAG,
         INIT_NETWORK_SUBNET_HELP,
@@ -168,7 +167,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     step_counter += 1;
 
     println!("[general network settings complete]");
-    println!("[agent settings 3-8/{INIT_STEPS}]");
+    println!("[agent settings 3-8/28]");
 
     // Get primary IP of the current machine
     let iface_opt = get_interfaces().into_iter().next();
@@ -178,7 +177,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [3/28] --agent-web-address
     let agent_web_address = get_value(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_web_address.clone().map(|o| o.to_string()),
         INIT_AGENT_WEB_ADDRESS_FLAG,
         INIT_AGENT_WEB_ADDRESS_HELP,
@@ -190,7 +189,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [4/28] --agent-web-http-enabled & --agent-web-http-port
     let agent_web_http_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_web_http_enabled,
         INIT_AGENT_WEB_HTTP_ENABLED_FLAG,
         INIT_AGENT_WEB_HTTP_ENABLED_HELP,
@@ -199,7 +198,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let agent_web_http_port = if agent_web_http_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_web_http_port.map(|o| o.to_string()),
             INIT_AGENT_WEB_HTTP_PORT_FLAG,
             format!("\t{}", INIT_AGENT_WEB_HTTP_PORT_HELP).as_str(),
@@ -215,7 +214,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [5/28] --agent-web-https-enabled & --agent-web-https-port
     let agent_web_https_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_web_https_enabled,
         INIT_AGENT_WEB_HTTPS_ENABLED_FLAG,
         INIT_AGENT_WEB_HTTPS_ENABLED_HELP,
@@ -227,7 +226,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
 
         let port = get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_web_https_port.map(|o| o.to_string()),
             INIT_AGENT_WEB_HTTPS_PORT_FLAG,
             format!("\t{}", INIT_AGENT_WEB_HTTPS_PORT_HELP).as_str(),
@@ -236,7 +235,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         );
         let tls_cert = get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_web_https_tls_cert.clone().map(|o| o.display().to_string()),
             INIT_AGENT_WEB_HTTPS_TLS_CERT_FLAG,
             format!("\t{}", INIT_AGENT_WEB_HTTPS_TLS_CERT_HELP).as_str(),
@@ -245,7 +244,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         );
         let tls_key = get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_web_https_tls_key.clone().map(|o| o.display().to_string()),
             INIT_AGENT_WEB_HTTPS_TLS_KEY_FLAG,
             format!("\t{}", INIT_AGENT_WEB_HTTPS_TLS_KEY_HELP).as_str(),
@@ -262,7 +261,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [6/28] --agent-enable-web-password
     let mut agent_web_password_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_web_password_enabled,
         INIT_AGENT_WEB_PASSWORD_ENABLED_FLAG,
         INIT_AGENT_WEB_PASSWORD_ENABLED_HELP,
@@ -272,7 +271,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let agent_web_password_hash = if agent_web_password_enabled {
         let password = get_init_password(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_web_password.clone(),
             INIT_AGENT_WEB_PASSWORD_FLAG,
             format!("\t{}", INIT_AGENT_WEB_PASSWORD_HELP).as_str(),
@@ -291,7 +290,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [7/28] --agent-vpn-enabled & --agent-vpn-port
     let agent_vpn_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_vpn_enabled,
         INIT_AGENT_VPN_ENABLED_FLAG,
         INIT_AGENT_VPN_ENABLED_HELP,
@@ -300,7 +299,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let agent_vpn_port = if agent_vpn_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_vpn_port.clone().map(|o| o.to_string()),
             INIT_AGENT_VPN_PORT_FLAG,
             format!("\t{}", INIT_AGENT_VPN_PORT_HELP).as_str(),
@@ -316,7 +315,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [8/28] --agent-firewall-enabled
     let agent_firewall_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_firewall_enabled,
         INIT_AGENT_FIREWALL_ENABLED_FLAG,
         INIT_AGENT_FIREWALL_ENABLED_HELP,
@@ -326,7 +325,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // [8/28] --agent-firewall-utility
         let utility = get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
             INIT_AGENT_FIREWALL_UTILITY_FLAG,
             format!("\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
@@ -336,7 +335,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
         // [8/28] --agent-firewall-gateway
         let gateway = get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_firewall_gateway.clone(),
             INIT_AGENT_FIREWALL_GATEWAY_FLAG,
             format!("\t{}", INIT_AGENT_FIREWALL_GATEWAY_HELP).as_str(),
@@ -350,12 +349,12 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     step_counter += 1;
 
     println!("[agent settings complete]");
-    println!("[peer settings 9-19/{INIT_STEPS}]");
+    println!("[peer settings 9-19/28]");
 
     // [9/28] --agent-peer-name
     let agent_peer_name = get_value(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_name.clone(),
         INIT_AGENT_PEER_NAME_FLAG,
         INIT_AGENT_PEER_NAME_HELP,
@@ -377,7 +376,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     };
     let agent_peer_vpn_internal_address = get_value(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_vpn_internal_address.clone().map(|o| o.to_string()),
         INIT_AGENT_PEER_VPN_INTERNAL_ADDRESS_FLAG,
         INIT_AGENT_PEER_VPN_INTERNAL_ADDRESS_HELP,
@@ -397,7 +396,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [11/28] --agent-peer-vpn-endpoint
     let agent_peer_vpn_endpoint = get_value(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_vpn_endpoint.clone(),
         INIT_AGENT_PEER_VPN_ENDPOINT_FLAG,
         INIT_AGENT_PEER_VPN_ENDPOINT_HELP,
@@ -409,7 +408,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [12/28] --agent-peer-kind
     let agent_peer_kind = get_value(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_kind.clone(),
         INIT_AGENT_PEER_KIND_FLAG,
         INIT_AGENT_PEER_KIND_HELP,
@@ -421,7 +420,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [13/28] --agent-peer-icon-enabled & --agent-peer-icon-src
     let agent_peer_icon_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_icon_enabled,
         INIT_AGENT_PEER_ICON_ENABLED_FLAG,
         INIT_AGENT_PEER_ICON_ENABLED_HELP,
@@ -430,7 +429,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let agent_peer_icon_src = if agent_peer_icon_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_peer_icon_src.clone(),
             INIT_AGENT_PEER_ICON_SRC_FLAG,
             format!("\t{}", INIT_AGENT_PEER_ICON_SRC_HELP).as_str(),
@@ -446,7 +445,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [14/28] --agent-peer-dns-enabled & --agent-peer-dns-server
     let agent_peer_dns_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_dns_enabled,
         INIT_AGENT_PEER_DNS_ENABLED_FLAG,
         INIT_AGENT_PEER_DNS_ENABLED_HELP,
@@ -455,7 +454,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let agent_peer_dns_addresses = if agent_peer_dns_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_peer_dns_addresses.clone(),
             INIT_AGENT_PEER_DNS_ADDRESSES_FLAG,
             format!("\t{}", INIT_AGENT_PEER_DNS_ADDRESSES_HELP).as_str(),
@@ -471,7 +470,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [15/28] --agent-peer-mtu-enabled & --agent-peer-mtu-value
     let agent_peer_mtu_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_mtu_enabled,
         INIT_AGENT_PEER_MTU_ENABLED_FLAG,
         INIT_AGENT_PEER_MTU_ENABLED_HELP,
@@ -480,7 +479,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let agent_peer_mtu_value = if agent_peer_mtu_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.agent_peer_mtu_value.clone().map(|o| o.to_string()),
             INIT_AGENT_PEER_MTU_VALUE_FLAG,
             format!("\t{}", INIT_AGENT_PEER_MTU_VALUE_HELP).as_str(),
@@ -496,7 +495,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [16/28] --agent-peer-script-pre-up-enabled & --agent-peer-script-pre-up-line
     let agent_peer_script_pre_up = get_scripts(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_script_pre_up_enabled,
         init_opts.agent_peer_script_pre_up_line.clone(),
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
@@ -509,7 +508,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [17/28] --agent-peer-script-post-up-enabled & --agent-peer-script-post-up-line
     let agent_peer_script_post_up = get_scripts(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_script_post_up_enabled,
         init_opts.agent_peer_script_post_up_line.clone(),
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
@@ -522,7 +521,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [18/28] --agent-peer-script-pre-down-enabled & --agent-peer-script-pre-down-line
     let agent_peer_script_pre_down = get_scripts(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_script_pre_down_enabled,
         init_opts.agent_peer_script_pre_down_line.clone(),
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
@@ -535,7 +534,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [19/28] --agent-peer-script-post-down-enabled & --agent-peer-script-post-down-line
     let agent_peer_script_post_down = get_scripts(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.agent_peer_script_post_down_enabled,
         init_opts.agent_peer_script_post_down_line.clone(),
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
@@ -546,12 +545,12 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     step_counter += 1;
 
     println!("[peer settings complete]");
-    println!("[new peer/connection default settings 20-28/{INIT_STEPS}]");
+    println!("[new peer/connection default settings 20-28/28]");
 
     // [20/28] --default-peer-kind
     let default_peer_kind = get_value(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_peer_kind.clone(),
         INIT_DEFAULT_PEER_KIND_FLAG,
         INIT_DEFAULT_PEER_KIND_HELP,
@@ -563,7 +562,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [21/28] --default-peer-icon-enabled & --default-peer-icon-src
     let default_peer_icon_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_peer_icon_enabled,
         INIT_DEFAULT_PEER_ICON_ENABLED_FLAG,
         INIT_DEFAULT_PEER_ICON_ENABLED_HELP,
@@ -572,7 +571,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let default_peer_icon_src = if default_peer_icon_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.default_peer_icon_src.clone(),
             INIT_DEFAULT_PEER_ICON_SRC_FLAG,
             format!("\t{}", INIT_DEFAULT_PEER_ICON_SRC_HELP).as_str(),
@@ -588,7 +587,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [22/28] --default-peer-dns-enabled & --default-peer-dns-server
     let default_peer_dns_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_peer_dns_enabled,
         INIT_DEFAULT_PEER_DNS_ENABLED_FLAG,
         INIT_DEFAULT_PEER_DNS_ENABLED_HELP,
@@ -597,7 +596,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let default_peer_dns_addresses = if default_peer_dns_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.default_peer_dns_addresses.clone(),
             INIT_DEFAULT_PEER_DNS_ADDRESSES_FLAG,
             format!("\t{}", INIT_DEFAULT_PEER_DNS_ADDRESSES_HELP).as_str(),
@@ -613,7 +612,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [23/28] --default-peer-mtu-enabled & --default-peer-mtu-value
     let default_peer_mtu_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_peer_mtu_enabled,
         INIT_DEFAULT_PEER_MTU_ENABLED_FLAG,
         INIT_DEFAULT_PEER_MTU_ENABLED_HELP,
@@ -622,7 +621,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let default_peer_mtu_value = if default_peer_mtu_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.default_peer_mtu_value.clone().map(|o| o.to_string()),
             INIT_DEFAULT_PEER_MTU_VALUE_FLAG,
             format!("\t{}", INIT_DEFAULT_PEER_MTU_VALUE_HELP).as_str(),
@@ -638,7 +637,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [24/28] --default-peer-script-pre-up-enabled & --default-peer-script-pre-up-line
     let default_peer_script_pre_up = get_scripts(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_peer_script_pre_up_enabled,
         init_opts.default_peer_script_pre_up_line.clone(),
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
@@ -651,7 +650,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [25/28] --default-peer-script-post-up-enabled & --default-peer-script-post-up-line
     let default_peer_script_post_up = get_scripts(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_peer_script_post_up_enabled,
         init_opts.default_peer_script_post_up_line.clone(),
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
@@ -664,7 +663,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [26/28] --default-peer-script-pre-down-enabled & --default-peer-script-pre-down-line
     let default_peer_script_pre_down = get_scripts(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_peer_script_pre_down_enabled,
         init_opts.default_peer_script_pre_down_line.clone(),
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
@@ -677,7 +676,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [27/28] --default-peer-script-post-down-enabled & --default-peer-script-post-down-line
     let default_peer_script_post_down = get_scripts(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_peer_script_post_down_enabled,
         init_opts.default_peer_script_post_down_line.clone(),
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
@@ -690,7 +689,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     // [28/28] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
     let default_connection_persistent_keepalive_enabled = get_bool(
         init_opts.no_prompt,
-        step_str::<INIT_STEPS>(step_counter),
+        step_str(step_counter),
         init_opts.default_connection_persistent_keepalive_enabled,
         INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_ENABLED_FLAG,
         format!("\t{}", INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_ENABLED_HELP).as_str(),
@@ -699,7 +698,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
     let default_connection_persistent_keepalive_period = if default_connection_persistent_keepalive_enabled {
         get_value(
             init_opts.no_prompt,
-            step_str::<INIT_STEPS>(step_counter),
+            step_str(step_counter),
             init_opts.default_connection_persistent_keepalive_period.clone().map(|o| o.to_string()),
             INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_FLAG,
             format!("\t{}", INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_HELP).as_str(),
