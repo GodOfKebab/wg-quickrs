@@ -8,6 +8,7 @@ use std::process::Command;
 use std::time::{Duration, SystemTime};
 use regex::Regex;
 use wg_quickrs_lib::types::network::{Dns, Mtu};
+use crate::helpers::shell_cmd;
 use crate::wireguard::wg_quick;
 use crate::wireguard::wg_quick::{DnsManager, EndpointRouter, TunnelError, TunnelResult};
 
@@ -85,7 +86,7 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
             }
         };
 
-        log::info!("[+] wireguard-go exit");
+        log::debug!("[+] wireguard-go exit");
     });
 
     std::thread::sleep(Duration::from_millis(500)); // TODO: replace with a better solution
@@ -106,10 +107,10 @@ pub fn del_interface(iface: &str, interface: &str, _dns_manager: &mut DnsManager
 
 pub fn add_address(iface: &str, addr: &str, is_ipv6: bool) -> TunnelResult<()> {
     if is_ipv6 {
-        wg_quick::cmd(&["ifconfig", iface, "inet6", addr, "alias"])?;
+        shell_cmd(&["ifconfig", iface, "inet6", addr, "alias"])?;
     } else {
         let ip = addr.split('/').next().unwrap();
-        wg_quick::cmd(&["ifconfig", iface, "inet", addr, ip, "alias"])?;
+        shell_cmd(&["ifconfig", iface, "inet", addr, ip, "alias"])?;
     }
 
     Ok(())
@@ -117,7 +118,7 @@ pub fn add_address(iface: &str, addr: &str, is_ipv6: bool) -> TunnelResult<()> {
 
 pub fn set_mtu_and_up(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
     set_mtu(iface, mtu)?;
-    wg_quick::cmd(&["ifconfig", iface, "up"])?;
+    shell_cmd(&["ifconfig", iface, "up"])?;
 
     Ok(())
 }
@@ -127,7 +128,7 @@ pub fn set_mtu(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
         mtu.value
     } else {
         // Find default interface
-        let netstat_output = wg_quick::cmd(&["netstat", "-nr", "-f", "inet"])?;
+        let netstat_output = shell_cmd(&["netstat", "-nr", "-f", "inet"])?;
 
         let output_str = String::from_utf8_lossy(&netstat_output.stdout);
         let default_if = output_str
@@ -154,13 +155,13 @@ pub fn set_mtu(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
             return Ok(());
         }
     }
-    wg_quick::cmd(&["ifconfig", iface, "mtu", &mtu_val.to_string()])?;
+    shell_cmd(&["ifconfig", iface, "mtu", &mtu_val.to_string()])?;
 
     Ok(())
 }
 
 fn get_interface_mtu(iface: &str) -> TunnelResult<Option<u16>> {
-    let output = wg_quick::cmd(&["ifconfig", iface])?;
+    let output = shell_cmd(&["ifconfig", iface])?;
 
     let output_str = String::from_utf8_lossy(&output.stdout);
     let re = Regex::new(r"mtu\s+(\d+)").unwrap();
@@ -171,7 +172,7 @@ fn get_interface_mtu(iface: &str) -> TunnelResult<Option<u16>> {
 }
 
 fn collect_services(dns_manager: &mut DnsManager) -> TunnelResult<()> {
-    let output = wg_quick::cmd(&["networksetup", "-listallnetworkservices"])?;
+    let output = shell_cmd(&["networksetup", "-listallnetworkservices"])?;
 
     let output_str = String::from_utf8_lossy(&output.stdout);
     let mut found_services = HashMap::new();
@@ -206,7 +207,7 @@ fn collect_services(dns_manager: &mut DnsManager) -> TunnelResult<()> {
 }
 
 fn get_dns_servers(service: &str) -> TunnelResult<String> {
-    let output = wg_quick::cmd(&["networksetup", "-getdnsservers", service])?;
+    let output = shell_cmd(&["networksetup", "-getdnsservers", service])?;
     let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     // If contains spaces, it's an error message
@@ -218,7 +219,7 @@ fn get_dns_servers(service: &str) -> TunnelResult<String> {
 }
 
 fn get_search_domains(service: &str) -> TunnelResult<String> {
-    let output = wg_quick::cmd(&["networksetup", "-getsearchdomains", service])?;
+    let output = shell_cmd(&["networksetup", "-getsearchdomains", service])?;
     let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     // If contains spaces, it's an error message
@@ -237,10 +238,10 @@ pub fn set_dns(dns_servers: &Vec<Ipv4Addr>, _interface: &str, dns_manager: &mut 
         let mut set_dns_cmd = vec!["networksetup", "-setdnsservers", service];
         let dns_strings: Vec<String> = dns_servers.iter().map(|s| s.to_string()).collect();
         set_dns_cmd.extend(dns_strings.iter().map(|s| s.as_str()));
-        let _ = wg_quick::cmd(&set_dns_cmd)?;
+        let _ = shell_cmd(&set_dns_cmd)?;
 
         // Set search domains - always set search domains to Empty since DNS_SEARCH is empty
-        let _ = wg_quick::cmd(&["networksetup", "-setsearchdomains", service, "Empty"])?;
+        let _ = shell_cmd(&["networksetup", "-setsearchdomains", service, "Empty"])?;
     }
 
     Ok(())
@@ -251,13 +252,13 @@ pub fn del_dns(_interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<(
         // Restore DNS (ignore errors)
         let mut set_dns_cmd = vec!["networksetup", "-setdnsservers", service];
         set_dns_cmd.extend(original_dns.split_whitespace());
-        let _ = wg_quick::cmd(&set_dns_cmd)?;
+        let _ = shell_cmd(&set_dns_cmd)?;
 
         // Restore search domains (ignore errors)
         if let Some(search) = dns_manager.service_dns_search.get(service) {
             let mut set_dns_search_cmd = vec!["networksetup", "-setsearchdomains", service];
             set_dns_search_cmd.extend(search.split_whitespace());
-            let _ = wg_quick::cmd(&set_dns_search_cmd)?;
+            let _ = shell_cmd(&set_dns_search_cmd)?;
         }
     }
     *dns_manager = Default::default(); // reset DNS manager
@@ -271,19 +272,19 @@ pub fn add_route(iface: &str, _interface_name: &str, cidr: &str, endpoint_router
 
     if is_default {
         if is_ipv6 {
-            wg_quick::cmd(&["route", "-q", "-n", "add", "-inet6", "::/1", "-interface", iface])?;
-            wg_quick::cmd(&["route", "-q", "-n", "add", "-inet6", "8000::/1", "-interface", iface])?;
+            shell_cmd(&["route", "-q", "-n", "add", "-inet6", "::/1", "-interface", iface])?;
+            shell_cmd(&["route", "-q", "-n", "add", "-inet6", "8000::/1", "-interface", iface])?;
             endpoint_router.auto_route6 = true;
         } else {
-            wg_quick::cmd(&["route", "-q", "-n", "add", "-inet", "0.0.0.0/1", "-interface", iface])?;
-            wg_quick::cmd(&["route", "-q", "-n", "add", "-inet", "128.0.0.0/1", "-interface", iface])?;
+            shell_cmd(&["route", "-q", "-n", "add", "-inet", "0.0.0.0/1", "-interface", iface])?;
+            shell_cmd(&["route", "-q", "-n", "add", "-inet", "128.0.0.0/1", "-interface", iface])?;
             endpoint_router.auto_route4 = true;
         }
     } else {
         let family = if is_ipv6 { "-inet6" } else { "-inet" };
 
         // Check if a route already exists through this interface
-        let route_exists = match wg_quick::cmd(&["route", "-n", "get", family, cidr]) {
+        let route_exists = match shell_cmd(&["route", "-n", "get", family, cidr]) {
             Ok(output) => {
                 let output_str = String::from_utf8_lossy(&output.stdout);
                 output_str.contains(&format!("interface: {}\n", iface))
@@ -291,7 +292,7 @@ pub fn add_route(iface: &str, _interface_name: &str, cidr: &str, endpoint_router
             Err(_) => false
         };
         if !route_exists {
-            let _ = wg_quick::cmd(&["route", "-q", "-n", "add", family, &cidr, "-interface", iface]);
+            let _ = shell_cmd(&["route", "-q", "-n", "add", family, &cidr, "-interface", iface]);
         }
     }
 
@@ -327,9 +328,9 @@ pub fn set_endpoint_direct_route(iface: &str, endpoint_router: &mut wg_quick::En
         }
 
         if endpoint.contains(':') && endpoint_router.auto_route6 {
-            let _ = wg_quick::cmd(&["route", "-q", "-n", "delete", "-inet6", endpoint]);
+            let _ = shell_cmd(&["route", "-q", "-n", "delete", "-inet6", endpoint]);
         } else if endpoint_router.auto_route4 {
-            let _ = wg_quick::cmd(&["route", "-q", "-n", "delete", "-inet", endpoint]);
+            let _ = shell_cmd(&["route", "-q", "-n", "delete", "-inet", endpoint]);
         }
     }
 
@@ -345,19 +346,19 @@ pub fn set_endpoint_direct_route(iface: &str, endpoint_router: &mut wg_quick::En
         if endpoint.contains(':') && endpoint_router.auto_route6 {
             // IPv6 endpoint
             if let Some(gw) = &endpoint_router.gateway6 {
-                let _ = wg_quick::cmd(&["route", "-q", "-n", "add", "-inet6", endpoint, "-gateway", gw]);
+                let _ = shell_cmd(&["route", "-q", "-n", "add", "-inet6", endpoint, "-gateway", gw]);
             } else {
                 // No IPv6 gateway - add a blackhole route to prevent routing loop
-                let _ = wg_quick::cmd(&["route", "-q", "-n", "add", "-inet6", endpoint, "::1", "-blackhole"]);
+                let _ = shell_cmd(&["route", "-q", "-n", "add", "-inet6", endpoint, "::1", "-blackhole"]);
             }
             added.push(endpoint.clone());
         } else if endpoint_router.auto_route4 {
             // IPv4 endpoint
             if let Some(gw) = &endpoint_router.gateway4 {
-                let _ = wg_quick::cmd(&["route", "-q", "-n", "add", "-inet", endpoint, "-gateway", gw]);
+                let _ = shell_cmd(&["route", "-q", "-n", "add", "-inet", endpoint, "-gateway", gw]);
             } else {
                 // No IPv4 gateway - add blackhole route
-                let _ = wg_quick::cmd(&["route", "-q", "-n", "add", "-inet", endpoint, "127.0.0.1", "-blackhole"]);
+                let _ = shell_cmd(&["route", "-q", "-n", "add", "-inet", endpoint, "127.0.0.1", "-blackhole"]);
             }
             added.push(endpoint.clone());
         }
@@ -369,7 +370,7 @@ pub fn set_endpoint_direct_route(iface: &str, endpoint_router: &mut wg_quick::En
 fn get_default_gateway(ipv6: bool) -> TunnelResult<String> {
     let family = if ipv6 { "inet6" } else { "inet" };
 
-    let output = wg_quick::cmd(&["netstat", "-nr", "-f", family])?;
+    let output = shell_cmd(&["netstat", "-nr", "-f", family])?;
 
     let output_str = String::from_utf8_lossy(&output.stdout);
     for line in output_str.lines() {
@@ -407,10 +408,10 @@ pub fn start_monitor_daemon(iface: &str, interface_name: &str, dns: &Dns, mtu: &
         if let Err(e) = del_dns(&iface_clone, &mut dns_manager_clone) {
             log::warn!("[!] Monitor daemon error while deleting DNS: {}", e);
         }
-        log::info!("[+] Stopped route monitor");
+        log::debug!("[+] Stopped route monitor");
     });
 
-    log::info!("[+] Backgrounding route monitor");
+    log::debug!("[+] Backgrounding route monitor");
     Ok(())
 }
 
@@ -454,7 +455,7 @@ fn monitor_daemon_worker(
             continue;
         }
 
-        let iface_check = wg_quick::cmd(&["ifconfig", &real_iface]);
+        let iface_check = shell_cmd(&["ifconfig", &real_iface]);
 
         if iface_check.is_err() || !iface_check?.status.success() {
             log::warn!("[!] Interface {} no longer exists, stopping monitor", &real_iface);
@@ -491,33 +492,33 @@ fn monitor_daemon_worker(
         }
     }
 
-    log::info!("[+] Stopping route monitor");
+    log::debug!("[+] Stopping route monitor");
     let _ = route_monitor.kill();
-    log::info!("[+] Stopped route monitor");
+    log::debug!("[+] Stopped route monitor");
 
     Ok(())
 }
 
 pub fn del_routes(iface: &str) -> TunnelResult<()> {
-    let output = wg_quick::cmd(&["netstat", "-nr", "-f", "inet"])?;
+    let output = shell_cmd(&["netstat", "-nr", "-f", "inet"])?;
 
     let output_str = String::from_utf8_lossy(&output.stdout);
     for line in output_str.lines() {
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() > 5 && parts[5] == iface {
             let dest = parts[0];
-            let _ = wg_quick::cmd(&["route", "-q", "-n", "delete", "-inet", dest]);
+            let _ = shell_cmd(&["route", "-q", "-n", "delete", "-inet", dest]);
         }
     }
 
-    let output = wg_quick::cmd(&["netstat", "-nr", "-f", "inet6"])?;
+    let output = shell_cmd(&["netstat", "-nr", "-f", "inet6"])?;
 
     let output_str = String::from_utf8_lossy(&output.stdout);
     for line in output_str.lines() {
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() > 3 && parts[3] == iface {
             let dest = parts[0];
-            let _ = wg_quick::cmd(&["route", "-q", "-n", "delete", "-inet6", dest]);
+            let _ = shell_cmd(&["route", "-q", "-n", "delete", "-inet6", dest]);
         }
     }
 

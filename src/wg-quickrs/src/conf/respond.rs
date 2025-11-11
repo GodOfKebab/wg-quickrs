@@ -82,7 +82,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
         }
     };
 
-    log::info!("update_config with the change_sum = \n{:?}", change_sum);
+    log::debug!("update config with the change_sum = \n{:?}", change_sum);
 
     let mut c = get_mg_config_w_digest!();
     let this_peer_id = c.network_w_digest.network.this_peer;
@@ -320,17 +320,17 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
         }
     }
     if !changed_config {
-        log::info!("nothing to update");
+        log::debug!("nothing to update");
         return Err(bad_request!("nothing to update"));
     }
     post_mg_config_w_digest!(c);
+    log::info!("config updated");
 
     if c.agent.vpn.enabled {
         sync_conf(&c.clone().to_config()).map_err(|e| {
             log::error!("{e}");
             internal_server_error!("can't handle request: unable to synchronize config")
         })?;
-        log::info!("synchronized config file");
     }
 
     Ok(HttpResponse::Ok().json(json!({
@@ -352,8 +352,8 @@ pub(crate) fn post_network_reserve_address() -> Result<HttpResponse, HttpRespons
         valid_until: reservation_valid_until.clone(),
     });
     post_mg_config_w_digest!(c);
-
     log::info!("reserved address {} for {} until {}", next_address.clone(), reservation_peer_id, reservation_valid_until);
+    
     Ok(HttpResponse::Ok().json(json!({
         "address": next_address,
         "peer_id": reservation_peer_id,

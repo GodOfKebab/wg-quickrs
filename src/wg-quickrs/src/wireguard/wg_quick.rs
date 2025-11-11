@@ -1,11 +1,11 @@
 use std::collections::HashMap;
-use std::process::{Command, Output};
 use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 use wg_quickrs_lib::types::config::Config;
 use wg_quickrs_lib::types::network::{Peer, Script};
+use crate::helpers::{shell_cmd, ShellError};
 use crate::wireguard::cmd::WireGuardCommandError;
 #[cfg(target_os = "macos")]
 use crate::wireguard::wg_quick_darwin as wg_quick_platform;
@@ -29,6 +29,8 @@ pub enum TunnelError {
     WireGuardLibError(#[from] wg_quickrs_lib::types::misc::WireGuardLibError),
     #[error("{0}")]
     WireGuardCommandError(#[from] WireGuardCommandError),
+    #[error("{0}")]
+    ShellError(#[from] ShellError),
     #[cfg(target_os = "macos")]
     #[error("Unable to find default gateway")]
     DefaultGatewayNotFound(),
@@ -148,7 +150,7 @@ impl TunnelManager {
         self.add_routes()?;
         #[cfg(target_os = "macos")]
         {
-            log::info!("[#] Setting endpoint direct route to WireGuard interface: {}", self.interface_name());
+            log::debug!("[#] Setting endpoint direct route to WireGuard interface: {}", self.interface_name());
             let iface = self.real_interface.as_ref().unwrap();
             wg_quick_platform::set_endpoint_direct_route(iface, &mut self.endpoint_router)?;
         }
@@ -206,7 +208,7 @@ impl TunnelManager {
 
         match wg_quick_platform::interface_exists(&interface) {
             Ok(Some(iface)) => {
-                log::info!("[#] Interface for {} is {}", &interface, iface);
+                log::debug!("[#] Interface for {} is {}", &interface, iface);
                 self.real_interface = Some(iface);
                 Ok(true)
             }
@@ -217,7 +219,7 @@ impl TunnelManager {
 
     fn add_interface(&mut self) -> TunnelResult<()> {
         let interface = self.interface_name();
-        log::info!("[#] Adding WireGuard interface: {}", &interface);
+        log::debug!("[#] Adding WireGuard interface: {}", &interface);
         self.real_interface = Some(wg_quick_platform::add_interface(&interface)?);
         Ok(())
     }
@@ -227,7 +229,7 @@ impl TunnelManager {
             TunnelError::InterfaceNotFound("No interface to delete".to_string())
         })?;
         let interface = self.interface_name();
-        log::info!("[#] Deleting WireGuard interface: {}", &interface);
+        log::debug!("[#] Deleting WireGuard interface: {}", &interface);
 
         let mut dns_manager = self.dns_manager.clone();
         let mut endpoint_router = self.endpoint_router.clone();
@@ -239,7 +241,7 @@ impl TunnelManager {
     }
 
     fn add_addresses(&self) -> TunnelResult<()> {
-        log::info!("[#] Adding addresses to WireGuard interface: {}", self.interface_name());
+        log::debug!("[#] Adding addresses to WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().unwrap();
 
         let this_peer = &self.this_peer()?;
@@ -257,7 +259,7 @@ impl TunnelManager {
     }
 
     fn set_mtu_and_up(&self) -> TunnelResult<()> {
-        log::info!("[#] Setting MTU and bringing up WireGuard interface: {}", self.interface_name());
+        log::debug!("[#] Setting MTU and bringing up WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().unwrap();
 
         wg_quick_platform::set_mtu_and_up(iface, &self.this_peer()?.mtu)?;
@@ -266,7 +268,7 @@ impl TunnelManager {
     }
 
     fn set_dns(&mut self) -> TunnelResult<()> {
-        log::info!("[#] Setting DNS for WireGuard interface: {}", self.interface_name());
+        log::debug!("[#] Setting DNS for WireGuard interface: {}", self.interface_name());
         let this_peer = &self.this_peer()?;
 
         if !this_peer.dns.enabled || this_peer.dns.addresses.is_empty() {
@@ -280,13 +282,13 @@ impl TunnelManager {
     }
 
     fn del_dns(&mut self) -> TunnelResult<()> {
-        log::info!("[#] Deleting DNS for WireGuard interface: {}", self.interface_name());
+        log::debug!("[#] Deleting DNS for WireGuard interface: {}", self.interface_name());
         let interface_name = self.interface_name();
         wg_quick_platform::del_dns(&interface_name, &mut self.dns_manager)
     }
 
     fn add_routes(&mut self) -> TunnelResult<()> {
-        log::info!("[#] Adding routes to WireGuard interface: {}", self.interface_name());
+        log::debug!("[#] Adding routes to WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().unwrap();
         let allowed_ips = get_allowed_ips(iface)?;
         let config = self.config.as_ref().unwrap();
@@ -299,7 +301,7 @@ impl TunnelManager {
     }
 
     fn del_routes(&self) -> TunnelResult<()> {
-        log::info!("[#] Deleting routes from WireGuard interface: {}", self.interface_name());
+        log::debug!("[#] Deleting routes from WireGuard interface: {}", self.interface_name());
         let iface = self.real_interface.as_ref().ok_or_else(|| {
             TunnelError::InterfaceNotFound("No interface for route deletion".to_string())
         })?;
@@ -308,7 +310,7 @@ impl TunnelManager {
     }
 
     fn set_config(&self) -> TunnelResult<()> {
-        log::info!("[#] Setting WireGuard interface configuration: {}", self.interface_name());
+        log::debug!("[#] Setting WireGuard interface configuration: {}", self.interface_name());
         let iface = self.real_interface.as_ref().unwrap();
         let config = self.config.as_ref().unwrap();
 
@@ -316,14 +318,14 @@ impl TunnelManager {
 
         let mut temp_file = NamedTempFile::new()?;
         writeln!(temp_file, "{}", wg_config)?;
-        cmd(&["wg", "setconf", iface, &temp_file.path().to_string_lossy()])?;
+        shell_cmd(&["wg", "setconf", iface, &temp_file.path().to_string_lossy()])?;
         let _ = fs::remove_file(&temp_file);
 
         Ok(())
     }
 
     fn is_wireguard_interface(&self) -> TunnelResult<bool> {
-        let output = cmd(&["wg", "show", "interfaces"])?;
+        let output = shell_cmd(&["wg", "show", "interfaces"])?;
 
         if !output.status.success() {
             return Ok(false);
@@ -340,7 +342,7 @@ impl TunnelManager {
     }
 
     fn execute_hooks(&self, hook_type: HookType) -> TunnelResult<()> {
-        log::info!("[#] Executing {:?} hooks", hook_type);
+        log::debug!("[#] Executing {:?} hooks", hook_type);
         let this_peer = &self.this_peer()?;
         let config = self.config.as_ref().unwrap();
 
@@ -356,18 +358,18 @@ impl TunnelManager {
             HookType::PostUp => {
                 if config.agent.firewall.enabled && let Some(utility) = config.agent.firewall.utility.file_name() {
                     if utility == "iptables" {
-                        let _ = cmd(&[fw_utility, "-t", "nat", "-I", "POSTROUTING", "-s", &subnet.to_string(), "-o", gateway, "-j", "MASQUERADE"]);
-                        let _ = cmd(&[fw_utility, "-I", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
-                        let _ = cmd(&[fw_utility, "-I", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
-                        let _ = cmd(&[fw_utility, "-I", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
+                        let _ = shell_cmd(&[fw_utility, "-t", "nat", "-I", "POSTROUTING", "-s", &subnet.to_string(), "-o", gateway, "-j", "MASQUERADE"]);
+                        let _ = shell_cmd(&[fw_utility, "-I", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
+                        let _ = shell_cmd(&[fw_utility, "-I", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
+                        let _ = shell_cmd(&[fw_utility, "-I", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
                         #[cfg(not(feature = "docker"))]
-                        let _ = cmd(&["sysctl", "-w", "net.ipv4.ip_forward=1"]);
+                        let _ = shell_cmd(&["sysctl", "-w", "net.ipv4.ip_forward=1"]);
                     } else if utility == "pfctl" {
                         match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet.to_string(), true) {
                             Ok(()) => {
-                                let _ = cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
-                                let _ = cmd(&[fw_utility, "-e"]);
-                                let _ = cmd(&["sysctl", "-w", "net.inet.ip.forwarding=1"]);
+                                let _ = shell_cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
+                                let _ = shell_cmd(&[fw_utility, "-e"]);
+                                let _ = shell_cmd(&["sysctl", "-w", "net.inet.ip.forwarding=1"]);
                             },
                             Err(e) => log::warn!("Warning: Failed to modify pf.conf: {}", e),
                         }
@@ -380,21 +382,21 @@ impl TunnelManager {
             HookType::PostDown => {
                 if config.agent.firewall.enabled && let Some(utility) = config.agent.firewall.utility.file_name() {
                     if utility == "iptables" {
-                        let _ = cmd(&[fw_utility, "-t", "nat", "-D", "POSTROUTING", "-s", &subnet.to_string(), "-o", gateway, "-j", "MASQUERADE"]);
-                        let _ = cmd(&[fw_utility, "-D", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
-                        let _ = cmd(&[fw_utility, "-D", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
-                        let _ = cmd(&[fw_utility, "-D", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
+                        let _ = shell_cmd(&[fw_utility, "-t", "nat", "-D", "POSTROUTING", "-s", &subnet.to_string(), "-o", gateway, "-j", "MASQUERADE"]);
+                        let _ = shell_cmd(&[fw_utility, "-D", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
+                        let _ = shell_cmd(&[fw_utility, "-D", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
+                        let _ = shell_cmd(&[fw_utility, "-D", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
                         #[cfg(not(feature = "docker"))]
-                        let _ = cmd(&["sysctl", "-w", "net.ipv4.ip_forward=0"]);
+                        let _ = shell_cmd(&["sysctl", "-w", "net.ipv4.ip_forward=0"]);
                     } else if utility == "pfctl" {
                         match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet.to_string(), false) {
                             Ok(_) => {}
                             Err(e) => log::warn!("Warning: Failed to modify pf.conf: {}", e),
                         };
-                        let _ = cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
-                        let _ = cmd(&[fw_utility, "-d"]);
+                        let _ = shell_cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
+                        let _ = shell_cmd(&[fw_utility, "-d"]);
                         #[cfg(not(feature = "docker"))]
-                        let _ = cmd(&["sysctl", "-w", "net.inet.ip.forwarding=0"]);
+                        let _ = shell_cmd(&["sysctl", "-w", "net.inet.ip.forwarding=0"]);
                     }
                 }
                 cmds.extend(this_peer.scripts.post_down.clone());
@@ -407,7 +409,7 @@ impl TunnelManager {
                 continue;
             }
 
-            let output = cmd(&["sh", "-c", &hook.script])?;
+            let output = shell_cmd(&["sh", "-c", &hook.script])?;
 
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
@@ -442,7 +444,7 @@ fn extract_ip_from_endpoint(endpoint: &str) -> Option<String> {
 }
 
 fn get_allowed_ips(iface: &str) -> TunnelResult<Vec<String>> {
-    let output = match cmd(&["wg", "show", iface, "allowed-ips"]) {
+    let output = match shell_cmd(&["wg", "show", iface, "allowed-ips"]) {
         Ok(output) => output,
         Err(e) => {
             log::warn!("Failed to get allowed IPs: {}, defaulting to an empty list of allowed IPs", e);
@@ -468,7 +470,7 @@ fn get_allowed_ips(iface: &str) -> TunnelResult<Vec<String>> {
 }
 
 pub fn get_endpoints(iface: &str) -> Vec<String> {
-    let output = match cmd(&["wg", "show", iface, "endpoints"]) {
+    let output = match shell_cmd(&["wg", "show", iface, "endpoints"]) {
         Ok(output) => output,
         Err(e) => {
             log::warn!("Failed to get endpoints: {}, defaulting to an empty list of endpoints", e);
@@ -491,28 +493,6 @@ pub fn get_endpoints(iface: &str) -> Vec<String> {
     endpoints
 }
 
-pub fn cmd(args: &[&str]) -> TunnelResult<Output> {
-    if args.is_empty() {
-        return Err(TunnelError::CommandFailed("Empty command".to_string()));
-    }
-
-    log::info!("[+] {}", args.join(" "));
-
-    let output = Command::new(args[0])
-        .args(&args[1..])
-        .output()?;
-    if !output.stderr.is_empty() {
-        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
-    }
-
-    if !output.status.success() {
-        println!("{}", String::from_utf8_lossy(&output.stdout));
-        return Err(TunnelError::CommandFailed(String::from_utf8_lossy(&output.stderr).to_string()));
-    }
-
-    Ok(output)
-}
-
 fn mod_pf_conf(gateway: &str, subnet: &str, add: bool) -> TunnelResult<()> {
     let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}  # added by wg-quickrs");
 
@@ -529,9 +509,9 @@ fn mod_pf_conf(gateway: &str, subnet: &str, add: bool) -> TunnelResult<()> {
 
     if add {
         // Adding rule
-        log::info!("*** adding the nat rule to pf.conf...");
+        log::debug!("*** adding the nat rule to pf.conf...");
         if rule_exists {
-            log::info!("*** already exists, nothing to do");
+            log::debug!("*** already exists, nothing to do");
             return Ok(()); // Already exists, nothing to do
         }
 
@@ -558,12 +538,12 @@ fn mod_pf_conf(gateway: &str, subnet: &str, add: bool) -> TunnelResult<()> {
 
         // Write to a temporary file
         fs::write(pf_conf_new, new_lines.join("\n") + "\n")?;
-        log::info!("*** added the nat rule to pf.conf");
+        log::debug!("*** added the nat rule to pf.conf");
     } else {
         // Removing rule
-        log::info!("*** removing the nat rule from pf.conf...");
+        log::debug!("*** removing the nat rule from pf.conf...");
         if !rule_exists {
-            log::info!("*** already removed, nothing to do");
+            log::debug!("*** already removed, nothing to do");
             return Ok(()); // Doesn't exist, nothing to do
         }
 
@@ -576,7 +556,7 @@ fn mod_pf_conf(gateway: &str, subnet: &str, add: bool) -> TunnelResult<()> {
 
         // Write to a temporary file
         fs::write(pf_conf_new, new_lines.join("\n") + "\n")?;
-        log::info!("*** removed the nat rule from pf.conf");
+        log::debug!("*** removed the nat rule from pf.conf");
     }
 
     // Atomic operations: backup then replace

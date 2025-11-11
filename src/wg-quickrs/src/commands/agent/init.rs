@@ -23,7 +23,7 @@ use crate::conf::util::ConfUtilError;
 include!(concat!(env!("OUT_DIR"), "/init_options_generated.rs"));
 
 #[derive(Error, Debug)]
-pub enum InitError {
+pub enum AgentInitError {
     #[error("wg-quickrs is already initialized at \"{0}\"")]
     AlreadyInitialized(String),
     #[error("{0}")]
@@ -131,12 +131,12 @@ fn get_init_password(
 }
 
 
-pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), InitError> {
+pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     let file_path = WG_QUICKRS_CONFIG_FILE.get().unwrap();
     if file_path.exists() {
-        return Err(InitError::AlreadyInitialized(file_path.display().to_string()));
+        return Err(AgentInitError::AlreadyInitialized(file_path.display().to_string()));
     }
-    log::info!("Initializing wg-quickrs...");
+    log::info!("Initializing wg-quickrs agent...");
     
     let mut step_counter = 1;
     let step_str = make_step_formatter(28);

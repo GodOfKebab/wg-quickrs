@@ -10,9 +10,9 @@ use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
 };
 use std::path::PathBuf;
-use std::process::Command;
 use thiserror::Error;
 use tokio::try_join;
+use crate::helpers::shell_cmd;
 
 #[derive(Error, Debug)]
 pub enum ServerError {
@@ -25,39 +25,24 @@ fn setup_firewall_rules(utility: PathBuf, port: u16, is_add_action: bool) {
         && utility_fn.to_string_lossy() == "iptables"
     {
         // iptables -A/-D INPUT -p tcp --dport PORT -j ACCEPT
-        let readable_command = format!(
-            "$ {} {} INPUT -p tcp --dport {} -j ACCEPT",
-            utility.display(),
+        let shell_result = shell_cmd(&[
+            utility.to_str().unwrap(),
             if is_add_action { "-A" } else { "-D" },
-            port
-        );
-        match Command::new(utility)
-            .arg(if is_add_action { "-A" } else { "-D" })
-            .arg("INPUT")
-            .arg("-p")
-            .arg("tcp")
-            .arg("--dport")
-            .arg(format!("{}", port))
-            .arg("-j")
-            .arg("ACCEPT")
-            .output()
-        {
-            Ok(output) => {
-                log::info!("{readable_command}");
-                if !output.stdout.is_empty() {
-                    log::debug!("{}", String::from_utf8_lossy(&output.stdout));
-                }
-                if !output.stderr.is_empty() {
-                    log::warn!("{}", String::from_utf8_lossy(&output.stderr));
-                }
-                if !output.status.success() {
-                    log::warn!("firewall input rule update for http(s) failed");
-                }
-            }
-            Err(_) => {
+            "INPUT",
+            "-p",
+            "tcp",
+            "--dport",
+            port.to_string().as_str(),
+            "-j",
+            "ACCEPT"]);
+
+        if let Ok(output) = shell_result {
+            if !output.status.success() {
                 log::warn!("firewall input rule update for http(s) failed");
             }
-        };
+        } else {
+            log::warn!("firewall input rule update for http(s) failed");
+        }
     }
 }
 

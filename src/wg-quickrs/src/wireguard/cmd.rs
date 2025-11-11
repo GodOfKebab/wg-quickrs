@@ -7,7 +7,6 @@ use wg_quickrs_lib::types::misc::{WireGuardStatus};
 use std::collections::{BTreeMap, VecDeque};
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -16,6 +15,7 @@ use tempfile::NamedTempFile;
 use thiserror::Error;
 use tokio::signal::unix::{signal, SignalKind};
 use wg_quickrs_lib::types::network::ConnectionId;
+use crate::helpers::{shell_cmd, ShellError};
 use crate::wireguard::wg_quick;
 
 const TELEMETRY_CAPACITY: usize = 21;
@@ -50,14 +50,12 @@ pub enum WireGuardCommandError {
     MutexLockFailed(String),
     #[error("wireguard::cmd::error::interface_missing -> wireguard interface doesn't exist")]
     InterfaceMissing,
-    #[error("wireguard::cmd::error::command_exec_error -> command for {0} failed: {1}")]
-    CommandExecError(String, std::io::Error),
-    #[error("wireguard::cmd::error::command_exec_not_successful -> command for {0} completed unsuccessfully")]
-    CommandExecNotSuccessful(String),
+    #[error("{0}")]
+    ShellError(#[from] ShellError),
     #[error("wireguard::cmd::error::file_write_error -> failed to write file at {0} failed: {1}")]
     FileWriteError(PathBuf, std::io::Error),
-    #[error("wireguard::cmd::error::interface_sync_failed -> failed to sync wireguard interface: {0}")]
-    InterfaceSyncFailed(String),
+    #[error("Failed to sync wireguard interface")]
+    InterfaceSyncFailed(),
     #[error("wireguard::cmd::error::tunnel_error -> tunnel operation failed: {0}")]
     TunnelError(String),
     #[error("wireguard::cmd::error::other -> unexpected error: {0}")]
@@ -81,7 +79,6 @@ pub(crate) async fn run_vpn_server(
     *WG_TUNNEL_MANAGER.lock().unwrap() = wg_quick::TunnelManager::new(Some(config.clone()));
 
     Box::pin(async move {
-        log::info!("Always disable wireguard first on startup");
         let _ = disable_tunnel();
         match WG_STATUS.lock() {
             Ok(mut w) => *w = WireGuardStatus::DOWN,
@@ -193,70 +190,46 @@ fn show_dump(config: &Config) -> Result<BTreeMap<ConnectionId, TelemetryDatum>, 
         return Err(WireGuardCommandError::InterfaceMissing);
     }
 
-    let readable_command = format!("$ wg show {} dump", &*wg_interface_mut);
-    log::debug!("{readable_command}");
+    let output = shell_cmd(&["wg", "show", &*wg_interface_mut, "dump"])?;
+    let mut telemetry = BTreeMap::<ConnectionId, TelemetryDatum>::new();
 
-    match Command::new("wg")
-        .arg("show")
-        .arg(&*wg_interface_mut)
-        .arg("dump")
-        .output()
-    {
-        Ok(output) => {
-            if !output.stdout.is_empty() {
-                log::trace!("{}", String::from_utf8_lossy(&output.stdout));
-            }
-            if !output.stderr.is_empty() {
-                log::debug!("{}", String::from_utf8_lossy(&output.stderr));
-            }
-            if !output.status.success() {
-                return Err(WireGuardCommandError::CommandExecNotSuccessful(
-                    readable_command,
-                ));
-            }
-
-            let mut telemetry = BTreeMap::<ConnectionId, TelemetryDatum>::new();
-
-            let dump = String::from_utf8_lossy(&output.stdout);
-            for line in dump.trim().lines().skip(1) {
-                let parts: Vec<&str> = line.split('\t').collect();
-                if parts.len() < 8 {
-                    continue;
-                }
-                let public_key = parts[0];
-
-                for (peer_id, peer_details) in config.network.peers.clone() {
-                    if wg_quickrs_lib::helpers::wg_public_key_from_private_key(&peer_details.private_key).to_base64() != public_key
-                    {
-                        continue;
-                    }
-
-                    let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
-                    let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
-                    let connection_id =
-                        wg_quickrs_lib::helpers::get_connection_id(config.network.this_peer.clone(), peer_id.clone());
-
-                    let (transfer_a_to_b, transfer_b_to_a) = if connection_id.a == config.network.this_peer {
-                        (transfer_tx, transfer_rx)
-                    } else {
-                        (transfer_rx, transfer_tx)
-                    };
-
-                    telemetry.insert(
-                        connection_id.clone(),
-                        TelemetryDatum {
-                            latest_handshake_at: parts[4].parse::<u64>().unwrap_or(0),
-                            transfer_a_to_b,
-                            transfer_b_to_a,
-                        },
-                    );
-                    break;
-                }
-            }
-            Ok(telemetry)
+    let dump = String::from_utf8_lossy(&output.stdout);
+    for line in dump.trim().lines().skip(1) {
+        let parts: Vec<&str> = line.split('\t').collect();
+        if parts.len() < 8 {
+            continue;
         }
-        Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
+        let public_key = parts[0];
+
+        for (peer_id, peer_details) in config.network.peers.clone() {
+            if wg_quickrs_lib::helpers::wg_public_key_from_private_key(&peer_details.private_key).to_base64() != public_key
+            {
+                continue;
+            }
+
+            let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
+            let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
+            let connection_id =
+                wg_quickrs_lib::helpers::get_connection_id(config.network.this_peer.clone(), peer_id.clone());
+
+            let (transfer_a_to_b, transfer_b_to_a) = if connection_id.a == config.network.this_peer {
+                (transfer_tx, transfer_rx)
+            } else {
+                (transfer_rx, transfer_tx)
+            };
+
+            telemetry.insert(
+                connection_id.clone(),
+                TelemetryDatum {
+                    latest_handshake_at: parts[4].parse::<u64>().unwrap_or(0),
+                    transfer_a_to_b,
+                    transfer_b_to_a,
+                },
+            );
+            break;
+        }
     }
+    Ok(telemetry)
 }
 
 pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
@@ -293,29 +266,10 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     };
     let temp_path = temp.path().to_owned();
 
-    let readable_command = format!("$ wg syncconf {} <(WG_CONF_STRIPPED)", &*wg_interface_mut);
-    log::info!("{readable_command}");
-
-    match Command::new("wg")
-        .arg("syncconf")
-        .arg(&*wg_interface_mut)
-        .arg(temp_path)
-        .output()
-    {
-        Ok(output) => {
-            if !output.stdout.is_empty() {
-                log::debug!("{}", String::from_utf8_lossy(&output.stdout));
-            }
-            if !output.stderr.is_empty() {
-                log::warn!("{}", String::from_utf8_lossy(&output.stderr));
-            }
-            if !output.status.success() {
-                return Err(WireGuardCommandError::InterfaceSyncFailed(readable_command));
-            }
-            Ok(())
-        }
-        Err(e) => Err(WireGuardCommandError::CommandExecError(readable_command, e)),
-    }
+    let _ = shell_cmd(&["wg", "syncconf", &*wg_interface_mut, temp_path.to_str().unwrap()]).map_err(|_| {
+        WireGuardCommandError::InterfaceSyncFailed()
+    })?;
+    Ok(())
 }
 
 pub(crate) fn disable_tunnel() -> Result<(), WireGuardCommandError> {

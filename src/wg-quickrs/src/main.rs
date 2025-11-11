@@ -4,17 +4,20 @@ use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use thiserror::Error;
-use wg_quickrs::{WG_QUICKRS_CONFIG_FILE, WG_QUICKRS_CONFIG_FOLDER};
+use wg_quickrs_cli::Cli;
+use clap::{CommandFactory, FromArgMatches};
+use once_cell::sync::OnceCell;
 use wg_quickrs_lib::validation::error::ValidationError;
 use wg_quickrs_lib::macros::full_version;
 
-
-mod cli;
 mod commands;
 mod conf;
 mod web;
 mod wireguard;
+mod helpers;
 
+pub static WG_QUICKRS_CONFIG_FOLDER: OnceCell<PathBuf> = OnceCell::new();
+pub static WG_QUICKRS_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
 #[derive(Error, Debug)]
 pub enum CommandError {
@@ -25,16 +28,17 @@ pub enum CommandError {
     #[error("{0}")]
     Validation(#[from] ValidationError),
     #[error("{0}")]
-    AgentRun(#[from] commands::agent::run::AgentRunError),
+    AgentInit(#[from] commands::agent::init::AgentInitError),
     #[error("{0}")]
-    Init(#[from] commands::agent::init::InitError),
+    AgentRun(#[from] commands::agent::run::AgentRunError),
     #[error("{0}")]
     ConfigCommand(#[from] commands::config::ConfigCommandError),
 }
 
 #[actix_web::main]
 async fn main() -> ExitCode {
-    let args = cli::parse();
+    let matches = Cli::command().version(full_version!()).get_matches();
+    let args = Cli::from_arg_matches(&matches).expect("Failed to parse command line arguments");
 
     // start logger
     SimpleLogger::new()

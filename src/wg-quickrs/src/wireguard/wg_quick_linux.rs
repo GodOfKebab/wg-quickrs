@@ -7,11 +7,12 @@ use std::env;
 use std::net::Ipv4Addr;
 use regex::Regex;
 use wg_quickrs_lib::types::network::Mtu;
+use crate::helpers::shell_cmd;
 use crate::wireguard::wg_quick;
 use crate::wireguard::wg_quick::{DnsManager, TunnelError, TunnelResult};
 
 pub fn interface_exists(interface: &str) -> TunnelResult<Option<String>> {
-    let output = wg_quick::cmd(&["ip", "link", "show", "dev", interface]);
+    let output = shell_cmd(&["ip", "link", "show", "dev", interface]);
 
     if output.is_ok() {
         return Ok(Some(interface.to_string()));
@@ -20,11 +21,11 @@ pub fn interface_exists(interface: &str) -> TunnelResult<Option<String>> {
 }
 
 pub fn add_interface(interface: &str) -> TunnelResult<String> {
-    let result = wg_quick::cmd(&["ip", "link", "add", interface, "type", "wireguard"]);
+    let result = shell_cmd(&["ip", "link", "add", interface, "type", "wireguard"]);
 
     if result.is_err() {
         log::warn!("[!] Missing WireGuard kernel module. Falling back to slow userspace implementation.");
-        let userspace_result = wg_quick::cmd(&["wireguard-go", interface]);  // TODO: start in another thread
+        let userspace_result = shell_cmd(&["wireguard-go", interface]);  // TODO: start in another thread
 
         if userspace_result.is_err() {
             return Err(TunnelError::CommandFailed(
@@ -38,7 +39,7 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
 
 pub fn add_address(iface: &str, addr: &str, is_ipv6: bool) -> TunnelResult<()> {
     let proto = if is_ipv6 { "-6" } else { "-4" };
-    wg_quick::cmd(&["ip", proto, "address", "add", addr, "dev", iface])?;
+    shell_cmd(&["ip", proto, "address", "add", addr, "dev", iface])?;
     Ok(())
 }
 
@@ -49,7 +50,7 @@ pub fn set_mtu_and_up(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
         calculate_mtu(iface).unwrap_or(1420).to_string()
     };
 
-    wg_quick::cmd(&["ip", "link", "set", "mtu", &mtu_val, "up", "dev", iface])?;
+    shell_cmd(&["ip", "link", "set", "mtu", &mtu_val, "up", "dev", iface])?;
 
     Ok(())
 }
@@ -63,7 +64,7 @@ fn calculate_mtu(iface: &str) -> TunnelResult<u16> {
     let dev_regex = Regex::new(r"dev ([^ ]+)").unwrap();
 
     for endpoint in endpoints {
-        let output = wg_quick::cmd(&["ip", "route", "get", &endpoint])?;
+        let output = shell_cmd(&["ip", "route", "get", &endpoint])?;
         let output_str = String::from_utf8_lossy(&output.stdout);
 
         if let Some(mtu) = extract_mtu(&output_str, &mtu_regex, &dev_regex) {
@@ -74,7 +75,7 @@ fn calculate_mtu(iface: &str) -> TunnelResult<u16> {
     }
 
     if min_mtu == u16::MAX {
-        if let Ok(default_output) = wg_quick::cmd(&["ip", "route", "show", "default"]) {
+        if let Ok(default_output) = shell_cmd(&["ip", "route", "show", "default"]) {
             let default_output_str = String::from_utf8_lossy(&default_output.stdout);
 
             if let Some(mtu) = extract_mtu(&default_output_str, &mtu_regex, &dev_regex) {
@@ -103,7 +104,7 @@ fn extract_mtu(output: &str, mtu_regex: &Regex, dev_regex: &Regex) -> Option<u16
     // If not found, try to get device name and query it
     if let Some(caps) = dev_regex.captures(output) {
         let device = &caps[1];
-        if let Ok(link_output) = wg_quick::cmd(&["ip", "link", "show", "dev", device]) {
+        if let Ok(link_output) = shell_cmd(&["ip", "link", "show", "dev", device]) {
             let link_str = String::from_utf8_lossy(&link_output.stdout);
             if let Some(caps) = mtu_regex.captures(&link_str) {
                 if let Ok(mtu) = caps[1].parse::<u16>() {
@@ -170,7 +171,7 @@ pub fn set_dns(dns_servers: &Vec<Ipv4Addr>, interface: &str, dns_manager: &mut D
         .map(|s| format!("nameserver {}\n", s))
         .collect::<String>();
 
-    log::info!("[+] resolvconf -a {}{} -m 0 -x", resolvconf_iface_prefix(), interface);
+    log::debug!("[+] resolvconf -a {}{} -m 0 -x", resolvconf_iface_prefix(), interface);
     let mut child = Command::new("resolvconf")
         .args(&["-a", &format!("{}{}", resolvconf_iface_prefix(), interface), "-m", "0", "-x"])
         .stdin(std::process::Stdio::piped())
@@ -197,9 +198,9 @@ pub fn add_route(iface: &str, interface_name: &str, cidr: &str, endpoint_router:
         let is_ipv6 = cidr.contains(':');
         let proto = if is_ipv6 { "-6" } else { "-4" };
 
-        let check = wg_quick::cmd(&["ip", proto, "route", "show", "dev", iface, "match", &cidr])?;
+        let check = shell_cmd(&["ip", proto, "route", "show", "dev", iface, "match", &cidr])?;
         if check.stdout.is_empty() {
-            wg_quick::cmd(&["ip", proto, "route", "add", &cidr, "dev", iface])?;
+            shell_cmd(&["ip", proto, "route", "add", &cidr, "dev", iface])?;
         }
     }
 
@@ -207,7 +208,7 @@ pub fn add_route(iface: &str, interface_name: &str, cidr: &str, endpoint_router:
 }
 
 fn get_fwmark(interface: &str) -> TunnelResult<u16> {
-    let output = wg_quick::cmd(&["wg", "show", interface, "fwmark"])?;
+    let output = shell_cmd(&["wg", "show", interface, "fwmark"])?;
     let fwmark_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     if fwmark_str.is_empty() || fwmark_str == "off" {
@@ -223,8 +224,8 @@ fn find_unused_table() -> TunnelResult<u16> {
     let mut table = 51820u16;
 
     loop {
-        let ipv4_check = wg_quick::cmd(&["ip", "-4", "route", "show", "table", &table.to_string()])?;
-        let ipv6_check = wg_quick::cmd(&["ip", "-6", "route", "show", "table", &table.to_string()])?;
+        let ipv4_check = shell_cmd(&["ip", "-4", "route", "show", "table", &table.to_string()])?;
+        let ipv6_check = shell_cmd(&["ip", "-6", "route", "show", "table", &table.to_string()])?;
 
         if ipv4_check.stdout.is_empty() && ipv6_check.stdout.is_empty() {
             return Ok(table);
@@ -246,7 +247,7 @@ pub fn add_default_route(interface: &str, cidr: &str) -> TunnelResult<()> {
         Ok(mark) => mark,
         Err(_) => {
             let table = find_unused_table()?;
-            wg_quick::cmd(&["wg", "set", interface, "fwmark", &table.to_string()])?;
+            shell_cmd(&["wg", "set", interface, "fwmark", &table.to_string()])?;
             table
         }
     }.to_string();
@@ -258,9 +259,9 @@ pub fn add_default_route(interface: &str, cidr: &str) -> TunnelResult<()> {
     let pf = if is_ipv6 { "ip6" } else { "ip" };
 
     // Add routing rules
-    wg_quick::cmd(&["ip", proto, "rule", "add", "not", "fwmark", table, "table", table])?;
-    wg_quick::cmd(&["ip", proto, "rule", "add", "table", "main", "suppress_prefixlength", "0"])?;
-    wg_quick::cmd(&["ip", proto, "route", "add", cidr, "dev", interface, "table", table])?;
+    shell_cmd(&["ip", proto, "rule", "add", "not", "fwmark", table, "table", table])?;
+    shell_cmd(&["ip", proto, "rule", "add", "table", "main", "suppress_prefixlength", "0"])?;
+    shell_cmd(&["ip", proto, "route", "add", cidr, "dev", interface, "table", table])?;
 
     // Build firewall rules
     let marker = format!("-m comment --comment \"wg-quickrs rule for {}\"", interface);
@@ -285,7 +286,7 @@ pub fn add_default_route(interface: &str, cidr: &str) -> TunnelResult<()> {
     ));
 
     // Get interface addresses and add anti-spoofing rules
-    let addr_output = wg_quick::cmd(&["ip", "-o", proto, "addr", "show", "dev", interface])?;
+    let addr_output = shell_cmd(&["ip", "-o", proto, "addr", "show", "dev", interface])?;
 
     let addr_str = String::from_utf8_lossy(&addr_output.stdout);
     let addr_regex = Regex::new(r".*inet6?\\ ([0-9a-f:.]+)/[0-9]+.*")
@@ -330,11 +331,11 @@ pub fn add_default_route(interface: &str, cidr: &str) -> TunnelResult<()> {
 
     // Enable source validation for IPv4
     if !is_ipv6 {
-        let _ = wg_quick::cmd(&["sysctl", "-q", "net.ipv4.conf.all.src_valid_mark=1"]);
+        let _ = shell_cmd(&["sysctl", "-q", "net.ipv4.conf.all.src_valid_mark=1"]);
     }
 
     // Apply firewall rules - prefer nftables if available
-    let nft_exists = wg_quick::cmd(&["nft", "--version"])
+    let nft_exists = shell_cmd(&["nft", "--version"])
         .map(|o| o.status.success())
         .unwrap_or(false);
 
@@ -391,7 +392,7 @@ fn execute_iptables_command(iptables: &str, restore: &str) -> TunnelResult<()> {
 
 fn remove_nftables(interface: &str) -> TunnelResult<()> {
     // Check if nft is available
-    let nft_exists = wg_quick::cmd(&["nft", "--version"])
+    let nft_exists = shell_cmd(&["nft", "--version"])
         .map(|o| o.status.success())
         .unwrap_or(false);
 
@@ -400,7 +401,7 @@ fn remove_nftables(interface: &str) -> TunnelResult<()> {
     }
 
     // List all nftables tables
-    let output = wg_quick::cmd(&["nft", "list", "tables"])?;
+    let output = shell_cmd(&["nft", "list", "tables"])?;
 
     let tables_str = String::from_utf8_lossy(&output.stdout);
     let target_table = format!("wg-quickrs-{}", interface);
@@ -423,7 +424,7 @@ fn remove_nftables(interface: &str) -> TunnelResult<()> {
 
 fn remove_iptables(interface: &str) -> TunnelResult<()> {
     // Check if iptables is available
-    let iptables_exists = wg_quick::cmd(&["iptables", "--version"])
+    let iptables_exists = shell_cmd(&["iptables", "--version"])
         .map(|o| o.status.success())
         .unwrap_or(false);
 
@@ -436,7 +437,7 @@ fn remove_iptables(interface: &str) -> TunnelResult<()> {
     // Process both iptables and ip6tables
     for iptables in &["iptables", "ip6tables"] {
         // Get current rules
-        let save_output = wg_quick::cmd(&[&format!("{}-save", iptables)])?;
+        let save_output = shell_cmd(&[&format!("{}-save", iptables)])?;
 
         let rules_str = String::from_utf8_lossy(&save_output.stdout);
         let mut restore = String::new();
@@ -486,13 +487,13 @@ fn remove_routing_rules(table: u16) -> TunnelResult<()> {
 
 fn remove_rules_matching(proto: &str, pattern: &str, delete_cmd: &[&str]) -> TunnelResult<()> {
     loop {
-        let check = wg_quick::cmd(&["ip", proto, "rule", "show"])?;
+        let check = shell_cmd(&["ip", proto, "rule", "show"])?;
         let rules_str = String::from_utf8_lossy(&check.stdout);
         if !rules_str.contains(pattern) {
             break;
         }
 
-        wg_quick::cmd(delete_cmd)?;
+        shell_cmd(delete_cmd)?;
     }
 
     Ok(())
@@ -517,7 +518,7 @@ pub fn del_interface(_iface: &str, interface: &str, dns_manager: &mut DnsManager
     }
 
     // Delete the interface
-    wg_quick::cmd(&["ip", "link", "delete", "dev", interface])?;
+    shell_cmd(&["ip", "link", "delete", "dev", interface])?;
     Ok(())
 }
 
@@ -530,7 +531,7 @@ pub fn del_dns(interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<()
     if !dns_manager.have_set_dns {
         return Ok(());
     }
-    let _ = wg_quick::cmd(&["resolvconf", "-d", &format!("{}{}", resolvconf_iface_prefix(), interface), "-f"])?;
+    let _ = shell_cmd(&["resolvconf", "-d", &format!("{}{}", resolvconf_iface_prefix(), interface), "-f"])?;
     dns_manager.have_set_dns = false;
 
     Ok(())
