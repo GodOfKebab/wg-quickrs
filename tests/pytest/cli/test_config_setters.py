@@ -103,23 +103,6 @@ def test_config_reset_peer_private_key(setup_wg_quickrs_folder):
     assert new_key != old_key
 
 
-def _get_first_connection_id(setup_wg_quickrs_folder):
-    """Helper to get the first connection ID from ls connections."""
-    result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "ls", "connections"],
-        capture_output=True,
-        text=True
-    )
-    if result.returncode != 0:
-        return None
-    connections = [line for line in result.stdout.strip().split('\n') if line and "No connections" not in line]
-    if not connections:
-        return None
-    # Extract connection ID from format "name1<->name2 (uuid*uuid)"
-    first_connection = connections[0]
-    return first_connection[first_connection.rfind('(') + 1:first_connection.rfind(')')]
-
-
 @pytest.mark.parametrize(
     "action",
     ["enable", "disable"],
@@ -128,10 +111,7 @@ def test_config_connection_toggle(setup_wg_quickrs_folder, action):
     """Test enabling/disabling connection."""
     setup_wg_quickrs_folder("no_auth_multi_peer")
 
-    conn_id = _get_first_connection_id(setup_wg_quickrs_folder)
-    if not conn_id:
-        pytest.skip("No connections found")
-
+    conn_id = "9541bbb0-a3c0-4b83-8637-96820cae7983*0ed989c6-6dba-4e3c-8034-08adf4262d9e"
     result = subprocess.run(
         get_wg_quickrs_command() + ["config", action, "network", "connection", conn_id],
         capture_output=True,
@@ -145,10 +125,7 @@ def test_config_set_connection_allowed_ips(setup_wg_quickrs_folder):
     """Test setting connection allowed IPs."""
     setup_wg_quickrs_folder("no_auth_multi_peer")
 
-    conn_id = _get_first_connection_id(setup_wg_quickrs_folder)
-    if not conn_id:
-        pytest.skip("No connections found")
-
+    conn_id = "9541bbb0-a3c0-4b83-8637-96820cae7983*0ed989c6-6dba-4e3c-8034-08adf4262d9e"
     result = subprocess.run(
         get_wg_quickrs_command() + [
             "config", "set", "network", "connection", conn_id,
@@ -165,10 +142,7 @@ def test_config_set_connection_persistent_keepalive(setup_wg_quickrs_folder):
     """Test setting connection persistent keepalive."""
     setup_wg_quickrs_folder("no_auth_multi_peer")
 
-    conn_id = _get_first_connection_id(setup_wg_quickrs_folder)
-    if not conn_id:
-        pytest.skip("No connections found")
-
+    conn_id = "9541bbb0-a3c0-4b83-8637-96820cae7983*0ed989c6-6dba-4e3c-8034-08adf4262d9e"
     result = subprocess.run(
         get_wg_quickrs_command() + [
             "config", "set", "network", "connection", conn_id,
