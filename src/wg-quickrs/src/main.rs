@@ -46,6 +46,7 @@ async fn main() -> ExitCode {
         } else {
             LevelFilter::Info
         })
+        .with_module_level("actix_server", LevelFilter::Warn)
         .init()
         .unwrap_or_else(|e| {
             eprintln!("Logger init failed: {e}");

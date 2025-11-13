@@ -6,6 +6,7 @@ use std::os::unix::fs::FileTypeExt;
 use std::os::unix::process::CommandExt;
 use std::process::Command;
 use std::time::{Duration, SystemTime};
+use log::{log_enabled, Level};
 use regex::Regex;
 use wg_quickrs_lib::types::network::{Dns, Mtu};
 use crate::helpers::shell_cmd;
@@ -53,7 +54,6 @@ pub fn interface_exists(interface: &str) -> TunnelResult<Option<String>> {
         return Ok(None);
     }
 
-    log::info!("[+] Interface for {} is {}", interface, iface);
     Ok(Some(iface))
 }
 
@@ -62,12 +62,13 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
 
     let name_file = format!("/var/run/wireguard/{}.name", interface);
 
+    let log_level = if log_enabled!(Level::Debug) { "debug" } else { "error" };
     let value = name_file.clone();
     std::thread::spawn(move || unsafe {
         match Command::new("wireguard-go")
             .args(["--foreground", "utun"])
             .env("WG_TUN_NAME_FILE", value)
-            .env("LOG_LEVEL", "debug")
+            .env("LOG_LEVEL", log_level)
             .stdin(std::process::Stdio::inherit())
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit())

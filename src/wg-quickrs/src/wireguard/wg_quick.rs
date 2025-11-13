@@ -121,7 +121,7 @@ impl TunnelManager {
         }
 
         let interface = self.interface_name();
-        log::info!("Starting WireGuard tunnel: {}", &interface);
+        log::info!("Starting WireGuard tunnel: {}...", &interface);
 
         self.add_interface()?;
         self.execute_hooks(HookType::PreUp)?;
@@ -160,12 +160,12 @@ impl TunnelManager {
             .ok_or_else(|| WireGuardCommandError::Other("WireGuard config not initialized".to_string()))?;
 
         if !self.interface_exists()? {
-            log::warn!("Interface already deleted, skipping cleanup");
+            log::debug!("Interface already deleted, skipping cleanup");
             return Ok(());
         }
 
         let interface = self.interface_name();
-        log::info!("Stopping WireGuard tunnel: {}", &interface);
+        log::info!("Stopping WireGuard tunnel: {}...", &interface);
 
         if !self.is_wireguard_interface()? {
             return Err(TunnelError::InvalidConfig(format!(

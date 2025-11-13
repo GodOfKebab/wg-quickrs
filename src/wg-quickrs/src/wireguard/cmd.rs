@@ -75,7 +75,7 @@ pub static WG_STATUS: Mutex<WireGuardStatus> = Mutex::new(WireGuardStatus::DOWN)
 pub(crate) async fn run_vpn_server(
     config: &Config,
 ) -> std::io::Result<()> {
-    log::info!("Starting VPN server with wg-quick native implementation");
+    log::info!("Starting WireGuard tunnel...");
     *WG_TUNNEL_MANAGER.lock().unwrap() = wg_quick::TunnelManager::new(Some(config.clone()));
 
     Box::pin(async move {

@@ -1,3 +1,4 @@
+use std::net::{IpAddr, SocketAddr};
 use crate::WG_QUICKRS_CONFIG_FOLDER;
 use crate::web::api;
 use crate::web::app;
@@ -95,25 +96,16 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                 );
             }
 
-            let bind_addr = (config.agent.web.address, config.agent.web.http.port);
+            let bind_addr = SocketAddr::new(IpAddr::from(config.agent.web.address), config.agent.web.http.port);
             match HttpServer::new(app_factory).bind(bind_addr) {
                 Ok(http_server) => {
-                    log::info!(
-                        "Starting HTTP server at http://{}:{}/",
-                        bind_addr.0,
-                        bind_addr.1
-                    );
+                    log::info!("HTTP server listening on http://{}", bind_addr);
                     http_server.run().await.unwrap_or_else(|e| {
                         log::error!("Unable to run the http server: {e}");
                     });
                 }
                 Err(e) => {
-                    log::error!(
-                        "Unable bind the http server to {}:{} => {}",
-                        bind_addr.0,
-                        bind_addr.1,
-                        e
-                    );
+                    log::info!("Unable bind the https server to {}: {}", bind_addr, e);
                     return Ok(());
                 }
             };
@@ -141,10 +133,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                 true,
             );
         }
-        let bind_addr = (
-            config.agent.web.address,
-            config.agent.web.https.port,
-        );
+        let bind_addr = SocketAddr::new(IpAddr::from(config.agent.web.address), config.agent.web.https.port);
         let mut tls_cert = WG_QUICKRS_CONFIG_FOLDER.get().unwrap().clone();
         tls_cert.push(config.agent.web.https.tls_cert.clone());
         let mut tls_key = WG_QUICKRS_CONFIG_FOLDER.get().unwrap().clone();
@@ -153,22 +142,13 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             Ok(tls_config) => Some(Box::pin(async move {
                 match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr, tls_config) {
                     Ok(https_server) => {
-                        log::info!(
-                            "Starting HTTPS server at https://{}:{}/",
-                            bind_addr.0,
-                            bind_addr.1
-                        );
+                        log::info!("HTTPS server listening on https://{}", bind_addr);
                         https_server.run().await.unwrap_or_else(|e| {
                             log::error!("Unable to run the https server: {e}");
                         });
                     }
                     Err(e) => {
-                        log::error!(
-                            "Unable bind the https server to {}:{} => {}",
-                            bind_addr.0,
-                            bind_addr.1,
-                            e
-                        );
+                        log::info!("Unable bind the https server to {}: {}", bind_addr, e);
                         return Ok(());
                     }
                 };
