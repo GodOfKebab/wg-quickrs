@@ -98,9 +98,7 @@ async fn post_token(body: web::Bytes) -> impl Responder {
     let status_body: LoginBody = match serde_json::from_str(&body_raw) {
         Ok(val) => val,
         Err(err) => {
-            return HttpResponse::BadRequest().json(json!({
-                "error": format!("Invalid JSON: {err}")
-            }));
+            return HttpResponse::BadRequest().body(format!("invalid JSON: {err}"));
         }
     };
     let client_id = &status_body.client_id;

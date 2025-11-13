@@ -12,9 +12,7 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
     let status_body: StatusBody = match serde_json::from_str(&body_raw) {
         Ok(val) => val,
         Err(err) => {
-            return HttpResponse::BadRequest().json(json!({
-                "error": format!("Invalid JSON: {err}")
-            }));
+            return HttpResponse::BadRequest().body(format!("invalid JSON: {}", err));
         }
     };
 
@@ -23,9 +21,7 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
     } else if status_body.status == WireGuardStatus::DOWN {
         disable_tunnel
     } else {
-        return HttpResponse::BadRequest().json(json!({
-            "error": "Invalid status value"
-        }));
+        return HttpResponse::BadRequest().body("invalid status value");
     };
 
     match WG_STATUS.lock() {
@@ -34,9 +30,7 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
         }
         Err(e) => {
             log::error!("Failed to acquire WG_STATUS lock: {}", e);
-            return HttpResponse::InternalServerError().json(json!({
-                "error": "Failed to check current WireGuard status"
-            }));
+            return HttpResponse::InternalServerError().body("failed to check current WireGuard status");
         }
         _ => {}
     }
@@ -45,7 +39,7 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
         Ok(_) => HttpResponse::Ok().json(json!(status_body)),
         Err(e) => {
             log::error!("{e}");
-            HttpResponse::InternalServerError().into()
+            HttpResponse::InternalServerError().body(format!("failed to run command: {e}"))
         }
     }
 }

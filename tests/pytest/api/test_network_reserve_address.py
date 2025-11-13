@@ -48,7 +48,7 @@ def test_add_peer_with_reserved_address(setup_wg_quickrs_agent):
     }
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum_w_fake_peer_id)
     assert response.status_code == 400
-    assert "uuid" in response.json()["message"]
+    assert "uuid" in response.content.decode("utf-8")
 
     another_peer_id = "a1c11ade-dd1a-4f5a-a6f9-3b6c6d10f416"
     change_sum_w_another_peer_id = {
@@ -58,7 +58,7 @@ def test_add_peer_with_reserved_address(setup_wg_quickrs_agent):
     }
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum_w_another_peer_id)
     assert response.status_code == 403
-    assert "reserved for another" in response.json()["message"]
+    assert "reserved for another" in response.content.decode("utf-8")
 
     correct_change_sum = {
         "added_peers": {
@@ -98,7 +98,7 @@ def test_change_peer_address_with_conflicting_reserved_address(setup_wg_quickrs_
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 400
-    assert "address is already reserved for another peer" in response.json()["message"]
+    assert "address is already reserved for another peer" in response.content.decode("utf-8")
 
 
 def test_add_peer_with_unreserved_address(setup_wg_quickrs_agent):

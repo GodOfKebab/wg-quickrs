@@ -11,38 +11,13 @@ use wg_quickrs_lib::helpers::remove_expired_reservations;
 use wg_quickrs_lib::types::network::{ReservationData, NetworkWDigest};
 use wg_quickrs_lib::types::config::ConfigFile;
 
-macro_rules! http_response {
-    ($status:ident, $status_str:expr, $($arg:tt)*) => {
-        HttpResponse::$status().json(json!({
-            "status": $status_str,
-            "message": format!($($arg)*)
-        }))
-    };
-}
-
-macro_rules! bad_request {
-    ($($arg:tt)*) => { http_response!(BadRequest, "bad_request", $($arg)*) };
-}
-
-macro_rules! forbidden {
-    ($($arg:tt)*) => { http_response!(Forbidden, "forbidden", $($arg)*) };
-}
-
-macro_rules! not_found {
-    ($($arg:tt)*) => { http_response!(NotFound, "not_found", $($arg)*) };
-}
-
-macro_rules! internal_server_error {
-    ($($arg:tt)*) => { http_response!(InternalServerError, "internal_server_error", $($arg)*) };
-}
-
 macro_rules! get_mg_config_w_digest {
     () => {{
         util::CONFIG_W_NETWORK_DIGEST
             .get()
-            .ok_or_else(|| internal_server_error!("can't handle request: internal config variables are not initialized"))?
+            .ok_or_else(|| HttpResponse::InternalServerError().body("internal config variables are not initialized"))?
             .lock()
-            .map_err(|_| internal_server_error!("can't handle request: unable to acquire lock on config variables"))?
+            .map_err(|_| HttpResponse::InternalServerError().body("unable to acquire lock on config variables"))?
     }};
 }
 
@@ -51,19 +26,19 @@ macro_rules! post_mg_config_w_digest {
         let config_file = ConfigFile::from(&$c.to_config());
         $c.network_w_digest.network.updated_at = Utc::now();
         $c.network_w_digest = NetworkWDigest::try_from($c.network_w_digest.network.clone())
-            .map_err(|_| internal_server_error!("can't handle request: unable to compute config digest"))?;
+            .map_err(|_| HttpResponse::InternalServerError().body("unable to compute config digest"))?;
 
         let config_file_str = serde_yml::to_string(&config_file)
-            .map_err(|_| internal_server_error!("can't handle request: unable to serialize config"))?;
+            .map_err(|_| HttpResponse::InternalServerError().body("unable to serialize config"))?;
 
         util::write_config(config_file_str)
-            .map_err(|_| internal_server_error!("can't handle request: unable to write config"))?;
+            .map_err(|_| HttpResponse::InternalServerError().body("unable to write config"))?;
     }};
 }
 
 pub(crate) fn get_network_summary(query: web::Query<crate::web::api::SummaryBody>) -> Result<HttpResponse, HttpResponse> {
     let summary = util::get_summary()
-        .map_err(|_| internal_server_error!("can't handle request: unable to get summary"))?;
+        .map_err(|_| HttpResponse::InternalServerError().body("unable to get summary"))?;
     let response_data = if query.only_digest {
         json!(SummaryDigest::from(&summary))
     } else {
@@ -77,7 +52,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     let change_sum: ChangeSum = match serde_json::from_str(&body_raw) {
         Ok(val) => val,
         Err(err) => {
-            return Err(bad_request!("invalid JSON: {}", err));
+            return Err(HttpResponse::BadRequest().body(format!("invalid JSON: {}", err)));
         }
     };
 
@@ -90,45 +65,45 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     remove_expired_reservations(&mut c.network_w_digest.network);
 
     // process changed_fields
-    if let Some(changed_fields) = change_sum.changed_fields {
-        if let Some(changed_fields_peers) = changed_fields.peers {
+    if let Some(changed_fields) = &change_sum.changed_fields {
+        if let Some(changed_fields_peers) = &changed_fields.peers {
             for (peer_id, peer_details) in changed_fields_peers {
                 let mut network_copy = c.network_w_digest.network.clone();
-                if let Some(peer_config) = c.network_w_digest.network.peers.get_mut(&peer_id) {
+                if let Some(peer_config) = c.network_w_digest.network.peers.get_mut(peer_id) {
                     if let Some(name) = &peer_details.name {
                         peer_config.name = parse_and_validate_peer_name(name).map_err(|e| {
-                            bad_request!("changed_fields.peers.{}.name: {}", peer_id, e)
+                            HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.name: {}", peer_id, e))
                         })?;
                     }
                     if let Some(address) = &peer_details.address {
-                        network_copy.peers.retain(|id, _| id != &peer_id);
+                        network_copy.peers.retain(|id, _| id != peer_id);
                         peer_config.address = validate_peer_address(address, &network_copy).map_err(|e| {
-                            bad_request!("changed_fields.peers.{}.address: {}", peer_id, e)
+                            HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.address: {}", peer_id, e))
                         })?;
                     }
                     if let Some(endpoint) = &peer_details.endpoint {
                         peer_config.endpoint = validate_peer_endpoint(endpoint).map_err(|e| {
-                            bad_request!("changed_fields.peers.{}.endpoint: {}", peer_id, e)
+                            HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.endpoint: {}", peer_id, e))
                         })?;
                     }
                     if let Some(kind) = &peer_details.kind {
                         peer_config.kind = parse_and_validate_peer_kind(kind).map_err(|e| {
-                            bad_request!("changed_fields.peers.{}.kind: {}", peer_id, e)
+                            HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.kind: {}", peer_id, e))
                         })?;
                     }
                     if let Some(icon) = &peer_details.icon {
                         peer_config.icon = validate_peer_icon(icon).map_err(|e| {
-                            bad_request!("changed_fields.peers.{}.icon: {}", peer_id, e)
+                            HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.icon: {}", peer_id, e))
                         })?;
                     }
                     if let Some(dns) = &peer_details.dns {
                         peer_config.dns = validate_peer_dns(dns).map_err(|e| {
-                            bad_request!("changed_fields.peers.{}.dns: {}", peer_id, e)
+                            HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.dns: {}", peer_id, e))
                         })?;
                     }
                     if let Some(mtu) = &peer_details.mtu {
                         peer_config.mtu = validate_peer_mtu(mtu).map_err(|e| {
-                            bad_request!("changed_fields.peers.{}.mtu: {}", peer_id, e)
+                            HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.mtu: {}", peer_id, e))
                         })?;
                     }
                     if let Some(private_key) = &peer_details.private_key {
@@ -136,38 +111,38 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                         // If deserialization succeeds, private_key is already validated.
                     }
 
-                    if let Some(scripts) = peer_details.scripts {
-                        if let Some(scripts) = scripts.pre_up {
-                            peer_config.scripts.pre_up = validate_peer_scripts(&scripts).map_err(|e| {
-                                bad_request!("changed_fields.peers.{}.scripts.pre_up: {}", peer_id, e)
+                    if let Some(scripts) = &peer_details.scripts {
+                        if let Some(scripts) = &scripts.pre_up {
+                            peer_config.scripts.pre_up = validate_peer_scripts(scripts).map_err(|e| {
+                                HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.scripts.pre_up: {}", peer_id, e))
                             })?;
                         }
-                        if let Some(scripts) = scripts.post_up {
-                            peer_config.scripts.post_up = validate_peer_scripts(&scripts).map_err(|e| {
-                                bad_request!("changed_fields.peers.{}.scripts.post_up: {}", peer_id, e)
+                        if let Some(scripts) = &scripts.post_up {
+                            peer_config.scripts.post_up = validate_peer_scripts(scripts).map_err(|e| {
+                                HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.scripts.post_up: {}", peer_id, e))
                             })?;
                         }
-                        if let Some(scripts) = scripts.pre_down {
-                            peer_config.scripts.pre_down = validate_peer_scripts(&scripts).map_err(|e| {
-                                bad_request!("changed_fields.peers.{}.scripts.pre_down: {}", peer_id, e)
+                        if let Some(scripts) = &scripts.pre_down {
+                            peer_config.scripts.pre_down = validate_peer_scripts(scripts).map_err(|e| {
+                                HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.scripts.pre_down: {}", peer_id, e))
                             })?;
                         }
-                        if let Some(scripts) = scripts.post_down {
-                            peer_config.scripts.post_down = validate_peer_scripts(&scripts).map_err(|e| {
-                                bad_request!("changed_fields.peers.{}.scripts.post_down: {}", peer_id, e)
+                        if let Some(scripts) = &scripts.post_down {
+                            peer_config.scripts.post_down = validate_peer_scripts(scripts).map_err(|e| {
+                                HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.scripts.post_down: {}", peer_id, e))
                             })?;
                         }
                     }
                     changed_config = true;
                 } else {
-                    return Err(not_found!("peer '{peer_id}' does not exist"));
+                    return Err(HttpResponse::NotFound().body(format!("peer '{}' does not exist", peer_id)));
                 }
             }
         }
-        if let Some(changed_fields_connections) = changed_fields.connections {
+        if let Some(changed_fields_connections) = &changed_fields.connections {
             for (connection_id, connection_details) in changed_fields_connections {
                 if let Some(connection_config) =
-                    c.network_w_digest.network.connections.get_mut(&connection_id)
+                    c.network_w_digest.network.connections.get_mut(connection_id)
                 {
                     if let Some(enabled) = connection_details.enabled {
                         connection_config.enabled = enabled;
@@ -176,37 +151,37 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                         connection_config.pre_shared_key = pre_shared_key;
                         // If deserialization succeeds, pre_shared_key is already validated.
                     }
-                    if let Some(allowed_ips_a_to_b) = connection_details.allowed_ips_a_to_b {
-                        connection_config.allowed_ips_a_to_b = allowed_ips_a_to_b;
+                    if let Some(allowed_ips_a_to_b) = &connection_details.allowed_ips_a_to_b {
+                        connection_config.allowed_ips_a_to_b = allowed_ips_a_to_b.clone();
                         // If deserialization succeeds, allowed_ips_a_to_b is already validated.
                     }
-                    if let Some(allowed_ips_b_to_a) = connection_details.allowed_ips_b_to_a {
-                        connection_config.allowed_ips_b_to_a = allowed_ips_b_to_a;
+                    if let Some(allowed_ips_b_to_a) = &connection_details.allowed_ips_b_to_a {
+                        connection_config.allowed_ips_b_to_a = allowed_ips_b_to_a.clone();
                         // If deserialization succeeds, allowed_ips_b_to_a is already validated.
                     }
-                    if let Some(persistent_keepalive) = connection_details.persistent_keepalive {
-                        connection_config.persistent_keepalive = validate_conn_persistent_keepalive(&persistent_keepalive).map_err(|e| {
-                            bad_request!("changed_fields.connections.{}.persistent_keepalive: {}", connection_id, e)
+                    if let Some(persistent_keepalive) = &connection_details.persistent_keepalive {
+                        connection_config.persistent_keepalive = validate_conn_persistent_keepalive(persistent_keepalive).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.connections.{}.persistent_keepalive: {}", connection_id, e))
                         })?;
                     }
                     changed_config = true;
                 } else {
-                    return Err(not_found!("connection '{connection_id}' does not exist"));
+                    return Err(HttpResponse::NotFound().body(format!("connection '{}' does not exist", connection_id)));
                 }
             }
         }
     }
 
     // process added_peers
-    if let Some(added_peers) = change_sum.added_peers {
+    if let Some(added_peers) = &change_sum.added_peers {
         for (peer_id, peer_details) in added_peers {
             {
-                if c.network_w_digest.network.peers.contains_key(&peer_id) {
-                    return Err(forbidden!("peer '{}' already exists", peer_id));
+                if c.network_w_digest.network.peers.contains_key(peer_id) {
+                    return Err(HttpResponse::Forbidden().body(format!("peer '{}' already exists", peer_id)));
                 }
                 if let Some(value) = c.network_w_digest.network.reservations.get(&peer_details.address)
-                    && value.peer_id != peer_id {
-                    return Err(forbidden!("address '{}' is reserved for another peer_id", peer_details.address));
+                    && value.peer_id != *peer_id {
+                    return Err(HttpResponse::Forbidden().body(format!("address '{}' is reserved for another peer_id", peer_details.address)));
                 }
                 // ensure the address is taken off the reservation list so check_internal_address succeeds (this won't be posted if it fails early)
                 c.network_w_digest
@@ -216,59 +191,59 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
 
                 // If deserialization succeeds, peer_id is already validated.
                 parse_and_validate_peer_name(&peer_details.name).map_err(|e| {
-                    bad_request!("added_peers.{}.name: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.name: {}", peer_id, e))
                 })?;
                 validate_peer_address(&peer_details.address, &c.network_w_digest.network).map_err(|e| {
-                    bad_request!("added_peers.{}.address: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.address: {}", peer_id, e))
                 })?;
                 validate_peer_endpoint(&peer_details.endpoint).map_err(|e| {
-                    bad_request!("added_peers.{}.endpoint: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.endpoint: {}", peer_id, e))
                 })?;
                 parse_and_validate_peer_kind(&peer_details.kind).map_err(|e| {
-                    bad_request!("added_peers.{}.kind: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.kind: {}", peer_id, e))
                 })?;
                 validate_peer_icon(&peer_details.icon).map_err(|e| {
-                    bad_request!("added_peers.{}.icon: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.icon: {}", peer_id, e))
                 })?;
                 validate_peer_dns(&peer_details.dns).map_err(|e| {
-                    bad_request!("added_peers.{}.dns: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.dns: {}", peer_id, e))
                 })?;
                 // If deserialization succeeds, dns is already validated.
                 validate_peer_mtu(&peer_details.mtu).map_err(|e| {
-                    bad_request!("added_peers.{}.mtu: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.mtu: {}", peer_id, e))
                 })?;
                 // If deserialization succeeds, private_key is already validated.
                 validate_peer_scripts(&peer_details.scripts.pre_up).map_err(|e| {
-                    bad_request!("added_peers.{}.scripts.pre_up: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.scripts.pre_up: {}", peer_id, e))
                 })?;
                 validate_peer_scripts(&peer_details.scripts.post_up).map_err(|e| {
-                    bad_request!("added_peers.{}.scripts.post_up: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.scripts.post_up: {}", peer_id, e))
                 })?;
                 validate_peer_scripts(&peer_details.scripts.pre_down).map_err(|e| {
-                    bad_request!("added_peers.{}.scripts.pre_down: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.scripts.pre_down: {}", peer_id, e))
                 })?;
                 validate_peer_scripts(&peer_details.scripts.post_down).map_err(|e| {
-                    bad_request!("added_peers.{}.scripts.post_down: {}", peer_id, e)
+                    HttpResponse::BadRequest().body(format!("added_peers.{}.scripts.post_down: {}", peer_id, e))
                 })?;
-                let mut added_peer = wg_quickrs_lib::types::network::Peer::from(&peer_details);
+                let mut added_peer = wg_quickrs_lib::types::network::Peer::from(peer_details);
                 added_peer.created_at = Utc::now();
                 added_peer.updated_at = added_peer.created_at;
-                c.network_w_digest.network.peers.insert(peer_id, added_peer);
+                c.network_w_digest.network.peers.insert(*peer_id, added_peer);
                 changed_config = true;
             }
         }
     }
 
     // process removed_peers
-    if let Some(removed_peers) = change_sum.removed_peers {
+    if let Some(removed_peers) = &change_sum.removed_peers {
         for peer_id in removed_peers {
             {
-                if peer_id == this_peer_id {
-                    return Err(forbidden!("can't remove this peer"));
+                if *peer_id == this_peer_id {
+                    return Err(HttpResponse::Forbidden().body("can't remove this peer"));
                 }
-                c.network_w_digest.network.peers.remove(&peer_id);
+                c.network_w_digest.network.peers.remove(peer_id);
                 // automatically remove connections
-                for connection_id in c.network_w_digest.network.connections.clone().keys().filter(|&x| x.contains(&peer_id)) {
+                for connection_id in c.network_w_digest.network.connections.clone().keys().filter(|&x| x.contains(peer_id)) {
                     c.network_w_digest.network.connections.remove(connection_id);
                 }
                 changed_config = true;
@@ -277,50 +252,50 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     }
 
     // process added_connections
-    if let Some(added_connections) = change_sum.added_connections {
+    if let Some(added_connections) = &change_sum.added_connections {
         for (connection_id, connection_details) in added_connections {
             {
                 if !c.network_w_digest.network.peers.contains_key(&connection_id.a) {
-                    return Err(bad_request!("added_connections.{}: 'peer_id' doesn't exist", connection_id.a));
+                    return Err(HttpResponse::BadRequest().body(format!("added_connections.{}: 'peer_id' doesn't exist", connection_id.a)));
                 }
                 if !c.network_w_digest.network.peers.contains_key(&connection_id.b) {
-                    return Err(bad_request!("added_connections.{}: 'peer_id' doesn't exist", connection_id.b));
+                    return Err(HttpResponse::BadRequest().body(format!("added_connections.{}: 'peer_id' doesn't exist", connection_id.b)));
                 }
-                if c.network_w_digest.network.connections.contains_key(&connection_id) {
-                    return Err(forbidden!("connection '{}' already exists", connection_id));
+                if c.network_w_digest.network.connections.contains_key(connection_id) {
+                    return Err(HttpResponse::Forbidden().body(format!("connection '{}' already exists", connection_id)));
                 }
                 if connection_id.a == connection_id.b {
-                    return Err(forbidden!("loopback connection detected: {}", connection_id));
+                    return Err(HttpResponse::Forbidden().body(format!("loopback connection detected: {}", connection_id)));
                 }
 
                 // If deserialization succeeds, pre_shared_key is already validated.
                 // If deserialization succeeds, allowed_ips_a_to_b is already validated.
                 // If deserialization succeeds, allowed_ips_b_to_a is already validated.
                 validate_conn_persistent_keepalive(&connection_details.persistent_keepalive).map_err(|e| {
-                    bad_request!("added_connections.{}.persistent_keepalive: {}", connection_id, e)
+                    HttpResponse::BadRequest().body(format!("added_connections.{}.persistent_keepalive: {}", connection_id, e))
                 })?;
 
                 c.network_w_digest
                     .network
                     .connections
-                    .insert(connection_id.clone(), connection_details);
+                    .insert(connection_id.clone(), connection_details.clone());
                 changed_config = true;
             }
         }
     }
 
     // process removed_connections
-    if let Some(removed_connections) = change_sum.removed_connections {
+    if let Some(removed_connections) = &change_sum.removed_connections {
         for connection_id in removed_connections {
             {
-                c.network_w_digest.network.connections.remove(&connection_id);
+                c.network_w_digest.network.connections.remove(connection_id);
                 changed_config = true;
             }
         }
     }
     if !changed_config {
         log::debug!("nothing to update");
-        return Err(bad_request!("nothing to update"));
+        return Err(HttpResponse::BadRequest().body("nothing to update"));
     }
     post_mg_config_w_digest!(c);
     log::info!("config updated");
@@ -328,13 +303,11 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
     if c.agent.vpn.enabled {
         sync_conf(&c.clone().to_config()).map_err(|e| {
             log::error!("{e}");
-            internal_server_error!("can't handle request: unable to synchronize config")
+            HttpResponse::InternalServerError().body("unable to synchronize config")
         })?;
     }
 
-    Ok(HttpResponse::Ok().json(json!({
-        "status": "ok"
-    })))
+    Ok(HttpResponse::Ok().json(json!(change_sum)))
 }
 
 pub(crate) fn post_network_reserve_address() -> Result<HttpResponse, HttpResponse> {

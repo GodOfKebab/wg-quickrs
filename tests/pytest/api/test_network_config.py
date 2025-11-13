@@ -26,9 +26,7 @@ def test_patch_peer_not_found(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 404
-    data = response.json()
-    assert data["status"] == "not_found"
-    assert "does not exist" in data["message"]
+    assert "does not exist" in response.content.decode("utf-8")
 
 
 def test_add_bad_connection(setup_wg_quickrs_agent):
@@ -46,7 +44,7 @@ def test_add_bad_connection(setup_wg_quickrs_agent):
     }
     setup_response = requests.patch(f"{base_url}/api/network/config", json=bad_setup_change_sum)
     assert setup_response.status_code == 400
-    assert "uuid*uuid" in setup_response.json()["message"]
+    assert "uuid*uuid" in setup_response.content.decode("utf-8")
 
     peer1_id = "71c565c3-e5c7-45b6-9f21-3d26c9b07d06"
     peer2_id = "349950ac-671f-4ba4-825e-778ebdf79d01"
@@ -58,7 +56,7 @@ def test_add_bad_connection(setup_wg_quickrs_agent):
     }
     setup_response = requests.patch(f"{base_url}/api/network/config", json=fake_setup_change_sum)
     assert setup_response.status_code == 400
-    assert "'peer_id' doesn't exist" in setup_response.json()["message"]
+    assert "'peer_id' doesn't exist" in setup_response.content.decode("utf-8")
 
 
 def test_invalid_json(setup_wg_quickrs_agent):
@@ -70,8 +68,7 @@ def test_invalid_json(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", data="invalid json")
     assert response.status_code == 400
-    data = response.json()
-    assert "invalid JSON" in data["message"]
+    assert "invalid JSON" in response.content.decode("utf-8")
 
 
 def test_empty_change_sum(setup_wg_quickrs_agent):
@@ -85,9 +82,7 @@ def test_empty_change_sum(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", json=empty_change_sum)
     assert response.status_code == 400
-    data = response.json()
-    assert data["status"] == "bad_request"
-    assert "nothing to update" in data["message"]
+    assert "nothing to update" in response.content.decode("utf-8")
 
 
 def test_connection_not_found(setup_wg_quickrs_agent):
@@ -109,9 +104,7 @@ def test_connection_not_found(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 404
-    data = response.json()
-    assert data["status"] == "not_found"
-    assert "does not exist" in data["message"]
+    assert "does not exist" in response.content.decode("utf-8")
 
 
 def test_remove_peer(setup_wg_quickrs_agent):
@@ -197,8 +190,7 @@ def test_change_peer_address_with_conflicting_address(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 400
-    assert "taken by" in response.json()["message"]
-    assert "wg-quickrs-host" in response.json()["message"]
+    assert "taken by 0ed989c6-6dba-4e3c-8034-08adf4262d9e (wg-quickrs-host)" in response.content.decode("utf-8")
 
 
 def test_patch_with_malformed_json(setup_wg_quickrs_agent):
@@ -230,7 +222,7 @@ def test_add_peer_with_duplicate_address(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 400
-    assert "address" in response.json()["message"].lower()
+    assert "address" in response.content.decode("utf-8")
 
 
 def test_add_peer_with_duplicate_id(setup_wg_quickrs_agent):
@@ -249,7 +241,7 @@ def test_add_peer_with_duplicate_id(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 403
-    assert "already exists" in response.json()["message"]
+    assert "already exists" in response.content.decode("utf-8")
 
 
 def test_change_nonexistent_field(setup_wg_quickrs_agent):
@@ -287,7 +279,7 @@ def test_add_connection_between_same_peer(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 403
-    assert "loopback" in response.json()["message"]
+    assert "loopback" in response.content.decode("utf-8")
 
 
 def test_add_duplicate_connection(setup_wg_quickrs_agent):
@@ -306,5 +298,5 @@ def test_add_duplicate_connection(setup_wg_quickrs_agent):
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 403
-    assert "already exists" in response.json()["message"].lower()
+    assert "already exists" in response.content.decode("utf-8")
 
