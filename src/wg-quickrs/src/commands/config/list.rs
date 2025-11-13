@@ -48,7 +48,7 @@ pub fn list_network_connections() -> Result<(), ConfigCommandError> {
         return Ok(());
     }
 
-    for (conn_id, _connection) in &config.network.connections {
+    for conn_id in config.network.connections.keys() {
         // Get peer names
         let peer_a_name = config.network.peers.get(&conn_id.a)
             .map(|p| p.name.as_str())

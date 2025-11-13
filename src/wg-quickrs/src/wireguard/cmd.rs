@@ -210,7 +210,7 @@ fn show_dump(config: &Config) -> Result<BTreeMap<ConnectionId, TelemetryDatum>, 
             let transfer_rx = parts[5].parse::<u64>().unwrap_or(0);
             let transfer_tx = parts[6].parse::<u64>().unwrap_or(0);
             let connection_id =
-                wg_quickrs_lib::helpers::get_connection_id(config.network.this_peer.clone(), peer_id.clone());
+                wg_quickrs_lib::helpers::get_connection_id(config.network.this_peer, peer_id);
 
             let (transfer_a_to_b, transfer_b_to_a) = if connection_id.a == config.network.this_peer {
                 (transfer_tx, transfer_rx)
@@ -255,7 +255,7 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
         }
     };
 
-    match temp.write_all((&wg_conf_stripped).as_ref()) {
+    match temp.write_all(wg_conf_stripped.as_ref()) {
         Ok(_) => {}
         Err(e) => {
             return Err(WireGuardCommandError::FileWriteError(
@@ -265,8 +265,10 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
         }
     };
     let temp_path = temp.path().to_owned();
+    let temp_path_str = temp_path.to_str()
+        .ok_or_else(|| WireGuardCommandError::Other("Temporary file path contains invalid UTF-8".to_string()))?;
 
-    let _ = shell_cmd(&["wg", "syncconf", &*wg_interface_mut, temp_path.to_str().unwrap()]).map_err(|_| {
+    let _ = shell_cmd(&["wg", "syncconf", &*wg_interface_mut, temp_path_str]).map_err(|_| {
         WireGuardCommandError::InterfaceSyncFailed()
     })?;
     Ok(())

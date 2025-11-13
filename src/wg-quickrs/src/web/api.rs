@@ -107,7 +107,13 @@ async fn post_token(body: web::Bytes) -> impl Responder {
     let password = &status_body.password;
 
     // check password-based auth
-    let parsed_hash = PasswordHash::new(&config.agent.web.password.hash).expect("Invalid hash format");
+    let parsed_hash = match PasswordHash::new(&config.agent.web.password.hash) {
+        Ok(hash) => hash,
+        Err(e) => {
+            log::error!("Invalid password hash format in configuration: {}", e);
+            return HttpResponse::InternalServerError().body("Server configuration error");
+        }
+    };
     if Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_err() {
         return HttpResponse::Unauthorized().body("Invalid credentials");
     }

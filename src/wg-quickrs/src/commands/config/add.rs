@@ -2,13 +2,11 @@ use crate::conf;
 use crate::commands::config::{ConfigCommandError};
 use crate::commands::helpers::*;
 use chrono::Utc;
-use std::net::Ipv4Addr;
 use uuid::Uuid;
 use wg_quickrs_lib::helpers::{get_connection_id, wg_generate_key};
 use wg_quickrs_lib::types::network::*;
 use wg_quickrs_lib::validation::network::*;
 use wg_quickrs_cli::config::add::{AddPeerOptions, AddConnectionOptions};
-use crate::conf::network::get_next_available_address;
 
 include!(concat!(env!("OUT_DIR"), "/add_peer_options_generated.rs"));
 include!(concat!(env!("OUT_DIR"), "/add_connection_options_generated.rs"));
@@ -35,18 +33,14 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
     step_counter += 1;
 
     // Get peer address
-    let taken_addresses: Vec<Ipv4Addr> = config.network.peers.values()
-        .map(|p| p.address)
-        .chain(config.network.reservations.keys().copied())
-        .collect();
     let network_copy = config.network.clone();
     let peer_address = get_value(
         opts.no_prompt,
         step_str(step_counter),
-        opts.address.clone().map(|o| o.to_string()),
+        opts.address.map(|o| o.to_string()),
         ADD_PEER_ADDRESS_FLAG,
         ADD_PEER_ADDRESS_HELP,
-        get_next_available_address(&config.network.subnet, &taken_addresses).map(|o| o.to_string()),
+        conf::network::get_next_available_address(&config.network).map(|o| o.to_string()),
         move |s: &str| parse_and_validate_peer_address(s, &network_copy),
     );
 
@@ -141,7 +135,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
         get_value(
             opts.no_prompt,
             step_str(step_counter),
-            opts.mtu_value.clone().map(|o| o.to_string()),
+            opts.mtu_value.map(|o| o.to_string()),
             ADD_PEER_MTU_VALUE_FLAG,
             format!("\t{}", ADD_PEER_MTU_VALUE_HELP).as_str(),
             config.network.defaults.peer.mtu.enabled.then(|| config.network.defaults.peer.mtu.value.to_string()),
@@ -149,7 +143,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
         )
     } else {
         // if disabled, default to an mtu of 1420
-        config.network.defaults.peer.mtu.value.clone()
+        config.network.defaults.peer.mtu.value
     };
     step_counter += 1;
 
@@ -256,13 +250,12 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
                 .with_prompt("Do you want to connect this peer to any existing peers?")
                 .default(true)
                 .interact()
-                .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
+                .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::other(e.to_string())))?;
 
             if !want_connections {
                 vec![]
             } else {
-                let defaults: Vec<bool> = config.network.peers.iter()
-                    .map(|(id, _)| *id == config.network.this_peer)
+                let defaults: Vec<bool> = config.network.peers.keys().map(|id| *id == config.network.this_peer)
                     .collect();
 
                 // Ask which peers to connect to
@@ -272,7 +265,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
                     .defaults(&defaults)
                     .report(false)
                     .interact()
-                    .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
+                    .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::other(e.to_string())))?;
 
                 // Print the selected items
                 println!("Selected peers:");
@@ -299,7 +292,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
         add_connection(&AddConnectionOptions{
             no_prompt: opts.no_prompt,
             first_peer: Some(peer_id),
-            second_peer: Some(other_peer_id.clone()),
+            second_peer: Some(*other_peer_id),
             persistent_keepalive_enabled: None,
             persistent_keepalive_period: None,
             allowed_ips_first_to_second: Vec::new(),
@@ -344,11 +337,11 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
             .with_prompt("Select first peer")
             .items(&filtered_peer_items)
             .interact()
-            .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
+            .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::other(e.to_string())))?;
 
         filtered_peer_ids[selection]
     };
-    let first_peer_name = &config.network.peers.get(&first_peer_id).ok_or(ConfigCommandError::PeerNotFound(first_peer_id.clone()))?.name;
+    let first_peer_name = &config.network.peers.get(&first_peer_id).ok_or(ConfigCommandError::PeerNotFound(first_peer_id))?.name;
 
     println!("{}", first_peer_id);
     // Get second peer
@@ -356,7 +349,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
         if peer_id == first_peer_id {
             return Err(ConfigCommandError::MissingArgument("first_peer and second_peer cannot be the same".to_string()));
         }
-        peer_id.clone()
+        peer_id
     } else if opts.no_prompt == Some(true) {
         return Err(ConfigCommandError::MissingArgument("second_peer".to_string()));
     } else {
@@ -366,7 +359,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
                     return false;
                 }
                 // Check if the connection already exists
-                let conn_id = get_connection_id(first_peer_id, (**peer_id).clone());
+                let conn_id = get_connection_id(first_peer_id, **peer_id);
                 !config.network.connections.contains_key(&conn_id)
             }).copied().collect();
         let filtered_peer_items: Vec<String> = filtered_peer_ids.iter()
@@ -381,11 +374,11 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
             .with_prompt("Select second peer")
             .items(&filtered_peer_items)
             .interact()
-            .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
+            .map_err(|e| ConfigCommandError::ReadFailed(std::io::Error::other(e.to_string())))?;
 
         filtered_peer_ids[selection]
     };
-    let second_peer_name = &config.network.peers.get(&second_peer_id).ok_or(ConfigCommandError::PeerNotFound(second_peer_id.clone()))?.name;
+    let second_peer_name = &config.network.peers.get(&second_peer_id).ok_or(ConfigCommandError::PeerNotFound(second_peer_id))?.name;
 
     // Create connection ID (always store with smaller UUID first)
     let conn_id = get_connection_id(first_peer_id, second_peer_id);
@@ -447,7 +440,7 @@ pub fn add_connection(opts: &AddConnectionOptions) -> Result<(), ConfigCommandEr
             )
         }
     } else {
-        config.network.defaults.connection.persistent_keepalive.period.clone()
+        config.network.defaults.connection.persistent_keepalive.period
     };
 
     // Create connection

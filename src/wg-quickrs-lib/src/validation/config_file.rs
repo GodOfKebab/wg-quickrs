@@ -1,5 +1,5 @@
 #![cfg(not(target_arch = "wasm32"))]
-use std::path::PathBuf;
+use std::path::Path;
 use thiserror::Error;
 use crate::helpers::remove_expired_reservations;
 use crate::types::config::ConfigFile;
@@ -13,7 +13,7 @@ pub enum ConfigFileValidationError {
     Validation(String, ValidationError),
 }
 
-pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &PathBuf) -> Result<(), ConfigFileValidationError> {
+pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &Path) -> Result<(), ConfigFileValidationError> {
     // Validate Agent
     if config_file.agent.web.https.enabled {
         validate_tls_file(config_folder_path, &config_file.agent.web.https.tls_cert).map_err(|e| {
@@ -118,11 +118,11 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
     })?;
 
     // Validate reservations
-    for (address, _reservation) in &config_file.network.reservations {
+    for address in config_file.network.reservations.keys() {
         let mut temp_network = config_file.network.clone();
         temp_network.reservations.remove(address);
 
-        validate_peer_address(&address, &temp_network).map_err(|e| {
+        validate_peer_address(address, &temp_network).map_err(|e| {
             ConfigFileValidationError::Validation(format!("network.reservations.{{{address}}}"), e)
         })?;
         // skip network.reservations.{address}.peer_id because if it can be deserialized, it means it's valid

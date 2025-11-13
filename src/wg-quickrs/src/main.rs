@@ -1,5 +1,4 @@
 use log::LevelFilter;
-use wg_quickrs_cli;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -74,7 +73,7 @@ fn expand_tilde(path: PathBuf) -> PathBuf {
     path
 }
 
-async fn entrypoint(args: wg_quickrs_cli::Cli) -> Result<(), CommandError> {
+async fn entrypoint(args: Cli) -> Result<(), CommandError> {
     // get the wg_quickrs config file path
     let mut config_folder = expand_tilde(args.wg_quickrs_config_folder.clone());
     if !config_folder.exists() {

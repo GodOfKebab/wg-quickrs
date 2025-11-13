@@ -25,8 +25,16 @@ fn setup_firewall_rules(utility: PathBuf, port: u16, is_add_action: bool) {
         && utility_fn.to_string_lossy() == "iptables"
     {
         // iptables -A/-D INPUT -p tcp --dport PORT -j ACCEPT
+        let utility_str = match utility.to_str() {
+            Some(s) => s,
+            None => {
+                log::warn!("Firewall utility path contains invalid UTF-8, skipping firewall rule setup");
+                return;
+            }
+        };
+
         let shell_result = shell_cmd(&[
-            utility.to_str().unwrap(),
+            utility_str,
             if is_add_action { "-A" } else { "-D" },
             "INPUT",
             "-p",
@@ -87,8 +95,8 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                 );
             }
 
-            let bind_addr = (config.agent.web.address.clone(), config.agent.web.http.port);
-            match HttpServer::new(app_factory).bind(bind_addr.clone()) {
+            let bind_addr = (config.agent.web.address, config.agent.web.http.port);
+            match HttpServer::new(app_factory).bind(bind_addr) {
                 Ok(http_server) => {
                     log::info!(
                         "Starting HTTP server at http://{}:{}/",
@@ -134,7 +142,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             );
         }
         let bind_addr = (
-            config.agent.web.address.clone(),
+            config.agent.web.address,
             config.agent.web.https.port,
         );
         let mut tls_cert = WG_QUICKRS_CONFIG_FOLDER.get().unwrap().clone();
@@ -143,7 +151,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
         tls_key.push(config.agent.web.https.tls_key.clone());
         match load_tls_config(&tls_cert, &tls_key) {
             Ok(tls_config) => Some(Box::pin(async move {
-                match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr.clone(), tls_config) {
+                match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr, tls_config) {
                     Ok(https_server) => {
                         log::info!(
                             "Starting HTTPS server at https://{}:{}/",

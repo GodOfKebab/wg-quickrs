@@ -17,7 +17,6 @@ use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and
 use wg_quickrs_lib::validation::helpers::firewall_utility_options;
 use wg_quickrs_lib::validation::network::{parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name};
 use crate::commands::helpers::*;
-use crate::conf::network::get_next_available_address;
 use crate::conf::util::ConfUtilError;
 
 include!(concat!(env!("OUT_DIR"), "/init_options_generated.rs"));
@@ -35,7 +34,10 @@ pub enum AgentInitError {
 // Get primary IP of the current machine
 pub fn get_interfaces() -> Vec<Interface> {
     get_if_addrs()
-        .unwrap()
+        .unwrap_or_else(|e| {
+            log::warn!("Failed to get network interfaces: {}", e);
+            Vec::new()
+        })
         .into_iter()
         .filter(|a| !a.is_loopback() && a.ip().is_ipv4())
         .collect()
@@ -158,7 +160,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     let network_subnet = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
-        init_opts.network_subnet.clone().map(|o| o.to_string()),
+        init_opts.network_subnet.map(|o| o.to_string()),
         INIT_NETWORK_SUBNET_FLAG,
         INIT_NETWORK_SUBNET_HELP,
         Some("10.0.34.0/24".into()),
@@ -178,7 +180,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     let agent_web_address = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
-        init_opts.agent_web_address.clone().map(|o| o.to_string()),
+        init_opts.agent_web_address.map(|o| o.to_string()),
         INIT_AGENT_WEB_ADDRESS_FLAG,
         INIT_AGENT_WEB_ADDRESS_HELP,
         iface_ip.map(|o| o.to_string()),
@@ -222,7 +224,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     let (agent_web_https_port, agent_web_https_tls_cert, agent_web_https_tls_key) = if agent_web_https_enabled {
         let config_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
-        let (option_cert, option_key) = find_cert_server(&config_folder, agent_web_address.to_string());
+        let (option_cert, option_key) = find_cert_server(config_folder, agent_web_address.to_string());
 
         let port = get_value(
             init_opts.no_prompt,
@@ -240,7 +242,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             INIT_AGENT_WEB_HTTPS_TLS_CERT_FLAG,
             format!("\t{}", INIT_AGENT_WEB_HTTPS_TLS_CERT_HELP).as_str(),
             option_cert.map(|o| o.display().to_string()),
-            move |s: &str| parse_and_validate_tls_file(&config_folder, s),
+            move |s: &str| parse_and_validate_tls_file(config_folder, s),
         );
         let tls_key = get_value(
             init_opts.no_prompt,
@@ -249,7 +251,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             INIT_AGENT_WEB_HTTPS_TLS_KEY_FLAG,
             format!("\t{}", INIT_AGENT_WEB_HTTPS_TLS_KEY_HELP).as_str(),
             option_key.map(|o| o.display().to_string()),
-            move |s: &str| parse_and_validate_tls_file(&config_folder, s),
+            move |s: &str| parse_and_validate_tls_file(config_folder, s),
         );
         (port, tls_cert, tls_key)
     } else {
@@ -276,12 +278,12 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             INIT_AGENT_WEB_PASSWORD_FLAG,
             format!("\t{}", INIT_AGENT_WEB_PASSWORD_HELP).as_str(),
         );
-        let password_hash = calculate_password_hash(password.trim()).unwrap_or_else(|_| {
+        
+        calculate_password_hash(password.trim()).unwrap_or_else(|_| {
             eprintln!("unable to calculate password hash, disabling password");
             agent_web_password_enabled = false;
             "".into()
-        });
-        password_hash
+        })
     } else {
         "".into()
     };
@@ -300,7 +302,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         get_value(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.agent_vpn_port.clone().map(|o| o.to_string()),
+            init_opts.agent_vpn_port.map(|o| o.to_string()),
             INIT_AGENT_VPN_PORT_FLAG,
             format!("\t{}", INIT_AGENT_VPN_PORT_HELP).as_str(),
             Some("51820".into()),
@@ -366,7 +368,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     // [10/28] --agent-peer-vpn-internal-address
     let temp_network = Network {
         name: "".to_string(),
-        subnet: network_subnet.clone(),
+        subnet: network_subnet,
         this_peer: Default::default(),
         peers: Default::default(),
         connections: Default::default(),
@@ -377,10 +379,10 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     let agent_peer_vpn_internal_address = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
-        init_opts.agent_peer_vpn_internal_address.clone().map(|o| o.to_string()),
+        init_opts.agent_peer_vpn_internal_address.map(|o| o.to_string()),
         INIT_AGENT_PEER_VPN_INTERNAL_ADDRESS_FLAG,
         INIT_AGENT_PEER_VPN_INTERNAL_ADDRESS_HELP,
-        get_next_available_address(&network_subnet, &Vec::new()).map(|o| o.to_string()),
+        network_subnet.hosts().next().map(|o| o.to_string()),
         move |s: &str| parse_and_validate_peer_address(s, &temp_network),
     );
     step_counter += 1;
@@ -469,7 +471,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         get_value(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.agent_peer_mtu_value.clone().map(|o| o.to_string()),
+            init_opts.agent_peer_mtu_value.map(|o| o.to_string()),
             INIT_AGENT_PEER_MTU_VALUE_FLAG,
             format!("\t{}", INIT_AGENT_PEER_MTU_VALUE_HELP).as_str(),
             Some("1420".into()),
@@ -600,7 +602,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         get_value(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.default_peer_mtu_value.clone().map(|o| o.to_string()),
+            init_opts.default_peer_mtu_value.map(|o| o.to_string()),
             INIT_DEFAULT_PEER_MTU_VALUE_FLAG,
             format!("\t{}", INIT_DEFAULT_PEER_MTU_VALUE_HELP).as_str(),
             Some("1420".into()),
@@ -677,7 +679,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         get_value(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.default_connection_persistent_keepalive_period.clone().map(|o| o.to_string()),
+            init_opts.default_connection_persistent_keepalive_period.map(|o| o.to_string()),
             INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_FLAG,
             format!("\t{}", INIT_DEFAULT_CONNECTION_PERSISTENT_KEEPALIVE_PERIOD_HELP).as_str(),
             Some("25".into()),
@@ -728,11 +730,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         },
         network: Network {
             name: network_name.to_string(),
-            subnet: network_subnet.clone(),
-            this_peer: peer_id.clone(),
+            subnet: network_subnet,
+            this_peer: peer_id,
             peers: {
                 let mut map = BTreeMap::new();
-                map.insert(peer_id.clone(), Peer {
+                map.insert(peer_id, Peer {
                     name: agent_peer_name.to_string(),
                     address: agent_peer_vpn_internal_address,
                     endpoint: Endpoint {
@@ -745,8 +747,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                         src: agent_peer_icon_src,
                     },
                     private_key: wg_generate_key(),
-                    created_at: now.clone(),
-                    updated_at: now.clone(),
+                    created_at: now,
+                    updated_at: now,
                     dns: Dns {
                         enabled: agent_peer_dns_enabled,
                         addresses: agent_peer_dns_addresses,

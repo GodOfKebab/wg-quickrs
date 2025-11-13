@@ -10,7 +10,6 @@ use uuid::Uuid;
 use wg_quickrs_lib::helpers::remove_expired_reservations;
 use wg_quickrs_lib::types::network::{ReservationData, NetworkWDigest};
 use wg_quickrs_lib::types::config::ConfigFile;
-use crate::conf::helpers::{get_allocated_addresses};
 
 macro_rules! http_response {
     ($status:ident, $status_str:expr, $($arg:tt)*) => {
@@ -97,18 +96,18 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 let mut network_copy = c.network_w_digest.network.clone();
                 if let Some(peer_config) = c.network_w_digest.network.peers.get_mut(&peer_id) {
                     if let Some(name) = &peer_details.name {
-                        peer_config.name = parse_and_validate_peer_name(&name).map_err(|e| {
+                        peer_config.name = parse_and_validate_peer_name(name).map_err(|e| {
                             bad_request!("changed_fields.peers.{}.name: {}", peer_id, e)
                         })?;
                     }
                     if let Some(address) = &peer_details.address {
                         network_copy.peers.retain(|id, _| id != &peer_id);
-                        peer_config.address = validate_peer_address(&address, &network_copy).map_err(|e| {
+                        peer_config.address = validate_peer_address(address, &network_copy).map_err(|e| {
                             bad_request!("changed_fields.peers.{}.address: {}", peer_id, e)
                         })?;
                     }
                     if let Some(endpoint) = &peer_details.endpoint {
-                        peer_config.endpoint = validate_peer_endpoint(&endpoint).map_err(|e| {
+                        peer_config.endpoint = validate_peer_endpoint(endpoint).map_err(|e| {
                             bad_request!("changed_fields.peers.{}.endpoint: {}", peer_id, e)
                         })?;
                     }
@@ -118,7 +117,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                         })?;
                     }
                     if let Some(icon) = &peer_details.icon {
-                        peer_config.icon = validate_peer_icon(&icon).map_err(|e| {
+                        peer_config.icon = validate_peer_icon(icon).map_err(|e| {
                             bad_request!("changed_fields.peers.{}.icon: {}", peer_id, e)
                         })?;
                     }
@@ -128,12 +127,12 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                         })?;
                     }
                     if let Some(mtu) = &peer_details.mtu {
-                        peer_config.mtu = validate_peer_mtu(&mtu).map_err(|e| {
+                        peer_config.mtu = validate_peer_mtu(mtu).map_err(|e| {
                             bad_request!("changed_fields.peers.{}.mtu: {}", peer_id, e)
                         })?;
                     }
                     if let Some(private_key) = &peer_details.private_key {
-                        peer_config.private_key = private_key.clone();
+                        peer_config.private_key = *private_key;
                         // If deserialization succeeds, private_key is already validated.
                     }
 
@@ -253,7 +252,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 })?;
                 let mut added_peer = wg_quickrs_lib::types::network::Peer::from(&peer_details);
                 added_peer.created_at = Utc::now();
-                added_peer.updated_at = added_peer.created_at.clone();
+                added_peer.updated_at = added_peer.created_at;
                 c.network_w_digest.network.peers.insert(peer_id, added_peer);
                 changed_config = true;
             }
@@ -341,18 +340,17 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
 pub(crate) fn post_network_reserve_address() -> Result<HttpResponse, HttpResponse> {
     let mut c = get_mg_config_w_digest!();
     remove_expired_reservations(&mut c.network_w_digest.network);
-    let allocated_addresses = get_allocated_addresses(&c.network_w_digest.network);
-    let next_address = network::get_next_available_address(&c.network_w_digest.network.subnet, &allocated_addresses)
+    let next_address = network::get_next_available_address(&c.network_w_digest.network)
         .ok_or_else(|| HttpResponse::Conflict().body("No more IP addresses available in the pool".to_string()))?;
 
     let reservation_peer_id = Uuid::new_v4();
     let reservation_valid_until = Utc::now() + Duration::minutes(10);
-    c.network_w_digest.network.reservations.insert(next_address.clone(), ReservationData {
-        peer_id: reservation_peer_id.clone(),
-        valid_until: reservation_valid_until.clone(),
+    c.network_w_digest.network.reservations.insert(next_address, ReservationData {
+        peer_id: reservation_peer_id,
+        valid_until: reservation_valid_until,
     });
     post_mg_config_w_digest!(c);
-    log::info!("reserved address {} for {} until {}", next_address.clone(), reservation_peer_id, reservation_valid_until);
+    log::info!("reserved address {} for {} until {}", next_address, reservation_peer_id, reservation_valid_until);
     
     Ok(HttpResponse::Ok().json(json!({
         "address": next_address,

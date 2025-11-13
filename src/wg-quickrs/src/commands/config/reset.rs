@@ -19,10 +19,10 @@ pub fn reset_web_password(reset_web_password_opts: &Option<String>) -> Result<()
         }
         None => {
             print!("Enter your new password: ");
-            io::stdout().flush().unwrap(); // Ensure the prompt is shown before waiting for input
+            io::stdout().flush().map_err(ConfigCommandError::ReadFailed)?; // Ensure the prompt is shown before waiting for input
 
             let mut pwd = String::new();
-            io::stdin().read_line(&mut pwd).map_err(|e| ConfigCommandError::ReadFailed(e))?;
+            io::stdin().read_line(&mut pwd).map_err(ConfigCommandError::ReadFailed)?;
             pwd.trim().to_string()
         }
     };

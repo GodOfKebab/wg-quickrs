@@ -65,7 +65,7 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
     let value = name_file.clone();
     std::thread::spawn(move || unsafe {
         match Command::new("wireguard-go")
-            .args(&["--foreground", "utun"])
+            .args(["--foreground", "utun"])
             .env("WG_TUN_NAME_FILE", value)
             .env("LOG_LEVEL", "debug")
             .stdin(std::process::Stdio::inherit())
@@ -138,11 +138,10 @@ pub fn set_mtu(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
 
         // Get MTU from default interface
         let mut mtu_sys = 1500u16; // fallback
-        if let Some(default_if) = default_if {
-            if let Some(detected_mtu) = get_interface_mtu(default_if)? {
+        if let Some(default_if) = default_if
+            && let Some(detected_mtu) = get_interface_mtu(default_if)? {
                 mtu_sys = detected_mtu;
             }
-        }
 
         // Subtract WireGuard overhead
         mtu_sys = mtu_sys.saturating_sub(80);
@@ -150,11 +149,10 @@ pub fn set_mtu(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
     };
 
     // Only set if different from current
-    if let Some(current_mtu) = get_interface_mtu(iface)? {
-        if mtu_val == current_mtu {
+    if let Some(current_mtu) = get_interface_mtu(iface)?
+        && mtu_val == current_mtu {
             return Ok(());
         }
-    }
     shell_cmd(&["ifconfig", iface, "mtu", &mtu_val.to_string()])?;
 
     Ok(())
@@ -230,7 +228,7 @@ fn get_search_domains(service: &str) -> TunnelResult<String> {
     })
 }
 
-pub fn set_dns(dns_servers: &Vec<Ipv4Addr>, _interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<()> {
+pub fn set_dns(dns_servers: &[Ipv4Addr], _interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<()> {
     collect_services(dns_manager)?;
 
     for service in dns_manager.service_dns.keys() {
@@ -266,7 +264,7 @@ pub fn del_dns(_interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<(
     Ok(())
 }
 
-pub fn add_route(iface: &str, _interface_name: &str, cidr: &str, endpoint_router: &mut wg_quick::EndpointRouter) -> TunnelResult<()> {
+pub fn add_route(iface: &str, _interface_name: &str, cidr: &str, endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
     let is_default = cidr.ends_with("/0");
     let is_ipv6 = cidr.contains(':');
 
@@ -292,14 +290,14 @@ pub fn add_route(iface: &str, _interface_name: &str, cidr: &str, endpoint_router
             Err(_) => false
         };
         if !route_exists {
-            let _ = shell_cmd(&["route", "-q", "-n", "add", family, &cidr, "-interface", iface]);
+            let _ = shell_cmd(&["route", "-q", "-n", "add", family, cidr, "-interface", iface]);
         }
     }
 
     Ok(())
 }
 
-pub fn set_endpoint_direct_route(iface: &str, endpoint_router: &mut wg_quick::EndpointRouter) -> TunnelResult<()> {
+pub fn set_endpoint_direct_route(iface: &str, endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
     let mut old_endpoints = endpoint_router.endpoints.clone();
     let old_gateway4 = endpoint_router.gateway4.clone();
     let old_gateway6 = endpoint_router.gateway6.clone();
@@ -433,7 +431,7 @@ fn monitor_daemon_worker(
     };
 
     let mut route_monitor = Command::new("route")
-        .args(&["-n", "monitor"])
+        .args(["-n", "monitor"])
         .stdout(Stdio::piped())
         .spawn()?;
 
@@ -462,17 +460,15 @@ fn monitor_daemon_worker(
             break;
         }
 
-        if endpoint_router.auto_route4 || endpoint_router.auto_route6 {
-            if let Err(e) = set_endpoint_direct_route(&real_iface, &mut endpoint_router_clone) {
+        if (endpoint_router.auto_route4 || endpoint_router.auto_route6)
+            && let Err(e) = set_endpoint_direct_route(&real_iface, &mut endpoint_router_clone) {
                 log::warn!("[!] Failed to reapply endpoint routes: {}", e);
             }
-        }
 
-        if mtu.enabled {
-            if let Err(e) = set_mtu(&real_iface, &mtu) {
+        if mtu.enabled
+            && let Err(e) = set_mtu(&real_iface, &mtu) {
                 log::warn!("[!] Failed to reapply MTU: {}", e);
             }
-        }
 
         // Reapply DNS with debouncing
         if !dns_servers.is_empty() {

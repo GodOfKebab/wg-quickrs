@@ -30,7 +30,7 @@ impl From<&Summary> for SummaryDigest {
             telemetry: summary.telemetry.clone(),
             digest: summary.digest.clone(),
             status: summary.status.clone(),
-            timestamp: summary.timestamp.clone(),
+            timestamp: summary.timestamp,
         }
     }
 }
@@ -117,14 +117,14 @@ impl From<&AddedPeer> for Peer {
     fn from(added_peer: &AddedPeer) -> Self {
         Peer {
             name: added_peer.name.clone(),
-            address: added_peer.address.clone(),
+            address: added_peer.address,
             endpoint: added_peer.endpoint.clone(),
             kind: added_peer.kind.clone(),
             icon: added_peer.icon.clone(),
             dns: added_peer.dns.clone(),
             mtu: added_peer.mtu.clone(),
             scripts: added_peer.scripts.clone(),
-            private_key: added_peer.private_key.clone(),
+            private_key: added_peer.private_key,
             created_at: Utc::now(), // TODO: use time from arg
             updated_at: Utc::now(),
         }

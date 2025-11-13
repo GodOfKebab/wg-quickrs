@@ -1,7 +1,6 @@
 // build.rs: generate bash/zsh/... completion scripts
 use clap::{CommandFactory, Parser};
 use clap_complete::generate_to;
-use wg_quickrs_cli;
 use std::fs;
 use std::path::Path;
 

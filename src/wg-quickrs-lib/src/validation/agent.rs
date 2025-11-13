@@ -54,7 +54,7 @@ pub fn parse_and_validate_fw_utility(fw_utility: &str) -> ValidationResult<PathB
     validate_fw_utility(&fw_utility_path)
 }
 
-pub fn validate_fw_utility(fw_utility: &PathBuf) -> ValidationResult<PathBuf> {
+pub fn validate_fw_utility(fw_utility: &Path) -> ValidationResult<PathBuf> {
     // Check if a path exists and is a file
     if fw_utility.exists() && fw_utility.is_file() {
         return Ok(fw_utility.to_path_buf());

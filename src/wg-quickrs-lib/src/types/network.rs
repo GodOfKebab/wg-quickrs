@@ -110,8 +110,10 @@ pub struct Endpoint {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum EndpointAddress {
     #[serde(rename = "none")]
+    #[default]
     None,
     #[serde(rename = "ipv4_and_port")]
     Ipv4AndPort(Ipv4AndPort),
@@ -119,11 +121,6 @@ pub enum EndpointAddress {
     HostnameAndPort(HostnameAndPort),
 }
 
-impl Default for EndpointAddress {
-    fn default() -> Self {
-        EndpointAddress::None
-    }
-}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Ipv4AndPort {

@@ -53,7 +53,7 @@ pub fn validate_peer_address(address_ipv4: &Ipv4Addr, network: &Network) -> Vali
     if network.reservations.get(address_ipv4).is_some_and(|res| Utc::now() < res.valid_until) {
         return Err(ValidationError::AddressIsReserved());
     }
-    Ok(address_ipv4.clone())
+    Ok(*address_ipv4)
 }
 
 pub fn parse_and_validate_peer_endpoint(endpoint_address: &str) -> ValidationResult<EndpointAddress> {
@@ -79,11 +79,10 @@ pub fn parse_and_validate_peer_endpoint(endpoint_address: &str) -> ValidationRes
 }
 
 pub fn validate_peer_endpoint(endpoint: &Endpoint) -> ValidationResult<Endpoint> {
-    if let EndpointAddress::HostnameAndPort(h) = &endpoint.address {
-        if !hostname_validator::is_valid(&h.hostname) {
+    if let EndpointAddress::HostnameAndPort(h) = &endpoint.address
+        && !hostname_validator::is_valid(&h.hostname) {
             return Err(ValidationError::InvalidEndpoint());
         }
-    }
     if endpoint.enabled && endpoint.address == EndpointAddress::None {
         return Err(ValidationError::EmptyEndpoint());
     }
@@ -162,13 +161,13 @@ pub fn validate_peer_script(script: &Script) -> ValidationResult<Script> {
     Ok(script.clone())
 }
 
-pub fn validate_peer_scripts(script: &Vec<Script>) -> ValidationResult<Vec<Script>> {
+pub fn validate_peer_scripts(script: &[Script]) -> ValidationResult<Vec<Script>> {
     for (i, script) in script.iter().enumerate() {
         validate_peer_script(script).map_err(|_| {
             ValidationError::ScriptMissingSemicolonAt(i)
         })?;
     }
-    Ok(script.clone())
+    Ok(script.to_owned())
 }
 
 pub fn parse_and_validate_wg_key(key: &str) -> ValidationResult<WireGuardKey> {

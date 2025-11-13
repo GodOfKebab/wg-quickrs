@@ -28,8 +28,17 @@ pub(crate) fn post_wireguard_server_status(body: web::Bytes) -> HttpResponse {
         }));
     };
 
-    if status_body.status == *WG_STATUS.lock().unwrap() {
-        return HttpResponse::Ok().json(json!(status_body));
+    match WG_STATUS.lock() {
+        Ok(current_status) if status_body.status == *current_status => {
+            return HttpResponse::Ok().json(json!(status_body));
+        }
+        Err(e) => {
+            log::error!("Failed to acquire WG_STATUS lock: {}", e);
+            return HttpResponse::InternalServerError().json(json!({
+                "error": "Failed to check current WireGuard status"
+            }));
+        }
+        _ => {}
     }
 
     match action() {

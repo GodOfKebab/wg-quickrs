@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use crate::types::network::*;
 use crate::types::misc::{WireGuardLibError};
 use x25519_dalek::{PublicKey, StaticSecret};
@@ -86,7 +86,7 @@ pub fn get_peer_wg_config(
 
     // connection fields
     for (connection_id, connection_details) in network.connections.clone().into_iter() {
-        if !connection_id.contains(&peer_id) {
+        if !connection_id.contains(peer_id) {
             continue;
         }
         if !connection_details.enabled {
@@ -123,7 +123,7 @@ pub fn get_peer_wg_config(
         }
         if other_peer_details.endpoint.enabled {
             if let EndpointAddress::Ipv4AndPort(ipv4_port) = &other_peer_details.endpoint.address {
-                writeln!(wg_conf, "Endpoint = {}:{}", ipv4_port.ipv4.to_string(), ipv4_port.port).unwrap();
+                writeln!(wg_conf, "Endpoint = {}:{}", ipv4_port.ipv4, ipv4_port.port).unwrap();
             } else if let EndpointAddress::HostnameAndPort(host_port) = &other_peer_details.endpoint.address {
                 writeln!(wg_conf, "Endpoint = {}:{}", host_port.hostname, host_port.port).unwrap();
             }
@@ -148,6 +148,8 @@ pub fn wg_generate_key() -> WireGuardKey {
     WireGuardKey(key_bytes)
 }
 
+/// Get a deterministic connection ID for two peers.
+/// The connection ID always has the larger UUID in field 'a' and the smaller in field 'b'.
 pub fn get_connection_id(peer1: Uuid, peer2: Uuid) -> ConnectionId {
     if peer1 > peer2 {
         ConnectionId { a: peer1, b: peer2 }
@@ -156,8 +158,9 @@ pub fn get_connection_id(peer1: Uuid, peer2: Uuid) -> ConnectionId {
     }
 }
 
+/// Remove expired IP address reservations from the network.
+/// Keeps only reservations where valid_until is still in the future.
 pub fn remove_expired_reservations(network: &mut Network) {
-    network.reservations.retain(|_, lease_data| {
-        Utc::now().signed_duration_since(&lease_data.valid_until) < Duration::zero()
-    });
+    let now = Utc::now();
+    network.reservations.retain(|_, reservation| reservation.valid_until > now);
 }

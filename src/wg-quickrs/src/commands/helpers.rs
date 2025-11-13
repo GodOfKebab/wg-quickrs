@@ -97,6 +97,7 @@ where
 }
 
 /// Helper to prompt for multiple scripts
+#[allow(clippy::too_many_arguments)]
 pub fn get_scripts(
     cli_no_prompt: Option<bool>,
     step_str: String,
@@ -176,6 +177,7 @@ pub fn get_scripts(
 }
 
 /// Helper to prompt for multiple DNS addresses
+#[allow(clippy::too_many_arguments)]
 pub fn get_dns_addresses(
     cli_no_prompt: Option<bool>,
     step_str: String,
@@ -200,6 +202,7 @@ pub fn get_dns_addresses(
 }
 
 /// Helper to prompt for multiple DNS addresses with default values
+#[allow(clippy::too_many_arguments)]
 pub fn get_dns_addresses_with_defaults(
     cli_no_prompt: Option<bool>,
     step_str: String,

@@ -39,6 +39,7 @@ pub enum TunnelError {
 pub type TunnelResult<T> = Result<T, TunnelError>;
 
 #[allow(dead_code)]
+#[derive(Default)]
 pub struct EndpointRouter {
     pub(crate) endpoints: Vec<String>,
     pub(crate) gateway4: Option<String>,
@@ -54,25 +55,14 @@ impl Clone for EndpointRouter {
             endpoints: self.endpoints.clone(),
             gateway4: self.gateway4.clone(),
             gateway6: self.gateway6.clone(),
-            auto_route4: self.auto_route4.clone(),
-            auto_route6: self.auto_route6.clone(),
-            have_set_firewall: self.have_set_firewall.clone(),
-        }
-    }
-}
-impl Default for EndpointRouter {
-    fn default() -> Self {
-        EndpointRouter {
-            endpoints: Vec::new(),
-            gateway4: None,
-            gateway6: None,
-            auto_route4: false,
-            auto_route6: false,
-            have_set_firewall: false,
+            auto_route4: self.auto_route4,
+            auto_route6: self.auto_route6,
+            have_set_firewall: self.have_set_firewall,
         }
     }
 }
 
+#[derive(Default)]
 pub struct DnsManager {
     pub(crate) have_set_dns: bool,
     pub(crate) service_dns: HashMap<String, String>,
@@ -82,22 +72,13 @@ pub struct DnsManager {
 impl Clone for DnsManager {
     fn clone(&self) -> Self {
         Self {
-            have_set_dns: self.have_set_dns.clone(),
+            have_set_dns: self.have_set_dns,
             service_dns: self.service_dns.clone(),
             service_dns_search: self.service_dns_search.clone(),
         }
     }
 }
 
-impl Default for DnsManager {
-    fn default() -> Self {
-        DnsManager {
-            have_set_dns: false,
-            service_dns: Default::default(),
-            service_dns_search: Default::default(),
-        }
-    }
-}
 
 pub struct TunnelManager {
     pub(crate) config: Option<Config>,
@@ -245,7 +226,7 @@ impl TunnelManager {
         let iface = self.real_interface.as_ref().unwrap();
 
         let this_peer = &self.this_peer()?;
-        let addresses = vec![this_peer.address.clone()];
+        let addresses = vec![this_peer.address];
 
         let config = self.config.as_ref().unwrap();
         let subnet_slash = config.network.subnet.prefix_len();
@@ -335,7 +316,7 @@ impl TunnelManager {
         let interfaces: Vec<&str> = output_str.split_whitespace().collect();
 
         let interface_name = self.interface_name();
-        let real_iface = self.real_interface.as_ref().map(|s| s.as_str());
+        let real_iface = self.real_interface.as_deref();
 
         Ok(interfaces.contains(&&*interface_name) ||
             (real_iface.is_some() && interfaces.contains(&real_iface.unwrap())))
@@ -430,11 +411,10 @@ enum HookType {
 }
 
 fn extract_ip_from_endpoint(endpoint: &str) -> Option<String> {
-    if endpoint.starts_with('[') {
-        if let Some(end) = endpoint.find(']') {
+    if endpoint.starts_with('[')
+        && let Some(end) = endpoint.find(']') {
             return Some(endpoint[1..end].to_string());
         }
-    }
 
     if let Some(colon_pos) = endpoint.rfind(':') {
         return Some(endpoint[..colon_pos].to_string());
@@ -453,7 +433,7 @@ fn get_allowed_ips(iface: &str) -> TunnelResult<Vec<String>> {
     };
 
     // Parse and collect valid CIDR entries
-    let mut cidrs: Vec<String> = String::from_utf8_lossy(&*output.stdout)
+    let mut cidrs: Vec<String> = String::from_utf8_lossy(&output.stdout)
         .split_whitespace()
         .filter(|s| wg_quickrs_lib::validation::network::parse_and_validate_ipv4_subnet(s).is_ok())
         .map(String::from)
@@ -483,11 +463,10 @@ pub fn get_endpoints(iface: &str) -> Vec<String> {
 
     for line in output_str.lines() {
         let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() > 1 {
-            if let Some(ip) = extract_ip_from_endpoint(parts[1]) {
-                endpoints.push(ip);
+        if parts.len() > 1
+            && let Some(ip) = extract_ip_from_endpoint(parts[1]) {
+                endpoints.push(ip.clone());
             }
-        }
     }
 
     endpoints
@@ -502,7 +481,7 @@ fn mod_pf_conf(gateway: &str, subnet: &str, add: bool) -> TunnelResult<()> {
 
     // Read the file
     let content = fs::read_to_string(pf_conf_path)
-        .map_err(|e| TunnelError::IoError(e))?;
+        .map_err(TunnelError::IoError)?;
 
     // Check if the rule already exists
     let rule_exists = content.lines().any(|line| line == nat_rule);
