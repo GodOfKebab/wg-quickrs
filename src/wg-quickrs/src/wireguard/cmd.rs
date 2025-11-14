@@ -241,40 +241,27 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
         .lock()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
-    let wg_conf_stripped = match get_peer_wg_config(
-        &config.network,
-        &config.network.this_peer,
-        true,
-    ) {
-        Ok(n) => n,
-        Err(e) => {
-            return Err(WireGuardCommandError::Other(e.to_string()));
-        }
-    };
+    let mut wg_tunnel_manager = WG_TUNNEL_MANAGER
+        .lock()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
-    let mut temp = match NamedTempFile::new() {
-        Ok(file) => file,
-        Err(e) => {
-            return Err(WireGuardCommandError::Other(e.to_string()));
-        }
-    };
+    wg_tunnel_manager.config = Some(config.clone());
 
-    match temp.write_all(wg_conf_stripped.as_ref()) {
-        Ok(_) => {}
-        Err(e) => {
-            return Err(WireGuardCommandError::FileWriteError(
-                PathBuf::from(temp.path()),
-                e,
-            ));
-        }
-    };
+    let wg_conf_stripped = get_peer_wg_config(&config.network, &config.network.this_peer, true)
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
+
+    let mut temp = NamedTempFile::new()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
+
+    temp.write_all(wg_conf_stripped.as_ref())
+        .map_err(|e| WireGuardCommandError::FileWriteError(PathBuf::from(temp.path()), e))?;
+
     let temp_path = temp.path().to_owned();
     let temp_path_str = temp_path.to_str()
         .ok_or_else(|| WireGuardCommandError::Other("Temporary file path contains invalid UTF-8".to_string()))?;
 
-    let _ = shell_cmd(&["wg", "syncconf", &*wg_interface_mut, temp_path_str]).map_err(|_| {
-        WireGuardCommandError::InterfaceSyncFailed()
-    })?;
+    let _ = shell_cmd(&["wg", "syncconf", &*wg_interface_mut, temp_path_str])
+        .map_err(|_| WireGuardCommandError::InterfaceSyncFailed())?;
     Ok(())
 }
 
