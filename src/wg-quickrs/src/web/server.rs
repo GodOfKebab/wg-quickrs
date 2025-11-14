@@ -17,7 +17,7 @@ use crate::helpers::shell_cmd;
 
 #[derive(Error, Debug)]
 pub enum ServerError {
-    #[error("Failed to configure TLS for HTTPS: {0}")]
+    #[error("failed to configure tls for https: {0}")]
     TlsSetupFailed(String),
 }
 

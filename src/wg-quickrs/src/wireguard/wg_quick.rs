@@ -15,15 +15,15 @@ use crate::wireguard::wg_quick_linux as wg_quick_platform;
 
 #[derive(Error, Debug)]
 pub enum TunnelError {
-    #[error("Command execution failed: {0}")]
+    #[error("command execution failed: {0}")]
     CommandFailed(String),
-    #[error("IO error: {0}")]
+    #[error("io error: {0}")]
     IoError(#[from] std::io::Error),
-    #[error("Interface already exists: {0}")]
+    #[error("interface already exists: {0}")]
     InterfaceExists(String),
-    #[error("Interface not found: {0}")]
+    #[error("interface not found: {0}")]
     InterfaceNotFound(String),
-    #[error("Invalid configuration: {0}")]
+    #[error("invalid configuration: {0}")]
     InvalidConfig(String),
     #[error("{0}")]
     WireGuardLibError(#[from] wg_quickrs_lib::types::misc::WireGuardLibError),
@@ -32,7 +32,7 @@ pub enum TunnelError {
     #[error("{0}")]
     ShellError(#[from] ShellError),
     #[cfg(target_os = "macos")]
-    #[error("Unable to find default gateway")]
+    #[error("unable to find default gateway")]
     DefaultGatewayNotFound(),
 }
 

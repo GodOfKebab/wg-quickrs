@@ -20,9 +20,9 @@ pub static WG_QUICKRS_CONFIG_FILE: OnceCell<PathBuf> = OnceCell::new();
 
 #[derive(Error, Debug)]
 pub enum CommandError {
-    #[error("IO Error: {0}")]
+    #[error("io error: {0}")]
     IO(#[from] std::io::Error),
-    #[error("Path Error: {0}")]
+    #[error("path error: {0}")]
     Path(String),
     #[error("{0}")]
     Validation(#[from] ValidationError),

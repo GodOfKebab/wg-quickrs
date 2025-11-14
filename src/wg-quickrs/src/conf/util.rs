@@ -17,25 +17,25 @@ use semver::Version;
 
 #[derive(Error, Debug)]
 pub enum ConfUtilError {
-    #[error("Failed to write config file file at {0}: {1}")]
+    #[error("failed to write config file file at {0}: {1}")]
     Write(PathBuf, std::io::Error),
-    #[error("Failed to read config file at {0}: {1}")]
+    #[error("failed to read config file at {0}: {1}")]
     Read(PathBuf, std::io::Error),
-    #[error("Invalid config file format: {0}")]
+    #[error("invalid config file format: {0}")]
     Parse(serde_yml::Error),
-    #[error("Failed to serialize config object: {0}")]
+    #[error("failed to serialize config object: {0}")]
     Serialization(serde_yml::Error),
-    #[error("Failed to encode digest: {0}")]
+    #[error("failed to encode digest: {0}")]
     DigestEncoding(base16ct::Error),
-    #[error("Failed to acquire lock: {0}")]
+    #[error("failed to acquire lock: {0}")]
     MutexLockFailed(String),
-    #[error("Failed to set mutex variable")]
+    #[error("failed to set mutex variable")]
     MutexSetFailed(),
-    #[error("Invalid version semantic version: {0}")]
+    #[error("invalid version semantic version: {0}")]
     InvalidVersion(semver::Error),
-    #[error("Version in conf.yml not supported: expected {0}, got {1}")]
+    #[error("version in conf.yml not supported: expected {0}, got {1}")]
     VersionNotSupported(String, String),
-    #[error("Validation Error: {0}")]
+    #[error("validation Error: {0}")]
     Validation(#[from] ValidationError),
     #[error("{0}")]
     WireGuardLibError(#[from] wg_quickrs_lib::types::misc::WireGuardLibError),

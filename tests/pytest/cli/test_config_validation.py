@@ -34,7 +34,7 @@ def create_invalid_config_file(wg_quickrs_config_file, field_path, invalid_value
         ("network", None, ["invalid config file format"]),
 
         # incorrect version
-        ("version", "999.999.999", ["conf::util::error::version_not_supported"]),
+        ("version", "999.999.999", ["version", "not supported"]),
 
         # Agent.web validation
         ("agent.web.address", "", ["ipv4"]),

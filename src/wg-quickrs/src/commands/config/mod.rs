@@ -41,25 +41,25 @@ pub enum ConfigCommandError {
     Validation(#[from] ValidationError),
     #[error(transparent)]
     ConfUtilError(#[from] ConfUtilError),
-    #[error("Can't enable firewall gateway: Gateway is not set")]
+    #[error("cannot enable firewall gateway: gateway is not set")]
     GatewayNotSet(),
-    #[error("Failed to read input: {0}")]
+    #[error("failed to read input: {0}")]
     ReadFailed(#[from] io::Error),
-    #[error("Failed to serialize to YAML: {0}")]
+    #[error("failed to serialize to YAML: {0}")]
     YamlSerialization(#[from] serde_yml::Error),
-    #[error("Peer not found: {0}")]
+    #[error("peer not found: {0}")]
     PeerNotFound(Uuid),
-    #[error("Connection not found: {0}")]
+    #[error("connection not found: {0}")]
     ConnectionNotFound(String),
-    #[error("Reservation not found: {0}")]
+    #[error("reservation not found: {0}")]
     ReservationNotFound(Ipv4Addr),
-    #[error("Invalid connection ID format: {0}")]
+    #[error("invalid connection id format: {0}")]
     InvalidConnectionId(String),
-    #[error("Invalid UUID format: {0}")]
+    #[error("invalid uuid format: {0}")]
     InvalidUuid(#[from] uuid::Error),
-    #[error("Missing required argument: {0}")]
+    #[error("missing required argument: {0}")]
     MissingArgument(String),
-    #[error("Cannot remove this_peer: {0}")]
+    #[error("cannot remove this_peer: {0}")]
     CannotRemoveThisPeer(Uuid),
 }
 

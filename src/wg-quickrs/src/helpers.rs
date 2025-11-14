@@ -3,11 +3,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ShellError {
-    #[error("Empty command")]
+    #[error("empty command")]
     Empty(),
-    #[error("IO error: {0}")]
+    #[error("io error: {0}")]
     IoError(#[from] std::io::Error),
-    #[error("Failed: {0}")]
+    #[error("failed: {0}")]
     Failed(String),
 }
 pub type ShellResult<T> = Result<T, ShellError>;

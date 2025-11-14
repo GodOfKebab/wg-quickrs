@@ -5,9 +5,9 @@ use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum WireGuardLibError {
-    #[error("types::error::peer_not_found -> peer {0} is not found")]
+    #[error("peer {0} is not found")]
     PeerNotFound(Uuid),
-    #[error("types::error::digest_serialize_failed -> unable to serialize network")]
+    #[error("unable to serialize network")]
     SerializationFailed(),
 }
 

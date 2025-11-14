@@ -239,7 +239,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
         for peer_id in removed_peers {
             {
                 if *peer_id == this_peer_id {
-                    return Err(HttpResponse::Forbidden().body("can't remove this peer"));
+                    return Err(HttpResponse::Forbidden().body("cannot remove this peer"));
                 }
                 c.network_w_digest.network.peers.remove(peer_id);
                 // automatically remove connections
@@ -256,10 +256,10 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
         for (connection_id, connection_details) in added_connections {
             {
                 if !c.network_w_digest.network.peers.contains_key(&connection_id.a) {
-                    return Err(HttpResponse::BadRequest().body(format!("added_connections.{}: 'peer_id' doesn't exist", connection_id.a)));
+                    return Err(HttpResponse::BadRequest().body(format!("added_connections.{}: 'peer_id' does not exist", connection_id.a)));
                 }
                 if !c.network_w_digest.network.peers.contains_key(&connection_id.b) {
-                    return Err(HttpResponse::BadRequest().body(format!("added_connections.{}: 'peer_id' doesn't exist", connection_id.b)));
+                    return Err(HttpResponse::BadRequest().body(format!("added_connections.{}: 'peer_id' does not exist", connection_id.b)));
                 }
                 if c.network_w_digest.network.connections.contains_key(connection_id) {
                     return Err(HttpResponse::Forbidden().body(format!("connection '{}' already exists", connection_id)));

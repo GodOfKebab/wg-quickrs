@@ -6,9 +6,9 @@ use crate::conf::util::ConfUtilError;
 
 #[derive(Error, Debug)]
 pub enum AgentRunError {
-    #[error("Configuration Error: {0}")]
+    #[error("configuration error: {0}")]
     Conf(#[from] ConfUtilError),
-    #[error("IO Error: {0}")]
+    #[error("io error: {0}")]
     IO(#[from] std::io::Error),
 }
 

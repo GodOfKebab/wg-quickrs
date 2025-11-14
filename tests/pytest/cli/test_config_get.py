@@ -748,7 +748,7 @@ def test_config_get_network_peer_not_found(setup_wg_quickrs_folder):
 
     assert result.returncode != 0
     # Error is logged to stdout
-    assert "Peer not found" in result.stdout or "Peer not found" in result.stderr
+    assert "peer not found" in result.stdout
 
 
 # ========== Tests for Network Defaults ==========

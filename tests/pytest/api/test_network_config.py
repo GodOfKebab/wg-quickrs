@@ -56,7 +56,7 @@ def test_add_bad_connection(setup_wg_quickrs_agent):
     }
     setup_response = requests.patch(f"{base_url}/api/network/config", json=fake_setup_change_sum)
     assert setup_response.status_code == 400
-    assert "'peer_id' doesn't exist" in setup_response.content.decode("utf-8")
+    assert "'peer_id' does not exist" in setup_response.content.decode("utf-8")
 
 
 def test_invalid_json(setup_wg_quickrs_agent):

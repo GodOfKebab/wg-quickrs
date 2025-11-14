@@ -7,9 +7,9 @@ pub enum ValidationError {
     NotIPv4Address(),
     #[error("port is not a valid number (1-65535)")]
     NotPortNumber(),
-    #[error("TLS file is not found")]
+    #[error("tls file is not found")]
     TlsFileNotFound(),
-    #[error("TLS path is not a file (it is a directory or a symlink)")]
+    #[error("tls path is not a file (it is a directory or a symlink)")]
     TlsFileNotAFile(),
     #[error("gateway {0} is not found (possible options: {1})")]
     InterfaceNotFound(String, String),
@@ -43,7 +43,7 @@ pub enum ValidationError {
     EmptyIcon(),
     #[error("dns cannot be empty when enabled")]
     EmptyDns(),
-    #[error("MTU is invalid (1-10000)")]
+    #[error("mtu is invalid (1-10000)")]
     InvalidMtu(),
     #[error("script missing a semicolon")]
     ScriptMissingSemicolon(),
