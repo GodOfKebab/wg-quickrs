@@ -29,34 +29,43 @@ def test_wireguard_status_invalid_requests(setup_wg_quickrs_agent, json_data, ex
     assert response.status_code == expected_status
 
 
-def test_wireguard_status_up_down(setup_wg_quickrs_agent):
+def test_wireguard_status_up_uninitialized(setup_wg_quickrs_agent):
     """Test setting wireguard status up then down."""
     base_url = setup_wg_quickrs_agent("no_auth_single_peer", use_sudo=True)
     response = requests.post(f"{base_url}/api/wireguard/status", json={"status": "up"})
-    assert response.status_code == 200
+    assert response.status_code == 500
+    assert "not initialized" in response.content.decode("utf-8")
 
-    response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
-    assert response.json()["status"] == "up"
+
+def test_wireguard_status_up_down_up(setup_wg_quickrs_agent):
+    """Test setting wireguard status up, down, then up."""
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer_w_enabled_vpn", use_sudo=True)
 
     response = requests.post(f"{base_url}/api/wireguard/status", json={"status": "down"})
     assert response.status_code == 200
-
     response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
     assert response.json()["status"] == "down"
+
+    response = requests.post(f"{base_url}/api/wireguard/status", json={"status": "up"})
+    assert response.status_code == 200
+    response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
+    assert response.json()["status"] == "up"
 
 
 def test_wireguard_status_idempotent_up(setup_wg_quickrs_agent):
     """Test that sending 'up' multiple times is idempotent."""
-    base_url = setup_wg_quickrs_agent("no_auth_single_peer", use_sudo=True)
+    base_url = setup_wg_quickrs_agent("no_auth_single_peer_w_enabled_vpn", use_sudo=True)
 
     # Send up the up command twice
-    response1 = requests.post(f"{base_url}/api/wireguard/status", json={"status": "up"})
-    assert response1.status_code == 200
+    response = requests.post(f"{base_url}/api/wireguard/status", json={"status": "up"})
+    assert response.status_code == 200
+    response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
+    assert response.json()["status"] == "up"
 
-    time.sleep(1)
-
-    response2 = requests.post(f"{base_url}/api/wireguard/status", json={"status": "up"})
-    assert response2.status_code == 200
+    response = requests.post(f"{base_url}/api/wireguard/status", json={"status": "up"})
+    assert response.status_code == 200
+    response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
+    assert response.json()["status"] == "up"
 
 
 def test_wireguard_status_idempotent_down(setup_wg_quickrs_agent):
@@ -64,12 +73,14 @@ def test_wireguard_status_idempotent_down(setup_wg_quickrs_agent):
     base_url = setup_wg_quickrs_agent("no_auth_single_peer", use_sudo=True)
 
     # Ensure it's down first
-    response1 = requests.post(f"{base_url}/api/wireguard/status", json={"status": "down"})
-    assert response1.status_code == 200
-
-    time.sleep(1)
+    response = requests.post(f"{base_url}/api/wireguard/status", json={"status": "down"})
+    assert response.status_code == 200
+    response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
+    assert response.json()["status"] == "down"
 
     # Send the down command again
-    response2 = requests.post(f"{base_url}/api/wireguard/status", json={"status": "down"})
-    assert response2.status_code == 200
+    response = requests.post(f"{base_url}/api/wireguard/status", json={"status": "down"})
+    assert response.status_code == 200
+    response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
+    assert response.json()["status"] == "down"
 

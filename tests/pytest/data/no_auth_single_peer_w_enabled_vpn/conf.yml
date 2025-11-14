@@ -1,0 +1,79 @@
+version: '1.0.0'
+agent:
+  web:
+    address: '127.0.0.1'
+    http:
+      enabled: true
+      port: 9080
+    https:
+      enabled: false
+      port: 9443
+      tls_cert: ''
+      tls_key: ''
+    password:
+      enabled: false
+      hash: ''
+  vpn:
+    enabled: true
+    port: 51829
+  firewall:
+    enabled: false
+    utility: ''
+    gateway: ''
+network:
+  name: wg-quickrs-home
+  subnet: '10.0.34.0/24'
+  this_peer: '0ed989c6-6dba-4e3c-8034-08adf4262d9e'
+  peers:
+    '0ed989c6-6dba-4e3c-8034-08adf4262d9e':
+      name: wg-quickrs-host
+      address: '10.0.34.1'
+      endpoint:
+        enabled: true
+        address: !ipv4_and_port
+          ipv4: '127.0.0.1'
+          port: 51820
+      kind: server
+      icon:
+        enabled: false
+        src: ''
+      dns:
+        enabled: true
+        addresses:
+          - '1.1.1.1'
+      mtu:
+        enabled: false
+        value: 1420
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+      private_key: yGFmuVZeV1V/Jy0rAx7bOF4Gx4Mt/17VMazM5grvqE4=
+      created_at: '2025-10-04T00:36:44Z'
+      updated_at: '2025-10-04T00:36:44Z'
+  connections: {}
+  defaults:
+    peer:
+      kind: laptop
+      icon:
+        enabled: false
+        src: ''
+      dns:
+        enabled: true
+        addresses:
+          - '1.1.1.1'
+      mtu:
+        enabled: false
+        value: 1420
+      scripts:
+        pre_up: []
+        post_up: []
+        pre_down: []
+        post_down: []
+    connection:
+      persistent_keepalive:
+        enabled: true
+        period: 25
+  reservations: {}
+  updated_at: '2025-10-04T00:36:44Z'

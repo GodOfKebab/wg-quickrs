@@ -75,6 +75,10 @@ pub static WG_STATUS: Mutex<WireGuardStatus> = Mutex::new(WireGuardStatus::DOWN)
 pub(crate) async fn run_vpn_server(
     config: &Config,
 ) -> std::io::Result<()> {
+    if !config.agent.vpn.enabled {
+        log::warn!("WireGuard tunnel is disabled");
+        return Ok(());
+    }
     log::info!("Starting WireGuard tunnel...");
     *WG_TUNNEL_MANAGER.lock().unwrap() = wg_quick::TunnelManager::new(Some(config.clone()));
 

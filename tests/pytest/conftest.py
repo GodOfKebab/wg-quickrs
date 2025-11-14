@@ -1,4 +1,4 @@
-from tests.pytest.helpers import get_paths, get_wg_quickrs_command, wait_for_port
+from tests.pytest.helpers import get_paths, get_wg_quickrs_command, wait_for_tcp_port, wait_for_wireguard
 from subprocess import Popen
 import os
 import shutil
@@ -88,11 +88,18 @@ def setup_wg_quickrs_agent(request, setup_wg_quickrs_folder):
         # Start agent
         agent = Popen(get_wg_quickrs_command(use_sudo) + ['agent', 'run'])
 
-        # Wait for it to start listening
+        # Wait for http(s) to start listening
         if host_port:
-            if not wait_for_port(host_port, timeout=10):
+            if not wait_for_tcp_port(host_port, timeout=10):
                 agent.terminate()
-                raise RuntimeError("Agent failed to start within timeout")
+                raise RuntimeError("Agent failed to start http(s) within timeout")
+
+        # Wait for wireguard tunnel to start listening
+        if conf['agent']['vpn']['enabled']:
+            if not wait_for_wireguard(base_url, timeout=10):
+                agent.terminate()
+                raise RuntimeError("Agent failed to start wireguard tunnel within timeout")
+
 
         # terminate agent when the test is over
         def fin():

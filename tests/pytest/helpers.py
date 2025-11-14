@@ -27,7 +27,7 @@ def get_wg_quickrs_command(use_sudo=False):
     return command
 
 
-def wait_for_port(host_port, timeout=10.0):
+def wait_for_tcp_port(host_port, timeout=10.0):
     """Wait until TCP port is open or timeout"""
     start = time.time()
     while time.time() - start < timeout:
@@ -36,6 +36,17 @@ def wait_for_port(host_port, timeout=10.0):
                 return True
         except OSError:
             time.sleep(0.1)
+    return False
+
+
+def wait_for_wireguard(base_url, timeout=10.0):
+    """Wait until vpn is initialized or timeout"""
+    start = time.time()
+    while time.time() - start < timeout:
+        response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
+        if response.json()["status"] == "up":
+            return True
+        time.sleep(0.1)
     return False
 
 
