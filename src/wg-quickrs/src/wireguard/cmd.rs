@@ -46,19 +46,19 @@ fn get_since_timestamp(ts: &Arc<Mutex<u64>>) -> u64 {
 
 #[derive(Error, Debug)]
 pub enum WireGuardCommandError {
-    #[error("wireguard::cmd::error::mutex_lock_failed -> failed to acquire lock: {0}")]
+    #[error("Failed to acquire lock: {0}")]
     MutexLockFailed(String),
-    #[error("wireguard::cmd::error::interface_missing -> wireguard interface doesn't exist")]
+    #[error("Wireguard interface doesn't exist")]
     InterfaceMissing,
     #[error("{0}")]
     ShellError(#[from] ShellError),
-    #[error("wireguard::cmd::error::file_write_error -> failed to write file at {0} failed: {1}")]
+    #[error("Failed to write file at {0} failed: {1}")]
     FileWriteError(PathBuf, std::io::Error),
     #[error("Failed to sync wireguard interface")]
     InterfaceSyncFailed(),
-    #[error("wireguard::cmd::error::tunnel_error -> tunnel operation failed: {0}")]
+    #[error("Tunnel operation failed: {0}")]
     TunnelError(String),
-    #[error("wireguard::cmd::error::other -> unexpected error: {0}")]
+    #[error("Unexpected error: {0}")]
     Other(String),
 }
 
