@@ -142,7 +142,6 @@ import ConfButton from "@/src/components/ui/buttons/conf.vue";
 import QrButton from "@/src/components/ui/buttons/qr.vue";
 import DownloadButton from "@/src/components/ui/buttons/download.vue";
 import {
-  get_peer_wg_config_wasm,
   wg_generate_key_wasm,
 } from '@/pkg/wg_quickrs_lib.js';
 
@@ -301,11 +300,6 @@ export default {
     },
     errorDetected() {
       return !!(Object.keys(this.change_sum.errors.peers[this.peerId]).length + Object.keys(this.change_sum.errors.connections).length)
-    },
-    peer_wg_conf_file() {
-      const wg_network = this.network_w_new_peer;
-      wg_network.connections = this.change_sum.added_connections;
-      return get_peer_wg_config_wasm(wg_network, this.peerId, this.version.full_version);
     },
   },
 }
