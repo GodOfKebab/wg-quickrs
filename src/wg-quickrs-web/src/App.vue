@@ -57,19 +57,19 @@
             <div v-if="wireguardStatus === 'unknown'"
                  class="inline-block align-middle shadow-md rounded-full transition-all w-5 h-3 mr-1.5 bg-yellow-500 hover:bg-yellow-400"
                  title="WireGuard Networking Status Unknown">
-              <div class="shadow-md rounded-full w-1 h-1 m-1 ml-2 bg-white"></div>
+              <div class="shadow-md rounded-full w-[7px] h-[7px] mx-[6px] my-[2px] bg-white"></div>
             </div>
             <div v-else-if="wireguardStatus === 'down'"
                  class="inline-block align-middle shadow-md rounded-full transition-all w-5 h-3 mr-1.5 bg-red-500 cursor-pointer hover:bg-red-400"
                  title="Enable WireGuard Networking"
                  @click="dialogId = 'network-toggle'">
-              <div class="shadow-md rounded-full w-1 h-1 m-1 bg-white"></div>
+              <div class="shadow-md rounded-full w-[7px] h-[7px] m-[2px] bg-white"></div>
             </div>
             <div v-else-if="wireguardStatus === 'up'"
                  class="inline-block align-middle shadow-md rounded-full transition-all w-5 h-3 mr-1.5 bg-green-500 cursor-pointer hover:bg-green-400"
                  title="Disable WireGuard Networking"
                  @click="dialogId = 'network-toggle'">
-              <div class="shadow-md rounded-full w-1 h-1 m-1 ml-3 bg-white"></div>
+              <div class="shadow-md rounded-full w-[7px] h-[7px] mx-[10px] my-[2px] bg-white"></div>
             </div>
             <span class="text-sm text-gray-500 text-right" style="margin-left: 3px">WireGuard Status</span>
           </div>
