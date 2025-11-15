@@ -6,7 +6,6 @@ use thiserror::Error;
 use wg_quickrs_lib::types::config::Config;
 use wg_quickrs_lib::types::network::{Peer, Script};
 use crate::helpers::{shell_cmd, ShellError};
-use crate::wireguard::cmd::WireGuardCommandError;
 #[cfg(target_os = "macos")]
 use crate::wireguard::wg_quick_darwin as wg_quick_platform;
 #[cfg(target_os = "linux")]
@@ -15,6 +14,8 @@ use crate::wireguard::wg_quick_linux as wg_quick_platform;
 
 #[derive(Error, Debug)]
 pub enum TunnelError {
+    #[error("WireGuard config not initialized")]
+    ConfigNotInitialized(),
     #[error("command execution failed: {0}")]
     CommandFailed(String),
     #[error("io error: {0}")]
@@ -27,8 +28,6 @@ pub enum TunnelError {
     InvalidConfig(String),
     #[error("{0}")]
     WireGuardLibError(#[from] wg_quickrs_lib::types::misc::WireGuardLibError),
-    #[error("{0}")]
-    WireGuardCommandError(#[from] WireGuardCommandError),
     #[error("{0}")]
     ShellError(#[from] ShellError),
     #[cfg(target_os = "macos")]
@@ -82,7 +81,7 @@ impl Clone for DnsManager {
 
 pub struct TunnelManager {
     pub(crate) config: Option<Config>,
-    real_interface: Option<String>,
+    pub(crate) real_interface: Option<String>,
     endpoint_router: EndpointRouter,
     dns_manager: DnsManager
 }
@@ -111,10 +110,10 @@ impl TunnelManager {
         Ok(this_peer.clone())
     }
 
-    pub fn start_tunnel(&mut self) -> TunnelResult<String> {
+    pub fn start_tunnel(&mut self) -> TunnelResult<()> {
         let config = self.config
             .clone()
-            .ok_or_else(|| WireGuardCommandError::Other("WireGuard config not initialized".to_string()))?;
+            .ok_or_else(|| TunnelError::ConfigNotInitialized())?;
 
         if self.interface_exists()? {
             return Err(TunnelError::InterfaceExists(self.interface_name()));
@@ -151,13 +150,13 @@ impl TunnelManager {
                 &config.agent.vpn.port,
                 self.real_interface.clone().unwrap()
             );
-        Ok(self.real_interface.clone().unwrap())
+        Ok(())
     }
 
     pub fn stop_tunnel(&mut self) -> TunnelResult<()> {
         let _ = self.config
             .clone()
-            .ok_or_else(|| WireGuardCommandError::Other("WireGuard config not initialized".to_string()))?;
+            .ok_or_else(|| TunnelError::ConfigNotInitialized())?;
 
         if !self.interface_exists()? {
             log::debug!("Interface already deleted, skipping cleanup");

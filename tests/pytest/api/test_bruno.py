@@ -5,7 +5,7 @@ import subprocess
 
 def test_bruno(setup_wg_quickrs_agent):
     """Run bruno (most of the functionality is also tested with pytest, but this makes sure bruno is kept up to date if the API changes)."""
-    base_url = setup_wg_quickrs_agent("test_pwd_single_peer")
+    base_url = setup_wg_quickrs_agent("test_pwd_single_peer_w_enabled_vpn", use_sudo=True)
 
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
 

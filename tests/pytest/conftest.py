@@ -94,9 +94,9 @@ def setup_wg_quickrs_agent(request, setup_wg_quickrs_folder):
                 agent.terminate()
                 raise RuntimeError("Agent failed to start http(s) within timeout")
 
-        # Wait for wireguard tunnel to start listening
+        # Wait for the wireguard tunnel to start listening
         if conf['agent']['vpn']['enabled']:
-            if not wait_for_wireguard(base_url, timeout=10):
+            if not wait_for_wireguard(base_url, conf['agent']['web']['https']['enabled'], timeout=10):
                 agent.terminate()
                 raise RuntimeError("Agent failed to start wireguard tunnel within timeout")
 

@@ -6,13 +6,13 @@ agent:
       enabled: true
       port: 9080
     https:
-      enabled: false
+      enabled: true
       port: 9443
-      tls_cert: ''
-      tls_key: ''
+      tls_cert: certs/servers/127.0.0.1/cert.pem
+      tls_key: certs/servers/127.0.0.1/key.pem
     password:
-      enabled: false
-      hash: ''
+      enabled: true
+      hash: $argon2id$v=19$m=19456,t=2,p=1$ctvAgEg6dGM$QK8VivrJ2rrJTz1QUk/6R+pieUUlVq/GXYRyWGd2TaU
   vpn:
     enabled: true
     port: 51829

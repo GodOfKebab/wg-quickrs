@@ -1,18 +1,8 @@
 import pytest
 
 from tests.pytest.conftest import setup_wg_quickrs_agent
-from tests.pytest.helpers import get_paths
+from tests.pytest.helpers import get_paths, get_token
 import requests
-
-
-def get_token(base_url):
-    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
-    response = requests.post(f"{base_url}/api/token",
-                             json={ "client_id": "pytest", "password": "test" },
-                             verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
-    assert response.status_code == 200
-    assert response.text.startswith("ey")
-    return response.text
 
 
 def test_api_token(setup_wg_quickrs_agent):
@@ -75,7 +65,7 @@ def test_api_patch_protected(setup_wg_quickrs_agent):
 @pytest.mark.parametrize(
     "path,expected_status",
     [
-        ("wireguard/status", 400),  # bad request expected since the body is empty
+        ("wireguard/status", 403),  # bad request expected since vpn is not enabled
         ("network/reserve/address", 200),
     ])
 def test_api_post_protected(setup_wg_quickrs_agent, path, expected_status):

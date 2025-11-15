@@ -73,7 +73,7 @@ async fn post_wireguard_status(req: HttpRequest, body: web::Bytes) -> impl Respo
     if let Err(e) = enforce_auth(req) {
         return e;
     }
-    wireguard::respond::post_wireguard_server_status(body)
+    wireguard::respond::post_wireguard_server_status(body).unwrap_or_else(|e| e)
 }
 
 #[post("/api/token")]

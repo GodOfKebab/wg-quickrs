@@ -27,6 +27,16 @@ def get_wg_quickrs_command(use_sudo=False):
     return command
 
 
+def get_token(base_url):
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+    response = requests.post(f"{base_url}/api/token",
+                             json={ "client_id": "pytest", "password": "test" },
+                             verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
+    assert response.status_code == 200
+    assert response.text.startswith("ey")
+    return response.text
+
+
 def wait_for_tcp_port(host_port, timeout=10.0):
     """Wait until TCP port is open or timeout"""
     start = time.time()
@@ -39,11 +49,17 @@ def wait_for_tcp_port(host_port, timeout=10.0):
     return False
 
 
-def wait_for_wireguard(base_url, timeout=10.0):
+def wait_for_wireguard(base_url, use_https=False, timeout=20.0):
     """Wait until vpn is initialized or timeout"""
     start = time.time()
     while time.time() - start < timeout:
-        response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
+        if use_https:
+            pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+            response = requests.get(f"{base_url}/api/network/summary?only_digest=true",
+                                    headers={ "Authorization": f"Bearer {get_token(base_url)}" },
+                                    verify=wg_quickrs_config_folder / "certs/root/rootCA.crt")
+        else:
+            response = requests.get(f"{base_url}/api/network/summary?only_digest=true")
         if response.json()["status"] == "up":
             return True
         time.sleep(0.1)

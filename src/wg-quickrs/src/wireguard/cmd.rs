@@ -7,7 +7,7 @@ use wg_quickrs_lib::types::misc::{WireGuardStatus};
 use std::collections::{BTreeMap, VecDeque};
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use chrono::Utc;
@@ -20,23 +20,23 @@ use crate::wireguard::wg_quick;
 
 const TELEMETRY_CAPACITY: usize = 21;
 const TELEMETRY_INTERVAL: u64 = 1000;
-type TelemetryType = Lazy<Arc<Mutex<VecDeque<TelemetryData>>>>;
+type TelemetryType = Lazy<Arc<RwLock<VecDeque<TelemetryData>>>>;
 static TELEMETRY: TelemetryType =
-    Lazy::new(|| Arc::new(Mutex::new(VecDeque::with_capacity(TELEMETRY_CAPACITY))));
+    Lazy::new(|| Arc::new(RwLock::new(VecDeque::with_capacity(TELEMETRY_CAPACITY))));
 
-static LAST_TELEMETRY_QUERY_TS: Lazy<Arc<Mutex<u64>>> = Lazy::new(|| Arc::new(Mutex::new(0)));
+static LAST_TELEMETRY_QUERY_TS: Lazy<Arc<RwLock<u64>>> = Lazy::new(|| Arc::new(RwLock::new(0)));
 
-fn update_timestamp(ts: &Arc<Mutex<u64>>) {
+fn update_timestamp(ts: &Arc<RwLock<u64>>) {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    let mut ts = ts.lock().unwrap();
+    let mut ts = ts.write().unwrap();
     *ts = now;
 }
 
-fn get_since_timestamp(ts: &Arc<Mutex<u64>>) -> u64 {
-    let start = *ts.lock().unwrap();
+fn get_since_timestamp(ts: &Arc<RwLock<u64>>) -> u64 {
+    let start = *ts.read().unwrap();
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -48,29 +48,20 @@ fn get_since_timestamp(ts: &Arc<Mutex<u64>>) -> u64 {
 pub enum WireGuardCommandError {
     #[error("failed to acquire lock: {0}")]
     MutexLockFailed(String),
-    #[error("wireguard interface does not exist")]
+    #[error("WireGuard interface does not exist")]
     InterfaceMissing,
     #[error("{0}")]
     ShellError(#[from] ShellError),
     #[error("failed to write file at {0} failed: {1}")]
     FileWriteError(PathBuf, std::io::Error),
-    #[error("failed to sync wireguard interface")]
+    #[error("failed to sync WireGuard interface")]
     InterfaceSyncFailed(),
     #[error("tunnel operation failed: {0}")]
-    TunnelError(String),
-    #[error("unexpected error: {0}")]
-    Other(String),
+    TunnelError(#[from] wg_quick::TunnelError),
 }
 
-impl From<wg_quick::TunnelError> for WireGuardCommandError {
-    fn from(err: wg_quick::TunnelError) -> Self {
-        WireGuardCommandError::TunnelError(err.to_string())
-    }
-}
-
-static WG_TUNNEL_MANAGER: Lazy<Mutex<wg_quick::TunnelManager>> = Lazy::new(|| Mutex::new(wg_quick::TunnelManager::new(Default::default())));
-static WG_INTERFACE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("".to_string()));
-pub static WG_STATUS: Mutex<WireGuardStatus> = Mutex::new(WireGuardStatus::DOWN);
+static WG_TUNNEL_MANAGER: Lazy<RwLock<wg_quick::TunnelManager>> = Lazy::new(|| RwLock::new(wg_quick::TunnelManager::new(Default::default())));
+pub static WG_STATUS: RwLock<WireGuardStatus> = RwLock::new(WireGuardStatus::UNKNOWN);
 
 pub(crate) async fn run_vpn_server(
     config: &Config,
@@ -79,23 +70,17 @@ pub(crate) async fn run_vpn_server(
         log::warn!("WireGuard tunnel is disabled");
         return Ok(());
     }
-    log::info!("Starting WireGuard tunnel...");
-    *WG_TUNNEL_MANAGER.lock().unwrap() = wg_quick::TunnelManager::new(Some(config.clone()));
+    let mut tunnel_manager = WG_TUNNEL_MANAGER.write().unwrap();
+    tunnel_manager.config = Some(config.clone());
+    drop(tunnel_manager);
 
     Box::pin(async move {
         let _ = disable_tunnel();
-        match WG_STATUS.lock() {
-            Ok(mut w) => *w = WireGuardStatus::DOWN,
-            Err(e) => log::error!("Failed to acquire lock when forcing internal wireguard status tracker to down: {e}")
-        }
 
-        if !config.agent.vpn.enabled {
-            log::warn!("VPN server is disabled.");
-        } else {
-            enable_tunnel().unwrap_or_else(|e| {
-                log::error!("Failed to enable the wireguard tunnel: {e}");
-            });
-        }
+        log::info!("Starting WireGuard tunnel...");
+        enable_tunnel().unwrap_or_else(|e| {
+            log::error!("Failed to enable the wireguard tunnel: {e}");
+        });
 
         let mut signal_terminate = signal(SignalKind::terminate()).unwrap();
         let mut signal_interrupt = signal(SignalKind::interrupt()).unwrap();
@@ -119,7 +104,7 @@ pub(crate) async fn run_vpn_server(
 }
 
 fn run_loop() {
-    match WG_STATUS.lock() {
+    match WG_STATUS.read() {
         Ok(status) => {
             if status.clone() != WireGuardStatus::UP {
                 return;
@@ -147,7 +132,7 @@ fn run_loop() {
 
     match show_dump(&config) {
         Ok(telemetry) => {
-            let mut buf = TELEMETRY.lock().unwrap();
+            let mut buf = TELEMETRY.write().unwrap();
             if buf.len() == TELEMETRY_CAPACITY {
                 buf.pop_front();
             }
@@ -164,12 +149,11 @@ pub(crate) fn get_telemetry() -> Result<Option<Telemetry>, WireGuardCommandError
     if get_since_timestamp(&LAST_TELEMETRY_QUERY_TS)
         > TELEMETRY_INTERVAL * TELEMETRY_CAPACITY as u64
     {
-        let mut buf = TELEMETRY.lock().unwrap();
-        *buf = VecDeque::with_capacity(TELEMETRY_CAPACITY);
+        *TELEMETRY.write().unwrap() = VecDeque::with_capacity(TELEMETRY_CAPACITY);
     }
     update_timestamp(&LAST_TELEMETRY_QUERY_TS);
 
-    match TELEMETRY.lock() {
+    match TELEMETRY.read() {
         Ok(buf) => Ok(Some(Telemetry {
             max_len: TELEMETRY_CAPACITY as u8,
             data: buf.iter().cloned().collect(),
@@ -179,22 +163,20 @@ pub(crate) fn get_telemetry() -> Result<Option<Telemetry>, WireGuardCommandError
 }
 
 pub(crate) fn status_tunnel() -> Result<WireGuardStatus, WireGuardCommandError> {
-    let wg_status_mut = WG_STATUS
-        .lock()
+    let wg_status = WG_STATUS
+        .read()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
-    Ok(wg_status_mut.clone())
+    Ok(wg_status.clone())
 }
 
 fn show_dump(config: &Config) -> Result<BTreeMap<ConnectionId, TelemetryDatum>, WireGuardCommandError> {
-    let wg_interface_mut = WG_INTERFACE
-        .lock()
+    let tunnel_manager = WG_TUNNEL_MANAGER
+        .read()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
-    if (*wg_interface_mut).is_empty() {
-        return Err(WireGuardCommandError::InterfaceMissing);
-    }
+    let real_interface = tunnel_manager.real_interface.as_ref().ok_or(WireGuardCommandError::InterfaceMissing)?;
 
-    let output = shell_cmd(&["wg", "show", &*wg_interface_mut, "dump"])?;
+    let output = shell_cmd(&["wg", "show", real_interface, "dump"])?;
     let mut telemetry = BTreeMap::<ConnectionId, TelemetryDatum>::new();
 
     let dump = String::from_utf8_lossy(&output.stdout);
@@ -237,15 +219,11 @@ fn show_dump(config: &Config) -> Result<BTreeMap<ConnectionId, TelemetryDatum>, 
 }
 
 pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
-    let wg_interface_mut = WG_INTERFACE
-        .lock()
+    let mut tunnel_manager = WG_TUNNEL_MANAGER
+        .write()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
-    let mut wg_tunnel_manager = WG_TUNNEL_MANAGER
-        .lock()
-        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
-
-    wg_tunnel_manager.config = Some(config.clone());
+    tunnel_manager.config = Some(config.clone());
 
     let wg_conf_stripped = get_peer_wg_config(&config.network, &config.network.this_peer, true)
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
@@ -257,74 +235,48 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
         .map_err(|e| WireGuardCommandError::FileWriteError(PathBuf::from(temp.path()), e))?;
 
     let temp_path = temp.path().to_owned();
-    let temp_path_str = temp_path.to_str()
-        .ok_or_else(|| WireGuardCommandError::Other("Temporary file path contains invalid UTF-8".to_string()))?;
+    let temp_path_str = temp_path.to_str().unwrap();
 
-    let _ = shell_cmd(&["wg", "syncconf", &*wg_interface_mut, temp_path_str])
+    let _ = shell_cmd(&["wg", "syncconf", tunnel_manager.real_interface.as_ref().unwrap(), temp_path_str])
         .map_err(|_| WireGuardCommandError::InterfaceSyncFailed())?;
     Ok(())
 }
 
 pub(crate) fn disable_tunnel() -> Result<(), WireGuardCommandError> {
     *WG_STATUS
-        .lock()
+        .write()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
         WireGuardStatus::UNKNOWN;
-    *WG_INTERFACE
-        .lock()
-        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? = String::new();
 
-    let mut wg_tunnel_manager = WG_TUNNEL_MANAGER
-        .lock()
+    let mut tunnel_manager = WG_TUNNEL_MANAGER
+        .write()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
-    match wg_tunnel_manager.stop_tunnel() {
-        Ok(_) => {
-            *WG_STATUS
-                .lock()
-                .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
-                WireGuardStatus::DOWN;
+    tunnel_manager.stop_tunnel()?;
+        *WG_STATUS
+            .write()
+            .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
+            WireGuardStatus::DOWN;
 
-            let mut buf = TELEMETRY.lock().unwrap();
-            *buf = VecDeque::with_capacity(TELEMETRY_CAPACITY);
+        *TELEMETRY.write().unwrap() = VecDeque::with_capacity(TELEMETRY_CAPACITY);
 
-            Ok(())
-        }
-        Err(e) => {
-            log::warn!("Failed to stop tunnel (may already be down): {}", e);
-            *WG_STATUS
-                .lock()
-                .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
-                WireGuardStatus::DOWN;
-            Ok(())
-        }
-    }
+        Ok(())
 }
 
 pub(crate) fn enable_tunnel() -> Result<(), WireGuardCommandError> {
     *WG_STATUS
-        .lock()
+        .write()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
         WireGuardStatus::UNKNOWN;
 
-    let mut wg_tunnel_manager = WG_TUNNEL_MANAGER
-        .lock()
+    let mut tunnel_manager = WG_TUNNEL_MANAGER
+        .write()
         .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
 
-    match wg_tunnel_manager.start_tunnel() {
-        Ok(real_interface) => {
-            let mut wg_interface_mut = WG_INTERFACE
-                .lock()
-                .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))?;
-
-            *wg_interface_mut = real_interface.clone();
-
-            *WG_STATUS
-                .lock()
-                .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
-                WireGuardStatus::UP;
-            Ok(())
-        }
-        Err(e) => Err(WireGuardCommandError::from(e)),
-    }
+    tunnel_manager.start_tunnel()?;
+    *WG_STATUS
+        .write()
+        .map_err(|e| WireGuardCommandError::MutexLockFailed(e.to_string()))? =
+        WireGuardStatus::UP;
+    Ok(())
 }
