@@ -10,7 +10,7 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{RwLock, OnceLock};
 use chrono::Utc;
 use thiserror::Error;
 use semver::Version;
@@ -43,19 +43,19 @@ pub enum ConfUtilError {
     ConfigFile(#[from] ConfigFileValidationError),
 }
 
-pub static CONFIG_W_NETWORK_DIGEST: OnceLock<Mutex<ConfigWNetworkDigest>> = OnceLock::new();
+pub static CONFIG_W_NETWORK_DIGEST: OnceLock<RwLock<ConfigWNetworkDigest>> = OnceLock::new();
 
 fn set_or_init_config_w_digest(config_w_network_digest: ConfigWNetworkDigest) -> Result<(), ConfUtilError> {
     let mut_opt = CONFIG_W_NETWORK_DIGEST.get();
     if mut_opt.is_none() {
         return CONFIG_W_NETWORK_DIGEST
-            .set(Mutex::new(config_w_network_digest.clone()))
+            .set(RwLock::new(config_w_network_digest.clone()))
             .map_err(|_| ConfUtilError::MutexSetFailed());
     }
 
     mut_opt
         .unwrap()
-        .lock()
+        .write()
         .map(|mut c| {
             c.agent = config_w_network_digest.agent;
             c.network_w_digest = config_w_network_digest.network_w_digest;
@@ -73,7 +73,7 @@ fn get_config_w_digest() -> Result<ConfigWNetworkDigest, ConfUtilError> {
     let mut_opt = CONFIG_W_NETWORK_DIGEST.get();
     if let Some(m) = mut_opt {
         return m
-            .lock()
+            .read()
             .map(|c| c.clone())
             .map_err(|e| ConfUtilError::MutexLockFailed(e.to_string()));
     }

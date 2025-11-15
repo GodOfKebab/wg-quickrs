@@ -16,7 +16,7 @@ macro_rules! get_mg_config_w_digest {
         util::CONFIG_W_NETWORK_DIGEST
             .get()
             .ok_or_else(|| HttpResponse::InternalServerError().body("internal config variables are not initialized"))?
-            .lock()
+            .write()
             .map_err(|_| HttpResponse::InternalServerError().body("unable to acquire lock on config variables"))?
     }};
 }
