@@ -19,48 +19,26 @@ fn main() {
         })
         .unwrap_or_else(|| "unknown".to_string());
 
+    // get branch name
+    let git_branch_name = Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    // Get short commit SHA (like GitHub)
+    let git_commit = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    let git_short_commit = git_commit.get(..7).unwrap_or(&git_commit[..0]);
+
     let timestamp = chrono::Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-
-    // Get current git branch
-    fn git_info_fn() -> String {
-        // get tag name w/ branch name fallback
-        let mut git_branch_tag = Command::new("git")
-            .args(["rev-parse", "--abbrev-ref", "HEAD"])
-            .output()
-            .ok()
-            .and_then(|o| String::from_utf8(o.stdout).ok())
-            .map(|s| s.trim().to_string())
-            .unwrap_or_else(|| "unknown".to_string());
-
-        // Try tag first
-        if let Some(tag) = Command::new("git")
-            .args(["describe", "--tags", "--exact-match"])
-            .output()
-            .ok()
-            .and_then(|o| {
-                if o.status.success() {
-                    String::from_utf8(o.stdout).ok()
-                } else {
-                    None
-                }
-            })
-            .map(|s| s.trim().to_string())
-        {
-            git_branch_tag = tag;
-        }
-
-        // Get short commit SHA (like GitHub)
-        let git_commit = Command::new("git")
-            .args(["rev-parse", "--short", "HEAD"])
-            .output()
-            .ok()
-            .and_then(|o| String::from_utf8(o.stdout).ok())
-            .map(|s| s.trim().to_string())
-            .unwrap_or_else(|| "unknown".to_string());
-
-        format!("{}#{}", git_branch_tag, git_commit)
-    }
-    let git_info = git_info_fn();
 
     let content = format!(
         r#"
@@ -72,16 +50,30 @@ macro_rules! wg_quickrs_version {{
 }}
 
 #[macro_export]
-macro_rules! build_info {{
+macro_rules! build_git_branch_name {{
     () => {{
-        "{git_info}@{timestamp}"
+        "{git_branch_name}"
+    }};
+}}
+
+#[macro_export]
+macro_rules! build_git_commit {{
+    () => {{
+        "{git_commit}"
+    }};
+}}
+
+#[macro_export]
+macro_rules! build_timestamp {{
+    () => {{
+        "{timestamp}"
     }};
 }}
 
 #[macro_export]
 macro_rules! full_version {{
     () => {{
-        "version: {wg_quickrs_version} | build: {git_info}@{timestamp}"
+        "version: v{wg_quickrs_version} | build: {git_branch_name}#{git_short_commit}@{timestamp}"
     }};
 }}
 "#

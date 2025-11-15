@@ -8,7 +8,7 @@ use rand::{RngCore, rng};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
-use wg_quickrs_lib::macros::{wg_quickrs_version, build_info};
+use wg_quickrs_lib::macros::*;
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -35,7 +35,11 @@ async fn get_version(req: HttpRequest) -> impl Responder {
 
     HttpResponse::Ok().json(json!({
         "version": wg_quickrs_version!(),
-        "build": build_info!(),
+        "build": {
+            "branch": build_git_branch_name!(),
+            "commit": build_git_commit!(),
+            "timestamp": build_timestamp!(),
+        },
     }))
 }
 

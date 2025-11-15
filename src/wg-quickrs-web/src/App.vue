@@ -142,13 +142,13 @@
       <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
         build:
         <strong>
-          <a :href="`https://github.com/GodOfKebab/wg-quickrs/commits/${version.build_sha_and_date[0].split('#')[1]}`"
+          <a :href="`https://github.com/GodOfKebab/wg-quickrs/commits/${version.build.commit}`"
              class="hover:underline"
              target="_blank">
-            {{ version.build_sha_and_date[0] }}
+            {{ version.build.commit.slice(0, 7) }}
           </a>
         </strong>
-        <strong>@{{ version.build_sha_and_date[1] }}</strong>
+        <strong>@{{ version.build.timestamp }}</strong>
       </small>
       <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
         last fetched:
@@ -359,15 +359,8 @@ export default {
 
       if (this.version === null) {
         this.api.get_version().then(response => {
-          const build_sha_and_date = response.build.split("@");
-          const last_build_date = (new Date(Date.parse(build_sha_and_date[1])))
-          this.version = {
-            version: response.version,
-            build: response.build,
-            build_sha_and_date: build_sha_and_date,
-            full_version: `version: ${response.version} | build: ${response.build}`,
-            readable_datetime: `${last_build_date} [${dayjs(last_build_date).fromNow()}]`
-          }
+          this.version = response;
+          this.version.readable_datetime = `${response.build.timestamp} [${dayjs(response.build.timestamp).fromNow()}]`;
         });
       }
     },
