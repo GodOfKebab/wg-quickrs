@@ -14,6 +14,7 @@ mod wasm {
     use crate::helpers;
     use crate::validation::network::*;
     use crate::validation::error::*;
+    use crate::types::misc::VERSION_BUILD_INFO;
     use crate::types::network::{Dns, Endpoint, Icon, Mtu, Network, PersistentKeepalive, Script, WireGuardKey};
 
     #[derive(Serialize)]
@@ -52,6 +53,11 @@ mod wasm {
         let peer1_uuid: Uuid = Uuid::from_str(peer1).unwrap();
         let peer2_uuid: Uuid = Uuid::from_str(peer2).unwrap();
         helpers::get_connection_id(peer1_uuid, peer2_uuid).to_string()
+    }
+
+    #[wasm_bindgen]
+    pub fn get_version_build_info_wasm() -> Result<JsValue, JsValue> {
+        serde_wasm_bindgen::to_value(&VERSION_BUILD_INFO).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen]

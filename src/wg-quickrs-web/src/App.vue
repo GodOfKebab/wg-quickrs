@@ -129,26 +129,26 @@
 
     <!-- Footer -->
     <footer class="text-center text-gray-500 mb-5 mx-2 shrink-0">
-      <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
+      <small v-if="version_build_info" :title="version_build_readable_ts" class="inline-block whitespace-pre-wrap">
         version:
         <strong>
-          <a :href="`https://github.com/GodOfKebab/wg-quickrs/releases/tag/v${version.version}`"
+          <a :href="`https://github.com/GodOfKebab/wg-quickrs/releases/tag/v${version_build_info.version}`"
              class="hover:underline"
              target="_blank">
-            {{ version.version }}
+            {{ version_build_info.version }}
           </a>
         </strong>
       </small>
-      <small v-if="version" :title="version.readable_datetime" class="inline-block whitespace-pre-wrap">
+      <small v-if="version_build_info" :title="version_build_readable_ts" class="inline-block whitespace-pre-wrap">
         build:
         <strong>
-          <a :href="`https://github.com/GodOfKebab/wg-quickrs/commits/${version.build.commit}`"
+          <a :href="`https://github.com/GodOfKebab/wg-quickrs/commits/${version_build_info.build.commit}`"
              class="hover:underline"
              target="_blank">
-            {{ version.build.commit.slice(0, 7) }}
+            {{ version_build_info.build.branch }}#{{ version_build_info.build.commit.slice(0, 7) }}
           </a>
         </strong>
-        <strong>@{{ version.build.timestamp }}</strong>
+        <strong>@{{ version_build_info.build.timestamp }}</strong>
       </small>
       <small :title="last_fetch.readable" class="inline-block whitespace-pre-wrap">
         last fetched:
@@ -209,15 +209,13 @@
                         v-model:dialog-id="dialogId"
                         :api="api"
                         :network="network"
-                        :peer-id="dialogId.slice(17, dialogId.length)"
-                        :version="version"></peer-config-dialog>
+                        :peer-id="dialogId.slice(17, dialogId.length)"></peer-config-dialog>
 
     <!-- Dialog: Peer Create -->
     <peer-create-dialog v-if="dialogId === 'create-peer'"
                         v-model:dialog-id="dialogId"
                         :api="api"
-                        :network="network"
-                        :version="version"></peer-create-dialog>
+                        :network="network"></peer-create-dialog>
 
   </div>
 </template>
@@ -235,6 +233,10 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import init from '@/pkg/wg_quickrs_lib.js';
 import WireGuardHelper from "@/src/js/wg-helper.js";
+import {
+  get_version_build_info_wasm,
+} from '@/pkg/wg_quickrs_lib.js';
+
 
 dayjs.extend(relativeTime);
 
@@ -262,12 +264,13 @@ export default {
       network: {},
       telemetry: null,
       digest: '',
-      version: null,
       last_fetch: {
         rfc3339: "",
         readable: "",
         since: -1,
       },
+      version_build_info: null,
+      version_build_readable_ts: '',
       wasmInitialized: false,
       api: {does_need_auth: false},
       settingsDropdownOpen: false
@@ -282,6 +285,7 @@ export default {
         console.error('WASM failed to load:', err);
       }
     }
+    this.version_build_info = get_version_build_info_wasm();
 
     this.api = new API();
     if (localStorage.getItem('remember') === 'true') {
@@ -299,6 +303,7 @@ export default {
     },
     async refresh() {
       this.last_fetch.since = this.last_fetch.rfc3339 ? new Date() - new Date(this.last_fetch.rfc3339) : -1;
+      this.version_build_readable_ts = `${this.version_build_info.build.timestamp} [${dayjs(this.version_build_info.build.timestamp).fromNow()}]`;
 
       let need_to_update_network = true;
       if (this.digest.length === 64) {
@@ -354,13 +359,6 @@ export default {
             this.webServerStatus = 'unknown';
             console.log(err);
           }
-        });
-      }
-
-      if (this.version === null) {
-        this.api.get_version().then(response => {
-          this.version = response;
-          this.version.readable_datetime = `${response.build.timestamp} [${dayjs(response.build.timestamp).fromNow()}]`;
         });
       }
     },

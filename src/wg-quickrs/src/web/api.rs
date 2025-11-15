@@ -6,10 +6,8 @@ use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, deco
 use once_cell::sync::Lazy;
 use rand::{RngCore, rng};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
-use wg_quickrs_lib::macros::*;
-
+use wg_quickrs_lib::types::misc::VERSION_BUILD_INFO;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Claims {
@@ -33,14 +31,7 @@ async fn get_version(req: HttpRequest) -> impl Responder {
         return e;
     }
 
-    HttpResponse::Ok().json(json!({
-        "version": wg_quickrs_version!(),
-        "build": {
-            "branch": build_git_branch_name!(),
-            "commit": build_git_commit!(),
-            "timestamp": build_timestamp!(),
-        },
-    }))
+    HttpResponse::Ok().json(VERSION_BUILD_INFO)
 }
 
 #[derive(serde::Deserialize)]

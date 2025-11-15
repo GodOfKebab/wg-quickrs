@@ -172,10 +172,6 @@ export default {
       type: String,
       default: "",
     },
-    version: {
-      type: Object,
-      default: {},
-    },
     api: {
       type: Object,
       default: null,

@@ -54,13 +54,6 @@ export default class API {
         }
     }
 
-    async get_version() {
-        return this.call({
-            method: 'get',
-            path: `/api/version`,
-        });
-    }
-
     async get_network_summary(url_encoded_params) {
         return this.call({
             method: 'get',
