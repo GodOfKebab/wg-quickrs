@@ -13,7 +13,7 @@
             <!-- Settings Button -->
             <button
                 :class="[settingsDropdownOpen ? 'bg-gray-300': '']"
-                class="mt-0.5 mr-2 h-8 w-8 rounded-md bg-gray-200 hover:bg-gray-300 flex items-center justify-center shrink-0"
+                class="mt-0.5 mr-2 h-8 w-8 rounded-md bg-gray-200 text-gray-600 hover:bg-gray-300 flex items-center justify-center shrink-0"
                 @click="settingsDropdownOpen = !settingsDropdownOpen">
               <img alt="settings" class="h-6" src="/icons/iconfinder/ionicons-211751_gear_icon.svg">
             </button>
@@ -120,9 +120,9 @@
       <!-- Add a Peer -->
       <div class="items-center justify-center p-3 px-5 border-gray-100">
         <button :disabled="webServerStatus !== 'up'"
-                class="bg-green-100 text-gray-700 border-2 border-gray-500 py-2 px-4 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-white"
+                class="bg-green-100 text-gray-700 border-2 border-gray-500 py-2 px-4 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-gray-100"
                 @click="dialogId = 'create-peer'">
-          <span class="text-sm">Add a Peer</span>
+          <span class="text-sm">+ Add a Peer</span>
         </button>
       </div>
     </div>
@@ -190,7 +190,7 @@
     <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = '' }"
                    modal-classes="max-w-xl"
                    :left-button-text="'Cancel'"
-                   :right-button-classes="wireguardStatus === 'up' ? ['text-white', 'bg-red-600', 'hover:bg-red-700', 'border-red-900'] : ['text-white', 'bg-green-600', 'hover:bg-green-700', 'border-green-900']"
+                   :right-button-color="wireguardStatus === 'up' ? 'red' : 'green'"
                    :right-button-click="() => { toggleWireGuardNetworking(); dialogId = ''; }"
                    :right-button-text="wireguardStatus === 'up' ? 'Disable' : 'Enable'"
                    class="z-10"

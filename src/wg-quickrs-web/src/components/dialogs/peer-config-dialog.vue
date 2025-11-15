@@ -4,7 +4,7 @@
     <!-- Dialog: Settings -->
     <custom-dialog :left-button-click="() => { $emit('update:dialogId', ''); }"
                    :left-button-text="'Cancel'"
-                   :right-button-classes="['enabled:bg-green-700', 'enabled:hover:bg-green-800', 'enabled:border-green-900', 'enabled:focus:outline-none', 'bg-gray-200', 'disabled:hover:bg-gray-200', 'disabled:cursor-not-allowed', 'disabled:border-gray-200', 'text-white']"
+                   right-button-color="green"
                    :right-button-click="page === 'file' ? () => { navigator.clipboard.writeText(peer_wg_conf_file).then(() => {
                                           alert('successfully copied');
                                           })
@@ -107,7 +107,7 @@
     <custom-dialog v-if="overlayDialogId === 'confirm-changes'"
                    :left-button-click="() => { overlayDialogId = ''; }"
                    :left-button-text="'Cancel'"
-                   :right-button-classes="['text-white', 'bg-green-600', 'hover:bg-green-700']"
+                   right-button-color="green"
                    :right-button-click="() => { updateConfiguration(); overlayDialogId = ''; page = 'edit'; $emit('update:dialogId', ''); }"
                    :right-button-text="'Do it!'"
                    class="z-20"
@@ -130,7 +130,7 @@
     <custom-dialog v-if="overlayDialogId === 'confirm-delete'"
                    :left-button-click="() => { overlayDialogId = '' }"
                    :left-button-text="'Cancel'"
-                   :right-button-classes="['text-white', 'bg-red-600', 'hover:bg-red-700']"
+                   right-button-color="red"
                    :right-button-click="() => { deletePeer(); overlayDialogId = ''; page = 'edit'; $emit('update:dialogId', ''); }"
                    :right-button-text="'Delete!'"
                    class="z-20"
