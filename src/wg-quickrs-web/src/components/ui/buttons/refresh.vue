@@ -1,5 +1,5 @@
 <template>
-  <button class="align-middle rounded bg-gray-100 hover:bg-gray-600 hover:text-white transition-all mx-2"
+  <button class="align-middle rounded bg-gray-100 text-gray-600 hover:bg-gray-600 hover:text-gray-100 transition-all mx-2"
           :title="title"
           @click="$emit('click');">
     <!-- "refresh" @ https://flowbite.com/icons/ -->
