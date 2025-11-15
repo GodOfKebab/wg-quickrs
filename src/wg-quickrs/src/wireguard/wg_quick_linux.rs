@@ -24,14 +24,10 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
     let result = shell_cmd(&["ip", "link", "add", interface, "type", "wireguard"]);
 
     if result.is_err() {
-        log::warn!("[!] Missing WireGuard kernel module. Falling back to slow userspace implementation.");
-        let userspace_result = shell_cmd(&["wireguard-go", interface]);  // TODO: start in another thread
-
-        if userspace_result.is_err() {
-            return Err(TunnelError::CommandFailed(
-                "Failed to create WireGuard interface".to_string()
-            ));
-        }
+        log::error!("[!] Missing WireGuard kernel module. Linux userspace implementation support is not available. Please install the WireGuard kernel module and try again.");
+        return Err(TunnelError::CommandFailed(
+            "Failed to create WireGuard interface".to_string()
+        ));
     }
 
     Ok(interface.to_string())
