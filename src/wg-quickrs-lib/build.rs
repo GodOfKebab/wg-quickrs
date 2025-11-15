@@ -36,7 +36,6 @@ fn main() {
         .and_then(|o| String::from_utf8(o.stdout).ok())
         .map(|s| s.trim().to_string())
         .unwrap_or_else(|| "unknown".to_string());
-    let git_short_commit = git_commit.get(..7).unwrap_or(&git_commit[..0]);
 
     let timestamp = chrono::Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
@@ -73,7 +72,7 @@ macro_rules! build_timestamp {{
 #[macro_export]
 macro_rules! full_version {{
     () => {{
-        "version: v{wg_quickrs_version} | build: {git_branch_name}#{git_short_commit}@{timestamp}"
+        "version: v{wg_quickrs_version} | build: {git_branch_name}#{git_commit}@{timestamp}"
     }};
 }}
 "#
