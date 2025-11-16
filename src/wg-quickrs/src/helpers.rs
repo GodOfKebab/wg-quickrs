@@ -23,12 +23,20 @@ pub fn shell_cmd(args: &[&str]) -> ShellResult<Output> {
         .args(&args[1..])
         .output()?;
     if !output.stderr.is_empty() {
-        log::debug!("{}", String::from_utf8_lossy(&output.stderr));
+        if !output.stdout.is_empty() {
+            log::debug!("{}", String::from_utf8_lossy(&output.stdout).trim());
+        }
+        log::debug!("{}", String::from_utf8_lossy(&output.stderr).trim());
     }
 
     if !output.status.success() {
         log::warn!("[+] {}", args.join(" "));
-        log::warn!("{}", String::from_utf8_lossy(&output.stdout));
+        if !output.stdout.is_empty() {
+            log::warn!("{}", String::from_utf8_lossy(&output.stdout).trim());
+        }
+        if !output.stderr.is_empty() {
+            log::warn!("{}", String::from_utf8_lossy(&output.stderr).trim());
+        }
         return Err(ShellError::Failed(String::from_utf8_lossy(&output.stderr).to_string()));
     }
 
