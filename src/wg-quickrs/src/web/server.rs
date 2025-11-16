@@ -105,7 +105,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                     });
                 }
                 Err(e) => {
-                    log::info!("Unable bind the https server to {}: {}", bind_addr, e);
+                    log::info!("Unable bind the http server to {}: {}", bind_addr, e);
                     return Ok(());
                 }
             };
