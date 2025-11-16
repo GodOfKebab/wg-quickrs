@@ -29,6 +29,8 @@ $SHELL run-md.sh ../docs/BUILDING.md install-deps-debian
 $SHELL run-md.sh ../docs/BUILDING.md build-src-debian
 . ~/.bashrc
 $SHELL run-md.sh ../docs/BUILDING.md run-agent-debian
+
+# Setup systemd service
 $SHELL run-md.sh ../docs/BUILDING.md set-up-systemd-debian
 
 # Docker
@@ -65,7 +67,7 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 ---
 
-#### 1.1.2 Build `wg-quickrs-lib`
+#### 1.1.2 Build `wg-quickrs-lib` (wasm target)
 
 Install `wasm-pack` dependency.
 
@@ -76,7 +78,7 @@ sudo apt update && sudo apt install -y build-essential
 cargo install wasm-pack
 ```
 
-Build `wg-quickrs-lib` directory.
+Build `wg-quickrs-lib` directory for the `wasm32-unknown-unknown` target.
 
 [//]: # (build-src-debian: 1.1.2 Build wg-quickrs-lib - Build 'wg-quickrs-lib' directory.)
 
@@ -388,8 +390,8 @@ Run the services to initialize the agent.
 [//]: # (run-agent-docker: 1.2 - Generate certs)
 
 ```sh
-docker compose -f docker-compose.init.yml up tls-cert-generator
-docker compose -f docker-compose.init.yml up wg-quickrs-init
+sudo docker compose -f docker-compose.init.yml up tls-cert-generator
+sudo docker compose -f docker-compose.init.yml up wg-quickrs-init
 
 ```
 
@@ -398,6 +400,6 @@ After initialization, you can run the `wg-quickrs-agent-run` service in `docker-
 [//]: # (run-agent-docker: 1.2 - Run agent)
 
 ```sh
-docker compose -f docker-compose.agent.yml up wg-quickrs-agent-run
+sudo docker compose -f docker-compose.agent.yml up wg-quickrs-agent-run
 ```
 
