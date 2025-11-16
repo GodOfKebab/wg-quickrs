@@ -31,7 +31,7 @@ pub enum AgentInitError {
     ConfUtil(#[from] ConfUtilError),
 }
 
-// Get primary IP of the current machine
+// Get network interfaces of the current machine
 pub fn get_interfaces() -> Vec<Interface> {
     get_if_addrs()
         .unwrap_or_else(|e| {
@@ -41,6 +41,17 @@ pub fn get_interfaces() -> Vec<Interface> {
         .into_iter()
         .filter(|a| !a.is_loopback() && a.ip().is_ipv4())
         .collect()
+}
+
+// Get network interface recommendation for the current machine
+pub fn recommend_interface() -> Option<Interface> {
+    default_net::get_default_interface()
+        .ok()
+        .and_then(|gw| get_interfaces().into_iter().find(|i| gw.name == i.name))
+        .or_else(|| {
+            log::warn!("Failed to get default gateway, falling back to first interface");
+            get_interfaces().into_iter().next()
+        })
 }
 
 fn find_cert_server(config_folder: &PathBuf, web_address: String) -> (Option<PathBuf>, Option<PathBuf>) {
@@ -172,7 +183,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     println!("[agent settings 3-8/28]");
 
     // Get primary IP of the current machine
-    let iface_opt = get_interfaces().into_iter().next();
+    let iface_opt = recommend_interface();
     let iface_name = iface_opt.as_ref().map(|iface| iface.name.clone());
     let mut iface_ip = iface_opt.and_then(|iface| match iface.ip() { IpAddr::V4(v4) => Some(v4), _ => None });
 

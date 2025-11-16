@@ -45,6 +45,7 @@ argon2 = "0.5.3"
 thiserror = "2.0.12"
 dialoguer = "0.12.0"
 get_if_addrs = "0.5.3"
+default-net = "0.22.0"
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 dirs = "6.0.0"
 aws-lc-rs = { version = "=1.14.0", features = ["bindgen"] }
