@@ -133,6 +133,4 @@ src/target/
 
 .idea/
 
-tls-cert-generator.sh
-
 src/.*
