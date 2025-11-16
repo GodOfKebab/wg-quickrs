@@ -1,8 +1,5 @@
 # Building wg-quickrs
 
-_⚠️ This project is **under active development**.
-Expect breaking changes and incomplete features._
-
 This document is optimized for a fresh installation of Debian 13 that you would get when you spin up a VPS.
 
 ---
@@ -75,6 +72,7 @@ Install `wasm-pack` dependency.
 [//]: # (install-deps-debian: 1.1.2 Build wg-quickrs-lib - Install 'wasm-pack' dependency)
 
 ```sh
+sudo apt update && sudo apt install -y build-essential
 cargo install wasm-pack
 ```
 
@@ -145,7 +143,7 @@ Install Bash/ZSH auto completions.
 
 ```sh
 # Bash
-cp target/release/completions/wg-quickrs.bash /etc/bash_completion.d/
+sudo cp target/release/completions/wg-quickrs.bash /etc/bash_completion.d/
 . ~/.bashrc
 ```
 
@@ -186,7 +184,7 @@ wg-quickrs --help
 
 # wg-quickrs <TAB>           # Shows available commands (init, agent)
 # wg-quickrs agent <TAB>     # Shows available agent subcommands
-# wg-quickrs init --<TAB>    # Shows available options for the init command
+# wg-quickrs config <TAB>    # Shows available config subcommands
 ```
 
 ---
@@ -200,10 +198,10 @@ Install `zig` and `zigbuild`.
 ```sh
 # ARCH options: x86_64, aarch64, arm based on your CURRENT machine you use to build binaries
 # See all options at https://ziglang.org/download/
-export ZIG_ARCH=x86_64
+export ZIG_ARCH=$(uname -m)
 curl -L "https://ziglang.org/download/0.15.1/zig-$ZIG_ARCH-linux-0.15.1.tar.xz" | tar -xJ
-mv zig-* /usr/local/zig
-ln -s /usr/local/zig/zig /usr/local/bin/zig
+sudo mv zig-* /usr/local/zig
+sudo ln -s /usr/local/zig/zig /usr/local/bin/zig
 cargo install cargo-zigbuild
 ```
 
@@ -232,12 +230,13 @@ Following grabs all the hostnames, IPv4+IPv6 interface addresses of the system a
 ```sh
 # Install to System:
 sudo mkdir -p /etc/wg-quickrs/certs
-wget https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.0/tls-cert-generator.sh -O /etc/wg-quickrs/certs/tls-cert-generator.sh
-sh /etc/wg-quickrs/certs/tls-cert-generator.sh -o /etc/wg-quickrs/certs all
+sudo wget https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.0/tls-cert-generator.sh -O /etc/wg-quickrs/certs/tls-cert-generator.sh
+sudo sh /etc/wg-quickrs/certs/tls-cert-generator.sh -o /etc/wg-quickrs/certs all
 
 # Install to User:
-# wget https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.0/tls-cert-generator.sh -O tls-cert-generator.sh
-# mkdir -p $HOME/.wg-quickrs/certs && sh tls-cert-generator.sh -o $HOME/.wg-quickrs/certs all
+# mkdir -p $HOME/.wg-quickrs/certs
+# wget https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.0/tls-cert-generator.sh -O $HOME/.wg-quickrs/tls-cert-generator.sh
+# sh $HOME/.wg-quickrs/tls-cert-generator.sh -o $HOME/.wg-quickrs/certs all
 
 ```
 
@@ -250,7 +249,7 @@ Install packages for the `wg` and `wg-quick` dependency.
 [//]: # (install-deps-debian: 1.1.7 Install WireGuard)
 
 ```sh
-sudo apt install -y wireguard wireguard-tools
+sudo apt install -y wireguard wireguard-tools openresolv iproute2 iptables
 ```
 
 ---
@@ -267,9 +266,9 @@ manually edit this file and restart your agent.
 
 ```sh
 # Install to System:
-wg-quickrs init
+sudo wg-quickrs agent init
 # Install to User:
-# wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs init
+# sudo wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs agent init
 ```
 
 ---
@@ -282,9 +281,9 @@ Run the agent.
 
 ```sh
 # Run on System:
-wg-quickrs agent run
+sudo wg-quickrs agent run
 # Run on User:
-# wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs agent run
+# sudo wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs agent run
 ```
 
 ---
@@ -309,7 +308,7 @@ Following creates:
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin --no-user-group wg-quickrs-user
 sudo groupadd wg-quickrs-group
 sudo usermod -aG wg-quickrs-group wg-quickrs-user
-echo "wg-quickrs-user ALL=(ALL) NOPASSWD: $(which wg), $(which wg-quick)" | sudo tee /etc/sudoers.d/wg-quickrs
+echo "wg-quickrs-user ALL=(ALL) NOPASSWD: $(which wg-quickrs)" | sudo tee /etc/sudoers.d/wg-quickrs
 sudo chmod 440 /etc/sudoers.d/wg-quickrs
 
 # setup file permissions
@@ -330,7 +329,7 @@ User=wg-quickrs-user
 Group=wg-quickrs-group
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
 
-ExecStart=/usr/local/bin/wg-quickrs agent run
+ExecStart=sudo /usr/local/bin/wg-quickrs agent run
 Restart=always
 RestartSec=5
 
