@@ -23,8 +23,8 @@ services:
     volumes:
       - .wg-quickrs-docker:/app/.wg-quickrs
     command: >
-      init --no-prompt true
-      --network-identifier wg-quickrs-home
+      agent init --no-prompt true
+      --network-name wg-quickrs-home
       --network-subnet     10.0.34.0/24
 
       --agent-web-address          0.0.0.0
@@ -48,7 +48,7 @@ services:
       --agent-peer-kind                     server
       --agent-peer-icon-enabled             false
       --agent-peer-dns-enabled              true
-      --agent-peer-dns-server               1.1.1.1
+      --agent-peer-dns-addresses            1.1.1.1
       --agent-peer-mtu-enabled              false
       --agent-peer-script-pre-up-enabled    false
       --agent-peer-script-post-up-enabled   false
@@ -58,7 +58,7 @@ services:
       --default-peer-kind                               laptop
       --default-peer-icon-enabled                       false
       --default-peer-dns-enabled                        true
-      --default-peer-dns-server                         1.1.1.1
+      --default-peer-dns-addresses                      1.1.1.1
       --default-peer-mtu-enabled                        false
       --default-peer-script-pre-up-enabled              false
       --default-peer-script-post-up-enabled             false
