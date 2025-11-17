@@ -35,8 +35,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
     # Install packages (only on first run)
     if ! command -v wg &> /dev/null; then
-      apk update
-      apk add --no-cache wireguard-tools-wg openresolv iproute2 iptables openssl
+      apk add -U --no-cache openssl
     fi
 
     # Wait for and configure eth1
