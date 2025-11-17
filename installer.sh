@@ -572,6 +572,93 @@ else
   echo "⚠️ Skipping TLS cert setup. Remember to configure certs later!"
 fi
 
+# --- setup systemd service (optional) ---
+if [ "$ARG_INSTALL_TO" = "system" ] && check_command systemctl; then
+  printf "🔧 Do you want to set up systemd service for wg-quickrs? [Y/n]: "
+  read setup_systemd
+  setup_systemd=${setup_systemd:-y}
+
+  if [ "$setup_systemd" = "y" ] || [ "$setup_systemd" = "Y" ]; then
+    echo "⏳ Setting up systemd service..."
+
+    # Create user and group
+    if ! id wg-quickrs-user >/dev/null 2>&1; then
+      echo "    Creating wg-quickrs-user..."
+      if ! run_privileged useradd --system --no-create-home --shell /usr/sbin/nologin --no-user-group wg-quickrs-user; then
+        echo "        ❌ Failed to create wg-quickrs-user"
+        echo "        ⚠️  Skipping systemd setup"
+      else
+        echo "        ✅ Created wg-quickrs-user"
+      fi
+    else
+      echo "        ✅ wg-quickrs-user already exists"
+    fi
+
+    if ! getent group wg-quickrs-group >/dev/null 2>&1; then
+      echo "    Creating wg-quickrs-group..."
+      if ! run_privileged groupadd wg-quickrs-group; then
+        echo "        ❌ Failed to create wg-quickrs-group"
+        echo "        ⚠️  Skipping systemd setup"
+      else
+        echo "        ✅ Created wg-quickrs-group"
+      fi
+    else
+      echo "        ✅ wg-quickrs-group already exists"
+    fi
+
+    # Add user to group
+    echo "    Adding wg-quickrs-user to wg-quickrs-group..."
+    run_privileged usermod -aG wg-quickrs-group wg-quickrs-user
+
+    # Setup sudoers
+    echo "    Setting up passwordless sudo only for the wg-quickrs command..."
+    echo "wg-quickrs-user ALL=(ALL) NOPASSWD: $BIN_DIR/wg-quickrs" | run_privileged tee /etc/sudoers.d/wg-quickrs >/dev/null
+    run_privileged chmod 440 /etc/sudoers.d/wg-quickrs
+
+    # Setup file permissions
+    echo "    Setting up file permissions for $WG_QUICKRS_INSTALL_DIR..."
+    run_privileged chown -R "$USER:wg-quickrs-group" "$WG_QUICKRS_INSTALL_DIR"
+    run_privileged chmod -R 770 "$WG_QUICKRS_INSTALL_DIR"
+
+    # Create systemd service file
+    echo "    Creating systemd service file..."
+    run_privileged tee /etc/systemd/system/wg-quickrs.service >/dev/null <<EOF
+[Unit]
+Description=wg-quickrs - An intuitive and feature-rich WireGuard configuration management tool
+After=network.target
+
+[Service]
+Type=simple
+User=wg-quickrs-user
+Group=wg-quickrs-group
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+
+ExecStart=sudo $BIN_DIR/wg-quickrs agent run
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Reload, enable, and start the service
+    echo "    Reloading systemd service..."
+    run_privileged systemctl daemon-reload
+
+    echo "✅ systemd service setup complete"
+    echo "ℹ️  After initializing your agent, you can manage the service with:"
+    echo
+    printf "        %ssystemctl enable wg-quickrs\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %ssystemctl start wg-quickrs\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %ssystemctl status wg-quickrs\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %ssystemctl stop wg-quickrs\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %ssystemctl restart wg-quickrs\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %sjournalctl -u wg-quickrs.service -n 50\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    echo
+  else
+    echo "⚠️ Skipping systemd setup"
+  fi
+fi
 
 # --- check if wg-quickrs is in PATH ---
 if ! wg-quickrs --help >/dev/null 2>&1; then
