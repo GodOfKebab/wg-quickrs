@@ -1,0 +1,62 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "cloud-image/alpine-3.21"
+
+  config.vm.provider :virtualbox do |vb|
+    vb.name = "wg-quickrs-deployment-vagrant-vm"
+    vb.memory = 1024  # 1 GB
+    vb.cpus = 1
+
+    # Get host OS and set bridge interface dynamically
+    host = RbConfig::CONFIG['host_os']
+
+    if host =~ /darwin/
+      # macOS - get default interface
+      bridge = `route -n get default | grep interface | awk '{print $2}'`.strip
+    elsif host =~ /linux/
+      # Linux - get default interface
+      bridge = `ip route | grep default | awk '{print $5}'`.strip
+    else
+      # Windows?
+      bridge = "Ethernet"
+    end
+
+    puts "Using bridge interface: #{bridge}"
+
+    # Manually add bridged adapter on NIC2
+    vb.customize ["modifyvm", :id, "--nic2", "bridged"]
+    vb.customize ["modifyvm", :id, "--bridgeadapter2", bridge]
+    vb.customize ["modifyvm", :id, "--nictype2", "82540EM"]
+  end
+
+  config.ssh.shell = "sh"
+  config.ssh.sudo_command = "doas %c"
+
+  # Install rsync on Alpine
+  config.vm.provision "shell", inline: <<-SHELL
+    # Install packages (only on first run)
+    if ! command -v wg &> /dev/null; then
+      apk update
+      apk add --no-cache wireguard-tools-wg openresolv iproute2 iptables openssl
+    fi
+
+    # Wait for and configure eth1
+    sleep 2
+    if ip link show eth1 2>/dev/null; then
+      ip link set eth1 up 2>/dev/null
+      udhcpc -i eth1 -n -q 2>/dev/null || true
+      echo "eth1 configured:"
+      ip addr show eth1
+    else
+      echo "WARNING: eth1 not found"
+    fi
+  SHELL
+
+  # Sync dist folder to VM
+  config.vm.synced_folder "../../../src/dist", "/home/vagrant/dist",
+    type: "rsync",
+    rsync__rsync_path: "doas rsync"  # Use doas instead of sudo
+
+  config.vm.provision "file",
+    source: "../../../installer.sh",
+    destination: "/home/vagrant/installer.sh"
+end

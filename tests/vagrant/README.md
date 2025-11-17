@@ -12,8 +12,10 @@ vagrant up
 vagrant ssh
 # in vagrant shell
 
-# Upload project folder to vagrant box (only for build)
+# Upload synced folders to vagrant box (build and deployment boxes only)
 vagrant rsync
+# Upload synced files to vagrant box (deployment box only)
+vagrant provision
 
 # cleanup vagrant box
 vagrant halt
@@ -27,6 +29,7 @@ vagrant destroy
 Used to verify `docs/BUILDING.md`
 
 ```shell
+# on the vm at ~/
 cd wg-quickrs/src
 # run-md.sh commands in docs/BUILDING.md
 
@@ -39,5 +42,16 @@ default via <gateway ip of your bridge network> dev eth1
 
 Used to verify `installer.sh`
 
+```shell
+# on the host machine at wg-quickrs/src/
+$SHELL run-md.sh ../docs/BUILDING.md run-zig-build
+# export RUST_TARGET=x86_64-unknown-linux-musl
+export RUST_TARGET=aarch64-unknown-linux-musl
+$SHELL run-md.sh ../docs/BUILDING.md create-a-distribution
+```
 
+```shell
+# on the vm at ~/
+sh installer.sh --dist-tarball dist/wg-quickrs-aarch64-unknown-linux-musl.tar.gz
+```
 
