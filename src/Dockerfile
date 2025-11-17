@@ -1,13 +1,14 @@
 FROM --platform=linux/$BUILDARCH rust:1.90-slim AS rust-builder
 WORKDIR /app
 
-RUN apt update && apt install -y curl
+RUN apt update && apt install -y curl git
 
 COPY src/Cargo.toml /app/Cargo.toml
 COPY src/Cargo.lock /app/Cargo.lock
 COPY src/wg-quickrs /app/wg-quickrs
 COPY src/wg-quickrs-cli /app/wg-quickrs-cli
 COPY src/wg-quickrs-lib /app/wg-quickrs-lib
+COPY .git /app/.git
 
 FROM rust-builder AS wg-quickrs-lib-builder
 WORKDIR /app
@@ -34,13 +35,11 @@ RUN case "$BUILDARCH" in \
             arm) echo 'arm' > ZIG_TARGET ;; \
             *) echo "Unsupported architecture $BUILDARCH" >&2; exit 1 ;; \
             esac && \
-    apt-get install -y xz-utils git cmake clang && \
+    apt-get install -y xz-utils cmake clang && \
     curl -L https://ziglang.org/download/0.15.1/zig-$(cat ZIG_TARGET)-linux-0.15.1.tar.xz | tar -xJ && \
     mv zig-* /usr/local/zig && \
     ln -s /usr/local/zig/zig /usr/local/bin/zig && \
     cargo install --locked cargo-zigbuild
-
-COPY .git /app/.git
 
 # Setup target arch
 ARG TARGETARCH
