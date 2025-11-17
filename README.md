@@ -10,7 +10,7 @@
 ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fwg-quickrs%2FCargo.toml&query=package.rust-version&logo=rust&label=rust&color=%23000000)
 ![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fwg-quickrs-web%2Fpackage.json&query=dependencies.vue&logo=vue.js&label=vue&color=%234FC08D)
 
-✨ An intuitive multi-peer `wg` / `wg-quick` wrapper written in 🦀 Rust.
+✨ An intuitive multi-peer `wg` wrapper written in 🦀 Rust (`wg-quick` alternative).
 
 ⚡ Rust + Vue + WASM + WireGuard = 🧪 one static binary + 📝 one YAML file to rule them all 🪄
 
@@ -24,7 +24,7 @@ Features:
 - Interactive graph to configure your P2P network
 - Sliding traffic graph to visualize your host's network traffic
 - Secure API access via HTTPS with support for password login and JWT authentication
-- Automatic firewall/NAT setup (`iptables` for Debian/Linux or `pf` for macOS, both come preinstalled with the OS)
+- Automatic firewall/NAT setup (`iptables` for Debian/Linux or `pf` for macOS, both usually come preinstalled with the OS)
 - If you are not feeling like dealing with VPN/networking on your machine, you can also just use the web console to create `.conf` files/QR codes for your network peers.
 
 ---
@@ -33,12 +33,27 @@ Features:
 
 ### Requirements
 
-- `wireguard-tools` (`wg(8)` and `wg-quick(8)` utilities)
-- optional for setting up the firewall: `iptables`(Linux) or `pf`(macOS)
+- `wireguard-tools` (only the `wg(8)` utility)
+- Linux
+  - `openresolv` / `resolvconf` one or the other required for DNS resolution
+  - `iproute2` required for setting up interfaces
+  - `iptables` / `nftables` (optional one or the other for setting up firewall)
+- macOS
+  - None (brew install `wireguard-tools` sets up all the required dependencies)
+
+#### Install Dependencies on Linux
 
 ```bash
 # Install on Debian/Ubuntu
-sudo apt install -y wireguard wireguard-tools
+sudo apt install -y wireguard wireguard-tools openresolv iproute2 iptables
+# Install on Alpine
+# doas apk add -U --no-cache wireguard-tools-wg openresolv iproute2 iptables
+```
+
+#### Install Dependencies on macOS
+
+```bash
+brew install wireguard-tools
 ```
 
 To get started, you can either use the pre-built binaries (recommended) or use the pre-built Docker image.
