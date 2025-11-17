@@ -1,16 +1,16 @@
 # Developing wg-quickrs
 
-Following are the scripts I use in my IDE to do my development.
+The following are some commands/scripts I use in my IDE to do my development.
 
 ---
 
 ## 1. WASM
 
-Following will build the WASM the target once.
+Following will build the WASM the target at once.
 
 ```sh
 # running directory: src/
-wasm-pack build wg-quickrs-web --target web --out-dir ../wg-quickrs-web/pkg
+wasm-pack build wg-quickrs-lib --target web --out-dir ../wg-quickrs-web/pkg
 ```
 
 ## 2. Vue/Frontend
@@ -37,7 +37,7 @@ So be sure to init your agent such that `http` is enabled and served at address 
 # make sure the dev config folder exists by running
 #   mkdir -p ../.wg-quickrs
 # initialize by running
-#   cargo run --profile dev -- --wg-quickrs-config-folder ../.wg-quickrs init
+#   cargo run --profile dev -- --wg-quickrs-config-folder ../.wg-quickrs agent init
 cargo watch -i wg-quickrs-web -x "run -- --wg-quickrs-config-folder ../.wg-quickrs agent run"
 ```
 
@@ -48,7 +48,7 @@ To test the release profile.
 cargo run --release -- --wg-quickrs-config-folder ../.wg-quickrs agent run
 ```
 
-# Testing wg-quickrs
+# Testing wg-quickrs (automated)
 
 There are both unit tests (rust) and functional tests (python for cli and api).
 
@@ -57,7 +57,7 @@ For the unit tests, run the following.
 ```sh
 # running directory: src/
 # generate wasm target
-wasm-pack build wg-quickrs-web --target web --out-dir ../wg-quickrs-web/pkg
+wasm-pack build wg-quickrs-lib --target web --out-dir ../wg-quickrs-web/pkg
 # build frontend
 cd ../wg-quickrs-web/
 npm ci --omit=dev
@@ -81,4 +81,8 @@ sudo apt update && sudo apt install wireguard
 # run functional tests
 pytest .
 ```
+
+# Testing wg-quickrs (manual)
+
+I also use vagrant boxes (see [docs](../tests/vagrant/README.md)) to keep [BUILDING.md](./BUILDING.md) and [installer.sh](../installer.sh) up to date.
 
