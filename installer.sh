@@ -626,7 +626,7 @@ if [ "$ARG_INSTALL_TO" = "system" ] && check_command systemctl; then
     run_privileged chmod -R 770 "$WG_QUICKRS_INSTALL_DIR"
 
     # Create systemd service file
-    echo "    Creating systemd service file..."
+    echo "    Creating systemd service file at /etc/systemd/system/wg-quickrs.service..."
     run_privileged tee /etc/systemd/system/wg-quickrs.service >/dev/null <<EOF
 [Unit]
 Description=wg-quickrs - An intuitive and feature-rich WireGuard configuration management tool
@@ -662,6 +662,147 @@ EOF
     echo
   else
     echo "⚠️ Skipping systemd setup"
+  fi
+elif [ "$ARG_INSTALL_TO" = "system" ] && check_command rc-service; then
+  printf "🔧 Do you want to set up OpenRC service for wg-quickrs? [Y/n]: "
+  read setup_openrc
+  setup_openrc=${setup_openrc:-y}
+
+  if [ "$setup_openrc" = "y" ] || [ "$setup_openrc" = "Y" ]; then
+    echo "⏳ Setting up OpenRC service..."
+
+    # Create user and group (may already exist from systemd setup on dual-init systems)
+    if ! id wg-quickrs-user >/dev/null 2>&1; then
+      echo "    Creating wg-quickrs-user..."
+      if ! run_privileged adduser -S -D -H -h /dev/null -s /sbin/nologin wg-quickrs-user; then
+        echo "        ❌ Failed to create wg-quickrs-user"
+        echo "        ⚠️  Skipping OpenRC setup"
+      else
+        echo "        ✅ Created wg-quickrs-user"
+      fi
+    else
+      echo "        ✅ wg-quickrs-user already exists"
+    fi
+
+    if ! getent group wg-quickrs-group >/dev/null 2>&1; then
+      echo "    Creating wg-quickrs-group..."
+      if ! run_privileged addgroup wg-quickrs-group; then
+        echo "        ❌ Failed to create wg-quickrs-group"
+        echo "        ⚠️  Skipping OpenRC setup"
+      else
+        echo "        ✅ Created wg-quickrs-group"
+      fi
+    else
+      echo "        ✅ wg-quickrs-group already exists"
+    fi
+
+    # Add user to group
+    echo "    Adding wg-quickrs-user to wg-quickrs-group..."
+    run_privileged addgroup wg-quickrs-user wg-quickrs-group 2>/dev/null || \
+      run_privileged usermod -aG wg-quickrs-group wg-quickrs-user
+
+    # Setup doas/sudo for passwordless execution
+    echo "    Setting up passwordless privilege escalation for the wg-quickrs command..."
+    if [ "$PRIVILEGE_CMD" = "doas" ]; then
+      echo "permit nopass wg-quickrs-user as root cmd $BIN_DIR/wg-quickrs" | run_privileged tee -a /etc/doas.conf >/dev/null
+    else
+      echo "wg-quickrs-user ALL=(ALL) NOPASSWD: $BIN_DIR/wg-quickrs" | run_privileged tee /etc/sudoers.d/wg-quickrs >/dev/null
+      run_privileged chmod 440 /etc/sudoers.d/wg-quickrs
+    fi
+
+    # Setup file permissions
+    echo "    Setting up file permissions for $WG_QUICKRS_INSTALL_DIR..."
+    run_privileged chown -R "$USER:wg-quickrs-group" "$WG_QUICKRS_INSTALL_DIR"
+    run_privileged chmod -R 770 "$WG_QUICKRS_INSTALL_DIR"
+
+    # Create log directory
+    run_privileged mkdir -p /var/log
+    run_privileged touch /var/log/wg-quickrs.log
+    run_privileged chown wg-quickrs-user:wg-quickrs-group /var/log/wg-quickrs.log
+    run_privileged chmod 640 /var/log/wg-quickrs.log
+
+    # Create OpenRC init script
+    echo "    Creating OpenRC init script at /etc/init.d/wg-quickrs..."
+    PRIV_CMD_PATH=$(which $PRIVILEGE_CMD)
+    run_privileged tee /etc/init.d/wg-quickrs >/dev/null <<OPENRC_EOF
+#!/sbin/openrc-run
+
+description="wg-quickrs - An intuitive and feature-rich WireGuard configuration management tool"
+
+command="$PRIV_CMD_PATH"
+command_args="$BIN_DIR/wg-quickrs agent run"
+command_user="wg-quickrs-user:wg-quickrs-group"
+command_background=yes
+pidfile="/run/wg-quickrs.pid"
+output_log="/var/log/wg-quickrs.log"
+error_log="/var/log/wg-quickrs.log"
+
+# Retry settings - restart if crashes
+respawn_delay=5
+respawn_max=3
+respawn_period=60
+
+# Supervisor to handle restarts
+supervisor="supervise-daemon"
+
+start_pre() {
+    # Ensure log file exists and has correct permissions
+    if [ ! -f "\$output_log" ]; then
+        touch "\$output_log"
+        chown wg-quickrs-user:wg-quickrs-group "\$output_log"
+        chmod 640 "\$output_log"
+    fi
+
+    # Rotate log if needed (keep last 1000 lines)
+    if [ -f "\$output_log" ]; then
+        line_count=\$(wc -l < "\$output_log" 2>/dev/null || echo "0")
+        if [ "\$line_count" -gt 1000 ]; then
+            tail -n 1000 "\$output_log" > "\$output_log.tmp"
+            mv "\$output_log.tmp" "\$output_log"
+        fi
+    fi
+}
+
+status() {
+    if [ -f "\$pidfile" ]; then
+        if kill -0 \$(cat "\$pidfile") 2>/dev/null; then
+            einfo "wg-quickrs is running (PID: \$(cat "\$pidfile"))"
+            if [ -f "\$output_log" ]; then
+                einfo ""
+                einfo "Last 20 log lines:"
+                tail -n 20 "\$output_log"
+            fi
+            return 0
+        else
+            eerror "wg-quickrs is not running but pidfile exists"
+            return 1
+        fi
+    else
+        einfo "wg-quickrs is not running"
+        return 3
+    fi
+}
+
+depend() {
+    need net
+    after firewall
+}
+OPENRC_EOF
+
+    # Make init script executable
+    run_privileged chmod +x /etc/init.d/wg-quickrs
+
+    echo "✅ OpenRC service setup complete"
+    echo "ℹ️  After initializing your agent, you can manage the service with:"
+    echo
+    printf "        %src-update add wg-quickrs default\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %src-service wg-quickrs start\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %src-service wg-quickrs status\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %src-service wg-quickrs stop\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    printf "        %src-service wg-quickrs restart\n" "$WG_QUICKRS_PRIVILEGE_CMD"
+    echo
+  else
+    echo "⚠️ Skipping OpenRC setup"
   fi
 fi
 
