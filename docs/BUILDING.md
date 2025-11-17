@@ -417,6 +417,7 @@ Run the services to initialize the agent.
 [//]: # (run-agent-docker: 1.2 - Generate certs)
 
 ```sh
+cd ..
 sudo docker compose -f docker-compose.init.yml up tls-cert-generator
 sudo docker compose -f docker-compose.init.yml up wg-quickrs-init
 
@@ -427,6 +428,7 @@ After initialization, you can run the `wg-quickrs-agent-run` service in `docker-
 [//]: # (run-agent-docker: 1.2 - Run agent)
 
 ```sh
+cd ..
 sudo docker compose -f docker-compose.agent.yml up wg-quickrs-agent-run
 ```
 
