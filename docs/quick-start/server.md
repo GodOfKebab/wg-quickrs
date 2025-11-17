@@ -18,14 +18,130 @@
 
 ## 1. Use the pre-built binaries (recommended)
 
-Use the installer script to auto-detect OS/architecture combo to determine which binary is needed.
+The `installer.sh` script is the easiest way to install wg-quickrs on your server. It automatically detects your OS and architecture, downloads the appropriate binary, installs dependencies, and optionally configures systemd/OpenRC services.
 
-TODO: Add more details about the installer script (options, what it does, etc.)
+### What the installer does
+
+The installer script performs the following actions:
+
+1. **Dependency Management**: Checks for and optionally installs required dependencies:
+   - WireGuard tools (`wg`)
+   - Linux: `iproute2`, `openresolv`/`resolvconf`, `iptables`
+   - macOS: `wireguard-tools` (via Homebrew)
+
+2. **Binary Installation**:
+   - Downloads the correct release tarball for your OS/architecture from GitHub
+   - Extracts and installs the binary to `/usr/local/bin` (system) or `~/.local/bin` (user)
+   - Installs configuration files to `/etc/wg-quickrs` (system) or `~/.wg-quickrs` (user)
+
+3. **Shell Completions**: Sets up auto-completion for `bash` or `zsh`
+
+4. **TLS Certificate Setup**: Optionally generates TLS certificates/keys for HTTPS support
+
+5. **Service Setup**: Optionally configures `systemd` (Linux) or `openrc` (Alpine) services with proper user/group permissions. So the agent can be managed easier and survive system reboots.
+
+### Basic installation
 
 ```bash
 wget -qO installer.sh https://raw.githubusercontent.com/GodOfKebab/wg-quickrs/refs/heads/main/installer.sh
 sh installer.sh
-````
+```
+
+The installer will interactively prompt you for:
+- Whether to set up TLS certificates
+- Server names for certificate generation (default: `all`)
+- Whether to set up systemd/OpenRC service (if available)
+
+### Installation options
+
+```bash
+# View all available options
+sh installer.sh --help
+
+# List available releases
+sh installer.sh list-releases
+
+# Install a specific release version
+sh installer.sh --release v1.0.0
+
+# Install to user directory instead of system-wide
+sh installer.sh --install-to user
+
+# Skip automatic dependency installation (install manually)
+sh installer.sh --skip-deps
+
+# Use a local tarball instead of downloading
+sh installer.sh --dist-tarball ./wg-quickrs-v1.0.0.tar.gz
+```
+
+### Installation examples
+
+**Example 1: Basic system-wide installation**
+```bash
+# Install latest version to /etc/wg-quickrs with systemd service
+sh installer.sh
+```
+
+**Example 2: User installation without service**
+```bash
+# Install to ~/.wg-quickrs for non-root usage
+sh installer.sh --install-to user
+```
+
+**Example 3: Install specific version**
+```bash
+# Install a specific release version
+sh installer.sh --release v1.0.0
+```
+
+**Example 4: Air-gapped installation**
+```bash
+# Download tarball separately, then install from local file
+wget https://github.com/GodOfKebab/wg-quickrs/releases/download/v1.0.0/wg-quickrs-x86_64-unknown-linux-musl.tar.gz
+sh installer.sh --dist-tarball ./wg-quickrs-x86_64-unknown-linux-musl.tar.gz
+```
+
+**Example 5: Skip dependencies (manual installation)**
+```bash
+# Install without automatic dependency installation
+# Useful if you want to manage dependencies yourself
+sh installer.sh --skip-deps
+```
+
+### Installation locations
+
+| Install Type | Binary Location | Config Location |
+|--------------|----------------|-----------------|
+| System (default) | `/usr/local/bin/wg-quickrs` | `/etc/wg-quickrs` |
+| User | `~/.local/bin/wg-quickrs` | `~/.wg-quickrs` |
+
+### After installation
+
+Once the installer completes, you'll be ready to initialize your agent:
+
+```bash
+# System installation
+sudo wg-quickrs agent init
+sudo wg-quickrs agent run
+
+# User installation
+wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs agent init
+wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs agent run
+```
+
+If you set up systemd/OpenRC service, you can manage it with:
+
+```bash
+# Systemd
+sudo systemctl enable wg-quickrs
+sudo systemctl start wg-quickrs
+sudo systemctl status wg-quickrs
+
+# OpenRC (Alpine Linux)
+sudo rc-update add wg-quickrs default
+sudo rc-service wg-quickrs start
+sudo rc-service wg-quickrs status
+```
 
 ---
 
