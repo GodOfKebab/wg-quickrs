@@ -47,11 +47,6 @@ wget -qO installer.sh https://raw.githubusercontent.com/GodOfKebab/wg-quickrs/re
 sh installer.sh
 ```
 
-The installer will interactively prompt you for:
-- Whether to set up TLS certificates
-- Server names for certificate generation (default: `all`)
-- Whether to set up systemd/OpenRC service (if available)
-
 ### Installation options
 
 ```bash
@@ -67,53 +62,20 @@ sh installer.sh --release v1.0.0
 # Install to user directory instead of system-wide
 sh installer.sh --install-to user
 
-# Skip automatic dependency installation (install manually)
+# Skip automatic dependency installation
 sh installer.sh --skip-deps
 
-# Use a local tarball instead of downloading
-sh installer.sh --dist-tarball ./wg-quickrs-v1.0.0.tar.gz
-```
-
-### Installation examples
-
-**Example 1: Basic system-wide installation**
-```bash
-# Install latest version to /etc/wg-quickrs with systemd service
-sh installer.sh
-```
-
-**Example 2: User installation without service**
-```bash
-# Install to ~/.wg-quickrs for non-root usage
-sh installer.sh --install-to user
-```
-
-**Example 3: Install specific version**
-```bash
-# Install a specific release version
-sh installer.sh --release v1.0.0
-```
-
-**Example 4: Air-gapped installation**
-```bash
-# Download tarball separately, then install from local file
+# Use a local tarball instead of downloading (Air-gapped installation)
 wget https://github.com/GodOfKebab/wg-quickrs/releases/download/v1.0.0/wg-quickrs-x86_64-unknown-linux-musl.tar.gz
 sh installer.sh --dist-tarball ./wg-quickrs-x86_64-unknown-linux-musl.tar.gz
 ```
 
-**Example 5: Skip dependencies (manual installation)**
-```bash
-# Install without automatic dependency installation
-# Useful if you want to manage dependencies yourself
-sh installer.sh --skip-deps
-```
-
 ### Installation locations
 
-| Install Type | Binary Location | Config Location |
-|--------------|----------------|-----------------|
+| Install Type     | Binary Location             | Config Location   |
+|------------------|-----------------------------|-------------------|
 | System (default) | `/usr/local/bin/wg-quickrs` | `/etc/wg-quickrs` |
-| User | `~/.local/bin/wg-quickrs` | `~/.wg-quickrs` |
+| User             | `~/.local/bin/wg-quickrs`   | `~/.wg-quickrs`   |
 
 ### After installation
 
