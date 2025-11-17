@@ -34,7 +34,7 @@ cd wg-quickrs/src
 # run-md.sh commands in docs/BUILDING.md
 
 # optionally use the bridge interface as default gateway
-default via <gateway ip of your bridge network> dev eth1
+sudo ip route replace default via <gateway ip of your bridge network> dev eth1
 ```
 
 
