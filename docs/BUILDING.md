@@ -35,8 +35,8 @@ $SHELL run-md.sh ../docs/BUILDING.md set-up-systemd-debian
 
 # Use zig for cross-compilation build
 $SHELL run-md.sh ../docs/BUILDING.md install-zig-build
-$SHELL run-md.sh ../docs/BUILDING.md run-zig-build
 export RUST_TARGET=aarch64-unknown-linux-musl
+$SHELL run-md.sh ../docs/BUILDING.md run-zig-build
 $SHELL run-md.sh ../docs/BUILDING.md create-a-distribution
 
 # Docker
@@ -221,10 +221,9 @@ Binary will be generated at `target/{{ TARGET }}/release/wg-quickrs`
 [//]: # (run-zig-build: 1.1.5 Run zigbuild)
 
 ```sh
-# TARGET options: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, armv7-unknown-linux-musleabihf
+# RUST_TARGET options: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, armv7-unknown-linux-musleabihf
 # See all options by running the following
 # rustup target list
-export RUST_TARGET=aarch64-unknown-linux-musl
 rustup target add "$RUST_TARGET"
 cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target="$RUST_TARGET"
 ```
@@ -238,6 +237,9 @@ Create a tarball of the `wg-quickrs` binary and the shell completions.
 [//]: # (create-a-distribution: 1.1.6 Create a distribution)
 
 ```sh
+# RUST_TARGET options: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl, armv7-unknown-linux-musleabihf
+# See all options by running the following
+# rustup target list
 mkdir -p "dist/$RUST_TARGET/bin"
 cp "target/$RUST_TARGET/release/wg-quickrs" "dist/$RUST_TARGET/bin/"
 cp -r "target/$RUST_TARGET/release/completions" "dist/$RUST_TARGET/"

@@ -44,10 +44,20 @@ Used to verify `installer.sh`
 
 ```shell
 # on the host machine at wg-quickrs/src/
-$SHELL run-md.sh ../docs/BUILDING.md run-zig-build
 # export RUST_TARGET=x86_64-unknown-linux-musl
+# export RUST_TARGET=armv7-unknown-linux-musleabihf
 export RUST_TARGET=aarch64-unknown-linux-musl
+$SHELL run-md.sh ../docs/BUILDING.md run-zig-build
 $SHELL run-md.sh ../docs/BUILDING.md create-a-distribution
+```
+
+```shell
+# on the host machine at wg-quickrs/tests/vagrant/deployment/
+# to upload dist/ to vagrant box
+vagrant rsync
+
+# or to upload wg-quickrs/installer.sh to vagrant box
+vagrant provision
 ```
 
 ```shell
