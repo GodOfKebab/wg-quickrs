@@ -123,6 +123,7 @@ install_with_brew() {
   echo "    ⏳ Installing these packages with Homebrew: $package..."
   if ! brew install "$package"; then
     echo "    ❌ Failed to install $package"
+    echo "    ℹ️  You can use --skip-deps to skip dependency installation and install manually"
     return 1
   fi
   echo "    ✅ Installed: $package"
@@ -147,6 +148,7 @@ install_with_apt() {
   fi
 
   echo "    ❌ Failed to install: $package"
+  echo "    ℹ️  You can use --skip-deps to skip dependency installation and install manually"
   echo "Exiting."
   exit 1
 }
@@ -169,6 +171,7 @@ install_with_apk() {
   fi
 
   echo "    ❌ Failed to install: $package"
+  echo "    ℹ️  You can use --skip-deps to skip dependency installation and install manually"
   echo "Exiting."
   exit 1
 }
@@ -194,6 +197,7 @@ check_dependencies() {
           if ! check_command brew; then
             echo "    ❌ Homebrew is required to install WireGuard but is not installed"
             echo "    ℹ️  Install Homebrew from https://brew.sh/"
+            echo "    ℹ️  Alternatively, use --skip-deps to skip dependency installation and install WireGuard manually"
             exit 1
           fi
           install_with_brew wireguard-tools || exit 1
@@ -258,6 +262,7 @@ check_dependencies() {
             done
           else
             echo "    ❌ Neither apt-get nor apk package manager found"
+            echo "    ℹ️  You can use --skip-deps to skip dependency installation and install manually"
             echo "Exiting."
             exit 1
           fi
