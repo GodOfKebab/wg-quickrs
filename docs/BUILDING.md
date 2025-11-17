@@ -24,24 +24,24 @@ I use this to quickly initialize a server in the cloud.
 
 ```sh
 # Local build
-$SHELL run-md.sh ../docs/BUILDING.md install-deps-debian
+sh run-md.sh ../docs/BUILDING.md install-deps-debian
 . "$HOME/.cargo/env"
-$SHELL run-md.sh ../docs/BUILDING.md build-src-debian
+sh run-md.sh ../docs/BUILDING.md build-src-debian
 . ~/.bashrc
-$SHELL run-md.sh ../docs/BUILDING.md run-agent-debian
+sh run-md.sh ../docs/BUILDING.md run-agent-debian
 
 # Setup systemd service
-$SHELL run-md.sh ../docs/BUILDING.md set-up-systemd-debian
+sh run-md.sh ../docs/BUILDING.md set-up-systemd-debian
 
 # Use zig for cross-compilation build
-$SHELL run-md.sh ../docs/BUILDING.md install-zig-build
+sh run-md.sh ../docs/BUILDING.md install-zig-build
 export RUST_TARGET=aarch64-unknown-linux-musl
-$SHELL run-md.sh ../docs/BUILDING.md run-zig-build
-$SHELL run-md.sh ../docs/BUILDING.md create-a-distribution
+sh run-md.sh ../docs/BUILDING.md run-zig-build
+sh run-md.sh ../docs/BUILDING.md create-a-distribution
 
 # Docker
-$SHELL run-md.sh ../docs/BUILDING.md build-src-docker
-$SHELL run-md.sh ../docs/BUILDING.md run-agent-docker
+sh run-md.sh ../docs/BUILDING.md build-src-docker
+sh run-md.sh ../docs/BUILDING.md run-agent-docker
 ```
 
 ---

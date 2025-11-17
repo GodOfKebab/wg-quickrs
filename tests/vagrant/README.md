@@ -47,8 +47,8 @@ Used to verify `installer.sh`
 # export RUST_TARGET=x86_64-unknown-linux-musl
 # export RUST_TARGET=armv7-unknown-linux-musleabihf
 export RUST_TARGET=aarch64-unknown-linux-musl
-$SHELL run-md.sh ../docs/BUILDING.md run-zig-build
-$SHELL run-md.sh ../docs/BUILDING.md create-a-distribution
+sh run-md.sh ../docs/BUILDING.md run-zig-build
+sh run-md.sh ../docs/BUILDING.md create-a-distribution
 ```
 
 ```shell

@@ -33,4 +33,4 @@ awk -v tag="$TAG" '
   }
   inblock { print }
 ' "$MD_FILE_PATH" > ".run-md/$MD_FILE_NAME-$TAG.sh"
-$SHELL ".run-md/$MD_FILE_NAME-$TAG.sh"
+sh ".run-md/$MD_FILE_NAME-$TAG.sh"
