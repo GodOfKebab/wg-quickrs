@@ -89,15 +89,30 @@ tarball_cleanup() {
 
 # --- privilege escalation helper ---
 PRIVILEGE_CMD=""
+if command -v sudo >/dev/null 2>&1; then
+  PRIVILEGE_CMD="sudo"
+elif command -v doas >/dev/null 2>&1; then
+  PRIVILEGE_CMD="doas"
+fi
+
+IS_ROOT=0
+
+# Check if we're already running as root
+if [ "$(id -u)" -eq 0 ]; then
+  IS_ROOT=1
+fi
+
 run_privileged() {
+  # If already root, just run the command directly
+  if [ $IS_ROOT -eq 1 ]; then
+    "$@"
+    return $?
+  fi
+
+  # Otherwise, find and use sudo/doas
   if [ -z "$PRIVILEGE_CMD" ]; then
-    if command -v sudo >/dev/null 2>&1; then
-      PRIVILEGE_CMD="sudo"
-    elif command -v doas >/dev/null 2>&1; then
-      PRIVILEGE_CMD="doas"
-    else
-      echo "⚠️ Neither sudo nor doas found. Cannot elevate privileges."
-    fi
+    echo "⚠️ Neither sudo nor doas found. Cannot elevate privileges."
+    return 1
   fi
   "$PRIVILEGE_CMD" "$@"
 }
@@ -108,10 +123,13 @@ check_command() {
   # Try command -v first (may not exist)
   command -v "$1" >/dev/null 2>&1 && return 0
 
-  if run_privileged sh -c "command -v '$1'" >/dev/null 2>&1; then
-    echo "    ⚠️  command $1 is only reachable with $PRIVILEGE_CMD. You may need to run wg-quickrs with $PRIVILEGE_CMD."
-    WG_QUICKRS_PRIVILEGE_CMD="$PRIVILEGE_CMD "
-    return 0
+  # Only check with privilege escalation if we're not already root
+  if [ $IS_ROOT -eq 0 ]; then
+    if run_privileged sh -c "command -v '$1'" >/dev/null 2>&1; then
+      echo "    ⚠️  command $1 is only reachable with $PRIVILEGE_CMD. You may need to run wg-quickrs with $PRIVILEGE_CMD."
+      WG_QUICKRS_PRIVILEGE_CMD="$PRIVILEGE_CMD "
+      return 0
+    fi
   fi
 
   # Fallback to which (usually available in BusyBox)
@@ -705,7 +723,7 @@ elif [ "$ARG_INSTALL_TO" = "system" ] && check_command rc-service; then
     echo "    Setting up passwordless privilege escalation for the wg-quickrs command..."
     if [ "$PRIVILEGE_CMD" = "doas" ]; then
       echo "permit nopass wg-quickrs-user as root cmd $BIN_DIR/wg-quickrs" | run_privileged tee -a /etc/doas.conf >/dev/null
-    else
+    elif [ "$PRIVILEGE_CMD" = "sudo" ]; then
       echo "wg-quickrs-user ALL=(ALL) NOPASSWD: $BIN_DIR/wg-quickrs" | run_privileged tee /etc/sudoers.d/wg-quickrs >/dev/null
       run_privileged chmod 440 /etc/sudoers.d/wg-quickrs
     fi
@@ -723,7 +741,7 @@ elif [ "$ARG_INSTALL_TO" = "system" ] && check_command rc-service; then
 
     # Create OpenRC init script
     echo "    Creating OpenRC init script at /etc/init.d/wg-quickrs..."
-    PRIV_CMD_PATH=$(which $PRIVILEGE_CMD)
+    PRIV_CMD_PATH="$(which $PRIVILEGE_CMD)"
     run_privileged tee /etc/init.d/wg-quickrs >/dev/null <<OPENRC_EOF
 #!/sbin/openrc-run
 
