@@ -4,21 +4,37 @@ usage() {
   cat << EOF
 Installer script for wg-quickrs
 
-Usage: $0 [OPTIONS]
+Usage: $0 [COMMAND] [OPTIONS]
+
+Commands:
+  list-releases               List available releases
 
 Options:
-  -r, --release            Specify release
-  -h, --help               Print help
+  -r, --release               Specify release
+  -d, --dist-tarball PATH     Use local tarball instead of downloading from GitHub
+  -i, --install-to LOCATION   Install location: system or user (default: system)
+  -h, --help                  Print help
 EOF
   exit 1
 }
 
 ARG_RELEASE=""
+ARG_DIST_TARBALL=""
+ARG_INSTALL_TO="system"
+ARG_COMMAND=""
+
+# --- parse command (if first argument doesn't start with -) ---
+if [ $# -gt 0 ] && [ "${1#-}" = "$1" ]; then
+  ARG_COMMAND="$1"
+  shift
+fi
 
 # --- parse options ---
 while [ $# -gt 0 ]; do
   case "$1" in
     -r|--release) ARG_RELEASE="$2"; shift 2 ;;
+    -d|--dist-tarball) ARG_DIST_TARBALL="$2"; shift 2 ;;
+    -i|--install-to) ARG_INSTALL_TO="$2"; shift 2 ;;
     -h|--help) usage ;;
     --) shift; break ;;
     -*) echo "Unknown option: $1" >&2; usage ;;
@@ -26,153 +42,270 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-echo "✨  Welcome to wg-quickrs installer!"
-
-# --- get ARG_RELEASE ---
-if [ -z "$ARG_RELEASE" ]; then
-  echo "ℹ️ No release version specified. If you want to use a different version, specify like the following"
-  echo
-  echo "    installer.sh --release v1.0.0"
-  echo
+list_releases() {
+  echo "⏳ Fetching available releases..."
   RELEASES=$(wget -qO- "https://api.github.com/repos/GodOfKebab/wg-quickrs/releases?per_page=10" | grep '"tag_name"' | sed 's/.*"tag_name": "\([^"]*\)".*/\1/')
-  echo "ℹ️ Here is a list of available releases:"
+  echo "ℹ️ Available releases:"
   for tag in $RELEASES; do
       echo "    - $tag"
   done
-  echo "⏳ Fetching latest release version..."
-  JSON=$(wget -qO- https://api.github.com/repos/GodOfKebab/wg-quickrs/releases/latest)
-  ARG_RELEASE=$(printf '%s\n' "$JSON" | grep '"tag_name":' | head -n1 | cut -d '"' -f4)
-  echo "    ✅ Using latest release: $ARG_RELEASE"
-else
-  JSON=$(wget -qO- "https://api.github.com/repos/GodOfKebab/wg-quickrs/releases/tags/$ARG_RELEASE")
-  if [ -z "$JSON" ]; then
-    echo "    ❌ Failed to find the manually specified release: $ARG_RELEASE"
+}
+
+# --- handle commands ---
+if [ -n "$ARG_COMMAND" ]; then
+  case "$ARG_COMMAND" in
+    list-releases)
+      list_releases
+      exit 0
+      ;;
+    *)
+      echo "❌ Unknown command: $ARG_COMMAND"
+      usage
+      ;;
+  esac
+fi
+
+echo "✨  Welcome to wg-quickrs installer!"
+
+# --- validate install-to argument ---
+if [ "$ARG_INSTALL_TO" != "system" ] && [ "$ARG_INSTALL_TO" != "user" ]; then
+  echo "❌ Invalid --install-to value: $ARG_INSTALL_TO (must be 'system' or 'user')"
+  exit 1
+fi
+
+# --- validate local tarball if provided ---
+if [ -n "$ARG_DIST_TARBALL" ]; then
+  if [ ! -f "$ARG_DIST_TARBALL" ]; then
+    echo "❌ Tarball file not found: $ARG_DIST_TARBALL"
+    exit 1
+  fi
+  echo "✅ Using local tarball: $ARG_DIST_TARBALL"
+fi
+
+# --- get ARG_RELEASE ---
+if [ -z "$ARG_DIST_TARBALL" ]; then
+  if [ -z "$ARG_RELEASE" ]; then
+    echo "ℹ️ No release version specified. If you want to use a different version, specify like the following"
+    echo
+    echo "    installer.sh --release v1.0.0"
+    echo
+    list_releases
+    echo "⏳ Fetching latest release version..."
+    JSON=$(wget -qO- https://api.github.com/repos/GodOfKebab/wg-quickrs/releases/latest)
+    ARG_RELEASE=$(printf '%s\n' "$JSON" | grep '"tag_name":' | head -n1 | cut -d '"' -f4)
+    echo "    ✅ Using latest release: $ARG_RELEASE"
+  else
+    JSON=$(wget -qO- "https://api.github.com/repos/GodOfKebab/wg-quickrs/releases/tags/$ARG_RELEASE")
+    if [ -z "$JSON" ]; then
+      echo "    ❌ Failed to find the manually specified release: $ARG_RELEASE"
+      echo
+      list_releases
+      exit 1;
+    else
+      echo "    ✅ Using manually specified release: $ARG_RELEASE"
+    fi
+  fi
+
+  # --- detect rust target triple ---
+  arch=$(uname -m)
+  os=$(uname -s)
+  os_triple="unknown-$os"
+  case "$arch" in
+      x86_64)
+          cpu="x86_64"
+          case "$os" in
+              Linux)   os_triple="unknown-linux-musl" ;;
+              Darwin)  os_triple="apple-darwin" ;;
+              *) os_triple="unknown-$os" ;;
+          esac
+        ;;
+      aarch64|arm64)
+          cpu="aarch64"
+          case "$os" in
+              Linux)   os_triple="unknown-linux-musl" ;;
+              Darwin)  os_triple="apple-darwin" ;;
+              *) os_triple="unknown-$os" ;;
+          esac
+          ;;
+      armv7l)
+          cpu="armv7"
+          case "$os" in
+              Linux)   os_triple="unknown-linux-musleabihf" ;;
+              Darwin)  os_triple="apple-darwin" ;;
+              *) os_triple="unknown-$os" ;;
+          esac
+        ;;
+      *) cpu="$arch" ;;
+  esac
+  target="${cpu}-${os_triple}"
+  echo "✅ Detected target: $target"
+
+  # --- find asset url ---
+  echo "⏳ Fetching assets from the $ARG_RELEASE release..."
+
+  ASSET_URL=$(printf '%s\n' "$JSON" \
+    | grep "browser_download_url" \
+    | grep "$target" \
+    | cut -d '"' -f4)
+
+  if [ -z "$ASSET_URL" ]; then
+    echo "    ❌ Failed to find the correct asset from the $ARG_RELEASE release"
+    ASSET_URL=$(printf '%s\n' "$JSON" \
+      | grep "browser_download_url" \
+      | cut -d '"' -f4)
+    echo "    ℹ️ Here is a list of all available assets in the $ARG_RELEASE release:"
+    for url in $ASSET_URL; do
+        echo "        - $(echo "$url" | cut -d'/' -f9-)"
+    done
     exit 1;
   else
-    echo "    ✅ Using manually specified release: $ARG_RELEASE"
+    echo "    ✅ Detected asset $(echo "$ASSET_URL" | cut -d'/' -f9-) in the $ARG_RELEASE release"
   fi
 fi
 
-# --- detect rust target triple ---
-arch=$(uname -m)
-os=$(uname -s)
-os_triple="unknown-$os"
-case "$arch" in
-    x86_64)
-        cpu="x86_64"
-        case "$os" in
-            Linux)   os_triple="unknown-linux-musl" ;;
-            Darwin)  os_triple="apple-darwin" ;;
-            *) os_triple="unknown-$os" ;;
-        esac
-      ;;
-    aarch64|arm64)
-        cpu="aarch64"
-        case "$os" in
-            Linux)   os_triple="unknown-linux-musl" ;;
-            Darwin)  os_triple="apple-darwin" ;;
-            *) os_triple="unknown-$os" ;;
-        esac
-        ;;
-    armv7l)
-        cpu="armv7"
-        case "$os" in
-            Linux)   os_triple="unknown-linux-musleabihf" ;;
-            Darwin)  os_triple="apple-darwin" ;;
-            *) os_triple="unknown-$os" ;;
-        esac
-      ;;
-    *) cpu="$arch" ;;
-esac
-target="${cpu}-${os_triple}"
-echo "✅ Detected target: $target"
+# --- download tarball if needed ---
+TARBALL_PATH=""
+CLEANUP_TARBALL=0
 
-# --- find asset url ---
-echo "⏳ Fetching assets from the $ARG_RELEASE release..."
-
-ASSET_URL=$(printf '%s\n' "$JSON" \
-  | grep "browser_download_url" \
-  | grep "$target" \
-  | cut -d '"' -f4)
-
-if [ -z "$ASSET_URL" ]; then
-  echo "    ❌ Failed to find the correct asset from the $ARG_RELEASE release"
-  ASSET_URL=$(printf '%s\n' "$JSON" \
-    | grep "browser_download_url" \
-    | cut -d '"' -f4)
-  echo "    ℹ️ Here is a list of all available assets in the $ARG_RELEASE release:"
-  for url in $ASSET_URL; do
-      echo "        - $(echo "$url" | cut -d'/' -f9-)"
-  done
-  exit 1;
-else
-  echo "    ✅ Detected asset $(echo "$ASSET_URL" | cut -d'/' -f9-) in the $ARG_RELEASE release"
-fi
-
-
-# --- set up WG_QUICKRS_INSTALL_DIR ---
-WG_QUICKRS_SYSTEM_INSTALL_DIR="/etc/wg-quickrs"
-WG_QUICKRS_USER_INSTALL_DIR="$HOME/.wg-quickrs"
-WG_QUICKRS_INSTALL_DIR="$WG_QUICKRS_SYSTEM_INSTALL_DIR"
-WG_QUICKRS_INSTALL_DIR_OPTION=""
-WG_QUICKRS_REQUIRES_SUDO=0
-echo "⏳ Installing configuration files to: $WG_QUICKRS_INSTALL_DIR"
-mkdir -p "$WG_QUICKRS_INSTALL_DIR"
-
-download_release() {
-  if [ ! -w "$SYSTEM_BIN_DIR" ]; then
-    echo "🔐 Administrator privileges (write permission to $WG_QUICKRS_SYSTEM_INSTALL_DIR) required to download to $WG_QUICKRS_SYSTEM_INSTALL_DIR"
-    if ! sudo mkdir -p "$WG_QUICKRS_SYSTEM_INSTALL_DIR" 2>/dev/null; then
-      echo "    ⚠️  Failed to download to $WG_QUICKRS_SYSTEM_INSTALL_DIR, trying $WG_QUICKRS_USER_INSTALL_DIR instead"
-      mkdir -p "$WG_QUICKRS_USER_INSTALL_DIR"
-      if ! wget -qO- "$ASSET_URL" | tar -xzf - -C "$WG_QUICKRS_USER_INSTALL_DIR"; then
-        echo "        ❌ Failed to download release"
-        exit 1
-      fi
-      echo "        ✅ Downloaded wg-quickrs binary to $WG_QUICKRS_USER_INSTALL_DIR"
-      WG_QUICKRS_INSTALL_DIR="$WG_QUICKRS_USER_INSTALL_DIR"
-      WG_QUICKRS_INSTALL_DIR_OPTION=" --wg-quickrs-config-folder $WG_QUICKRS_USER_INSTALL_DIR"
-    else
-      wget -qO- "$ASSET_URL" | sudo tar -xzf - -C "$WG_QUICKRS_SYSTEM_INSTALL_DIR"
-      echo "    ✅ Downloaded wg-quickrs release to $WG_QUICKRS_SYSTEM_INSTALL_DIR"
-      WG_QUICKRS_REQUIRES_SUDO=1
-    fi
-  else
-    wget -qO- "$ASSET_URL" | tar -xzf - -C "$WG_QUICKRS_SYSTEM_INSTALL_DIR"
+tarball_cleanup() {
+  if [ $CLEANUP_TARBALL -eq 1 ]; then
+    echo "⏳ Cleaning up downloaded tarball..."
+    rm -f "$TARBALL_PATH"
+    echo "    ✅ Cleaned up tarball"
   fi
 }
 
-SYSTEM_BIN_DIR="/usr/local/bin"
-USER_BIN_DIR="$HOME/.local/bin"
+# Privilege escalation helper - detects and uses sudo or doas
+PRIVILEGE_CMD=""
+run_privileged() {
+  if [ -z "$PRIVILEGE_CMD" ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      PRIVILEGE_CMD="sudo"
+    elif command -v doas >/dev/null 2>&1; then
+      PRIVILEGE_CMD="doas"
+    else
+      echo "❌ Neither sudo nor doas found. Cannot elevate privileges."
+      tarball_cleanup
+      exit 1
+    fi
+  fi
+  "$PRIVILEGE_CMD" "$@"
+}
+
+download_tarball() {
+    echo "⏳ Downloading release tarball to $TARBALL_PATH..."
+    CLEANUP_TARBALL=1
+    if ! wget -q -O "$TARBALL_PATH" "$ASSET_URL"; then
+      echo "    ❌ Failed to download release from $ASSET_URL"
+      tarball_cleanup
+      exit 1
+    fi
+    echo "    ✅ Downloaded release tarball"
+}
+
+
+if [ -z "$ARG_DIST_TARBALL" ]; then
+  # Download tarball from GitHub to current directory
+  TARBALL_PATH="./wg-quickrs-$ARG_RELEASE.tar.gz"
+
+  # Check if tarball already exists
+  if [ -f "$TARBALL_PATH" ]; then
+    printf "⚠️  Tarball %s already exists. Do you want to override it? [y/N]: " "$TARBALL_PATH"
+    read override_tarball
+    override_tarball=${override_tarball:-n}
+
+    if [ "$override_tarball" = "y" ] || [ "$override_tarball" = "Y" ]; then
+      download_tarball
+    else
+      echo "    ✅ Using existing tarball: $TARBALL_PATH"
+    fi
+  else
+    download_tarball
+  fi
+else
+  # Use provided local tarball
+  TARBALL_PATH="$ARG_DIST_TARBALL"
+fi
+
+# --- set up WG_QUICKRS_INSTALL_DIR ---
+WG_QUICKRS_REQUIRES_SUDO=0
+
+if [ "$ARG_INSTALL_TO" = "system" ]; then
+  WG_QUICKRS_INSTALL_DIR="/etc/wg-quickrs"
+  WG_QUICKRS_INSTALL_DIR_OPTION=""
+  echo "⏳ Installing configuration files to: $WG_QUICKRS_INSTALL_DIR (system)"
+else
+  WG_QUICKRS_INSTALL_DIR="$HOME/.wg-quickrs"
+  WG_QUICKRS_INSTALL_DIR_OPTION=" --wg-quickrs-config-folder $WG_QUICKRS_INSTALL_DIR"
+  echo "⏳ Installing configuration files to: $WG_QUICKRS_INSTALL_DIR (user)"
+fi
+
+install_from_tarball() {
+  # Ensure target directory exists
+  if ! mkdir -p "$WG_QUICKRS_INSTALL_DIR" >/dev/null 2>&1; then
+    echo "🔐 Administrator privileges may be required to create $WG_QUICKRS_INSTALL_DIR"
+    if ! run_privileged mkdir -p "$WG_QUICKRS_INSTALL_DIR" >/dev/null 2>&1; then
+      echo "    ❌ Failed to create $WG_QUICKRS_INSTALL_DIR"
+      tarball_cleanup
+      exit 1
+    fi
+  fi
+
+  # Extract tarball with elevated privileges if needed
+  if [ ! -w "$WG_QUICKRS_INSTALL_DIR" ]; then
+    echo "🔐 Administrator privileges required to extract to $WG_QUICKRS_INSTALL_DIR"
+    if ! run_privileged tar -xzf "$TARBALL_PATH" -C "$WG_QUICKRS_INSTALL_DIR"; then
+      echo "    ❌ Failed to extract tarball to $WG_QUICKRS_INSTALL_DIR"
+      tarball_cleanup
+      exit 1
+    fi
+    WG_QUICKRS_REQUIRES_SUDO=1
+  else
+    if ! tar -xzf "$TARBALL_PATH" -C "$WG_QUICKRS_INSTALL_DIR"; then
+      echo "    ❌ Failed to extract tarball to $WG_QUICKRS_INSTALL_DIR"
+      tarball_cleanup
+      exit 1
+    fi
+  fi
+
+  echo "    ✅ Extracted wg-quickrs from tarball to $WG_QUICKRS_INSTALL_DIR"
+}
+
+if [ "$ARG_INSTALL_TO" = "system" ]; then
+  BIN_DIR="/usr/local/bin"
+else
+  BIN_DIR="$HOME/.local/bin"
+fi
 
 install_bin() {
-  if [ ! -w "$SYSTEM_BIN_DIR" ]; then
-    echo "🔐 Administrator privileges (write permission to $SYSTEM_BIN_DIR) required to install to $SYSTEM_BIN_DIR"
-    if ! sudo mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$SYSTEM_BIN_DIR/wg-quickrs" 2>/dev/null; then
-      echo "    ⚠️  Failed to install to $SYSTEM_BIN_DIR, trying $USER_BIN_DIR instead"
-      # check override
-      mkdir -p "$USER_BIN_DIR"
-      if ! mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$USER_BIN_DIR/wg-quickrs"; then
-        echo "        ❌ Failed to install binary"
-        exit 1
-      fi
-      echo "        ✅ Installed wg-quickrs binary to $USER_BIN_DIR"
-
-      # Warn about PATH if needed
-      if ! echo "$PATH" | grep -q "$USER_BIN_DIR"; then
-        echo "    ⚠️  Add $USER_BIN_DIR to your PATH:"
-        echo
-        echo "        export PATH=\"\$HOME/.local/bin:\$PATH\""
-        echo
-      fi
-    else
-      echo "    ✅ Installed wg-quickrs binary to $SYSTEM_BIN_DIR"
+  # Ensure target directory exists
+  if ! mkdir -p "$BIN_DIR" >/dev/null 2>&1; then
+    echo "🔐 Administrator privileges may be required to create $BIN_DIR"
+    if ! run_privileged mkdir -p "$BIN_DIR" >/dev/null 2>&1; then
+      echo "    ❌ Failed to create $BIN_DIR"
+      tarball_cleanup
+      exit 1
     fi
-    rm -r "$WG_QUICKRS_INSTALL_DIR/bin"
-  else
-    mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$SYSTEM_BIN_DIR/wg-quickrs"
-    rm -r "$WG_QUICKRS_INSTALL_DIR/bin"
   fi
+
+  # Install binary with elevated privileges if needed
+  if [ ! -w "$BIN_DIR" ]; then
+    echo "🔐 Administrator privileges required to install to $BIN_DIR"
+    if ! run_privileged mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$BIN_DIR/wg-quickrs" 2>/dev/null; then
+      echo "    ❌ Failed to install to $BIN_DIR - insufficient permissions"
+      tarball_cleanup
+      exit 1
+    fi
+  else
+    if ! mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$BIN_DIR/wg-quickrs"; then
+      echo "    ❌ Failed to install binary to $BIN_DIR"
+      tarball_cleanup
+      exit 1
+    fi
+  fi
+
+  echo "    ✅ Installed wg-quickrs binary to $BIN_DIR"
+  rm -rf "$WG_QUICKRS_INSTALL_DIR/bin"
 }
 
 if [ -n "$(ls -A "$WG_QUICKRS_INSTALL_DIR" 2>/dev/null)" ]; then
@@ -180,60 +313,25 @@ if [ -n "$(ls -A "$WG_QUICKRS_INSTALL_DIR" 2>/dev/null)" ]; then
   read overwrite
   overwrite=${overwrite:-n}
   if [ "$overwrite" = "y" ] || [ "$overwrite" = "Y" ]; then
-    download_release
+    install_from_tarball
     install_bin
     echo "    ✅ Overwritten and updated files."
   else
     echo "Exiting..."
+    tarball_cleanup
     exit
   fi
 else
-  download_release
+  install_from_tarball
   install_bin
   echo "    ✅ Fresh install completed."
 fi
 
-printf "🤔 Do you want to set up TLS certs/keys (at \"%s/certs\") now? [Y/n]: " "$WG_QUICKRS_INSTALL_DIR"
-read setup_certs
-setup_certs=${setup_certs:-y}
-
-if [ "$setup_certs" = "y" ] || [ "$setup_certs" = "Y" ]; then
-  if [ $WG_QUICKRS_REQUIRES_SUDO -eq 1  ]; then
-    sudo mkdir -p "$WG_QUICKRS_INSTALL_DIR/certs"
-    sudo wget -q https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.1/tls-cert-generator.sh -O "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh"
-  else
-    mkdir -p "$WG_QUICKRS_INSTALL_DIR/certs"
-    wget -q https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.1/tls-cert-generator.sh -O "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh"
-  fi
-
-  echo "🔐 Enter server names for certificate generation:"
-  echo "    - Specific hostnames/IPs (space-separated): example.com 192.168.1.1"
-  echo "    - Special values (space-separated): all all-ipv4 all-ipv6 all-hostname"
-  echo "    - Combined (space-separated): all example.com 192.168.1.1"
-  printf "Servers (default: all) : "
-  read server_names
-  server_names=${server_names:-"all"}
-  echo "⏳ Generating certificates for: $server_names"
-  if [ $WG_QUICKRS_REQUIRES_SUDO -eq 1  ]; then
-    sudo sh "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh" -f -o "$WG_QUICKRS_INSTALL_DIR/certs" "$server_names"
-  else
-    sh "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh" -f -o "$WG_QUICKRS_INSTALL_DIR/certs" "${server_names}"
-  fi
-  echo "✅ Generated TLS certs/keys"
-
-  echo "ℹ️ If you want to generate cert/key in the future, run the following with YOUR_SERVER1, YOUR_SERVER2, etc. filled in"
-  echo
-  printf "    sh \"%s/certs/tls-cert-generator.sh\" -o \"%s/certs\" YOUR_SERVER1 YOUR_SERVER2\n" "$WG_QUICKRS_INSTALL_DIR" "$WG_QUICKRS_INSTALL_DIR"
-  echo
-else
-  echo "⚠️ Skipping TLS cert setup. Remember to configure certs later!"
-fi
+# Clean up downloaded tarball if we downloaded one
+tarball_cleanup
 
 echo "⏳ Setting up shell completions..."
-
-current_shell=$(basename "$SHELL")
-
-case "$current_shell" in
+case $(basename "$SHELL") in
   bash)
     BASH_COMPLETIONS_DIR="$HOME/.local/share/bash-completion/completions"
     mkdir -p "$BASH_COMPLETIONS_DIR"
@@ -259,9 +357,53 @@ case "$current_shell" in
     ;;
 esac
 
+printf "🤔 Do you want to set up TLS certs/keys (at \"%s/certs\") now? [Y/n]: " "$WG_QUICKRS_INSTALL_DIR"
+read setup_certs
+setup_certs=${setup_certs:-y}
 
-printf "🛠️ Then, you are ready to initialize your agent with:\n\n"
-printf "    wg-quickrs%s init\n" "$WG_QUICKRS_INSTALL_DIR_OPTION"
+if [ "$setup_certs" = "y" ] || [ "$setup_certs" = "Y" ]; then
+  if [ $WG_QUICKRS_REQUIRES_SUDO -eq 1  ]; then
+    run_privileged mkdir -p "$WG_QUICKRS_INSTALL_DIR/certs"
+    run_privileged wget -q https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.1/tls-cert-generator.sh -O "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh"
+  else
+    mkdir -p "$WG_QUICKRS_INSTALL_DIR/certs"
+    wget -q https://github.com/GodOfKebab/tls-cert-generator/releases/download/v1.3.1/tls-cert-generator.sh -O "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh"
+  fi
+
+  echo "🔐 Enter server names for certificate generation:"
+  echo "    - Specific hostnames/IPs (space-separated): example.com 192.168.1.1"
+  echo "    - Special values (space-separated): all all-ipv4 all-ipv6 all-hostname"
+  echo "    - Combined (space-separated): all example.com 192.168.1.1"
+  printf "Servers (default: all) : "
+  read server_names
+  server_names=${server_names:-"all"}
+  echo "⏳ Generating certificates for: $server_names"
+  if [ $WG_QUICKRS_REQUIRES_SUDO -eq 1  ]; then
+    run_privileged sh "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh" -o "$WG_QUICKRS_INSTALL_DIR/certs" "$server_names"
+  else
+    sh "$WG_QUICKRS_INSTALL_DIR/certs/tls-cert-generator.sh" -o "$WG_QUICKRS_INSTALL_DIR/certs" "${server_names}"
+  fi
+  echo "✅ Generated TLS certs/keys"
+
+  echo "ℹ️ If you want to generate cert/key in the future, run the following with YOUR_SERVER1, YOUR_SERVER2, etc. filled in"
+  echo
+  printf "    sh \"%s/certs/tls-cert-generator.sh\" -o \"%s/certs\" YOUR_SERVER1 YOUR_SERVER2\n" "$WG_QUICKRS_INSTALL_DIR" "$WG_QUICKRS_INSTALL_DIR"
+  echo
+else
+  echo "⚠️ Skipping TLS cert setup. Remember to configure certs later!"
+fi
+
+
+# --- check if wg-quickrs is in PATH ---
+if ! wg-quickrs --help >/dev/null 2>&1; then
+  echo "⚠️  wg-quickrs is not in your PATH. Please add $BIN_DIR to your PATH:"
+  echo
+  echo "        export PATH=\"\$PATH:$BIN_DIR\""
+  echo
+fi
+
+printf "🛠️ You are ready to initialize your agent with:\n\n"
+printf "    wg-quickrs%s agent init\n" "$WG_QUICKRS_INSTALL_DIR_OPTION"
 printf "\n🚀 After a successful initialization, you can start up your service with:\n\n"
 printf "    wg-quickrs%s agent run\n\n" "$WG_QUICKRS_INSTALL_DIR_OPTION"
 
