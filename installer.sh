@@ -73,6 +73,196 @@ if [ "$ARG_INSTALL_TO" != "system" ] && [ "$ARG_INSTALL_TO" != "user" ]; then
   exit 1
 fi
 
+TARBALL_PATH=""
+CLEANUP_TARBALL=0
+
+tarball_cleanup() {
+  if [ $CLEANUP_TARBALL -eq 1 ]; then
+    echo "⏳ Cleaning up downloaded tarball..."
+    rm -f "$TARBALL_PATH"
+    echo "    ✅ Cleaned up tarball"
+  fi
+}
+
+# --- privilege escalation helper ---
+PRIVILEGE_CMD=""
+run_privileged() {
+  if [ -z "$PRIVILEGE_CMD" ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      PRIVILEGE_CMD="sudo"
+    elif command -v doas >/dev/null 2>&1; then
+      PRIVILEGE_CMD="doas"
+    else
+      echo "⚠️ Neither sudo nor doas found. Cannot elevate privileges."
+    fi
+  fi
+  "$PRIVILEGE_CMD" "$@"
+}
+
+# --- dependency check functions ---
+WG_QUICKRS_PRIVILEGE_CMD=""
+check_command() {
+  # Try command -v first (may not exist)
+  command -v "$1" >/dev/null 2>&1 && return 0
+
+  if run_privileged sh -c "command -v '$1'" >/dev/null 2>&1; then
+    echo "    ⚠️  command $1 is only reachable with $PRIVILEGE_CMD. You may need to run wg-quickrs with $PRIVILEGE_CMD."
+    WG_QUICKRS_PRIVILEGE_CMD="$PRIVILEGE_CMD "
+    return 0
+  fi
+
+  # Fallback to which (usually available in BusyBox)
+  which "$1" >/dev/null 2>&1 && return 0
+}
+
+install_with_brew() {
+  package="$1"
+  echo "    ⏳ Installing these packages with Homebrew: $package..."
+  if ! brew install "$package"; then
+    echo "    ❌ Failed to install $package"
+    return 1
+  fi
+  echo "    ✅ Installed: $package"
+  return 0
+}
+
+install_with_apt() {
+  package="$1"
+  echo "    ⏳ Installing these packages with apt-get: $package..."
+
+  # Try without privileges first
+  if apt-get update -qq && apt-get install "$package"; then
+    echo "    ✅ Installed: $package"
+    return 0
+  fi
+
+  # If that failed, try with elevated privileges
+  echo "    🔐 Administrator privileges my be required with apt"
+  if run_privileged apt-get update -qq && run_privileged apt-get install "$package"; then
+    echo "    ✅ Installed: $package"
+    return 0
+  fi
+
+  echo "    ❌ Failed to install: $package"
+  echo "Exiting."
+  exit 1
+}
+
+install_with_apk() {
+  package="$1"
+  echo "    ⏳ Installing these packages with apk: $package..."
+
+  # Try without privileges first
+  if apk add -U --no-cache "$package"; then
+    echo "    ✅ Installed: $package"
+    return 0
+  fi
+
+  # If that failed, try with elevated privileges
+  echo "    🔐 Administrator privileges my be required with apk"
+  if run_privileged apk add -U --no-cache "$package"; then
+    echo "    ✅ Installed: $package"
+    return 0
+  fi
+
+  echo "    ❌ Failed to install: $package"
+  echo "Exiting."
+  exit 1
+}
+
+check_dependencies() {
+  echo "⏳ Checking system dependencies..."
+
+  # Detect OS
+  os=$(uname -s)
+
+  case "$os" in
+    Darwin)
+      # macOS: check for wg (WireGuard)
+      if ! check_command wg; then
+        echo "    ⚠️  WireGuard (wg) not found"
+        if ! check_command brew; then
+          echo "    ❌ Homebrew is required to install WireGuard but is not installed"
+          echo "    ℹ️  Install Homebrew from https://brew.sh/"
+          exit 1
+        fi
+        install_with_brew wireguard-tools || exit 1
+        check_command wg
+      else
+        echo "    ✅ WireGuard (wg) found"
+      fi
+      ;;
+
+    Linux)
+      # Linux: check for wg, resolvconf, ip, iptables
+      missing_deps=""
+
+      if ! check_command ip; then
+        echo "    ⚠️  ip not found"
+        missing_deps="$missing_deps iproute2"
+      else
+        echo "    ✅ ip found"
+      fi
+
+      if ! check_command resolvconf; then
+        echo "    ⚠️  resolvconf not found"
+        missing_deps="$missing_deps openresolv"
+      else
+        echo "    ✅ resolvconf found"
+      fi
+
+      if ! check_command iptables; then
+        echo "    ⚠️  iptables not found"
+        missing_deps="$missing_deps iptables"
+      else
+        echo "    ✅ iptables found"
+      fi
+
+      if ! check_command wg; then
+        echo "    ⚠️  wg not found"
+        if check_command apt-get; then
+          missing_deps="$missing_deps wireguard"
+        elif check_command apk; then
+          missing_deps="$missing_deps wireguard-tools-wg"
+        fi
+      else
+        echo "    ✅ wg found"
+      fi
+
+      # Install missing dependencies
+      if [ -n "$missing_deps" ]; then
+        # Detect which package manager to use
+        if check_command apt-get; then
+          for dep in $missing_deps; do
+              install_with_apt "$dep"
+              check_command "$dep"
+          done
+        elif check_command apk; then
+          for dep in $missing_deps; do
+              install_with_apk "$dep"
+              check_command "$dep"
+          done
+        else
+          echo "    ❌ Neither apt-get nor apk package manager found"
+          echo "Exiting."
+          exit 1
+        fi
+      fi
+      ;;
+
+    *)
+      echo "    ❌ Unknown OS: $os. This script is only supports Linux and macOS."
+      echo "Exiting."
+      exit 1
+      ;;
+  esac
+
+  echo "✅ All dependencies satisfied"
+}
+
+# --- check dependencies ---
+check_dependencies
+
 # --- validate local tarball if provided ---
 if [ -n "$ARG_DIST_TARBALL" ]; then
   if [ ! -f "$ARG_DIST_TARBALL" ]; then
@@ -164,34 +354,6 @@ if [ -z "$ARG_DIST_TARBALL" ]; then
 fi
 
 # --- download tarball if needed ---
-TARBALL_PATH=""
-CLEANUP_TARBALL=0
-
-tarball_cleanup() {
-  if [ $CLEANUP_TARBALL -eq 1 ]; then
-    echo "⏳ Cleaning up downloaded tarball..."
-    rm -f "$TARBALL_PATH"
-    echo "    ✅ Cleaned up tarball"
-  fi
-}
-
-# Privilege escalation helper - detects and uses sudo or doas
-PRIVILEGE_CMD=""
-run_privileged() {
-  if [ -z "$PRIVILEGE_CMD" ]; then
-    if command -v sudo >/dev/null 2>&1; then
-      PRIVILEGE_CMD="sudo"
-    elif command -v doas >/dev/null 2>&1; then
-      PRIVILEGE_CMD="doas"
-    else
-      echo "❌ Neither sudo nor doas found. Cannot elevate privileges."
-      tarball_cleanup
-      exit 1
-    fi
-  fi
-  "$PRIVILEGE_CMD" "$@"
-}
-
 download_tarball() {
     echo "⏳ Downloading release tarball to $TARBALL_PATH..."
     CLEANUP_TARBALL=1
@@ -242,9 +404,9 @@ fi
 
 install_from_tarball() {
   # Ensure target directory exists
-  if ! mkdir -p "$WG_QUICKRS_INSTALL_DIR" >/dev/null 2>&1; then
+  if ! mkdir -p "$WG_QUICKRS_INSTALL_DIR"; then
     echo "🔐 Administrator privileges may be required to create $WG_QUICKRS_INSTALL_DIR"
-    if ! run_privileged mkdir -p "$WG_QUICKRS_INSTALL_DIR" >/dev/null 2>&1; then
+    if ! run_privileged mkdir -p "$WG_QUICKRS_INSTALL_DIR"; then
       echo "    ❌ Failed to create $WG_QUICKRS_INSTALL_DIR"
       tarball_cleanup
       exit 1
@@ -260,6 +422,8 @@ install_from_tarball() {
       exit 1
     fi
     WG_QUICKRS_REQUIRES_SUDO=1
+    WG_QUICKRS_PRIVILEGE_CMD="$PRIVILEGE_CMD "
+    echo "    ⚠️  $WG_QUICKRS_INSTALL_DIR requires $PRIVILEGE_CMD. You may need to run wg-quickrs with $PRIVILEGE_CMD."
   else
     if ! tar -xzf "$TARBALL_PATH" -C "$WG_QUICKRS_INSTALL_DIR"; then
       echo "    ❌ Failed to extract tarball to $WG_QUICKRS_INSTALL_DIR"
@@ -279,9 +443,9 @@ fi
 
 install_bin() {
   # Ensure target directory exists
-  if ! mkdir -p "$BIN_DIR" >/dev/null 2>&1; then
+  if ! mkdir -p "$BIN_DIR"; then
     echo "🔐 Administrator privileges may be required to create $BIN_DIR"
-    if ! run_privileged mkdir -p "$BIN_DIR" >/dev/null 2>&1; then
+    if ! run_privileged mkdir -p "$BIN_DIR"; then
       echo "    ❌ Failed to create $BIN_DIR"
       tarball_cleanup
       exit 1
@@ -291,7 +455,7 @@ install_bin() {
   # Install binary with elevated privileges if needed
   if [ ! -w "$BIN_DIR" ]; then
     echo "🔐 Administrator privileges required to install to $BIN_DIR"
-    if ! run_privileged mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$BIN_DIR/wg-quickrs" 2>/dev/null; then
+    if ! run_privileged mv "$WG_QUICKRS_INSTALL_DIR/bin/wg-quickrs" "$BIN_DIR/wg-quickrs"; then
       echo "    ❌ Failed to install to $BIN_DIR - insufficient permissions"
       tarball_cleanup
       exit 1
@@ -309,10 +473,10 @@ install_bin() {
 }
 
 if [ -n "$(ls -A "$WG_QUICKRS_INSTALL_DIR" 2>/dev/null)" ]; then
-  printf "    ⚠️ Files already exist in %s. Do you want to overwrite them? [y/N]: " "$WG_QUICKRS_INSTALL_DIR"
-  read overwrite
-  overwrite=${overwrite:-n}
-  if [ "$overwrite" = "y" ] || [ "$overwrite" = "Y" ]; then
+  printf "    ⚠️ Files already exist in %s. Do you want to override them? [y/N]: " "$WG_QUICKRS_INSTALL_DIR"
+  read override
+  override=${override:-n}
+  if [ "$override" = "y" ] || [ "$override" = "Y" ]; then
     install_from_tarball
     install_bin
     echo "    ✅ Overwritten and updated files."
@@ -403,7 +567,7 @@ if ! wg-quickrs --help >/dev/null 2>&1; then
 fi
 
 printf "🛠️ You are ready to initialize your agent with:\n\n"
-printf "    wg-quickrs%s agent init\n" "$WG_QUICKRS_INSTALL_DIR_OPTION"
+printf "    %swg-quickrs%s agent init\n" "$WG_QUICKRS_PRIVILEGE_CMD" "$WG_QUICKRS_INSTALL_DIR_OPTION"
 printf "\n🚀 After a successful initialization, you can start up your service with:\n\n"
-printf "    wg-quickrs%s agent run\n\n" "$WG_QUICKRS_INSTALL_DIR_OPTION"
+printf "    %swg-quickrs%s agent run\n\n" "$WG_QUICKRS_PRIVILEGE_CMD" "$WG_QUICKRS_INSTALL_DIR_OPTION"
 
