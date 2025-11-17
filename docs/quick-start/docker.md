@@ -1,0 +1,103 @@
+# wg-quickrs quick-start guide for docker hosts
+
+## 1. Use the pre-built Docker images (recommended)
+
+## 1.1 Generate your TLS certs/keys (optional)
+
+Generate your TLS certs/keys to `$HOME/.wg-quickrs-docker/certs/YOUR-SERVER/cert.pem`/`$HOME/.wg-quickrs-docker/certs/YOUR-SERVER/key.pem`.
+
+Replace `YOUR-SERVER` with your IP address, FQDN, or a domain name.
+The following command will create a rootCA cert/key (at `$HOME/.wg-quickrs-docker/certs/root/rootCA.crt`) and use that to sign
+`$HOME/.wg-quickrs-docker/certs/YOUR-SERVER/cert.pem`.
+
+```bash
+docker run --rm \
+  -v "$HOME/.wg-quickrs-docker/certs:/app/certs" \
+  -e COUNTRY="XX" \
+  -e STATE="XX" \
+  -e LOCALITY="XX" \
+  -e ORGANIZATION="XX" \
+  -e ORGANIZATIONAL_UNIT="XX" \
+  -e ROOT_CN="tls-cert-generator@XX" \
+  godofkebab/tls-cert-generator \
+  YOUR-SERVER
+```
+
+---
+
+## 1.2 Initialize the agent
+
+Initialize your agent using the init command:
+
+```bash
+docker run --rm \
+  --name wg-quickrs-init-cnt \
+  -v "$HOME/.wg-quickrs-docker:/app/.wg-quickrs" \
+  godofkebab/wg-quickrs \
+  agent init --no-prompt true \
+    --network-name   wg-quickrs-home \
+    --network-subnet 10.0.34.0/24    \
+    --agent-web-address          0.0.0.0                            \
+    --agent-web-http-enabled     true                               \
+    --agent-web-http-port        80                                 \
+    --agent-web-https-enabled    true                               \
+    --agent-web-https-port       443                                \
+    --agent-web-https-tls-cert   certs/servers/YOUR-SERVER/cert.pem \
+    --agent-web-https-tls-key    certs/servers/YOUR-SERVER/key.pem  \
+    --agent-web-password-enabled true                               \
+    --agent-web-password         YOUR-PASSWORD                      \
+    --agent-vpn-enabled          true                               \
+    --agent-vpn-port             51820                              \
+    --agent-firewall-enabled     true                               \
+    --agent-firewall-utility     /usr/sbin/iptables                 \
+    --agent-firewall-gateway     eth0                               \
+    --agent-peer-name                     wg-quickrs-host   \
+    --agent-peer-vpn-internal-address     10.0.34.1         \
+    --agent-peer-vpn-endpoint             YOUR-SERVER:51820 \
+    --agent-peer-kind                     server            \
+    --agent-peer-icon-enabled             false             \
+    --agent-peer-dns-enabled              true              \
+    --agent-peer-dns-addresses            1.1.1.1           \
+    --agent-peer-mtu-enabled              false             \
+    --agent-peer-script-pre-up-enabled    false             \
+    --agent-peer-script-post-up-enabled   false             \
+    --agent-peer-script-pre-down-enabled  false             \
+    --agent-peer-script-post-down-enabled false             \
+    --default-peer-kind                               laptop  \
+    --default-peer-icon-enabled                       false   \
+    --default-peer-dns-enabled                        true    \
+    --default-peer-dns-addresses                      1.1.1.1 \
+    --default-peer-mtu-enabled                        false   \
+    --default-peer-script-pre-up-enabled              false   \
+    --default-peer-script-post-up-enabled             false   \
+    --default-peer-script-pre-down-enabled            false   \
+    --default-peer-script-post-down-enabled           false   \
+    --default-connection-persistent-keepalive-enabled true    \
+    --default-connection-persistent-keepalive-period  25
+```
+
+---
+
+## 1.3 Run the agent
+
+Then start the agent like so:
+
+```bash
+docker run \
+  --name wg-quickrs-agent-run-cnt \
+  -v "$HOME/.wg-quickrs-docker:/app/.wg-quickrs" \
+  --cap-add NET_ADMIN \
+  --cap-add SYS_MODULE \
+  --sysctl net.ipv4.ip_forward=1 \
+  --sysctl net.ipv4.conf.all.src_valid_mark=1 \
+  -p 8080:80/tcp \
+  -p 8443:443/tcp \
+  -p 51820:51820/udp \
+  godofkebab/wg-quickrs \
+  agent run
+```
+
+### 2. Build the Docker images from source
+
+See [BUILDING.md](../BUILDING.md#12-using-docker)
+

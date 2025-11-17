@@ -2,6 +2,8 @@
 
 This document is optimized for a fresh installation of Debian 13 that you would get when you spin up a VPS.
 
+⚠️ Note: all the commands in this document are supposed to be run from `wg-quickrs/src` directory for `run-md.sh` to work properly.
+
 ---
 
 ## 1. Installation
@@ -112,7 +114,6 @@ Build `web` directory.
 cd wg-quickrs-web
 npm ci --omit=dev
 npm run build
-cd ..
 ```
 
 ---
@@ -175,16 +176,15 @@ wg-quickrs --help
 # Usage: wg-quickrs [OPTIONS] <COMMAND>
 # 
 # Commands:
-#   init   Initialize the wg-quickrs agent.
-#          Configuration options can be filled either by prompts on screen (when no argument is provided) or specified as arguments to this command
-#   agent  Configure and run the wg-quickrs agent
-#   help   Print this message or the help of the given subcommand(s)
+#   agent   Run agent commands
+#   config  Edit agent configuration options
+#   help    Print this message or the help of the given subcommand(s)
 # 
 # Options:
 #   -v, --verbose
 #           Increase verbosity level from Info to Debug
 #       --wg-quickrs-config-folder <WG_QUICKRS_CONFIG_FOLDER>
-#           [default: .wg-quickrs]
+#           [default: /etc/wg-quickrs/]
 #   -h, --help
 #           Print help
 #   -V, --version
