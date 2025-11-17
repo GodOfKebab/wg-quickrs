@@ -326,7 +326,7 @@ Following creates:
 * A user `wg-quickrs-user` with relatively weak privileges but a part of `wg-quickrs-group`
 * A group `wg-quickrs-group` with
   * passwordless `sudo` access to `wg` and `wg-quick` executables
-  * read/write/execute permissions for files under `/etc/wg-quickrs` and `/etc/wireguard`
+  * read/write/execute permissions for files under `/etc/wg-quickrs`
 * The systemd service `wg-quickrs` that is enabled and started
   * This service also gives necessary networking-related permissions.
 
@@ -343,8 +343,6 @@ sudo chmod 440 /etc/sudoers.d/wg-quickrs
 # setup file permissions
 sudo chown -R $USER:wg-quickrs-group /etc/wg-quickrs
 sudo chmod -R 770 /etc/wg-quickrs
-sudo chown -R $USER:wg-quickrs-group /etc/wireguard
-sudo chmod -R 770 /etc/wireguard
 
 # setup systemd
 sudo tee /etc/systemd/system/wg-quickrs.service > /dev/null <<'EOF'
