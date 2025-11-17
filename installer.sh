@@ -13,6 +13,7 @@ Options:
   -r, --release               Specify release
   -d, --dist-tarball PATH     Use local tarball instead of downloading from GitHub
   -i, --install-to LOCATION   Install location: system or user (default: system)
+  --skip-deps                 Skip dependency installation (still checks if they exist)
   -h, --help                  Print help
 EOF
   exit 1
@@ -21,6 +22,7 @@ EOF
 ARG_RELEASE=""
 ARG_DIST_TARBALL=""
 ARG_INSTALL_TO="system"
+ARG_SKIP_DEPS=0
 ARG_COMMAND=""
 
 # --- parse command (if first argument doesn't start with -) ---
@@ -35,6 +37,7 @@ while [ $# -gt 0 ]; do
     -r|--release) ARG_RELEASE="$2"; shift 2 ;;
     -d|--dist-tarball) ARG_DIST_TARBALL="$2"; shift 2 ;;
     -i|--install-to) ARG_INSTALL_TO="$2"; shift 2 ;;
+    --skip-deps) ARG_SKIP_DEPS=1; shift ;;
     -h|--help) usage ;;
     --) shift; break ;;
     -*) echo "Unknown option: $1" >&2; usage ;;
@@ -173,6 +176,10 @@ install_with_apk() {
 check_dependencies() {
   echo "⏳ Checking system dependencies..."
 
+  if [ $ARG_SKIP_DEPS -eq 1 ]; then
+    echo "    ℹ️  Dependency installation will be skipped (--skip-deps)"
+  fi
+
   # Detect OS
   os=$(uname -s)
 
@@ -181,13 +188,17 @@ check_dependencies() {
       # macOS: check for wg (WireGuard)
       if ! check_command wg; then
         echo "    ⚠️  WireGuard (wg) not found"
-        if ! check_command brew; then
-          echo "    ❌ Homebrew is required to install WireGuard but is not installed"
-          echo "    ℹ️  Install Homebrew from https://brew.sh/"
-          exit 1
+        if [ $ARG_SKIP_DEPS -eq 1 ]; then
+          echo "    ⏭️  Skipping installation of wireguard-tools (--skip-deps)"
+        else
+          if ! check_command brew; then
+            echo "    ❌ Homebrew is required to install WireGuard but is not installed"
+            echo "    ℹ️  Install Homebrew from https://brew.sh/"
+            exit 1
+          fi
+          install_with_brew wireguard-tools || exit 1
+          check_command wg
         fi
-        install_with_brew wireguard-tools || exit 1
-        check_command wg
       else
         echo "    ✅ WireGuard (wg) found"
       fi
@@ -231,21 +242,25 @@ check_dependencies() {
 
       # Install missing dependencies
       if [ -n "$missing_deps" ]; then
-        # Detect which package manager to use
-        if check_command apt-get; then
-          for dep in $missing_deps; do
-              install_with_apt "$dep"
-              check_command "$dep"
-          done
-        elif check_command apk; then
-          for dep in $missing_deps; do
-              install_with_apk "$dep"
-              check_command "$dep"
-          done
+        if [ $ARG_SKIP_DEPS -eq 1 ]; then
+          echo "    ⏭️  Skipping installation of:$missing_deps (--skip-deps)"
         else
-          echo "    ❌ Neither apt-get nor apk package manager found"
-          echo "Exiting."
-          exit 1
+          # Detect which package manager to use
+          if check_command apt-get; then
+            for dep in $missing_deps; do
+                install_with_apt "$dep"
+                check_command "$dep"
+            done
+          elif check_command apk; then
+            for dep in $missing_deps; do
+                install_with_apk "$dep"
+                check_command "$dep"
+            done
+          else
+            echo "    ❌ Neither apt-get nor apk package manager found"
+            echo "Exiting."
+            exit 1
+          fi
         fi
       fi
       ;;
