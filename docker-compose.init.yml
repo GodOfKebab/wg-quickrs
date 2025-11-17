@@ -14,7 +14,7 @@ services:
     command: [ "YOUR-SERVER" ] # <-- update with your public IP/domain
 
   # <-- update YOUR-SERVER with the address (ip/domain) that would be in your wg endpoint
-  # <-- update YOUR_PASSWORD with your password
+  # <-- update YOUR-PASSWORD with your password
   wg-quickrs-init:
     container_name: wg-quickrs-init-cnt
     build:
@@ -35,7 +35,7 @@ services:
       --agent-web-https-tls-cert   certs/servers/YOUR-SERVER/cert.pem
       --agent-web-https-tls-key    certs/servers/YOUR-SERVER/key.pem
       --agent-web-password-enabled true
-      --agent-web-password         YOUR_PASSWORD
+      --agent-web-password         YOUR-PASSWORD
       --agent-vpn-enabled          true
       --agent-vpn-port             51820
       --agent-firewall-enabled     true
