@@ -19,14 +19,19 @@ fn main() {
         })
         .unwrap_or_else(|| "unknown".to_string());
 
-    // get branch name
+    // get the branch name
     let git_branch_name = Command::new("git")
-        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .args(["branch", "--show-current"])
         .output()
         .ok()
         .and_then(|o| String::from_utf8(o.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+        .and_then(|s| {
+            let trimmed = s.trim();
+            (!trimmed.is_empty()).then(|| trimmed.to_string())
+        })
+        .unwrap_or_else(|| "main".to_string());
+    // if a tag is checked out (instead of a branch), the command returns an empty string,
+    // so we default to main assuming release was initiated from main
 
     // Get short commit SHA (like GitHub)
     let git_commit = Command::new("git")
