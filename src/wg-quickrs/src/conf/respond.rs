@@ -112,6 +112,11 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                     }
 
                     if let Some(scripts) = &peer_details.scripts {
+                        // Security check: prevent modifying scripts for this_peer
+                        if *peer_id == this_peer_id {
+                            return Err(HttpResponse::Forbidden().body("cannot modify scripts for this peer remotely"));
+                        }
+
                         if let Some(scripts) = &scripts.pre_up {
                             peer_config.scripts.pre_up = validate_peer_scripts(scripts).map_err(|e| {
                                 HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.scripts.pre_up: {}", peer_id, e))

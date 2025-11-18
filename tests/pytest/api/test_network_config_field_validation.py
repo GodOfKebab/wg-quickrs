@@ -87,9 +87,10 @@ yaml.preserve_quotes = True
 )
 def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_value, expected_status, test_description):
     """Parameterized test for all peer field changes."""
-    base_url = setup_wg_quickrs_agent("no_auth_single_peer")
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
-    this_peer_id = get_this_peer_id(base_url)
+    # Change other-peer1
+    peer_id = "6e9a8440-f884-4b54-bfe7-b982f15e40fd"
 
     with open(wg_quickrs_config_file) as stream:
         old_conf = yaml.load(stream)
@@ -103,7 +104,7 @@ def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_valu
     change_sum = {
         "changed_fields": {
             "peers": {
-                this_peer_id: changed_fields
+                peer_id: changed_fields
             }
         }
     }
@@ -117,14 +118,14 @@ def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_valu
 
     if response.status_code == 200:
         if isinstance(field_name, str):
-            assert new_conf['network']['peers'][this_peer_id][field_name] == field_value
+            assert new_conf['network']['peers'][peer_id][field_name] == field_value
         else:
             for field_name_key, field_name_value in field_name.items():
                 if field_name_key == 'scripts':
                     for script_type, script_value in field_name_value.items():
-                        assert new_conf['network']['peers'][this_peer_id][field_name_key][script_type] == script_value
+                        assert new_conf['network']['peers'][peer_id][field_name_key][script_type] == script_value
                 else:
-                    assert new_conf['network']['peers'][this_peer_id][field_name_key] == field_name_value
+                    assert new_conf['network']['peers'][peer_id][field_name_key] == field_name_value
 
 
 @pytest.mark.parametrize(
