@@ -12,7 +12,7 @@
 
 ✨ An intuitive multi-peer `wg` wrapper written in 🦀 Rust (`wg-quick` alternative).
 
-⚡ Rust + Vue + WASM + WireGuard = 🧪 one static binary + 📝 one YAML file to rule them all 🪄
+⚡ Rust + Vue + WASM + WireGuard = 🧪 one static binary + 📝 one [YAML file](docs/SCHEMA.md) to rule them all 🪄
 
 Run it on your [router](docs/quick-start/router.md), [server](docs/quick-start/server.md), or [docker host](docs/quick-start/docker.md) and manage your WireGuard VPN from a terminal or a web interface.
 
