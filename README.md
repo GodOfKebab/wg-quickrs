@@ -16,9 +16,13 @@
 
 Run it on your [router](docs/quick-start/router.md), [server](docs/quick-start/server.md), or [docker host](docs/quick-start/docker.md) and manage your WireGuard VPN from a terminal or a web interface.
 
-![speedtest demo](https://yasar.idikut.cc/project-assets/wg-quickrs-speedtest.gif)
+<p align="center">
+  <img src="https://yasar.idikut.cc/project-assets/wg-quickrs-speedtest.gif" alt="speedtest demo">
+</p>
 
-![usage demo](https://yasar.idikut.cc/project-assets/wg-quickrs-demo.gif)
+<p align="center">
+  <img src="https://yasar.idikut.cc/project-assets/wg-quickrs-demo.gif" alt="usage demo">
+</p>
 
 Features:
 - Interactive graph to configure your P2P network
