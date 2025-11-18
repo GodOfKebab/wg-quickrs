@@ -18,7 +18,6 @@ services:
     extends:
       service: wg-quickrs-runner
     ports:
-      - "8080:80/tcp"
       - "8443:443/tcp"
       - "51820:51820/udp"
     command: [ "agent", "run" ]
