@@ -1,6 +1,6 @@
 [package]
 name = "wg-quickrs"
-version = "1.0.0-rc.2"
+version = "1.0.0-rc.3"
 edition = "2024"
 rust-version = "1.90"
 build = "build.rs"
