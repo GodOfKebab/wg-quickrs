@@ -1,0 +1,65 @@
+name: Auto-Release on Version Change
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/wg-quickrs/Cargo.toml'
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Get current version
+        id: version_check
+        run: |
+          # Get the current version from Cargo.toml
+          CURRENT_VERSION=$(grep -m1 '^version = ' src/wg-quickrs/Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "Current version: $CURRENT_VERSION"
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: tag_check
+        run: |
+          TAG="v${{ steps.version_check.outputs.current_version }}"
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+            echo "Tag $TAG already exists"
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG does not exist - will create release"
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        if: steps.tag_check.outputs.tag_exists == 'false'
+        run: |
+          TAG="${{ steps.tag_check.outputs.tag_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        if: steps.tag_check.outputs.tag_exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag_check.outputs.tag_name }}
+          name: Release ${{ steps.tag_check.outputs.tag_name }}
+          body: |
+            Automated release for version ${{ steps.version_check.outputs.current_version }}
+
+            This release was automatically created by the version watcher workflow.
+          draft: false
+          prerelease: ${{ contains(steps.version_check.outputs.current_version, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
