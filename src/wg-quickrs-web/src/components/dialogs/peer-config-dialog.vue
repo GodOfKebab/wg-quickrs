@@ -78,6 +78,7 @@
 
           <scripts-island :default-scripts="network.defaults.peer.scripts"
                           :peer="peer_conf"
+                          :is-this-peer="peerId === network.this_peer"
                           class="my-2 mr-2"
                           @updated-change-sum="onUpdatedScriptsIslandChangeSum"></scripts-island>
 

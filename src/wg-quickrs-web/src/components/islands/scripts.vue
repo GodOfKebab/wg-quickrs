@@ -1,9 +1,11 @@
 <template>
-  <div :class="[colors.div]" class="py-2 pl-1 pr-3 shadow-md border rounded">
+  <div class="py-2 pl-1 pr-3 shadow-md border rounded"
+       :class="[colors.div]"
+       :title="isThisPeer ? 'Cannot modify scripts for this peer remotely (security)' : 'Modify scripts'">
     <!-- Add buttons -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pl-2 pb-1">
+    <div v-if="!isThisPeer" class="grid grid-cols-2 md:grid-cols-4 gap-2 pl-2 pb-1">
       <div v-for="field in Object.keys(SCRIPTS_KEY_LOOKUP)" :key="field" class="items-center justify-center pt-1 border-gray-100">
-        <button class="text-gray-700 border-2 border-gray-500 py-2 px-1 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400 enabled:hover:text-gray-100"
+        <button class="text-gray-700 border-2 border-gray-500 py-2 px-1 rounded items-center transition w-full enabled:hover:bg-green-700 enabled:hover:border-green-700 enabled:hover:text-gray-100"
                 @click="peer_local_scripts[field].push({enabled: true, script: ''})">
           <span class="text-base inline-block whitespace-pre">+ Add a </span>
           <span class="text-base inline-block"><strong>{{ SCRIPTS_KEY_LOOKUP[field] }}</strong> Script</span>
@@ -15,15 +17,15 @@
     <div v-for="field in Object.keys(SCRIPTS_KEY_LOOKUP)" :key="field">
       <div v-for="i in peer_local_scripts[field].length" :key="i" class="flex">
         <div class="inline-block my-auto flex-none pl-2">
-          <delete-button title="Delete this script"
-                         :disabled="peer_local_scripts.deleted[field].has(i-1)"
+          <delete-button :title="isThisPeer ? 'Cannot modify scripts for this peer remotely (security)' : 'Delete this script'"
+                         :disabled="isThisPeer || peer_local_scripts.deleted[field].has(i-1)"
                          image-classes="h-6 w-6"
                          @click="peer_local_scripts.deleted[field].add(i-1); peer_local_scripts[field][i-1] = peer.scripts[field][i-1] ? peer.scripts[field][i-1] : { enabled: true, script: ''}"></delete-button>
         </div>
         <div class="inline-block flex-1 relative">
           <input-field v-model="peer_local_scripts[field][i-1]"
-                       :class="peer_local_scripts.deleted[field].has(i-1) ? 'opacity-50' : ''"
-                       :disabled="peer_local_scripts.deleted[field].has(i-1)"
+                       :class="peer_local_scripts.deleted[field].has(i-1) || isThisPeer ? 'opacity-50' : ''"
+                       :disabled="isThisPeer || peer_local_scripts.deleted[field].has(i-1)"
                        :input-color="colors[field][i-1]"
                        value-field="script"
                        :value-prev="peer.scripts[field][i-1] ? peer.scripts[field][i-1] : { enabled: true, script: ''}"
@@ -31,8 +33,8 @@
                        :label="SCRIPTS_KEY_LOOKUP[field]"
                        :placeholder="`${SCRIPTS_KEY_LOOKUP[field]} Script (e.g. echo 'Hey, this is ${SCRIPTS_KEY_LOOKUP[field]} Script';)`"></input-field>
           <!-- Undo Button -->
-          <undo-button v-if="peer_local_scripts.deleted[field].has(i-1)"
-                       :disabled="!peer_local_scripts.deleted[field].has(i-1)"
+          <undo-button v-if="!isThisPeer && peer_local_scripts.deleted[field].has(i-1)"
+                       :disabled="isThisPeer || !peer_local_scripts.deleted[field].has(i-1)"
                        alignment-classes="right-[6px] top-[5px] bg-gray-200"
                        image-classes="h-7"
                        class="rounded"
@@ -64,6 +66,10 @@ export default {
       default: {},
     },
     isNewPeer: {
+      type: Boolean,
+      default: false,
+    },
+    isThisPeer: {
       type: Boolean,
       default: false,
     },

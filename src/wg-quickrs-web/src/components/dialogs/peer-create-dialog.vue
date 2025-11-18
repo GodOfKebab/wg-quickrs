@@ -70,6 +70,7 @@
           <scripts-island v-if="default_peer_conf.scripts !== undefined"
                           :is-new-peer="true"
                           :peer="default_peer_conf"
+                          :is-this-peer="false"
                           class="my-2 mr-2"
                           @updated-change-sum="onUpdatedScriptsIslandChangeSum"></scripts-island>
 
