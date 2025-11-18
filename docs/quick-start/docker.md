@@ -80,22 +80,25 @@ docker run --rm \
 
 ## 1.3 Run the agent
 
-Then start the agent like so:
+Then start the agent and fork it in the background like so:
 
 ```bash
-docker run \
+docker run -d \
   --name wg-quickrs-agent-run-cnt \
   -v "$HOME/.wg-quickrs-docker:/app/.wg-quickrs" \
   --cap-add NET_ADMIN \
   --cap-add SYS_MODULE \
   --sysctl net.ipv4.ip_forward=1 \
   --sysctl net.ipv4.conf.all.src_valid_mark=1 \
-  -p 8080:80/tcp \
   -p 8443:443/tcp \
   -p 51820:51820/udp \
+  --restart unless-stopped \
   godofkebab/wg-quickrs \
   agent run
 ```
+
+HTTPS server will be available at `https://YOUR-SERVER:8443`.
+WireGuard endpoint will be available at `YOUR-SERVER:51820`.
 
 ### 2. Build the Docker images from source
 
