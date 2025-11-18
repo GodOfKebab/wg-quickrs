@@ -55,7 +55,7 @@ jobs:
           cargo install --locked cargo-zigbuild
           rustup target add ${{ env.target }}
           cargo clean
-          cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=${{ env.target }}
+          cargo zigbuild --locked --release --target ${{ env.target }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

@@ -53,7 +53,7 @@ RUN case "$TARGETARCH" in \
 
 # Copy wg-quickrs-web folder right before build for build optimization
 COPY --from=node-builder /app/wg-quickrs-web/dist /app/wg-quickrs-web/dist
-RUN cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=$(cat RUST_TARGET) --features docker && \
+RUN cargo zigbuild --locked --release --target $(cat RUST_TARGET) --features docker && \
     mkdir /app/bin/ && cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/bin/wg-quickrs
 
 FROM alpine:3.22 AS runner

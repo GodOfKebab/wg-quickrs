@@ -91,7 +91,7 @@ Build `wg-quickrs-lib` directory for the `wasm32-unknown-unknown` target.
 [//]: # (build-src-debian: 1.1.2 Build wg-quickrs-lib - Build 'wg-quickrs-lib' directory.)
 
 ```sh
-wasm-pack build wg-quickrs-lib --target web --out-dir ../wg-quickrs-web/pkg
+wasm-pack build wg-quickrs-lib --target web --out-dir ../wg-quickrs-web/pkg -- --locked
 ```
 
 ---
@@ -138,7 +138,7 @@ If the following method doesn't meet your needs, you can look into building with
 [//]: # (build-src-debian: 1.1.4 Build and Install wg-quickrs - build)
 
 ```sh
-cargo build --release --package wg-quickrs --bin wg-quickrs
+cargo build --locked --release
 
 mkdir -p /usr/local/bin/
 sudo install -m 755 target/release/wg-quickrs /usr/local/bin/
@@ -225,7 +225,7 @@ Binary will be generated at `target/{{ TARGET }}/release/wg-quickrs`
 # See all options by running the following
 # rustup target list
 rustup target add "$RUST_TARGET"
-cargo zigbuild --release --package wg-quickrs --bin wg-quickrs --target="$RUST_TARGET"
+cargo zigbuild --locked --release --target "$RUST_TARGET"
 ```
 
 ---
