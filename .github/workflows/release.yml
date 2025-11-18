@@ -1,7 +1,6 @@
 name: Build and Release
 
 on:
-  workflow_dispatch: # run manually
   push:
     tags:
       - "v*.*.*"
@@ -108,20 +107,15 @@ jobs:
           if [ "${{ matrix.use_zig }}" = "true" ]; then
             sudo apt-get update && sudo apt-get install -y musl-dev cmake clang llvm-dev libclang-dev pkg-config
             cargo install cargo-zigbuild
-            rustup target add ${{ matrix.target }}
-            cargo clean
-            cargo zigbuild --locked --release --package wg-quickrs --bin wg-quickrs --target=${{ matrix.target }}
+            cargo zigbuild --locked --release --target ${{ matrix.target }}
           else
-            cargo build --locked --release --package wg-quickrs --bin wg-quickrs --target ${{ matrix.target }}
+            cargo build --locked --release --target ${{ matrix.target }}
           fi
 
       - name: Package binary + completions
         run: |
           cd src
-          mkdir -p dist/${{ matrix.target }}/bin
-          cp target/${{ matrix.target }}/release/wg-quickrs dist/${{ matrix.target }}/bin/
-          cp -r target/${{ matrix.target }}/release/completions dist/${{ matrix.target }}/
-          tar -czf dist/wg-quickrs-${{ matrix.target }}.tar.gz -C dist/${{ matrix.target }} .
+          RUST_TARGET=${{ matrix.target }} sh run-md.sh ../docs/BUILDING.md create-a-distribution
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
