@@ -47,11 +47,30 @@ done
 
 list_releases() {
   echo "⏳ Fetching available releases..."
-  RELEASES=$(wget -qO- "https://api.github.com/repos/GodOfKebab/wg-quickrs/releases?per_page=10" | grep '"tag_name"' | sed 's/.*"tag_name": "\([^"]*\)".*/\1/')
+
+  RELEASES_JSON=$(wget -qO- "https://api.github.com/repos/GodOfKebab/wg-quickrs/releases?per_page=10")
+
   echo "ℹ️ Available releases:"
-  for tag in $RELEASES; do
-      echo "    - $tag"
-  done
+
+  # Extract date, tag_name, and prerelease status, then sort by date (reverse)
+  echo "$RELEASES_JSON" | awk '
+    /"tag_name":/ {
+      tag = $0
+      gsub(/.*"tag_name": "/, "", tag)
+      gsub(/".*/, "", tag)
+    }
+    /"prerelease":/ {
+      prerelease = ($0 ~ /true/) ? "(pre-release)" : "(stable)"
+    }
+    /"published_at":/ {
+      date = $0
+      gsub(/.*"published_at": "/, "", date)
+      gsub(/".*/, "", date)
+      # Extract just the date part (YYYY-MM-DD)
+      gsub(/T.*/, "", date)
+      print date " " tag " " prerelease
+    }
+  ' | sort -r | sed 's/^/    - /'
 }
 
 # --- handle commands ---
@@ -315,7 +334,7 @@ if [ -z "$ARG_DIST_TARBALL" ]; then
   if [ -z "$ARG_RELEASE" ]; then
     echo "ℹ️ No release version specified. If you want to use a different version, specify like the following"
     echo
-    echo "    installer.sh --release v1.0.0"
+    echo "    sh installer.sh --release v1.0.0"
     echo
     list_releases
     echo "⏳ Fetching latest release version..."
@@ -371,10 +390,14 @@ if [ -z "$ARG_DIST_TARBALL" ]; then
   # --- find asset url ---
   echo "⏳ Fetching assets from the $ARG_RELEASE release..."
 
-  ASSET_URL=$(printf '%s\n' "$JSON" \
-    | grep "browser_download_url" \
-    | grep "$target" \
-    | cut -d '"' -f4)
+  ASSET_URL=$(printf '%s\n' "$JSON" | awk -v target="$target" '
+    /"url":.*\/repos\/.*\/releases\/assets\// {
+      url = $0; gsub(/.*"url": "/, "", url); gsub(/".*/, "", url)
+    }
+    /"browser_download_url":/ && $0 ~ target {
+      print url; exit
+    }
+  ')
 
   if [ -z "$ASSET_URL" ]; then
     echo "    ❌ Failed to find the correct asset from the $ARG_RELEASE release"
@@ -387,15 +410,15 @@ if [ -z "$ARG_DIST_TARBALL" ]; then
     done
     exit 1;
   else
-    echo "    ✅ Detected asset $(echo "$ASSET_URL" | cut -d'/' -f9-) in the $ARG_RELEASE release"
+    echo "    ✅ Detected asset wg-quickrs-$target.tar.gz in the $ARG_RELEASE release"
   fi
 fi
 
 # --- download tarball if needed ---
 download_tarball() {
-    echo "⏳ Downloading release tarball to $TARBALL_PATH..."
+    echo "⏳ Downloading release tarball to $1..."
     CLEANUP_TARBALL=1
-    if ! wget -q -O "$TARBALL_PATH" "$ASSET_URL"; then
+    if ! wget -q --header="Accept: application/octet-stream" -O "$1" "$ASSET_URL"; then
       echo "    ❌ Failed to download release from $ASSET_URL"
       tarball_cleanup
       exit 1
@@ -406,7 +429,7 @@ download_tarball() {
 
 if [ -z "$ARG_DIST_TARBALL" ]; then
   # Download tarball from GitHub to current directory
-  TARBALL_PATH="./wg-quickrs-$ARG_RELEASE.tar.gz"
+  TARBALL_PATH="wg-quickrs-$ARG_RELEASE.tar.gz"
 
   # Check if tarball already exists
   if [ -f "$TARBALL_PATH" ]; then
@@ -415,12 +438,12 @@ if [ -z "$ARG_DIST_TARBALL" ]; then
     override_tarball=${override_tarball:-n}
 
     if [ "$override_tarball" = "y" ] || [ "$override_tarball" = "Y" ]; then
-      download_tarball
+      download_tarball "$TARBALL_PATH"
     else
       echo "    ✅ Using existing tarball: $TARBALL_PATH"
     fi
   else
-    download_tarball
+    download_tarball "$TARBALL_PATH"
   fi
 else
   # Use provided local tarball
