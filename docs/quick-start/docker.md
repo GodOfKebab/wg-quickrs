@@ -100,6 +100,20 @@ docker run -d \
 HTTPS server will be available at `https://YOUR-SERVER:8443`.
 WireGuard endpoint will be available at `YOUR-SERVER:51820`.
 
+## 1.4 Reset web password
+
+If you need to reset the web password in the future, make sure the 'agent run' container is not running and run the following command:
+
+```bash
+docker run --rm \
+  -v "$HOME/.wg-quickrs-docker:/app/.wg-quickrs" \
+  godofkebab/wg-quickrs \
+  config reset agent web password --password NEW_PASSWORD
+```
+
+⚠️ Note: Keep in mind that the plaintext password might show up in the bash/zsh history.
+If you instead use the binaries instead of docker, `wg-quickrs config reset agent web password` prompts for the password interactively, which is safer.
+
 ### 2. Build the Docker images from source
 
 See [BUILDING.md](../BUILDING.md#12-using-docker)

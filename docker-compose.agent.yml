@@ -22,3 +22,9 @@ services:
       - "51820:51820/udp"
     command: [ "agent", "run" ]
 
+  wg-quickrs-config-reset-password:
+    container_name: wg-quickrs-config-reset-password-cnt
+    extends:
+      service: wg-quickrs-runner
+    command: [ "config", "reset", "agent", "web", "password", "--password", "NEW_PASSWORD"]
+
