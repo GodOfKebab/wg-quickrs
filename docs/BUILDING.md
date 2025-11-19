@@ -190,7 +190,7 @@ wg-quickrs --help
 #   -V, --version
 #           Print version
 
-# wg-quickrs <TAB>           # Shows available commands (init, agent)
+# wg-quickrs <TAB>           # Shows available commands (agent, config)
 # wg-quickrs agent <TAB>     # Shows available agent subcommands
 # wg-quickrs config <TAB>    # Shows available config subcommands
 ```
