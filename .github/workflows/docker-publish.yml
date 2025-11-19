@@ -44,12 +44,3 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:${{ github.ref_name }}
             ${{ steps.check_prerelease.outputs.is_prerelease == 'false' && format('{0}/{1}:latest', secrets.DOCKERHUB_USERNAME, github.event.repository.name) || '' }}
-
-      - name: Update Docker Hub description
-        uses: peter-evans/dockerhub-description@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
-          short-description: ${{ github.event.repository.description }}
-          readme-filepath: ./README.md

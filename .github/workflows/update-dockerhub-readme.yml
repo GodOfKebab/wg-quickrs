@@ -1,0 +1,37 @@
+name: Update Docker Hub README
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'README.md'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  update-dockerhub:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Convert relative links to absolute
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}/blob/main"
+
+          # Convert relative markdown links to absolute GitHub URLs
+          sed -e "s|\](docs/|\](${REPO_URL}/docs/|g" \
+              -e "s|\](\./docs/|\](${REPO_URL}/docs/|g" \
+              README.md > README.dockerhub.md
+
+          echo "Converted README.md for Docker Hub"
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
+          short-description: ${{ github.event.repository.description }}
+          readme-filepath: ./README.dockerhub.md
