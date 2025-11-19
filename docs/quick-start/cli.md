@@ -3,6 +3,8 @@
 You can also use the command line interface to manage the config.
 To get documentation, just pass in `--help` option.
 
+The `installer.sh` script should also install the autocomplete scripts for bash or zsh.
+
 ```sh
 # wg-quickrs <TAB>           # Shows available commands (agent, config)
 wg-quickrs --help
