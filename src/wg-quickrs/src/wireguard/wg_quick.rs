@@ -508,7 +508,7 @@ fn mod_pf_conf(gateway: &str, subnet: &str, add: bool) -> TunnelResult<()> {
 
         // Check if the NAT section was found
         if !found_nat {
-            eprintln!("*** could NOT configure firewall because there are no existing NAT rules. See notes at docs/MACOS-FIREWALL.md");
+            eprintln!("*** could NOT configure firewall because there are no existing NAT rules. See notes at docs/notes/macos-firewall.md");
             return Err(TunnelError::InvalidConfig(
                 "No existing NAT rules in /etc/pf.conf".into()
             ));
