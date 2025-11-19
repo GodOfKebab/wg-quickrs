@@ -1,4 +1,4 @@
-// build.rs: generate bash/zsh/... completion scripts
+// build.rs: generate bash/zsh/... completion scripts and CLI documentation
 use clap::{CommandFactory, Parser};
 use clap_complete::generate_to;
 use std::fs;
@@ -144,6 +144,76 @@ pub const ADD_CONNECTION_{}_HELP: &str = "{}";
         // .../target/release/completions/...
         // println!("cargo:warning=Generated {} completion script at: {:?}", shell, _completion_file_path);
     }
+
+    // Generate markdown documentation (only if GENERATE_CLI_DOCS is set)
+    if std::env::var("GENERATE_CLI_DOCS").is_ok() {
+        generate_cli_docs();
+    }
+
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=Cargo.toml");
+}
+
+fn generate_cli_docs() {
+    let mut cli = wg_quickrs_cli::Cli::command();
+    let mut markdown = String::new();
+
+    // 2. Agent commands (with links)
+    if let Some(agent_cmd) = cli.find_subcommand_mut("agent") {
+        markdown.push_str(&clap_markdown::help_markdown_command_custom(
+            agent_cmd,
+            &clap_markdown::MarkdownOptions::new().show_footer(false).title("`wg-quickrs agent`".to_string())
+        ));
+        markdown.push_str("\n---\n\n");
+    }
+
+    // 3. Config commands (with links)
+    if let Some(config_cmd) = cli.find_subcommand_mut("config") {
+        markdown.push_str(&clap_markdown::help_markdown_command_custom(
+            config_cmd,
+            &clap_markdown::MarkdownOptions::new().title("`wg-quickrs config`".to_string())
+        ));
+    }
+
+    // Replace "Command Overview" with "Subcommand Overview"
+    markdown = markdown.replace("Command Overview", "Subcommand Overview");
+
+    // Prepend # to all lines starting with #
+    let mut result = String::new();
+    // 1. Main command (no links - just basic info)
+    result.push_str("# `wg-quickrs`\n\n");
+    // result.push_str("# `wg-quickrs`\n\n");
+    if let Some(about) = cli.get_about() {
+        result.push_str(&format!("{}\n\n", about));
+    }
+    result.push_str(&format!("**Usage:** `{}`\n\n", cli.render_usage()));
+    result.push_str("###### **Subcommands:**\n");
+    result.push_str("* `agent` — Run agent commands\n");
+    result.push_str("* `config` — Edit agent configuration options\n\n");
+    result.push_str("###### **Options:**\n\n");
+    result.push_str("* `-v`, `--verbose` — Increase verbosity level from Info to Debug\n");
+    result.push_str("* `--wg-quickrs-config-folder <WG_QUICKRS_CONFIG_FOLDER>`\n\n");
+    result.push_str("**Command Overview:**\n");
+    result.push_str("* [`wg-quickrs agent`↴](#wg-quickrs-agent)\n");
+    result.push_str("* [`wg-quickrs config`↴](#wg-quickrs-config)\n\n");
+    result.push_str("---\n\n");
+
+    let lines: Vec<&str> = markdown.lines().collect();
+    for line in lines {
+        if line.starts_with("######") {
+            result.push_str(line);
+            result.push('\n');
+        } else if line.starts_with('#') {
+            result.push_str(&format!("#{}\n", line));
+        } else if line.starts_with("This document contains") {
+            // skip the line
+        } else {
+            result.push_str(line);
+            result.push('\n');
+        }
+    }
+    markdown = result;
+
+    let docs_path = Path::new("../../docs/CLI_REFERENCE.md");
+    fs::write(docs_path, markdown).expect("Failed to write markdown documentation");
 }

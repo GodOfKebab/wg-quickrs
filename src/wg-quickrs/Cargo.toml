@@ -18,6 +18,7 @@ chrono = "0.4.41"
 serde_json = "1.0"
 clap = { version = "4.5.47", features = ["derive"] }
 clap_complete = "4.5.57"
+clap-markdown = "0.1.4"
 wg-quickrs-cli = { path = "../wg-quickrs-cli" }
 
 [dependencies]
