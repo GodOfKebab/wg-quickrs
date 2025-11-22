@@ -530,7 +530,18 @@ install_bin() {
   fi
 
   echo "    ✅ Installed wg-quickrs binary to $BIN_DIR"
-  rm -rf "$WG_QUICKRS_INSTALL_DIR/bin"
+
+  # Remove unnecessary folder with elevated privileges if needed
+  if [ ! -w "$WG_QUICKRS_INSTALL_DIR" ]; then
+    echo "🔐 Administrator privileges required to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/bin"
+    if ! run_privileged rm -rf "$WG_QUICKRS_INSTALL_DIR/bin"; then
+      echo "    ❌ Failed to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/bin"
+    fi
+  else
+    if ! rm -rf "$WG_QUICKRS_INSTALL_DIR/bin"; then
+      echo "    ❌ Failed to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/bin"
+    fi
+  fi
 }
 
 if [ -n "$(ls -A "$WG_QUICKRS_INSTALL_DIR" 2>/dev/null)" ]; then
@@ -581,6 +592,18 @@ case $(basename "$SHELL") in
     printf "    ⚠️ You are not using a supported shell (bash/zsh) for shell completions. Skipping shell completions.\n"
     ;;
 esac
+
+# Remove unnecessary folder with elevated privileges if needed
+if [ ! -w "$WG_QUICKRS_INSTALL_DIR" ]; then
+  echo "🔐 Administrator privileges required to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/completions"
+  if ! run_privileged rm -rf "$WG_QUICKRS_INSTALL_DIR/completions"; then
+    echo "    ❌ Failed to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/completions"
+  fi
+else
+  if ! rm -rf "$WG_QUICKRS_INSTALL_DIR/completions"; then
+    echo "    ❌ Failed to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/completions"
+  fi
+fi
 
 printf "🤔 Do you want to set up TLS certs/keys (at \"%s/certs\") now? [Y/n]: " "$WG_QUICKRS_INSTALL_DIR"
 read setup_certs
