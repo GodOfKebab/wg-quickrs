@@ -145,8 +145,7 @@ impl TunnelManager {
         self.execute_hooks(HookType::PostUp)?;
 
         log::info!(
-                "Started WireGuard tunnel at {}:{} (interface: {})",
-                &config.agent.web.address,
+                "Started WireGuard tunnel at *:{} (wg interface: {})",
                 &config.agent.vpn.port,
                 self.real_interface.clone().unwrap()
             );
