@@ -16,7 +16,7 @@ For that, you can skip the dependency installation.
 Additionally, if `/usr/local/bin` doesn't exist, you can install to user.
 
 ```shell
-wget -qO installer.sh https://raw.githubusercontent.com/GodOfKebab/wg-quickrs/refs/heads/main/installer.sh
+wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/installer.sh
 sh installer.sh --skip-deps --install-to user
 ```
 

@@ -43,7 +43,7 @@ The installer script performs the following actions:
 ### Basic installation
 
 ```bash
-wget -qO installer.sh https://raw.githubusercontent.com/GodOfKebab/wg-quickrs/refs/heads/main/installer.sh
+wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/installer.sh
 sh installer.sh
 ```
 
@@ -66,7 +66,7 @@ sh installer.sh --install-to user
 sh installer.sh --skip-deps
 
 # Use a local tarball instead of downloading (Air-gapped installation)
-wget https://github.com/GodOfKebab/wg-quickrs/releases/download/v1.0.0/wg-quickrs-x86_64-unknown-linux-musl.tar.gz
+wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/wg-quickrs-x86_64-unknown-linux-musl.tar.gz
 sh installer.sh --dist-tarball ./wg-quickrs-x86_64-unknown-linux-musl.tar.gz
 ```
 
