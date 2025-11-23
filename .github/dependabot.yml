@@ -8,7 +8,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
-    versioning-strategy: increase
     groups:
       # Group critical and high-severity security updates
       security-critical-high:
@@ -29,7 +28,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
-    versioning-strategy: increase
     groups:
       # Group critical and high-severity security updates
       security-critical-high:
@@ -50,7 +48,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
-    versioning-strategy: increase
     groups:
       # Group critical and high-severity security updates
       security-critical-high:
