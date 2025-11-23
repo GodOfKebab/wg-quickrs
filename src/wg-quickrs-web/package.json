@@ -10,7 +10,7 @@
   "dependencies": {
     "vue": "^3.5.21",
     "@vitejs/plugin-vue": "^6.0.1",
-    "@tailwindcss/vite": "^4.1.13",
+    "@tailwindcss/vite": "^4.1.17",
     "chart.js": "^4.5.0",
     "dayjs": "^1.11.18",
     "fast-deep-equal": "^3.1.3",
