@@ -22,7 +22,7 @@ clap-markdown = "0.1.4"
 wg-quickrs-cli = { path = "../wg-quickrs-cli" }
 
 [dependencies]
-actix-web = { version = "4.11.0", features = ["rustls-0_23"] }
+actix-web = { version = "4.12.0", features = ["rustls-0_23"] }
 actix-cors = "0.7"
 mime_guess = "2.0.4"
 rust-embed = "8.8.0"
