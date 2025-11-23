@@ -4,6 +4,6 @@ edition = "2024"
 rust-version = "1.90"
 
 [dependencies]
-clap = { version = "4.5.49", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 ipnet = "2.11.0"
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
