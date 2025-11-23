@@ -29,11 +29,6 @@ pub enum SetAgentCommands {
         #[command(subcommand)]
         target: SetAgentVpnCommands,
     },
-    #[command(about = "Set firewall configuration")]
-    Firewall {
-        #[command(subcommand)]
-        target: SetAgentFirewallCommands,
-    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -89,20 +84,6 @@ pub enum SetAgentVpnCommands {
     Port {
         #[arg(help = "Port number (0-65535)")]
         value: u16,
-    },
-}
-
-#[derive(Subcommand, Debug)]
-pub enum SetAgentFirewallCommands {
-    #[command(about = "Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)")]
-    Utility {
-        #[arg(help = "Utility binary path or name")]
-        value: PathBuf,
-    },
-    #[command(about = "Set the gateway used to configure firewall NAT and input rules (e.g. en0, eth0, etc.)")]
-    Gateway {
-        #[arg(help = "Internet interface name")]
-        value: String,
     },
 }
 

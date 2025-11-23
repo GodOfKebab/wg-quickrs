@@ -28,11 +28,6 @@ pub enum GetAgentCommands {
         #[command(subcommand)]
         target: Option<GetAgentVpnCommands>,
     },
-    #[command(about = "Get firewall configuration")]
-    Firewall {
-        #[command(subcommand)]
-        target: Option<GetAgentFirewallCommands>,
-    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -90,16 +85,6 @@ pub enum GetAgentVpnCommands {
     Enabled,
     #[command(about = "Get VPN server listening port")]
     Port,
-}
-
-#[derive(Subcommand, Debug)]
-pub enum GetAgentFirewallCommands {
-    #[command(about = "Get whether firewall configuration is enabled")]
-    Enabled,
-    #[command(about = "Get the utility used to configure firewall NAT and input rules")]
-    Utility,
-    #[command(about = "Get the gateway used to configure firewall NAT and input rules")]
-    Gateway,
 }
 
 #[derive(Subcommand, Debug)]

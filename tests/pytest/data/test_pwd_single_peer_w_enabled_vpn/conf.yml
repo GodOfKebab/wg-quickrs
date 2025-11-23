@@ -17,9 +17,17 @@ agent:
     enabled: true
     port: 51829
   firewall:
-    enabled: false
-    utility: ''
-    gateway: ''
+    http:
+      pre_up: []
+      post_down: []
+    https:
+      pre_up: []
+      post_down: []
+    vpn:
+      pre_up: []
+      post_up: []
+      pre_down: []
+      post_down: []
 network:
   name: wg-quickrs-home
   subnet: '10.0.34.0/24'

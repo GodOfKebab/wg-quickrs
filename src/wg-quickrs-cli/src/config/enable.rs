@@ -24,8 +24,6 @@ pub enum EnableAgentCommands {
     },
     #[command(about = "Enable VPN server")]
     Vpn,
-    #[command(about = "Enable firewall configuration")]
-    Firewall,
 }
 
 #[derive(Subcommand, Debug)]

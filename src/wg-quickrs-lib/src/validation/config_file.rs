@@ -23,13 +23,35 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
             ConfigFileValidationError::Validation("agent.web.https.tls_key".to_string(), e)
         })?;
     }
-    if config_file.agent.firewall.enabled {
-        validate_fw_utility(&config_file.agent.firewall.utility).map_err(|e| {
-            ConfigFileValidationError::Validation("agent.firewall.utility".to_string(), e)
-        })?;
-        parse_and_validate_fw_gateway(&config_file.agent.firewall.gateway).map_err(|e| {
-            ConfigFileValidationError::Validation("agent.firewall.gateway".to_string(), e)
-        })?;
+    // Validate Firewall scripts
+    for (protocol, scripts_map) in [
+        ("http", &config_file.agent.firewall.http),
+        ("https", &config_file.agent.firewall.https),
+    ] {
+        for (script_type, scripts) in scripts_map.clone() {
+            for (i, script) in scripts.iter().enumerate() {
+                if script.enabled {
+                    parse_and_validate_peer_script(&script.script).map_err(|e| {
+                        ConfigFileValidationError::Validation(
+                            format!("agent.firewall.{protocol}.{script_type}.{i}"),
+                            e,
+                        )
+                    })?;
+                }
+            }
+        }
+    }
+    for (script_type, scripts) in config_file.agent.firewall.vpn.clone() {
+        for (i, script) in scripts.iter().enumerate() {
+            if script.enabled {
+                parse_and_validate_peer_script(&script.script).map_err(|e| {
+                    ConfigFileValidationError::Validation(
+                        format!("agent.firewall.vpn.{script_type}.{i}"),
+                        e,
+                    )
+                })?;
+            }
+        }
     }
 
     // Validate Network
