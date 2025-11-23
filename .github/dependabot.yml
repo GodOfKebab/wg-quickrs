@@ -1,0 +1,65 @@
+version: 2
+
+updates:
+  # Cargo dependencies (Rust)
+  - package-ecosystem: "cargo"
+    directory: "/src"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    groups:
+      # Group critical and high-severity security updates
+      security-critical-high:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+      - "rust"
+
+  # npm dependencies (Node.js)
+  - package-ecosystem: "npm"
+    directory: "/src/wg-quickrs-web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    groups:
+      # Group critical and high-severity security updates
+      security-critical-high:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+      - "javascript"
+
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/tests/pytest"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    groups:
+      # Group critical and high-severity security updates
+      security-critical-high:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+      - "python"
