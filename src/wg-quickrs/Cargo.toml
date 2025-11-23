@@ -25,7 +25,7 @@ wg-quickrs-cli = { path = "../wg-quickrs-cli" }
 actix-web = { version = "4.11.0", features = ["rustls-0_23"] }
 actix-cors = "0.7"
 mime_guess = "2.0.4"
-rust-embed = "8.8.0"
+rust-embed = "8.9.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_yml = "0.0.12"
 serde_json = "1.0"
