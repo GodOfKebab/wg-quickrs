@@ -324,6 +324,8 @@ impl TunnelManager {
         log::debug!("[#] Executing WireGuard {:?} hooks", hook_type);
         let this_peer = &self.this_peer()?;
         let config = self.config.as_ref().unwrap();
+        let wg_interface_var = self.real_interface.clone()
+            .map_or(String::new(), |iface| format!("WG_INTERFACE={}", iface));
 
         // Execute VPN firewall scripts
         if config.agent.vpn.enabled {
@@ -339,7 +341,13 @@ impl TunnelManager {
                     continue;
                 }
 
-                let output = shell_cmd(&["sh", "-c", &hook.script])?;
+                let script_w_vars = format!(
+                    "SUBNET={subnet}\nWG_PORT={wg_port}\n{wg_interface_var}\n{script}",
+                    subnet=config.network.subnet,
+                    wg_port=config.agent.vpn.port,
+                    script=hook.script
+                );
+                let output = shell_cmd(&["sh", "-c", &script_w_vars])?;
                 if !output.status.success() {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     log::warn!("Warning: VPN firewall script failed: {}", stderr);

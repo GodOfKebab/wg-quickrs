@@ -67,7 +67,7 @@ fn generate_http_firewall_scripts(utility: &str) -> HttpScripts {
         let pre_up = vec![
             Script {
                 enabled: true,
-                script: "iptables -I INPUT -p tcp --dport \"$HTTP_PORT\" -j ACCEPT;".to_string(),
+                script: "iptables -I INPUT -p tcp --dport \"$PORT\" -j ACCEPT;".to_string(),
             },
         ];
 
@@ -75,7 +75,7 @@ fn generate_http_firewall_scripts(utility: &str) -> HttpScripts {
         let post_down = vec![
             Script {
                 enabled: true,
-                script: "iptables -D INPUT -p tcp --dport \"$HTTP_PORT\" -j ACCEPT;".to_string(),
+                script: "iptables -D INPUT -p tcp --dport \"$PORT\" -j ACCEPT;".to_string(),
             },
         ];
 

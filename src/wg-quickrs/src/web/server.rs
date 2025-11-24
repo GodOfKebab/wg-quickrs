@@ -22,19 +22,18 @@ pub enum ServerError {
     TlsSetupFailed(String),
 }
 
-fn execute_script(script: &str, hook_type: HookType) {
-    if !script.is_empty() {
-        log::debug!("[#] Executing http(s) {:?} hooks", hook_type);
-        match shell_cmd(&["sh", "-c", script]) {
-            Ok(output) => {
-                if !output.status.success() {
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    log::warn!("Warning: http(s) firewall script failed: {}", stderr);
-                }
+fn execute_script(script: &str, port: u16, hook_type: HookType) {
+    log::debug!("[#] Executing http(s) {:?} hooks", hook_type);
+    let script_w_vars = format!("PORT={port}\n{script}");
+    match shell_cmd(&["sh", "-c", &script_w_vars]) {
+        Ok(output) => {
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                log::warn!("Warning: http(s) firewall script failed: {}", stderr);
             }
-            Err(e) => {
-                log::warn!("Warning: http(s) firewall script failed: {}", e);
-            }
+        }
+        Err(e) => {
+            log::warn!("Warning: http(s) firewall script failed: {}", e);
         }
     }
 }
@@ -78,7 +77,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
         Some(Box::pin(async move {
             for hook in &http_scripts.pre_up {
                 if hook.enabled {
-                    execute_script(&hook.script, HookType::PreUp);
+                    execute_script(&hook.script, config.agent.web.http.port, HookType::PreUp);
                 }
             }
             
@@ -94,7 +93,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                     log::info!("Unable bind the http server to {}: {}", bind_addr, e);
                     for hook in &http_scripts.post_down {
                         if hook.enabled {
-                            execute_script(&hook.script, HookType::PostDown);
+                            execute_script(&hook.script, config.agent.web.http.port, HookType::PostDown);
                         }
                     }
                     return Ok(());
@@ -104,7 +103,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             log::info!("Stopped HTTP server");
             for hook in &http_scripts.post_down {
                 if hook.enabled {
-                    execute_script(&hook.script, HookType::PostDown);
+                    execute_script(&hook.script, config.agent.web.http.port, HookType::PostDown);
                 }
             }
             Ok(())
@@ -128,7 +127,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             Ok(tls_config) => Some(Box::pin(async move {
                 for hook in &https_scripts.pre_up {
                     if hook.enabled {
-                        execute_script(&hook.script, HookType::PreUp);
+                        execute_script(&hook.script, config.agent.web.https.port, HookType::PreUp);
                     }
                 }
 
@@ -143,7 +142,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                         log::info!("Unable bind the https server to {}: {}", bind_addr, e);
                         for hook in &https_scripts.post_down {
                             if hook.enabled {
-                                execute_script(&hook.script, HookType::PostDown);
+                                execute_script(&hook.script, config.agent.web.https.port, HookType::PostDown);
                             }
                         }
                         return Ok(());
@@ -153,7 +152,7 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                 log::info!("Stopped HTTPS server");
                 for hook in &https_scripts.post_down {
                     if hook.enabled {
-                        execute_script(&hook.script, HookType::PostDown);
+                        execute_script(&hook.script, config.agent.web.https.port, HookType::PostDown);
                     }
                 }
                 Ok(())
