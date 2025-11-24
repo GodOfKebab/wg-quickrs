@@ -204,17 +204,314 @@ def test_init_no_prompt_firewall(setup_wg_quickrs_folder):
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
 
     for opt_val, success in [
-        (f"--agent-firewall-enabled true --agent-firewall-utility not-a-utility --agent-firewall-gateway {gateway}", False),
-        (f"--agent-firewall-enabled true --agent-firewall-utility {utility} --agent-firewall-gateway not-a-gateway", False),
-        (f"--agent-firewall-enabled true --agent-firewall-gateway {gateway}", False),
-        (f"--agent-firewall-enabled true --agent-firewall-utility {utility}", False),
-        (f"--agent-firewall-enabled true --agent-firewall-utility {utility} --agent-firewall-gateway {gateway}", True),
+        # Invalid utility
+        (f"--agent-firewall-enabled true --agent-firewall-configure-http false --agent-firewall-configure-https false --agent-firewall-configure-vpn true --agent-firewall-vpn-automated true --agent-firewall-utility not-a-utility --agent-firewall-gateway {gateway}", False),
+        # Invalid gateway
+        (f"--agent-firewall-enabled true --agent-firewall-configure-http false --agent-firewall-configure-https false --agent-firewall-configure-vpn true --agent-firewall-vpn-automated true --agent-firewall-utility {utility} --agent-firewall-gateway not-a-gateway", False),
+        # Missing utility (but automated VPN enabled, so utility is required)
+        (f"--agent-firewall-enabled true --agent-firewall-configure-http false --agent-firewall-configure-https false --agent-firewall-configure-vpn true --agent-firewall-vpn-automated true --agent-firewall-gateway {gateway}", False),
+        # Missing gateway (but automated VPN enabled, so gateway is required)
+        (f"--agent-firewall-enabled true --agent-firewall-configure-http false --agent-firewall-configure-https false --agent-firewall-configure-vpn true --agent-firewall-vpn-automated true --agent-firewall-utility {utility}", False),
+        # Valid VPN automated setup
+        (f"--agent-firewall-enabled true --agent-firewall-configure-http false --agent-firewall-configure-https false --agent-firewall-configure-vpn true --agent-firewall-vpn-automated true --agent-firewall-utility {utility} --agent-firewall-gateway {gateway}", True),
     ]:
         setup_wg_quickrs_folder(None)
         ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=opt_val))
         assert (ret == 0) == success
         if os.path.exists(wg_quickrs_config_file):
             os.remove(wg_quickrs_config_file)
+
+
+def test_init_firewall_http_manual(setup_wg_quickrs_folder):
+    """Test HTTP firewall with manual script setup"""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Test HTTP manual setup with custom scripts
+    firewall_opts = """--agent-firewall-enabled true \\
+        --agent-firewall-configure-http true \\
+        --agent-firewall-http-automated false \\
+        --agent-firewall-http-pre-up-enabled true \\
+        --agent-firewall-http-pre-up-line 'echo "Starting HTTP firewall";' \\
+        --agent-firewall-http-pre-up-line 'iptables -I INPUT -p tcp --dport 80 -j ACCEPT;' \\
+        --agent-firewall-http-post-down-enabled true \\
+        --agent-firewall-http-post-down-line 'iptables -D INPUT -p tcp --dport 80 -j ACCEPT;' \\
+        --agent-firewall-http-post-down-line 'echo "Stopped HTTP firewall";' \\
+        --agent-firewall-configure-https false \\
+        --agent-firewall-configure-vpn false"""
+
+    ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=firewall_opts))
+    assert ret == 0
+
+    # Verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    http_scripts = conf["agent"]["firewall"]["http"]
+
+    # Verify pre_up scripts
+    assert len(http_scripts["pre_up"]) == 2
+    assert http_scripts["pre_up"][0]["script"] == 'echo "Starting HTTP firewall";'
+    assert http_scripts["pre_up"][1]["script"] == 'iptables -I INPUT -p tcp --dport 80 -j ACCEPT;'
+
+    # Verify post_down scripts
+    assert len(http_scripts["post_down"]) == 2
+    assert http_scripts["post_down"][0]["script"] == 'iptables -D INPUT -p tcp --dport 80 -j ACCEPT;'
+    assert http_scripts["post_down"][1]["script"] == 'echo "Stopped HTTP firewall";'
+
+
+def test_init_firewall_https_manual(setup_wg_quickrs_folder):
+    """Test HTTPS firewall with manual script setup"""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Test HTTPS manual setup with custom scripts
+    firewall_opts = """--agent-firewall-enabled true \\
+        --agent-firewall-configure-http false \\
+        --agent-firewall-configure-https true \\
+        --agent-firewall-https-automated false \\
+        --agent-firewall-https-pre-up-enabled true \\
+        --agent-firewall-https-pre-up-line 'echo "Starting HTTPS firewall";' \\
+        --agent-firewall-https-pre-up-line 'iptables -I INPUT -p tcp --dport 443 -j ACCEPT;' \\
+        --agent-firewall-https-post-down-enabled true \\
+        --agent-firewall-https-post-down-line 'iptables -D INPUT -p tcp --dport 443 -j ACCEPT;' \\
+        --agent-firewall-configure-vpn false"""
+
+    ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=firewall_opts))
+    assert ret == 0
+
+    # Verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    https_scripts = conf["agent"]["firewall"]["https"]
+
+    # Verify pre_up scripts
+    assert len(https_scripts["pre_up"]) == 2
+    assert https_scripts["pre_up"][0]["script"] == 'echo "Starting HTTPS firewall";'
+    assert https_scripts["pre_up"][1]["script"] == 'iptables -I INPUT -p tcp --dport 443 -j ACCEPT;'
+
+    # Verify post_down scripts
+    assert len(https_scripts["post_down"]) == 1
+    assert https_scripts["post_down"][0]["script"] == 'iptables -D INPUT -p tcp --dport 443 -j ACCEPT;'
+
+
+def test_init_firewall_vpn_manual(setup_wg_quickrs_folder):
+    """Test VPN firewall with manual script setup (all 4 lifecycle hooks)"""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Test VPN manual setup with custom scripts for all 4 hooks
+    firewall_opts = """--agent-firewall-enabled true \\
+        --agent-firewall-configure-http false \\
+        --agent-firewall-configure-https false \\
+        --agent-firewall-configure-vpn true \\
+        --agent-firewall-vpn-automated false \\
+        --agent-firewall-vpn-pre-up-enabled true \\
+        --agent-firewall-vpn-pre-up-line 'echo "VPN pre-up";' \\
+        --agent-firewall-vpn-post-up-enabled true \\
+        --agent-firewall-vpn-post-up-line 'echo "VPN post-up 1";' \\
+        --agent-firewall-vpn-post-up-line 'iptables -A FORWARD -i wg0 -j ACCEPT;' \\
+        --agent-firewall-vpn-post-up-line 'echo "VPN post-up 3";' \\
+        --agent-firewall-vpn-pre-down-enabled true \\
+        --agent-firewall-vpn-pre-down-line 'echo "VPN pre-down";' \\
+        --agent-firewall-vpn-post-down-enabled true \\
+        --agent-firewall-vpn-post-down-line 'iptables -D FORWARD -i wg0 -j ACCEPT;' \\
+        --agent-firewall-vpn-post-down-line 'echo "VPN post-down";'"""
+
+    ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=firewall_opts))
+    assert ret == 0
+
+    # Verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    vpn_scripts = conf["agent"]["firewall"]["vpn"]
+
+    # Verify all 4 lifecycle hooks
+    assert len(vpn_scripts["pre_up"]) == 1
+    assert vpn_scripts["pre_up"][0]["script"] == 'echo "VPN pre-up";'
+
+    assert len(vpn_scripts["post_up"]) == 3
+    assert vpn_scripts["post_up"][0]["script"] == 'echo "VPN post-up 1";'
+    assert vpn_scripts["post_up"][1]["script"] == 'iptables -A FORWARD -i wg0 -j ACCEPT;'
+    assert vpn_scripts["post_up"][2]["script"] == 'echo "VPN post-up 3";'
+
+    assert len(vpn_scripts["pre_down"]) == 1
+    assert vpn_scripts["pre_down"][0]["script"] == 'echo "VPN pre-down";'
+
+    assert len(vpn_scripts["post_down"]) == 2
+    assert vpn_scripts["post_down"][0]["script"] == 'iptables -D FORWARD -i wg0 -j ACCEPT;'
+    assert vpn_scripts["post_down"][1]["script"] == 'echo "VPN post-down";'
+
+
+def test_init_firewall_mixed_automated_manual(setup_wg_quickrs_folder):
+    """Test mixed firewall configuration: HTTP automated + VPN manual"""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    utilities = get_available_firewall_utilities()
+    interfaces = get_available_network_interfaces()
+
+    if not utilities or not interfaces:
+        pytest.skip("No firewall utilities or network interfaces available on this system")
+
+    utility = utilities[0]
+    gateway = interfaces[0]
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # HTTP automated, VPN manual
+    firewall_opts = f"""--agent-firewall-enabled true \\
+        --agent-firewall-configure-http true \\
+        --agent-firewall-http-automated true \\
+        --agent-firewall-utility {utility} \\
+        --agent-firewall-configure-https false \\
+        --agent-firewall-configure-vpn true \\
+        --agent-firewall-vpn-automated false \\
+        --agent-firewall-vpn-pre-up-enabled false \\
+        --agent-firewall-vpn-post-up-enabled true \\
+        --agent-firewall-vpn-post-up-line 'echo "Custom VPN post-up";' \\
+        --agent-firewall-vpn-pre-down-enabled false \\
+        --agent-firewall-vpn-post-down-enabled true \\
+        --agent-firewall-vpn-post-down-line 'echo "Custom VPN post-down";'"""
+
+    ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=firewall_opts))
+    assert ret == 0
+
+    # Verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    # VPN should have manual scripts
+    vpn_scripts = conf["agent"]["firewall"]["vpn"]
+    assert len(vpn_scripts["pre_up"]) == 0
+    assert len(vpn_scripts["post_up"]) == 1
+    assert vpn_scripts["post_up"][0]["script"] == 'echo "Custom VPN post-up";'
+    assert len(vpn_scripts["pre_down"]) == 0
+    assert len(vpn_scripts["post_down"]) == 1
+    assert vpn_scripts["post_down"][0]["script"] == 'echo "Custom VPN post-down";'
+
+
+def test_init_firewall_all_services_automated(setup_wg_quickrs_folder):
+    """Test all firewall services (HTTP, HTTPS, VPN) with automated setup"""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    utilities = get_available_firewall_utilities()
+    interfaces = get_available_network_interfaces()
+
+    if not utilities or not interfaces:
+        pytest.skip("No firewall utilities or network interfaces available on this system")
+
+    utility = utilities[0]
+    gateway = interfaces[0]
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # All services automated
+    firewall_opts = f"""--agent-firewall-enabled true \\
+        --agent-firewall-configure-http true \\
+        --agent-firewall-http-automated true \\
+        --agent-firewall-configure-https true \\
+        --agent-firewall-https-automated true \\
+        --agent-firewall-configure-vpn true \\
+        --agent-firewall-vpn-automated true \\
+        --agent-firewall-utility {utility} \\
+        --agent-firewall-gateway {gateway}"""
+
+    ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=firewall_opts))
+    assert ret == 0
+
+    # Verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    # All services should have automated scripts
+    vpn_scripts = conf["agent"]["firewall"]["vpn"]
+
+    # VPN should have 5 post_up and 5 post_down scripts
+    assert len(vpn_scripts["post_up"]) > 0
+    assert len(vpn_scripts["post_down"]) > 0
+
+
+def test_init_firewall_disabled_services_empty(setup_wg_quickrs_folder):
+    """Test that disabled firewall services result in empty script arrays"""
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    utilities = get_available_firewall_utilities()
+    interfaces = get_available_network_interfaces()
+
+    if not utilities or not interfaces:
+        pytest.skip("No firewall utilities or network interfaces available on this system")
+
+    utility = utilities[0]
+    gateway = interfaces[0]
+    setup_wg_quickrs_folder(None)
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    # Only VPN enabled, HTTP and HTTPS disabled
+    firewall_opts = f"""--agent-firewall-enabled true \\
+        --agent-firewall-configure-http false \\
+        --agent-firewall-configure-https false \\
+        --agent-firewall-configure-vpn true \\
+        --agent-firewall-vpn-automated true \\
+        --agent-firewall-utility {utility} \\
+        --agent-firewall-gateway {gateway}"""
+
+    ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=firewall_opts))
+    assert ret == 0
+
+    # Verify config
+    with open(wg_quickrs_config_file) as stream:
+        conf = yaml.load(stream)
+
+    # HTTP and HTTPS should have empty arrays
+    http_scripts = conf["agent"]["firewall"]["http"]
+    https_scripts = conf["agent"]["firewall"]["https"]
+
+    assert http_scripts["pre_up"] == []
+    assert http_scripts["post_down"] == []
+    assert https_scripts["pre_up"] == []
+    assert https_scripts["post_down"] == []
+
+    # VPN should have scripts
+    vpn_scripts = conf["agent"]["firewall"]["vpn"]
+    assert len(vpn_scripts["post_up"]) > 0
+    assert len(vpn_scripts["post_down"]) > 0
+
+
+def test_init_firewall_script_validation(setup_wg_quickrs_folder):
+    """Test that invalid firewall scripts are rejected"""
+    setup_wg_quickrs_folder(None)
+
+    # Invalid HTTP script (missing semicolon)
+    firewall_opts = """--agent-firewall-enabled true \\
+        --agent-firewall-configure-http true \\
+        --agent-firewall-http-automated false \\
+        --agent-firewall-http-pre-up-enabled true \\
+        --agent-firewall-http-pre-up-line 'not-a-valid-script' \\
+        --agent-firewall-configure-https false \\
+        --agent-firewall-configure-vpn false"""
+
+    ret = init_no_prompt(generate_init_no_prompt_opts(agent_firewall=firewall_opts))
+    assert ret != 0
 
 
 def test_init_with_existing_config(setup_wg_quickrs_folder):
