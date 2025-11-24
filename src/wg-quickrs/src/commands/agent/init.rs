@@ -153,20 +153,23 @@ fn generate_firewall_scripts(utility: &str, gateway: &str) -> Scripts {
             post_down,
         }
     } else if utility_name == "pfctl" {
+        let pf_vars = format!(
+            r#"PF_CONF="/etc/pf.conf";
+NAT_RULE="nat on {gateway} from $SUBNET to any -> {gateway}";
+"#
+        );
         // PostUp scripts - 4 separate items
         let post_up = vec![
             Script {
                 enabled: true,
                 script: format!(
-                    r#"PF_CONF="/etc/pf.conf";
-NAT_RULE="nat on {gateway} from $SUBNET to any -> {gateway}";
-
+                    r#"{pf_vars}
 awk "/^nat/ {{print; print \"$NAT_RULE\"; next}}1" "$PF_CONF" > "$PF_CONF.new";
 
-if [grep -qxF '{{nat_rule}}' /etc/pf.conf]; then
-	echo "Error: could NOT configure firewall because there are no existing NAT rules at $PF_CONF. See notes at docs/notes/macos-firewall.md" >&2;
-	rm -f "$PF_CONF.new";
-	exit 1;
+if ! grep -qxF "$NAT_RULE" "$PF_CONF.new"; then
+  echo "Error: could NOT configure firewall because there are no existing NAT rules at $PF_CONF. See notes at docs/notes/macos-firewall.md" >&2;
+  rm -f "$PF_CONF.new";
+  exit 1;
 fi
 
 mv "$PF_CONF" "$PF_CONF.bak";
@@ -192,9 +195,7 @@ mv "$PF_CONF.new" "$PF_CONF";"#
             Script {
                 enabled: true,
                 script: format!(
-                    r#"PF_CONF="/etc/pf.conf";
-NAT_RULE="nat on {gateway} from $SUBNET to any -> {gateway}";
-
+                    r#"{pf_vars}
 awk -v line="$NAT_RULE" '$0 != line' "$PF_CONF" > "$PF_CONF.new";
 
 mv "$PF_CONF" "$PF_CONF.bak";
