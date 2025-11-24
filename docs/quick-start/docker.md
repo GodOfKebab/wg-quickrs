@@ -51,6 +51,12 @@ docker run --rm \
     --agent-firewall-enabled     true                               \
     --agent-firewall-utility     /usr/sbin/iptables                 \
     --agent-firewall-gateway     eth0                               \
+    --agent-firewall-configure-http  true                           \
+    --agent-firewall-http-automated  true                           \
+    --agent-firewall-configure-https true                           \
+    --agent-firewall-https-automated true                           \
+    --agent-firewall-configure-vpn   true                           \
+    --agent-firewall-vpn-automated   true                           \
     --agent-peer-name                     wg-quickrs-host   \
     --agent-peer-vpn-internal-address     10.0.34.1         \
     --agent-peer-vpn-endpoint             YOUR-SERVER:51820 \

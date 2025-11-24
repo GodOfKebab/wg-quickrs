@@ -27,20 +27,26 @@ services:
       --network-name wg-quickrs-home
       --network-subnet     10.0.34.0/24
 
-      --agent-web-address          0.0.0.0
-      --agent-web-http-enabled     true
-      --agent-web-http-port        80
-      --agent-web-https-enabled    true
-      --agent-web-https-port       443
-      --agent-web-https-tls-cert   certs/servers/YOUR-SERVER/cert.pem
-      --agent-web-https-tls-key    certs/servers/YOUR-SERVER/key.pem
-      --agent-web-password-enabled true
-      --agent-web-password         YOUR-PASSWORD
-      --agent-vpn-enabled          true
-      --agent-vpn-port             51820
-      --agent-firewall-enabled     true
-      --agent-firewall-utility     /usr/sbin/iptables
-      --agent-firewall-gateway     eth0
+      --agent-web-address              0.0.0.0
+      --agent-web-http-enabled         true
+      --agent-web-http-port            80
+      --agent-web-https-enabled        true
+      --agent-web-https-port           443
+      --agent-web-https-tls-cert       certs/servers/YOUR-SERVER/cert.pem
+      --agent-web-https-tls-key        certs/servers/YOUR-SERVER/key.pem
+      --agent-web-password-enabled     true
+      --agent-web-password             YOUR-PASSWORD
+      --agent-vpn-enabled              true
+      --agent-vpn-port                 51820
+      --agent-firewall-enabled         true
+      --agent-firewall-utility         /usr/sbin/iptables
+      --agent-firewall-gateway         eth0
+      --agent-firewall-configure-http  true
+      --agent-firewall-http-automated  true
+      --agent-firewall-configure-https true
+      --agent-firewall-https-automated true
+      --agent-firewall-configure-vpn   true
+      --agent-firewall-vpn-automated   true
       
       --agent-peer-name                     wg-quickrs-host
       --agent-peer-vpn-internal-address     10.0.34.1

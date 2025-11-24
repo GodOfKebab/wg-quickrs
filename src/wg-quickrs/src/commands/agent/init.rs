@@ -116,6 +116,7 @@ fn generate_firewall_scripts(utility: &str, gateway: &str) -> Scripts {
                 enabled: true,
                 script: "iptables -I FORWARD -o \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
             },
+            #[cfg(not(feature = "docker"))]
             Script {
                 enabled: true,
                 script: "sysctl -w net.ipv4.ip_forward=1;".to_string(),
@@ -140,6 +141,7 @@ fn generate_firewall_scripts(utility: &str, gateway: &str) -> Scripts {
                 enabled: true,
                 script: "iptables -D FORWARD -o \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
             },
+            #[cfg(not(feature = "docker"))]
             Script {
                 enabled: true,
                 script: "sysctl -w net.ipv4.ip_forward=0;".to_string(),
