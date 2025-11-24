@@ -54,6 +54,175 @@ pub fn recommend_interface() -> Option<Interface> {
         })
 }
 
+// Generate recommended HTTP/HTTPS firewall scripts based on utility
+// HTTP/HTTPS only need pre_up and post_down (not post_up or pre_down)
+fn generate_http_firewall_scripts(utility: &str) -> HttpScripts {
+    let utility_name = std::path::Path::new(utility)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
+    if utility_name == "iptables" {
+        // PreUp scripts - 1 item to allow HTTP/HTTPS port
+        let pre_up = vec![
+            Script {
+                enabled: true,
+                script: "iptables -I INPUT -p tcp --dport \"$HTTP_PORT\" -j ACCEPT;".to_string(),
+            },
+        ];
+
+        // PostDown scripts - 1 item to remove HTTP/HTTPS port rule
+        let post_down = vec![
+            Script {
+                enabled: true,
+                script: "iptables -D INPUT -p tcp --dport \"$HTTP_PORT\" -j ACCEPT;".to_string(),
+            },
+        ];
+
+        HttpScripts {
+            pre_up,
+            post_down,
+        }
+    } else {
+        // Skip pfctl
+        HttpScripts::default()
+    }
+}
+
+// Generate recommended firewall scripts based on utility
+// Only GATEWAY is substituted during init, all other variables are runtime variables
+fn generate_firewall_scripts(utility: &str, gateway: &str) -> Scripts {
+    let utility_name = std::path::Path::new(utility)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
+    if utility_name == "iptables" {
+        // PostUp scripts - 5 separate items
+        let post_up = vec![
+            Script {
+                enabled: true,
+                script: format!("iptables -t nat -I POSTROUTING -s \"$SUBNET\" -o \"{}\" -j MASQUERADE;", gateway),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -I INPUT -p udp -m udp --dport \"$WG_PORT\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -I FORWARD -i \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -I FORWARD -o \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "sysctl -w net.ipv4.ip_forward=1;".to_string(),
+            },
+        ];
+
+        // PostDown scripts - 5 separate items
+        let post_down = vec![
+            Script {
+                enabled: true,
+                script: format!("iptables -t nat -D POSTROUTING -s \"$SUBNET\" -o \"{}\" -j MASQUERADE;", gateway),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -D INPUT -p udp -m udp --dport \"$WG_PORT\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -D FORWARD -i \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -D FORWARD -o \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "sysctl -w net.ipv4.ip_forward=0;".to_string(),
+            },
+        ];
+
+        Scripts {
+            pre_up: vec![],
+            post_up,
+            pre_down: vec![],
+            post_down,
+        }
+    } else if utility_name == "pfctl" {
+        // PostUp scripts - 4 separate items
+        let post_up = vec![
+            Script {
+                enabled: true,
+                script: format!(
+                    r#"PF_CONF="/etc/pf.conf";
+NAT_RULE="nat on {gateway} from $SUBNET to any -> {gateway}";
+
+awk "/^nat/ {{print; print \"$NAT_RULE\"; next}}1" "$PF_CONF" > "$PF_CONF.new";
+
+if [grep -qxF '{{nat_rule}}' /etc/pf.conf]; then
+	echo "Error: could NOT configure firewall because there are no existing NAT rules at $PF_CONF. See notes at docs/notes/macos-firewall.md" >&2;
+	rm -f "$PF_CONF.new";
+	exit 1;
+fi
+
+mv "$PF_CONF" "$PF_CONF.bak";
+mv "$PF_CONF.new" "$PF_CONF";"#
+                ),
+            },
+            Script {
+                enabled: true,
+                script: "pfctl -f /etc/pf.conf;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "pfctl -e || true;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "sysctl -w net.inet.ip.forwarding=1;".to_string(),
+            },
+        ];
+
+        // PostDown scripts - 3 separate items
+        let post_down = vec![
+            Script {
+                enabled: true,
+                script: format!(
+                    r#"PF_CONF="/etc/pf.conf";
+NAT_RULE="nat on {gateway} from $SUBNET to any -> {gateway}";
+
+awk -v line="$NAT_RULE" '$0 != line' "$PF_CONF" > "$PF_CONF.new";
+
+mv "$PF_CONF" "$PF_CONF.bak";
+mv "$PF_CONF.new" "$PF_CONF";"#,
+                ),
+            },
+            Script {
+                enabled: true,
+                script: "pfctl -d || true;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "sysctl -w net.inet.ip.forwarding=0;".to_string(),
+            },
+        ];
+
+        Scripts {
+            pre_up: vec![],
+            post_up,
+            pre_down: vec![],
+            post_down,
+        }
+    } else {
+        // Unknown utility, return empty scripts
+        Scripts::default()
+    }
+}
+
 fn find_cert_server(config_folder: &PathBuf, web_address: String) -> (Option<PathBuf>, Option<PathBuf>) {
     let servers_folder = config_folder.join("certs/servers");
 
@@ -334,30 +503,240 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_FIREWALL_ENABLED_HELP,
         true,
     );
-    let (agent_firewall_utility, agent_firewall_gateway) = if agent_firewall_enabled {
-        // [8/28] --agent-firewall-utility
-        let utility = get_value(
+
+    let (http_firewall_scripts, https_firewall_scripts, vpn_firewall_scripts) = if agent_firewall_enabled {
+        // HTTP firewall
+        let configure_http = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
-            INIT_AGENT_FIREWALL_UTILITY_FLAG,
-            format!("\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
-            firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),  // the first fw option is the default
-            parse_and_validate_fw_utility,
+            init_opts.agent_firewall_configure_http,
+            INIT_AGENT_FIREWALL_CONFIGURE_HTTP_FLAG,
+            format!("\t{}", INIT_AGENT_FIREWALL_CONFIGURE_HTTP_HELP).as_str(),
+            true,
         );
-        // [8/28] --agent-firewall-gateway
-        let gateway = get_value(
+
+        let http_scripts = if configure_http {
+            let http_automated = get_bool(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.agent_firewall_http_automated,
+                INIT_AGENT_FIREWALL_HTTP_AUTOMATED_FLAG,
+                format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_AUTOMATED_HELP).as_str(),
+                true,
+            );
+
+            if http_automated {
+                let utility = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
+                    INIT_AGENT_FIREWALL_UTILITY_FLAG,
+                    format!("\t\t\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
+                    firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
+                    parse_and_validate_fw_utility,
+                );
+                let scripts = generate_http_firewall_scripts(&utility.display().to_string());
+                println!("\t\t\t✓ HTTP firewall: {} pre-up, {} post-down script(s)",
+                         scripts.pre_up.len(), scripts.post_down.len());
+                scripts
+            } else {
+                // Manual setup using get_scripts helper
+                let http_pre_up = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_http_pre_up_enabled,
+                    init_opts.agent_firewall_http_pre_up_line.clone(),
+                    INIT_AGENT_FIREWALL_HTTP_PRE_UP_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_HTTP_PRE_UP_LINE_FLAG,
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_PRE_UP_ENABLED_HELP).as_str(),
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_PRE_UP_LINE_HELP).as_str(),
+                );
+
+                let http_post_down = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_http_post_down_enabled,
+                    init_opts.agent_firewall_http_post_down_line.clone(),
+                    INIT_AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_HTTP_POST_DOWN_LINE_FLAG,
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED_HELP).as_str(),
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_POST_DOWN_LINE_HELP).as_str(),
+                );
+
+                HttpScripts { pre_up: http_pre_up, post_down: http_post_down }
+            }
+        } else {
+            HttpScripts::default()
+        };
+
+        // HTTPS firewall
+        let configure_https = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.agent_firewall_gateway.clone(),
-            INIT_AGENT_FIREWALL_GATEWAY_FLAG,
-            format!("\t{}", INIT_AGENT_FIREWALL_GATEWAY_HELP).as_str(),
-            iface_name,
-            parse_and_validate_fw_gateway,
+            init_opts.agent_firewall_configure_https,
+            INIT_AGENT_FIREWALL_CONFIGURE_HTTPS_FLAG,
+            format!("\t{}", INIT_AGENT_FIREWALL_CONFIGURE_HTTPS_HELP).as_str(),
+            true,
         );
-        (utility, gateway)
+
+        let https_scripts = if configure_https {
+            let https_automated = get_bool(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.agent_firewall_https_automated,
+                INIT_AGENT_FIREWALL_HTTPS_AUTOMATED_FLAG,
+                format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_AUTOMATED_HELP).as_str(),
+                true,
+            );
+
+            if https_automated {
+                let utility = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
+                    INIT_AGENT_FIREWALL_UTILITY_FLAG,
+                    format!("\t\t\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
+                    firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
+                    parse_and_validate_fw_utility,
+                );
+                let scripts = generate_http_firewall_scripts(&utility.display().to_string());
+                println!("\t\t\t✓ HTTPS firewall: {} pre-up, {} post-down script(s)",
+                         scripts.pre_up.len(), scripts.post_down.len());
+                scripts
+            } else {
+                // Manual setup using get_scripts helper
+                let https_pre_up = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_https_pre_up_enabled,
+                    init_opts.agent_firewall_https_pre_up_line.clone(),
+                    INIT_AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_HTTPS_PRE_UP_LINE_FLAG,
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED_HELP).as_str(),
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_PRE_UP_LINE_HELP).as_str(),
+                );
+
+                let https_post_down = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_https_post_down_enabled,
+                    init_opts.agent_firewall_https_post_down_line.clone(),
+                    INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_LINE_FLAG,
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED_HELP).as_str(),
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_LINE_HELP).as_str(),
+                );
+
+                HttpScripts { pre_up: https_pre_up, post_down: https_post_down }
+            }
+        } else {
+            HttpScripts::default()
+        };
+
+        // VPN firewall
+        let configure_vpn = get_bool(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_firewall_configure_vpn,
+            INIT_AGENT_FIREWALL_CONFIGURE_VPN_FLAG,
+            format!("\t{}", INIT_AGENT_FIREWALL_CONFIGURE_VPN_HELP).as_str(),
+            true,
+        );
+
+        let vpn_scripts = if configure_vpn {
+            let vpn_automated = get_bool(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.agent_firewall_vpn_automated,
+                INIT_AGENT_FIREWALL_VPN_AUTOMATED_FLAG,
+                format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_AUTOMATED_HELP).as_str(),
+                true,
+            );
+
+            if vpn_automated {
+                let utility = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
+                    INIT_AGENT_FIREWALL_UTILITY_FLAG,
+                    format!("\t\t\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
+                    firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
+                    parse_and_validate_fw_utility,
+                );
+                let gateway = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_gateway.clone(),
+                    INIT_AGENT_FIREWALL_GATEWAY_FLAG,
+                    format!("\t\t\t{}", INIT_AGENT_FIREWALL_GATEWAY_HELP).as_str(),
+                    iface_name.clone(),
+                    parse_and_validate_fw_gateway,
+                );
+                let scripts = generate_firewall_scripts(&utility.display().to_string(), &gateway);
+                println!("\t\t\t✓ VPN firewall: {} pre-up, {} post-up, {} pre-down, {} post-down script(s)",
+                    scripts.pre_up.len(), scripts.post_up.len(),
+                    scripts.pre_down.len(), scripts.post_down.len());
+                scripts
+            } else {
+                // Manual setup using get_scripts helper
+                let vpn_pre_up = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_vpn_pre_up_enabled,
+                    init_opts.agent_firewall_vpn_pre_up_line.clone(),
+                    INIT_AGENT_FIREWALL_VPN_PRE_UP_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_PRE_UP_LINE_FLAG,
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_PRE_UP_ENABLED_HELP).as_str(),
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_PRE_UP_LINE_HELP).as_str(),
+                );
+
+                let vpn_post_up = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_vpn_post_up_enabled,
+                    init_opts.agent_firewall_vpn_post_up_line.clone(),
+                    INIT_AGENT_FIREWALL_VPN_POST_UP_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_POST_UP_LINE_FLAG,
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_POST_UP_ENABLED_HELP).as_str(),
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_POST_UP_LINE_HELP).as_str(),
+                );
+
+                let vpn_pre_down = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_vpn_pre_down_enabled,
+                    init_opts.agent_firewall_vpn_pre_down_line.clone(),
+                    INIT_AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_PRE_DOWN_LINE_FLAG,
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED_HELP).as_str(),
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_PRE_DOWN_LINE_HELP).as_str(),
+                );
+
+                let vpn_post_down = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_vpn_post_down_enabled,
+                    init_opts.agent_firewall_vpn_post_down_line.clone(),
+                    INIT_AGENT_FIREWALL_VPN_POST_DOWN_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_POST_DOWN_LINE_FLAG,
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_POST_DOWN_ENABLED_HELP).as_str(),
+                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_POST_DOWN_LINE_HELP).as_str(),
+                );
+
+                Scripts {
+                    pre_up: vpn_pre_up,
+                    post_up: vpn_post_up,
+                    pre_down: vpn_pre_down,
+                    post_down: vpn_post_down,
+                }
+            }
+        } else {
+            Scripts::default()
+        };
+
+        (http_scripts, https_scripts, vpn_scripts)
     } else {
-        ("".into(), "".into())
+        (HttpScripts::default(), HttpScripts::default(), Scripts::default())
     };
     step_counter += 1;
 
@@ -400,7 +779,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
 
     // update the address in the recommended endpoint
     for iface in get_interfaces() {
-        if agent_firewall_gateway == iface.name {
+        if iface_name == Some(iface.name.clone()) {
             iface_ip = match iface.ip() { IpAddr::V4(v4) => Some(v4), _ => None };
         }
     }
@@ -734,9 +1113,9 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                 port: agent_vpn_port,
             },
             firewall: AgentFirewall {
-                enabled: agent_firewall_enabled,
-                utility: agent_firewall_utility,
-                gateway: agent_firewall_gateway,
+                http: http_firewall_scripts,
+                https: https_firewall_scripts,
+                vpn: vpn_firewall_scripts,
             },
         },
         network: Network {

@@ -75,6 +75,75 @@ pub struct InitOptions {
     )]
     pub agent_firewall_gateway: Option<String>,
 
+    #[arg(long, default_value = None, long_help = "Configure HTTP firewall")]
+    pub agent_firewall_configure_http: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Use automated setup for HTTP firewall")]
+    pub agent_firewall_http_automated: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Configure HTTPS firewall")]
+    pub agent_firewall_configure_https: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Use automated setup for HTTPS firewall")]
+    pub agent_firewall_https_automated: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Configure VPN firewall")]
+    pub agent_firewall_configure_vpn: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Use automated setup for VPN firewall")]
+    pub agent_firewall_vpn_automated: Option<bool>,
+
+    // HTTP firewall scripts
+    #[arg(long, default_value = None, long_help = "Enable HTTP firewall PreUp scripts")]
+    pub agent_firewall_http_pre_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set HTTP firewall PreUp script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_http_pre_up_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable HTTP firewall PostDown scripts")]
+    pub agent_firewall_http_post_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set HTTP firewall PostDown script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_http_post_down_line: Vec<String>,
+
+    // HTTPS firewall scripts
+    #[arg(long, default_value = None, long_help = "Enable HTTPS firewall PreUp scripts")]
+    pub agent_firewall_https_pre_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set HTTPS firewall PreUp script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_https_pre_up_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable HTTPS firewall PostDown scripts")]
+    pub agent_firewall_https_post_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set HTTPS firewall PostDown script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_https_post_down_line: Vec<String>,
+
+    // VPN firewall scripts
+    #[arg(long, default_value = None, long_help = "Enable VPN firewall PreUp scripts")]
+    pub agent_firewall_vpn_pre_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set VPN firewall PreUp script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_vpn_pre_up_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable VPN firewall PostUp scripts")]
+    pub agent_firewall_vpn_post_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set VPN firewall PostUp script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_vpn_post_up_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable VPN firewall PreDown scripts")]
+    pub agent_firewall_vpn_pre_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set VPN firewall PreDown script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_vpn_pre_down_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable VPN firewall PostDown scripts")]
+    pub agent_firewall_vpn_post_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set VPN firewall PostDown script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_vpn_post_down_line: Vec<String>,
+
     #[arg(long, default_value = None, long_help = "Set agent peer name", value_name = "wg-quickrs-host"
     )]
     pub agent_peer_name: Option<String>,
