@@ -23,19 +23,24 @@ fn main() {
                 if long == "no-prompt" {
                     continue
                 }
-                let help = arg.get_long_help().unwrap_or_default().to_string();
+                let help = arg.get_long_help().unwrap_or_default().to_string().replace('"', "\\\"").replace('\n', "\\n");
                 let const_name = long.replace('-', "_").to_uppercase();
 
-                const_content.push_str(&format!(
-                    r#"
-pub const INIT_{}_FLAG: &str = "--{}";
-pub const INIT_{}_HELP: &str = "{}";
+                if long.ends_with("line") {
+                    const_content.push_str(&format!(
+                        r#"
+pub const INIT_{const_name}_FLAG: &str = "--{long}";
 "#,
-                    const_name,
-                    long,
-                    const_name,
-                    help.replace('"', "\\\"").replace('\n', "\\n")
-                ));
+                    ));
+                } else {
+
+                    const_content.push_str(&format!(
+                        r#"
+pub const INIT_{const_name}_FLAG: &str = "--{long}";
+pub const INIT_{const_name}_HELP: &str = "{help}";
+"#,
+                    ));
+                }
             }
         }
 
@@ -59,19 +64,24 @@ pub const INIT_{}_HELP: &str = "{}";
                 if long == "no-prompt" {
                     continue
                 }
-                let help = arg.get_long_help().unwrap_or_default().to_string();
+                let help = arg.get_long_help().unwrap_or_default().to_string().replace('"', "\\\"").replace('\n', "\\n");
                 let const_name = long.replace('-', "_").to_uppercase();
 
-                const_content.push_str(&format!(
-                    r#"
-pub const ADD_PEER_{}_FLAG: &str = "--{}";
-pub const ADD_PEER_{}_HELP: &str = "{}";
+                if long.ends_with("line") {
+                    const_content.push_str(&format!(
+                        r#"
+pub const ADD_PEER_{const_name}_FLAG: &str = "--{long}";
 "#,
-                    const_name,
-                    long,
-                    const_name,
-                    help.replace('"', "\\\"").replace('\n', "\\n")
-                ));
+                    ));
+                } else {
+
+                    const_content.push_str(&format!(
+                        r#"
+pub const ADD_PEER_{const_name}_FLAG: &str = "--{long}";
+pub const ADD_PEER_{const_name}_HELP: &str = "{help}";
+"#,
+                    ));
+                }
             }
         }
 

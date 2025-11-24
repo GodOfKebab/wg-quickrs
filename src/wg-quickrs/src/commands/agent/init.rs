@@ -548,8 +548,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     init_opts.agent_firewall_http_pre_up_line.clone(),
                     INIT_AGENT_FIREWALL_HTTP_PRE_UP_ENABLED_FLAG,
                     INIT_AGENT_FIREWALL_HTTP_PRE_UP_LINE_FLAG,
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_PRE_UP_ENABLED_HELP).as_str(),
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_PRE_UP_LINE_HELP).as_str(),
+                    INIT_AGENT_FIREWALL_HTTP_PRE_UP_ENABLED_HELP,
+                    "\t\t",
                 );
 
                 let http_post_down = get_scripts(
@@ -559,8 +559,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     init_opts.agent_firewall_http_post_down_line.clone(),
                     INIT_AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED_FLAG,
                     INIT_AGENT_FIREWALL_HTTP_POST_DOWN_LINE_FLAG,
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED_HELP).as_str(),
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_POST_DOWN_LINE_HELP).as_str(),
+                    INIT_AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED_HELP,
+                    "\t\t",
                 );
 
                 HttpScripts { pre_up: http_pre_up, post_down: http_post_down }
@@ -612,8 +612,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     init_opts.agent_firewall_https_pre_up_line.clone(),
                     INIT_AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED_FLAG,
                     INIT_AGENT_FIREWALL_HTTPS_PRE_UP_LINE_FLAG,
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED_HELP).as_str(),
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_PRE_UP_LINE_HELP).as_str(),
+                    INIT_AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED_HELP,
+                    "\t\t",
                 );
 
                 let https_post_down = get_scripts(
@@ -623,8 +623,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     init_opts.agent_firewall_https_post_down_line.clone(),
                     INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED_FLAG,
                     INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_LINE_FLAG,
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED_HELP).as_str(),
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_LINE_HELP).as_str(),
+                    INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED_HELP,
+                    "\t\t",
                 );
 
                 HttpScripts { pre_up: https_pre_up, post_down: https_post_down }
@@ -686,8 +686,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     init_opts.agent_firewall_vpn_pre_up_line.clone(),
                     INIT_AGENT_FIREWALL_VPN_PRE_UP_ENABLED_FLAG,
                     INIT_AGENT_FIREWALL_VPN_PRE_UP_LINE_FLAG,
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_PRE_UP_ENABLED_HELP).as_str(),
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_PRE_UP_LINE_HELP).as_str(),
+                    INIT_AGENT_FIREWALL_VPN_PRE_UP_ENABLED_HELP,
+                    "\t\t",
                 );
 
                 let vpn_post_up = get_scripts(
@@ -697,8 +697,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     init_opts.agent_firewall_vpn_post_up_line.clone(),
                     INIT_AGENT_FIREWALL_VPN_POST_UP_ENABLED_FLAG,
                     INIT_AGENT_FIREWALL_VPN_POST_UP_LINE_FLAG,
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_POST_UP_ENABLED_HELP).as_str(),
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_POST_UP_LINE_HELP).as_str(),
+                    INIT_AGENT_FIREWALL_VPN_POST_UP_ENABLED_HELP,
+                    "\t\t",
                 );
 
                 let vpn_pre_down = get_scripts(
@@ -708,8 +708,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     init_opts.agent_firewall_vpn_pre_down_line.clone(),
                     INIT_AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED_FLAG,
                     INIT_AGENT_FIREWALL_VPN_PRE_DOWN_LINE_FLAG,
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED_HELP).as_str(),
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_PRE_DOWN_LINE_HELP).as_str(),
+                    INIT_AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED_HELP,
+                    "\t\t",
                 );
 
                 let vpn_post_down = get_scripts(
@@ -719,8 +719,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     init_opts.agent_firewall_vpn_post_down_line.clone(),
                     INIT_AGENT_FIREWALL_VPN_POST_DOWN_ENABLED_FLAG,
                     INIT_AGENT_FIREWALL_VPN_POST_DOWN_LINE_FLAG,
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_POST_DOWN_ENABLED_HELP).as_str(),
-                    format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_POST_DOWN_LINE_HELP).as_str(),
+                    INIT_AGENT_FIREWALL_VPN_POST_DOWN_ENABLED_HELP,
+                    "\t\t",
                 );
 
                 Scripts {
@@ -882,7 +882,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
-        INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -895,7 +895,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
-        INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -908,7 +908,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
-        INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -921,7 +921,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
-        INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -1013,7 +1013,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
-        INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -1026,7 +1026,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
-        INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -1039,7 +1039,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
-        INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -1052,7 +1052,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
-        INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 

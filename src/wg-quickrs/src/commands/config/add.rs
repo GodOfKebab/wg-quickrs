@@ -156,7 +156,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
         ADD_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
         ADD_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         ADD_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
-        ADD_PEER_SCRIPT_PRE_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -168,7 +168,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
         ADD_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
         ADD_PEER_SCRIPT_POST_UP_LINE_FLAG,
         ADD_PEER_SCRIPT_POST_UP_ENABLED_HELP,
-        ADD_PEER_SCRIPT_POST_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -180,7 +180,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
         ADD_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
         ADD_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         ADD_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
-        ADD_PEER_SCRIPT_PRE_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
@@ -192,7 +192,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
         ADD_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
         ADD_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         ADD_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
-        ADD_PEER_SCRIPT_POST_DOWN_LINE_HELP,
+        "",
     );
 
     // Create the peer

@@ -106,22 +106,22 @@ pub fn get_scripts(
     enabled_flag: &str,
     line_flag: &str,
     enabled_help: &str,
-    _line_help: &str,
+    indentation: &str,
 ) -> Vec<Script> {
     let mut scripts = Vec::new();
 
     // Check if scripts are enabled at all
     let scripts_enabled = if let Some(v) = cli_enabled {
         println!(
-            "{} {} is {} from CLI option '{}'",
-            step_str, enabled_help, if v { "enabled" } else { "disabled" }, enabled_flag
+            "{} {}{} is {} from CLI option '{}'",
+            step_str, indentation, enabled_help, if v { "enabled" } else { "disabled" }, enabled_flag
         );
         v
     } else if cli_no_prompt == Some(true) {
         panic!("Error: CLI option '{}' is not set", enabled_flag);
     } else {
         dialoguer::Confirm::new()
-            .with_prompt(format!("{} {} (CLI option '{}')?", step_str, enabled_help, line_flag))
+            .with_prompt(format!("{} {}{} (CLI option '{}')?", step_str, indentation, enabled_help, line_flag))
             .default(false)
             .interact()
             .unwrap()
@@ -152,7 +152,7 @@ pub fn get_scripts(
     // Prompt for scripts in a loop
     loop {
         let script_line = prompt(
-            &format!("\t{} Enter script line (CLI option '{}')", step_str, line_flag),
+            &format!("{} \t{}Enter script line (CLI option '{}')", step_str, indentation, line_flag),
             None,
             parse_and_validate_peer_script,
         );
@@ -163,7 +163,7 @@ pub fn get_scripts(
         });
 
         let add_more = dialoguer::Confirm::new()
-            .with_prompt(format!("\t{} Add another script?", step_str))
+            .with_prompt(format!("{} {}Add another script?", step_str, indentation))
             .default(false)
             .interact()
             .unwrap();
