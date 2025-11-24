@@ -100,7 +100,6 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                     EnableAgentWebCommands::Password => toggle_agent_web_password(true),
                 },
                 EnableAgentCommands::Vpn => toggle_agent_vpn(true),
-                EnableAgentCommands::Firewall => toggle_agent_firewall(true),
             },
             EnableCommands::Network { target } => match target {
                 EnableNetworkCommands::Peer { id, target } => match target {
@@ -130,7 +129,6 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                     DisableAgentWebCommands::Password => toggle_agent_web_password(false),
                 },
                 DisableAgentCommands::Vpn => toggle_agent_vpn(false),
-                DisableAgentCommands::Firewall => toggle_agent_firewall(false),
             },
             DisableCommands::Network { target } => match target {
                 DisableNetworkCommands::Peer { id, target } => match target {
@@ -167,10 +165,6 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                 },
                 SetAgentCommands::Vpn { target } => match target {
                     SetAgentVpnCommands::Port { value } => set_agent_vpn_port(*value),
-                },
-                SetAgentCommands::Firewall { target } => match target {
-                    SetAgentFirewallCommands::Utility { value } => set_agent_firewall_utility(value),
-                    SetAgentFirewallCommands::Gateway { value } => set_agent_firewall_gateway(value),
                 },
             },
             SetCommands::Network { target } => match target {
@@ -258,14 +252,6 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                         Some(vpn_cmd) => match vpn_cmd {
                             GetAgentVpnCommands::Enabled => get_agent_vpn_enabled(),
                             GetAgentVpnCommands::Port => get_agent_vpn_port(),
-                        },
-                    },
-                    GetAgentCommands::Firewall { target } => match target {
-                        None => get_agent_firewall(),
-                        Some(fw_cmd) => match fw_cmd {
-                            GetAgentFirewallCommands::Enabled => get_agent_firewall_enabled(),
-                            GetAgentFirewallCommands::Utility => get_agent_firewall_utility(),
-                            GetAgentFirewallCommands::Gateway => get_agent_firewall_gateway(),
                         },
                     },
                 },

@@ -173,7 +173,6 @@ impl_config_getter!(get_agent_web_http, agent.web.http, yaml);
 impl_config_getter!(get_agent_web_https, agent.web.https, yaml);
 impl_config_getter!(get_agent_web_password, agent.web.password, yaml);
 impl_config_getter!(get_agent_vpn, agent.vpn, yaml);
-impl_config_getter!(get_agent_firewall, agent.firewall, yaml);
 
 // Agent individual field getters
 impl_config_getter!(get_agent_web_address, agent.web.address);
@@ -187,9 +186,6 @@ impl_config_getter!(get_agent_web_password_enabled, agent.web.password.enabled);
 impl_config_getter!(get_agent_web_password_hash, agent.web.password.hash);
 impl_config_getter!(get_agent_vpn_enabled, agent.vpn.enabled);
 impl_config_getter!(get_agent_vpn_port, agent.vpn.port);
-impl_config_getter!(get_agent_firewall_enabled, agent.firewall.enabled);
-impl_config_getter!(get_agent_firewall_utility, agent.firewall.utility, display);
-impl_config_getter!(get_agent_firewall_gateway, agent.firewall.gateway);
 
 // Network struct getter
 impl_config_getter!(get_network, network, yaml);

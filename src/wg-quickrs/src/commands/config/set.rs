@@ -8,7 +8,7 @@ use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::str::FromStr;
 use uuid::Uuid;
-use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, validate_fw_utility, validate_tls_file};
+use wg_quickrs_lib::validation::agent::{validate_tls_file};
 use wg_quickrs_lib::validation::error::ValidationError;
 use crate::WG_QUICKRS_CONFIG_FOLDER;
 
@@ -114,26 +114,8 @@ impl_port_setter!(set_agent_web_https_port, agent.web.https, "HTTPS");
 impl_port_setter!(set_agent_vpn_port, agent.vpn, "VPN");
 
 // ============================================================================
-// Agent Firewall Configuration Functions
+// Network Configuration Functions
 // ============================================================================
-
-
-impl_setter!(
-    set_agent_firewall_utility,
-    PathBuf,
-    agent.firewall.utility,
-    "firewall utility",
-    display: |p: &PathBuf| format!("{}", p.display()),
-    transform: |utility: &PathBuf| validate_fw_utility(utility)
-);
-
-impl_setter!(
-    set_agent_firewall_gateway,
-    str,
-    agent.firewall.gateway,
-    "firewall gateway",
-    transform: |gateway: &str| parse_and_validate_fw_gateway(gateway)
-);
 
 /// Set network name
 pub fn set_network_name(name: String) -> Result<(), ConfigCommandError> {

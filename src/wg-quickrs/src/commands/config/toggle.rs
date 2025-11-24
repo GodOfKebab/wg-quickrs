@@ -1,6 +1,6 @@
 use argon2::PasswordHash;
 use uuid::Uuid;
-use wg_quickrs_lib::validation::agent::{validate_fw_utility, validate_tls_file};
+use wg_quickrs_lib::validation::agent::validate_tls_file;
 use crate::conf;
 use crate::commands::config::{parse_connection_id, ConfigCommandError};
 use crate::WG_QUICKRS_CONFIG_FOLDER;
@@ -148,22 +148,6 @@ impl_toggle!(
     toggle_agent_vpn,
     agent.vpn =>
     |c: &wg_quickrs_lib::types::config::Config| format!("VPN server (port={})...", c.agent.vpn.port)
-);
-
-impl_toggle!(
-    toggle_agent_firewall,
-    agent.firewall =>
-    |c: &wg_quickrs_lib::types::config::Config| format!(
-        "firewall setting up NAT and input rules (utility={})...",
-        c.agent.firewall.utility.display()
-    ),
-    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
-        if c.agent.firewall.gateway.is_empty() {
-            return Err(ConfigCommandError::GatewayNotSet());
-        }
-        validate_fw_utility(&c.agent.firewall.utility)?;
-        Ok(())
-    }
 );
 
 // Peer toggles
