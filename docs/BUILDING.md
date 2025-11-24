@@ -397,17 +397,21 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-In the `docker-compose.init.yml` file:
+In the `docker-compose.yml` file:
 
 * For the `tls-cert-generator` service (see [repo](https://github.com/GodOfKebab/tls-cert-generator)), edit the TLS
   certificate settings and enter the FQDN/Domain names for the certificates
-* For the `wg-quickrs-init` service, edit the wg-quickrs settings
+* For the `wg-quickrs-agent-init` service, edit the wg-quickrs settings
+* For the `wg-quickrs-agent-run` service, run the wg-quickrs agent
+
+To force building locally, use the `docker-compose.local.yml` file, which extends the `docker-compose.yml`.
 
 [//]: # (build-src-docker: 1.2 - Edit docker compose file)
 
 ```sh
+# edit ip/domain/password
 cd ..
-nano docker-compose.init.yml
+nano docker-compose.yml
 ```
 
 Run the services to initialize the agent.
@@ -416,17 +420,17 @@ Run the services to initialize the agent.
 
 ```sh
 cd ..
-sudo docker compose -f docker-compose.init.yml up tls-cert-generator
-sudo docker compose -f docker-compose.init.yml up wg-quickrs-init
+sudo docker compose up tls-cert-generator
+sudo docker compose -f docker-compose.local.yml up wg-quickrs-agent-init-local
 
 ```
 
-After initialization, you can run the `wg-quickrs-agent-run` service in `docker-compose.agent.yml`.
+After initialization, you can run the `wg-quickrs-agent-run-local` service in `docker-compose.local.yml`.
 
 [//]: # (run-agent-docker: 1.2 - Run agent)
 
 ```sh
 cd ..
-sudo docker compose -f docker-compose.agent.yml up wg-quickrs-agent-run
+sudo docker compose -f docker-compose.local.yml up wg-quickrs-agent-run-local
 ```
 

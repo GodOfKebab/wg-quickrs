@@ -120,6 +120,28 @@ docker run --rm \
 ⚠️ Note: Keep in mind that the plaintext password might show up in the bash/zsh history.
 If you instead use the binaries instead of docker, `wg-quickrs config reset agent web password` prompts for the password interactively, which is safer.
 
+## 1.5 Use `docker-compose.yml`
+
+You can either pull and start your containers over the command line, or use the provided `docker-compose.yml` file.
+To download, run the following command:
+
+```shell
+wget https://raw.githubusercontent.com/godofkebab/wg-quickrs/v2/docker-compose.yml
+```
+
+After editing the `docker-compose.yml` file, run the following command to set up and start the containers:
+
+```shell
+# optional: generate TLS certs/keys
+docker-compose up tls-cert-generator
+# initialize the agent
+docker-compose up wg-quickrs-agent-init
+# run the agent and fork it in the background
+docker-compose up -d wg-quickrs-agent-run
+# reset the web password
+docker-compose up wg-quickrs-config-reset-password
+```
+
 ### 2. Build the Docker images from source
 
 See [BUILDING.md](../BUILDING.md#12-using-docker)
