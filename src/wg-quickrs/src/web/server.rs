@@ -2,6 +2,8 @@ use std::net::{IpAddr, SocketAddr};
 use crate::WG_QUICKRS_CONFIG_FOLDER;
 use crate::web::api;
 use crate::web::app;
+use crate::helpers::shell_cmd;
+use crate::wireguard::wg_quick::HookType;
 #[cfg(debug_assertions)]
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware};
@@ -13,7 +15,6 @@ use rustls::{
 use std::path::PathBuf;
 use thiserror::Error;
 use tokio::try_join;
-use crate::helpers::shell_cmd;
 
 #[derive(Error, Debug)]
 pub enum ServerError {
@@ -21,36 +22,19 @@ pub enum ServerError {
     TlsSetupFailed(String),
 }
 
-fn setup_firewall_rules(utility: PathBuf, port: u16, is_add_action: bool) {
-    if let Some(utility_fn) = utility.file_name()
-        && utility_fn.to_string_lossy() == "iptables"
-    {
-        // iptables -A/-D INPUT -p tcp --dport PORT -j ACCEPT
-        let utility_str = match utility.to_str() {
-            Some(s) => s,
-            None => {
-                log::warn!("Firewall utility path contains invalid UTF-8, skipping firewall rule setup");
-                return;
+fn execute_script(script: &str, hook_type: HookType) {
+    if !script.is_empty() {
+        log::debug!("[#] Executing http(s) {:?} hooks", hook_type);
+        match shell_cmd(&["sh", "-c", script]) {
+            Ok(output) => {
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    log::warn!("Warning: http(s) firewall script failed: {}", stderr);
+                }
             }
-        };
-
-        let shell_result = shell_cmd(&[
-            utility_str,
-            if is_add_action { "-A" } else { "-D" },
-            "INPUT",
-            "-p",
-            "tcp",
-            "--dport",
-            port.to_string().as_str(),
-            "-j",
-            "ACCEPT"]);
-
-        if let Ok(output) = shell_result {
-            if !output.status.success() {
-                log::warn!("firewall input rule update for http(s) failed");
+            Err(e) => {
+                log::warn!("Warning: http(s) firewall script failed: {}", e);
             }
-        } else {
-            log::warn!("firewall input rule update for http(s) failed");
         }
     }
 }
@@ -84,19 +68,21 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
             app
         }
     };
-
+    
     // Futures for HTTP/HTTPS servers
     let http_future = if config.agent.web.http.enabled {
-        Some(Box::pin(async move {
-            if config.agent.firewall.enabled {
-                setup_firewall_rules(
-                    config.agent.firewall.utility.clone(),
-                    config.agent.web.http.port,
-                    true,
-                );
-            }
+        let http_addr = config.agent.web.address;
+        let http_port = config.agent.web.http.port;
+        let http_scripts = config.agent.firewall.http.clone();
 
-            let bind_addr = SocketAddr::new(IpAddr::from(config.agent.web.address), config.agent.web.http.port);
+        Some(Box::pin(async move {
+            for hook in &http_scripts.pre_up {
+                if hook.enabled {
+                    execute_script(&hook.script, HookType::PreUp);
+                }
+            }
+            
+            let bind_addr = SocketAddr::new(IpAddr::from(http_addr), http_port);
             match HttpServer::new(app_factory).bind(bind_addr) {
                 Ok(http_server) => {
                     log::info!("HTTP server listening on http://{}", bind_addr);
@@ -106,17 +92,20 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                 }
                 Err(e) => {
                     log::info!("Unable bind the http server to {}: {}", bind_addr, e);
+                    for hook in &http_scripts.post_down {
+                        if hook.enabled {
+                            execute_script(&hook.script, HookType::PostDown);
+                        }
+                    }
                     return Ok(());
                 }
             };
 
             log::info!("Stopped HTTP server");
-            if config.agent.firewall.enabled {
-                setup_firewall_rules(
-                    config.agent.firewall.utility.clone(),
-                    config.agent.web.http.port,
-                    false,
-                );
+            for hook in &http_scripts.post_down {
+                if hook.enabled {
+                    execute_script(&hook.script, HookType::PostDown);
+                }
             }
             Ok(())
         }))
@@ -126,20 +115,23 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
     };
 
     let https_future = if config.agent.web.https.enabled {
-        if config.agent.firewall.enabled {
-            setup_firewall_rules(
-                config.agent.firewall.utility.clone(),
-                config.agent.web.https.port,
-                true,
-            );
-        }
-        let bind_addr = SocketAddr::new(IpAddr::from(config.agent.web.address), config.agent.web.https.port);
+        let https_addr = config.agent.web.address;
+        let https_port = config.agent.web.https.port;
+        let https_scripts = config.agent.firewall.https.clone();
+
+        let bind_addr = SocketAddr::new(IpAddr::from(https_addr), https_port);
         let mut tls_cert = WG_QUICKRS_CONFIG_FOLDER.get().unwrap().clone();
         tls_cert.push(config.agent.web.https.tls_cert.clone());
         let mut tls_key = WG_QUICKRS_CONFIG_FOLDER.get().unwrap().clone();
         tls_key.push(config.agent.web.https.tls_key.clone());
         match load_tls_config(&tls_cert, &tls_key) {
             Ok(tls_config) => Some(Box::pin(async move {
+                for hook in &https_scripts.pre_up {
+                    if hook.enabled {
+                        execute_script(&hook.script, HookType::PreUp);
+                    }
+                }
+
                 match HttpServer::new(app_factory).bind_rustls_0_23(bind_addr, tls_config) {
                     Ok(https_server) => {
                         log::info!("HTTPS server listening on https://{}", bind_addr);
@@ -149,17 +141,20 @@ pub(crate) async fn run_web_server(config: &Config) -> std::io::Result<()> {
                     }
                     Err(e) => {
                         log::info!("Unable bind the https server to {}: {}", bind_addr, e);
+                        for hook in &https_scripts.post_down {
+                            if hook.enabled {
+                                execute_script(&hook.script, HookType::PostDown);
+                            }
+                        }
                         return Ok(());
                     }
                 };
 
                 log::info!("Stopped HTTPS server");
-                if config.agent.firewall.enabled {
-                    setup_firewall_rules(
-                        config.agent.firewall.utility.clone(),
-                        config.agent.web.https.port,
-                        false,
-                    );
+                for hook in &https_scripts.post_down {
+                    if hook.enabled {
+                        execute_script(&hook.script, HookType::PostDown);
+                    }
                 }
                 Ok(())
             })),

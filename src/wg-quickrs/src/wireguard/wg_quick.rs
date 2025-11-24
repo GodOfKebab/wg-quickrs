@@ -4,7 +4,7 @@ use std::io::Write;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 use wg_quickrs_lib::types::config::Config;
-use wg_quickrs_lib::types::network::{Peer, Script};
+use wg_quickrs_lib::types::network::{Peer};
 use crate::helpers::{shell_cmd, ShellError};
 #[cfg(target_os = "macos")]
 use crate::wireguard::wg_quick_darwin as wg_quick_platform;
@@ -321,69 +321,41 @@ impl TunnelManager {
     }
 
     fn execute_hooks(&self, hook_type: HookType) -> TunnelResult<()> {
-        log::debug!("[#] Executing {:?} hooks", hook_type);
+        log::debug!("[#] Executing WireGuard {:?} hooks", hook_type);
         let this_peer = &self.this_peer()?;
         let config = self.config.as_ref().unwrap();
 
-        let fw_utility = &config.agent.firewall.utility.to_string_lossy();
-        let subnet = &config.network.subnet;
-        let gateway = &config.agent.firewall.gateway;
-        let port = &config.agent.vpn.port;
-        let interface = &config.network.name;
+        // Execute VPN firewall scripts
+        if config.agent.vpn.enabled {
+            let vpn_hooks = match hook_type {
+                HookType::PreUp => &config.agent.firewall.vpn.pre_up,
+                HookType::PostUp => &config.agent.firewall.vpn.post_up,
+                HookType::PreDown => &config.agent.firewall.vpn.pre_down,
+                HookType::PostDown => &config.agent.firewall.vpn.post_down,
+            };
 
-        let mut cmds: Vec<Script> = Vec::new();
-        let hooks = match hook_type {
+            for hook in vpn_hooks {
+                if !hook.enabled {
+                    continue;
+                }
+
+                let output = shell_cmd(&["sh", "-c", &hook.script])?;
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    log::warn!("Warning: VPN firewall script failed: {}", stderr);
+                }
+            }
+        }
+
+        // Execute peer scripts
+        let peer_hooks = match hook_type {
             HookType::PreUp => &this_peer.scripts.pre_up,
-            HookType::PostUp => {
-                if config.agent.firewall.enabled && let Some(utility) = config.agent.firewall.utility.file_name() {
-                    if utility == "iptables" {
-                        let _ = shell_cmd(&[fw_utility, "-t", "nat", "-I", "POSTROUTING", "-s", &subnet.to_string(), "-o", gateway, "-j", "MASQUERADE"]);
-                        let _ = shell_cmd(&[fw_utility, "-I", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
-                        let _ = shell_cmd(&[fw_utility, "-I", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
-                        let _ = shell_cmd(&[fw_utility, "-I", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
-                        #[cfg(not(feature = "docker"))]
-                        let _ = shell_cmd(&["sysctl", "-w", "net.ipv4.ip_forward=1"]);
-                    } else if utility == "pfctl" {
-                        match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet.to_string(), true) {
-                            Ok(()) => {
-                                let _ = shell_cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
-                                let _ = shell_cmd(&[fw_utility, "-e"]);
-                                let _ = shell_cmd(&["sysctl", "-w", "net.inet.ip.forwarding=1"]);
-                            },
-                            Err(e) => log::warn!("Warning: Failed to modify pf.conf: {}", e),
-                        }
-                    }
-                }
-                cmds.extend(this_peer.scripts.post_up.clone());
-                &cmds
-            },
+            HookType::PostUp => &this_peer.scripts.post_up,
             HookType::PreDown => &this_peer.scripts.pre_down,
-            HookType::PostDown => {
-                if config.agent.firewall.enabled && let Some(utility) = config.agent.firewall.utility.file_name() {
-                    if utility == "iptables" {
-                        let _ = shell_cmd(&[fw_utility, "-t", "nat", "-D", "POSTROUTING", "-s", &subnet.to_string(), "-o", gateway, "-j", "MASQUERADE"]);
-                        let _ = shell_cmd(&[fw_utility, "-D", "INPUT", "-p", "udp", "-m", "udp", "--dport", &port.to_string(), "-j", "ACCEPT"]);
-                        let _ = shell_cmd(&[fw_utility, "-D", "FORWARD", "-i", interface, "-j", "ACCEPT"]);
-                        let _ = shell_cmd(&[fw_utility, "-D", "FORWARD", "-o", interface, "-j", "ACCEPT"]);
-                        #[cfg(not(feature = "docker"))]
-                        let _ = shell_cmd(&["sysctl", "-w", "net.ipv4.ip_forward=0"]);
-                    } else if utility == "pfctl" {
-                        match mod_pf_conf(&config.agent.firewall.gateway, &config.network.subnet.to_string(), false) {
-                            Ok(_) => {}
-                            Err(e) => log::warn!("Warning: Failed to modify pf.conf: {}", e),
-                        };
-                        let _ = shell_cmd(&[fw_utility, "-f", "/etc/pf.conf"]);
-                        let _ = shell_cmd(&[fw_utility, "-d"]);
-                        #[cfg(not(feature = "docker"))]
-                        let _ = shell_cmd(&["sysctl", "-w", "net.inet.ip.forwarding=0"]);
-                    }
-                }
-                cmds.extend(this_peer.scripts.post_down.clone());
-                &cmds
-            },
+            HookType::PostDown => &this_peer.scripts.post_down,
         };
 
-        for hook in hooks {
+        for hook in peer_hooks {
             if !hook.enabled {
                 continue;
             }
@@ -401,7 +373,7 @@ impl TunnelManager {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum HookType {
+pub(crate) enum HookType {
     PreUp,
     PostUp,
     PreDown,
@@ -468,80 +440,4 @@ pub fn get_endpoints(iface: &str) -> Vec<String> {
     }
 
     endpoints
-}
-
-fn mod_pf_conf(gateway: &str, subnet: &str, add: bool) -> TunnelResult<()> {
-    let nat_rule = format!("nat on {gateway} from {subnet} to any -> {gateway}  # added by wg-quickrs");
-
-    let pf_conf_path = "/etc/pf.conf";
-    let pf_conf_new = "/etc/pf.conf.new";
-    let pf_conf_bak = "/etc/pf.conf.bak";
-
-    // Read the file
-    let content = fs::read_to_string(pf_conf_path)
-        .map_err(TunnelError::IoError)?;
-
-    // Check if the rule already exists
-    let rule_exists = content.lines().any(|line| line == nat_rule);
-
-    if add {
-        // Adding rule
-        log::debug!("*** adding the nat rule to pf.conf...");
-        if rule_exists {
-            log::debug!("*** already exists, nothing to do");
-            return Ok(()); // Already exists, nothing to do
-        }
-
-        // Build new content with rule inserted after the first "nat" line
-        let mut new_lines = Vec::new();
-        let mut found_nat = false;
-
-        for line in content.lines() {
-            new_lines.push(line.to_string());
-
-            if !found_nat && line.starts_with("nat") {
-                found_nat = true;
-                new_lines.push(nat_rule.to_string());
-            }
-        }
-
-        // Check if the NAT section was found
-        if !found_nat {
-            eprintln!("*** could NOT configure firewall because there are no existing NAT rules. See notes at docs/notes/macos-firewall.md");
-            return Err(TunnelError::InvalidConfig(
-                "No existing NAT rules in /etc/pf.conf".into()
-            ));
-        }
-
-        // Write to a temporary file
-        fs::write(pf_conf_new, new_lines.join("\n") + "\n")?;
-        log::debug!("*** added the nat rule to pf.conf");
-    } else {
-        // Removing rule
-        log::debug!("*** removing the nat rule from pf.conf...");
-        if !rule_exists {
-            log::debug!("*** already removed, nothing to do");
-            return Ok(()); // Doesn't exist, nothing to do
-        }
-
-        // Filter out the rule
-        let new_lines: Vec<String> = content
-            .lines()
-            .filter(|line| *line != nat_rule)
-            .map(|s| s.to_string())
-            .collect();
-
-        // Write to a temporary file
-        fs::write(pf_conf_new, new_lines.join("\n") + "\n")?;
-        log::debug!("*** removed the nat rule from pf.conf");
-    }
-
-    // Atomic operations: backup then replace
-    if std::path::Path::new(pf_conf_bak).exists() {
-        fs::remove_file(pf_conf_bak)?;
-    }
-    fs::rename(pf_conf_path, pf_conf_bak)?;
-    fs::rename(pf_conf_new, pf_conf_path)?;
-
-    Ok(())
 }
