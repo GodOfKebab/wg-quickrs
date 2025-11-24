@@ -82,6 +82,70 @@ Configuration options can be filled either by prompts on screen (when no argumen
 
 * `--agent-firewall-utility <iptables>` — Set the utility used to configure firewall NAT and input rules
 * `--agent-firewall-gateway <eth0>` — Set gateway (outbound interface) for VPN packet forwarding
+* `--agent-firewall-configure-http <AGENT_FIREWALL_CONFIGURE_HTTP>` — Configure HTTP firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-http-automated <AGENT_FIREWALL_HTTP_AUTOMATED>` — Use automated setup for HTTP firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-configure-https <AGENT_FIREWALL_CONFIGURE_HTTPS>` — Configure HTTPS firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-https-automated <AGENT_FIREWALL_HTTPS_AUTOMATED>` — Use automated setup for HTTPS firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-configure-vpn <AGENT_FIREWALL_CONFIGURE_VPN>` — Configure VPN firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-automated <AGENT_FIREWALL_VPN_AUTOMATED>` — Use automated setup for VPN firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-http-pre-up-enabled <AGENT_FIREWALL_HTTP_PRE_UP_ENABLED>` — Enable HTTP firewall PreUp scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-http-pre-up-line <AGENT_FIREWALL_HTTP_PRE_UP_LINE>` — Set HTTP firewall PreUp script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-http-post-down-enabled <AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED>` — Enable HTTP firewall PostDown scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-http-post-down-line <AGENT_FIREWALL_HTTP_POST_DOWN_LINE>` — Set HTTP firewall PostDown script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-https-pre-up-enabled <AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED>` — Enable HTTPS firewall PreUp scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-https-pre-up-line <AGENT_FIREWALL_HTTPS_PRE_UP_LINE>` — Set HTTPS firewall PreUp script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-https-post-down-enabled <AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED>` — Enable HTTPS firewall PostDown scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-https-post-down-line <AGENT_FIREWALL_HTTPS_POST_DOWN_LINE>` — Set HTTPS firewall PostDown script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-vpn-pre-up-enabled <AGENT_FIREWALL_VPN_PRE_UP_ENABLED>` — Enable VPN firewall PreUp scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-pre-up-line <AGENT_FIREWALL_VPN_PRE_UP_LINE>` — Set VPN firewall PreUp script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-vpn-post-up-enabled <AGENT_FIREWALL_VPN_POST_UP_ENABLED>` — Enable VPN firewall PostUp scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-post-up-line <AGENT_FIREWALL_VPN_POST_UP_LINE>` — Set VPN firewall PostUp script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-vpn-pre-down-enabled <AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED>` — Enable VPN firewall PreDown scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-pre-down-line <AGENT_FIREWALL_VPN_PRE_DOWN_LINE>` — Set VPN firewall PreDown script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-vpn-post-down-enabled <AGENT_FIREWALL_VPN_POST_DOWN_ENABLED>` — Enable VPN firewall PostDown scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-post-down-line <AGENT_FIREWALL_VPN_POST_DOWN_LINE>` — Set VPN firewall PostDown script line(s). Can be specified multiple times for multiple script lines.
 * `--agent-peer-name <wg-quickrs-host>` — Set agent peer name
 * `--agent-peer-vpn-internal-address <10.0.34.1>` — Set internal IPv4 address for agent in VPN network
 * `--agent-peer-vpn-endpoint <AGENT_PEER_VPN_ENDPOINT>` — Set publicly accessible endpoint(IP/FQDN:PORT) for VPN endpoint
