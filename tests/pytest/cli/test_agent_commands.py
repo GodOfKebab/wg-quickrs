@@ -5,8 +5,6 @@ from tests.pytest.conftest import setup_wg_quickrs_folder
 from tests.pytest.helpers import (
     get_wg_quickrs_command,
     get_paths,
-    get_available_firewall_utilities,
-    get_available_network_interfaces,
     deep_get
 )
 import subprocess
@@ -106,44 +104,7 @@ def test_agent_toggle_simple(setup_wg_quickrs_folder):
         ("enable", ["agent", "web", "http"], ('agent', 'web', 'http', 'enabled'), True, True),
         ("enable", ["agent", "vpn"], ('agent', 'vpn', 'enabled'), True, True),
         ("disable", ["agent", "vpn"], ('agent', 'vpn', 'enabled'), False, True),
-        ("enable", ["agent", "firewall"], ('agent', 'firewall', 'enabled'), False, False),
         ("enable", ["agent", "web", "password"], ('agent', 'web', 'password', 'enabled'), True, False),
-    ]:
-        run_and_check_success([action] + target, path, value, success)
-
-
-def test_agent_firewall_commands(setup_wg_quickrs_folder):
-    """Test firewall utility and gateway commands with various configurations"""
-    setup_wg_quickrs_folder("no_auth_single_peer")
-
-    utilities = get_available_firewall_utilities()
-    interfaces = get_available_network_interfaces()
-
-    if not utilities or not interfaces:
-        pytest.skip("No firewall utilities or network interfaces available on this system")
-
-    utility = utilities[0]
-    gateway = interfaces[0]
-
-    # can't enable firewall without setting utility and gateway
-    for action, target, path, value, success in [
-        ("enable", ["agent", "firewall"], ('agent', 'firewall', 'enabled'), True, False),
-    ]:
-        run_and_check_success([action] + target, path, value, success)
-
-    # set firewall utility and gateway tests
-    for command, path, value, success in [
-        (["agent", "firewall", "utility"], ('agent', 'firewall', 'utility'), utility, True),
-        (["agent", "firewall", "utility"], ('agent', 'firewall', 'utility'), "not-a-utility", False),
-        (["agent", "firewall", "gateway"], ('agent', 'firewall', 'gateway'), gateway, True),
-        (["agent", "firewall", "gateway"], ('agent', 'firewall', 'gateway'), "not-a-gateway", False),
-    ]:
-        run_and_check_success(["set"] + command + [str(value)], path, value, success)
-
-    # with firewall utility and gateway set, we can enable/disable firewall
-    for action, target, path, value, success in [
-        ("enable", ["agent", "firewall"], ('agent', 'firewall', 'enabled'), True, True),
-        ("disable", ["agent", "firewall"], ('agent', 'firewall', 'enabled'), False, True),
     ]:
         run_and_check_success([action] + target, path, value, success)
 
@@ -203,8 +164,6 @@ def test_agent_commands_without_config(setup_wg_quickrs_folder):
         ("set", ["agent", "web", "address"]),  # missing value
         ("set", ["agent", "web", "http", "port"]),  # missing value
         ("set", ["agent", "vpn", "port"]),  # missing value
-        ("set", ["agent", "firewall", "utility"]),  # missing value
-        ("set", ["agent", "firewall", "gateway"]),  # missing value
     ],
 )
 def test_agent_commands_missing_arguments(setup_wg_quickrs_folder, command, args):

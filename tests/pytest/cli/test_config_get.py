@@ -19,7 +19,6 @@ yaml.preserve_quotes = True
         (["get", "agent", "web", "password", "enabled"], "false"),
         (["get", "agent", "vpn", "enabled"], "false"),
         (["get", "agent", "vpn", "port"], "51829"),
-        (["get", "agent", "firewall", "enabled"], "false"),
     ],
 )
 def test_config_get_no_auth(setup_wg_quickrs_folder, command, expected_value):
@@ -51,7 +50,6 @@ def test_config_get_no_auth(setup_wg_quickrs_folder, command, expected_value):
         (["get", "agent", "web", "password", "enabled"], "true"),
         (["get", "agent", "vpn", "enabled"], "false"),
         (["get", "agent", "vpn", "port"], "51829"),
-        (["get", "agent", "firewall", "enabled"], "false"),
     ],
 )
 def test_config_get_with_pwd(setup_wg_quickrs_folder, command, expected_value):
@@ -127,49 +125,6 @@ def test_config_get_password_hash(setup_wg_quickrs_folder):
     assert output_lines[-1].startswith("$argon2")
 
 
-def test_config_get_firewall_utility_and_gateway(setup_wg_quickrs_folder):
-    """Test that config get commands return firewall utility and gateway (empty when not set)."""
-    setup_wg_quickrs_folder("no_auth_single_peer")
-
-    # Test utility
-    result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "get", "agent", "firewall", "utility"],
-        capture_output=True,
-        text=True
-    )
-    print(result.stdout)
-    print(result.stderr)
-
-    assert result.returncode == 0
-    # For empty values, println!("") outputs a newline after the log messages
-    # Remove only the final newline (not all trailing newlines) to preserve the empty line from println!
-    if result.stdout.endswith('\n'):
-        output_without_final_newline = result.stdout[:-1]
-    else:
-        output_without_final_newline = result.stdout
-    all_lines = output_without_final_newline.split('\n')
-    # The last line should be empty (the println!("") output)
-    assert all_lines[-1] == ""
-
-    # Test gateway
-    result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "get", "agent", "firewall", "gateway"],
-        capture_output=True,
-        text=True
-    )
-    print(result.stdout)
-    print(result.stderr)
-
-    assert result.returncode == 0
-    # Empty when not set
-    if result.stdout.endswith('\n'):
-        output_without_final_newline = result.stdout[:-1]
-    else:
-        output_without_final_newline = result.stdout
-    all_lines = output_without_final_newline.split('\n')
-    assert all_lines[-1] == ""
-
-
 @pytest.mark.parametrize(
     "command",
     [
@@ -184,9 +139,6 @@ def test_config_get_firewall_utility_and_gateway(setup_wg_quickrs_folder):
         ["get", "agent", "web", "password", "hash"],
         ["get", "agent", "vpn", "enabled"],
         ["get", "agent", "vpn", "port"],
-        ["get", "agent", "firewall", "enabled"],
-        ["get", "agent", "firewall", "utility"],
-        ["get", "agent", "firewall", "gateway"],
     ],
 )
 def test_config_get_without_config(setup_wg_quickrs_folder, command):
@@ -333,13 +285,11 @@ def get_config_field_from_file(field_path):
 @pytest.mark.parametrize(
     "command,expected_keys",
     [
-        (["get", "agent"], ["web", "vpn", "firewall"]),
         (["get", "agent", "web"], ["address", "http", "https", "password"]),
         (["get", "agent", "web", "http"], ["enabled", "port"]),
         (["get", "agent", "web", "https"], ["enabled", "port", "tls_cert", "tls_key"]),
         (["get", "agent", "web", "password"], ["enabled", "hash"]),
         (["get", "agent", "vpn"], ["enabled", "port"]),
-        (["get", "agent", "firewall"], ["enabled", "utility", "gateway"]),
     ],
 )
 def test_config_get_yaml_struct_no_auth(setup_wg_quickrs_folder, command, expected_keys):
@@ -361,7 +311,6 @@ def test_config_get_yaml_struct_no_auth(setup_wg_quickrs_folder, command, expect
         (["get", "agent"], ["web", "http", "port"], 9080),
         (["get", "agent"], ["vpn", "enabled"], False),
         (["get", "agent"], ["vpn", "port"], 51829),
-        (["get", "agent"], ["firewall", "enabled"], False),
         (["get", "agent", "web"], ["address"], "127.0.0.1"),
         (["get", "agent", "web"], ["http", "enabled"], True),
         (["get", "agent", "web"], ["http", "port"], 9080),
@@ -456,18 +405,6 @@ def test_config_get_yaml_agent_vpn_structure(setup_wg_quickrs_folder):
     assert data["enabled"] == False
     assert data["port"] == 51829
     assert len(data) == 2  # Should only have enabled and port
-
-
-def test_config_get_yaml_agent_firewall_structure(setup_wg_quickrs_folder):
-    """Test getting firewall structure as YAML."""
-    setup_wg_quickrs_folder("no_auth_single_peer")
-
-    data = get_yaml_output(["get", "agent", "firewall"])
-
-    assert data["enabled"] == False
-    assert data["utility"] == ""
-    assert data["gateway"] == ""
-    assert len(data) == 3  # Should only have enabled, utility, and gateway
 
 
 def test_config_get_yaml_consistency_with_individual_gets(setup_wg_quickrs_folder):
