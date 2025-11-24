@@ -1,4 +1,4 @@
-# `wg-quickrs` (v1.0.0)
+# `wg-quickrs`
 
 A tool to manage the peer and network configuration of the WireGuard-based overlay network over the web console
 
@@ -193,7 +193,6 @@ Run the wg-quickrs agent
 * [`config enable agent web https`↴](#config-enable-agent-web-https)
 * [`config enable agent web password`↴](#config-enable-agent-web-password)
 * [`config enable agent vpn`↴](#config-enable-agent-vpn)
-* [`config enable agent firewall`↴](#config-enable-agent-firewall)
 * [`config enable network`↴](#config-enable-network)
 * [`config enable network peer`↴](#config-enable-network-peer)
 * [`config enable network peer endpoint`↴](#config-enable-network-peer-endpoint)
@@ -215,7 +214,6 @@ Run the wg-quickrs agent
 * [`config disable agent web https`↴](#config-disable-agent-web-https)
 * [`config disable agent web password`↴](#config-disable-agent-web-password)
 * [`config disable agent vpn`↴](#config-disable-agent-vpn)
-* [`config disable agent firewall`↴](#config-disable-agent-firewall)
 * [`config disable network`↴](#config-disable-network)
 * [`config disable network peer`↴](#config-disable-network-peer)
 * [`config disable network peer endpoint`↴](#config-disable-network-peer-endpoint)
@@ -242,9 +240,6 @@ Run the wg-quickrs agent
 * [`config set agent web https tls-key`↴](#config-set-agent-web-https-tls-key)
 * [`config set agent vpn`↴](#config-set-agent-vpn)
 * [`config set agent vpn port`↴](#config-set-agent-vpn-port)
-* [`config set agent firewall`↴](#config-set-agent-firewall)
-* [`config set agent firewall utility`↴](#config-set-agent-firewall-utility)
-* [`config set agent firewall gateway`↴](#config-set-agent-firewall-gateway)
 * [`config set network`↴](#config-set-network)
 * [`config set network name`↴](#config-set-network-name)
 * [`config set network subnet`↴](#config-set-network-subnet)
@@ -295,10 +290,6 @@ Run the wg-quickrs agent
 * [`config get agent vpn`↴](#config-get-agent-vpn)
 * [`config get agent vpn enabled`↴](#config-get-agent-vpn-enabled)
 * [`config get agent vpn port`↴](#config-get-agent-vpn-port)
-* [`config get agent firewall`↴](#config-get-agent-firewall)
-* [`config get agent firewall enabled`↴](#config-get-agent-firewall-enabled)
-* [`config get agent firewall utility`↴](#config-get-agent-firewall-utility)
-* [`config get agent firewall gateway`↴](#config-get-agent-firewall-gateway)
 * [`config get network`↴](#config-get-network)
 * [`config get network name`↴](#config-get-network-name)
 * [`config get network subnet`↴](#config-get-network-subnet)
@@ -406,7 +397,6 @@ Enable agent configuration options
 
 * `web` — Enable web server options
 * `vpn` — Enable VPN server
-* `firewall` — Enable firewall configuration
 
 
 
@@ -453,14 +443,6 @@ Enable password authentication for web server
 Enable VPN server
 
 **Usage:** `config enable agent vpn`
-
-
-
-### `config enable agent firewall`
-
-Enable firewall configuration
-
-**Usage:** `config enable agent firewall`
 
 
 
@@ -635,7 +617,6 @@ Disable agent configuration options
 
 * `web` — Disable web server options
 * `vpn` — Disable VPN server
-* `firewall` — Disable firewall configuration
 
 
 
@@ -682,14 +663,6 @@ Disable password authentication for web server
 Disable VPN server
 
 **Usage:** `config disable agent vpn`
-
-
-
-### `config disable agent firewall`
-
-Disable firewall configuration
-
-**Usage:** `config disable agent firewall`
 
 
 
@@ -864,7 +837,6 @@ Set agent configuration values
 
 * `web` — Set web server configuration
 * `vpn` — Set VPN configuration
-* `firewall` — Set firewall configuration
 
 
 
@@ -989,43 +961,6 @@ Set VPN server listening port
 ###### **Arguments:**
 
 * `<VALUE>` — Port number (0-65535)
-
-
-
-### `config set agent firewall`
-
-Set firewall configuration
-
-**Usage:** `config set agent firewall <COMMAND>`
-
-###### **Subcommands:**
-
-* `utility` — Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)
-* `gateway` — Set the gateway used to configure firewall NAT and input rules (e.g. en0, eth0, etc.)
-
-
-
-### `config set agent firewall utility`
-
-Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)
-
-**Usage:** `config set agent firewall utility <VALUE>`
-
-###### **Arguments:**
-
-* `<VALUE>` — Utility binary path or name
-
-
-
-### `config set agent firewall gateway`
-
-Set the gateway used to configure firewall NAT and input rules (e.g. en0, eth0, etc.)
-
-**Usage:** `config set agent firewall gateway <VALUE>`
-
-###### **Arguments:**
-
-* `<VALUE>` — Internet interface name
 
 
 
@@ -1462,7 +1397,6 @@ Get agent configuration values
 
 * `web` — Get web server configuration
 * `vpn` — Get VPN configuration
-* `firewall` — Get firewall configuration
 
 
 
@@ -1620,44 +1554,6 @@ Get whether VPN server is enabled
 Get VPN server listening port
 
 **Usage:** `config get agent vpn port`
-
-
-
-### `config get agent firewall`
-
-Get firewall configuration
-
-**Usage:** `config get agent firewall [COMMAND]`
-
-###### **Subcommands:**
-
-* `enabled` — Get whether firewall configuration is enabled
-* `utility` — Get the utility used to configure firewall NAT and input rules
-* `gateway` — Get the gateway used to configure firewall NAT and input rules
-
-
-
-### `config get agent firewall enabled`
-
-Get whether firewall configuration is enabled
-
-**Usage:** `config get agent firewall enabled`
-
-
-
-### `config get agent firewall utility`
-
-Get the utility used to configure firewall NAT and input rules
-
-**Usage:** `config get agent firewall utility`
-
-
-
-### `config get agent firewall gateway`
-
-Get the gateway used to configure firewall NAT and input rules
-
-**Usage:** `config get agent firewall gateway`
 
 
 
