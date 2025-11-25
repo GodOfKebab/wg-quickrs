@@ -17,6 +17,7 @@ services:
     build:
       dockerfile: src/Dockerfile
       target: runner
+    restart: no
 
   wg-quickrs-config-reset-password-local:
     extends:
