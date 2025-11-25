@@ -82,8 +82,10 @@ Install `wasm-pack` dependency.
 [//]: # (install-deps-debian: 1.1.2 Build wg-quickrs-lib - Install 'wasm-pack' dependency)
 
 ```sh
-sudo apt update && sudo apt install -y build-essential
-cargo install wasm-pack
+curl https://drager.github.io/wasm-pack/installer/init.sh -sSf | bash
+# OR build from source
+# sudo apt install -y build-essential
+# cargo install wasm-pack
 ```
 
 Build `wg-quickrs-lib` directory for the `wasm32-unknown-unknown` target.
@@ -114,6 +116,7 @@ Build `web` directory.
 cd wg-quickrs-web
 npm ci --omit=dev
 npm run build
+cd ..
 ```
 
 ---
