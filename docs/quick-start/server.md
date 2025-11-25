@@ -45,6 +45,11 @@ The installer script performs the following actions:
 ```bash
 wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/installer.sh
 sh installer.sh
+# OR specify a release like so
+# wget -q https://github.com/GodOfKebab/wg-quickrs/releases/download/v1.0.0/installer.sh
+# sh installer.sh
+# Note: you still might be able to download earlier releases with the latest installer script
+#       but it's not guaranteed to work. If you want to be sure, use the installer script from that old release.
 ```
 
 ### Installation options

@@ -120,13 +120,19 @@ docker run --rm \
 ⚠️ Note: Keep in mind that the plaintext password might show up in the bash/zsh history.
 If you instead use the binaries instead of docker, `wg-quickrs config reset agent web password` prompts for the password interactively, which is safer.
 
-## 1.5 Use `docker-compose.yml`
+## 1.5 Use `docker-compose.yml` (recommended)
 
 You can either pull and start your containers over the command line, or use the provided `docker-compose.yml` file.
+The advantage of using the `docker-compose.yml` file is that you can easily customize the containers to your needs.
+Also, the tags are pinned to a version, so when you run this in the future, you will always get the same version.
 To download, run the following command:
 
 ```shell
-wget https://raw.githubusercontent.com/godofkebab/wg-quickrs/v2/docker-compose.yml
+mkdir wg-quickrs-docker
+cd wg-quickrs-docker
+wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/docker-compose.yml
+# OR specify a release like so
+# wget -q https://github.com/GodOfKebab/wg-quickrs/releases/download/v1.0.0/docker-compose.yml
 ```
 
 After editing the `docker-compose.yml` file, run the following command to set up and start the containers:
