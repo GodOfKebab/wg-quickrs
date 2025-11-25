@@ -6,7 +6,8 @@
 
 You can either pull and start your containers over the command line, or use the provided `docker-compose.yml` file.
 The advantage of using the `docker-compose.yml` file is that you can easily customize the containers to your needs.
-Also, the tags are pinned to a version, so when you run this in the future, you will always get the same version.
+Also, the tags are pinned to a version, so when you run this in the future, you will always deal with the same version of `wg-quickrs` as your config files.
+This prevents you from accidentally upgrading to a newer version of `wg-quickrs` and breaking your setup.
 To download, run the following command:
 
 ```shell
