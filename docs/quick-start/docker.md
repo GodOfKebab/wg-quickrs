@@ -133,13 +133,13 @@ After editing the `docker-compose.yml` file, run the following command to set up
 
 ```shell
 # optional: generate TLS certs/keys
-docker-compose up tls-cert-generator
+docker compose up tls-cert-generator
 # initialize the agent
-docker-compose up wg-quickrs-agent-init
+docker compose up wg-quickrs-agent-init
 # run the agent and fork it in the background
-docker-compose up -d wg-quickrs-agent-run
+docker compose up -d wg-quickrs-agent-run
 # reset the web password
-docker-compose up wg-quickrs-config-reset-password
+docker compose up wg-quickrs-config-reset-password
 ```
 
 ### 2. Build the Docker images from source
