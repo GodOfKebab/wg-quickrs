@@ -141,10 +141,16 @@ jobs:
       - name: List downloaded artifacts
         run: ls -R ./artifacts
 
+      - name: Pin version in docker-compose.yml
+        run: sed -e "s|wg-quickrs:latest|wg-quickrs:${{ github.ref_name }}|g" docker-compose.yml > .github/docker-compose.yml
+
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: artifacts/**/*.tar.gz
+          files: |
+            artifacts/**/*.tar.gz
+            installer.sh
+            .github/docker-compose.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
