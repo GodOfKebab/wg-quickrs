@@ -2,7 +2,37 @@
 
 ## 1. Use the pre-built Docker images (recommended)
 
-## 1.1 Generate your TLS certs/keys (optional)
+### 1.1 Use `docker-compose.yml` (recommended)
+
+You can either pull and start your containers over the command line, or use the provided `docker-compose.yml` file.
+The advantage of using the `docker-compose.yml` file is that you can easily customize the containers to your needs.
+Also, the tags are pinned to a version, so when you run this in the future, you will always get the same version.
+To download, run the following command:
+
+```shell
+mkdir wg-quickrs-docker
+cd wg-quickrs-docker
+wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/docker-compose.yml
+# OR specify a release like so
+# wget -q https://github.com/GodOfKebab/wg-quickrs/releases/download/v1.0.0/docker-compose.yml
+```
+
+After editing the `docker-compose.yml` file, run the following command to set up and start the containers:
+
+```shell
+# optional: generate TLS certs/keys
+docker compose up tls-cert-generator
+# initialize the agent
+docker compose up wg-quickrs-agent-init
+# run the agent and fork it in the background
+docker compose up -d wg-quickrs-agent-run
+# reset the web password
+docker compose up wg-quickrs-config-reset-password
+```
+
+### 1.2 Use docker CLI commands
+
+#### 1.2.1 Generate your TLS certs/keys (optional)
 
 Generate your TLS certs/keys to `$HOME/.wg-quickrs-docker/certs/YOUR-SERVER/cert.pem`/`$HOME/.wg-quickrs-docker/certs/YOUR-SERVER/key.pem`.
 
@@ -23,9 +53,7 @@ docker run --rm \
   YOUR-SERVER
 ```
 
----
-
-## 1.2 Initialize the agent
+#### 1.2.2 Initialize the agent
 
 Initialize your agent using the init command:
 
@@ -82,9 +110,7 @@ docker run --rm \
     --default-connection-persistent-keepalive-period  25
 ```
 
----
-
-## 1.3 Run the agent
+#### 1.2.3 Run the agent
 
 Then start the agent and fork it in the background like so:
 
@@ -106,7 +132,7 @@ docker run -d \
 HTTPS server will be available at `https://YOUR-SERVER:8443`.
 WireGuard endpoint will be available at `YOUR-SERVER:51820`.
 
-## 1.4 Reset web password
+#### 1.2.4 Reset web password
 
 If you need to reset the web password in the future, make sure the 'agent run' container is not running and run the following command:
 
@@ -120,35 +146,7 @@ docker run --rm \
 ⚠️ Note: Keep in mind that the plaintext password might show up in the bash/zsh history.
 If you instead use the binaries instead of docker, `wg-quickrs config reset agent web password` prompts for the password interactively, which is safer.
 
-## 1.5 Use `docker-compose.yml` (recommended)
-
-You can either pull and start your containers over the command line, or use the provided `docker-compose.yml` file.
-The advantage of using the `docker-compose.yml` file is that you can easily customize the containers to your needs.
-Also, the tags are pinned to a version, so when you run this in the future, you will always get the same version.
-To download, run the following command:
-
-```shell
-mkdir wg-quickrs-docker
-cd wg-quickrs-docker
-wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/docker-compose.yml
-# OR specify a release like so
-# wget -q https://github.com/GodOfKebab/wg-quickrs/releases/download/v1.0.0/docker-compose.yml
-```
-
-After editing the `docker-compose.yml` file, run the following command to set up and start the containers:
-
-```shell
-# optional: generate TLS certs/keys
-docker compose up tls-cert-generator
-# initialize the agent
-docker compose up wg-quickrs-agent-init
-# run the agent and fork it in the background
-docker compose up -d wg-quickrs-agent-run
-# reset the web password
-docker compose up wg-quickrs-config-reset-password
-```
-
-### 2. Build the Docker images from source
+## 2. Build the Docker images from source
 
 See [BUILDING.md](../BUILDING.md#12-using-docker)
 
