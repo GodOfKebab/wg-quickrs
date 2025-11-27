@@ -1,6 +1,7 @@
 from tests.pytest.helpers import get_paths, get_wg_quickrs_command, wait_for_tcp_port, wait_for_wireguard
 from subprocess import Popen
 import os
+import sys
 import shutil
 import pytest
 from ruamel.yaml import YAML
@@ -52,6 +53,15 @@ def setup_wg_quickrs_folder(request):
             # TLS cert generation
             if conf['agent']['web']['https']['enabled']:
                 setup_certs_folder(conf['agent']['web']['address'])
+
+            conf['agent']['vpn']['wg'] = shutil.which("wg")
+            if sys.platform == "linux":
+                conf['agent']['vpn']['wg_userspace']['enabled'] = False
+            else:
+                conf['agent']['vpn']['wg_userspace']['enabled'] = True
+                conf['agent']['vpn']['wg_userspace']['binary'] = shutil.which("wireguard-go")
+            with open(wg_quickrs_config_file, 'w') as stream:
+                yaml.dump(conf, stream)
 
         return pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file
 

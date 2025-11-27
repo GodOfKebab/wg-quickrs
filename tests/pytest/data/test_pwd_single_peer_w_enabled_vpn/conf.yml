@@ -16,6 +16,10 @@ agent:
   vpn:
     enabled: true
     port: 51829
+    wg: ''
+    wg_userspace:
+      enabled: true
+      binary: ''
   firewall:
     http:
       pre_up: []

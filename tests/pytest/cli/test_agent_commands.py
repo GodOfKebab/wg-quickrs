@@ -42,7 +42,7 @@ def run_and_check_success(cmd, field, field_val, success):
     expected_path = "root" + "".join(f"['{k}']" for k in field)
 
     # If the field type changes from str to PathBuf (like when setting fw utility), only check 'type_changes'
-    if 'type_changes' in diff:
+    if 'type_changes' in diff and expected_path in diff['type_changes']:
         assert diff["type_changes"][expected_path]["new_value"] == field_val
         return
     # Otherwise, check 'values_changed'

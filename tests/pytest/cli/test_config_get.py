@@ -404,7 +404,7 @@ def test_config_get_yaml_agent_vpn_structure(setup_wg_quickrs_folder):
 
     assert data["enabled"] == False
     assert data["port"] == 51829
-    assert len(data) == 2  # Should only have enabled and port
+    assert len(data) == 4  # Should only have enabled port, wg, wg userspace field
 
 
 def test_config_get_yaml_consistency_with_individual_gets(setup_wg_quickrs_folder):
