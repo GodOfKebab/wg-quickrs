@@ -13,8 +13,8 @@ use std::{env, fs};
 use chrono::Utc;
 use thiserror::Error;
 use uuid::Uuid;
-use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility};
-use wg_quickrs_lib::validation::helpers::firewall_utility_options;
+use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility, parse_and_validate_wg_tool, parse_and_validate_wg_userspace_binary};
+use wg_quickrs_lib::validation::helpers::{firewall_utility_options, wg_tool_options, wg_userspace_options};
 use wg_quickrs_lib::validation::network::{parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name};
 use crate::commands::helpers::*;
 use crate::conf::util::ConfUtilError;
@@ -472,7 +472,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [7/28] --agent-vpn-enabled & --agent-vpn-port
+    // [7/28] --agent-vpn-enabled & --agent-vpn-port & --agent-vpn-wg & --agent-vpn-wg-userspace-enabled & --agent-vpn-wg-userspace-binary
     let agent_vpn_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -481,8 +481,9 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_VPN_ENABLED_HELP,
         true,
     );
-    let agent_vpn_port = if agent_vpn_enabled {
-        get_value(
+    let (agent_vpn_port, agent_vpn_wg, agent_vpn_wg_userspace_enabled, agent_vpn_wg_userspace_binary) = if agent_vpn_enabled {
+        // --agent-vpn-port
+        let vpn_port = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_vpn_port.map(|o| o.to_string()),
@@ -490,10 +491,47 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             format!("\t{}", INIT_AGENT_VPN_PORT_HELP).as_str(),
             Some("51820".into()),
             parse_and_validate_port,
-        )
+        );
+
+        // --agent-vpn-wg
+        let vpn_wg = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_vpn_wg.clone().map(|o| o.display().to_string()),
+            INIT_AGENT_VPN_WG_FLAG,
+            format!("\t{}", INIT_AGENT_VPN_WG_HELP).as_str(),
+            wg_tool_options().into_iter().next().map(|o| o.display().to_string()),
+            parse_and_validate_wg_tool,
+        );
+
+        // --agent-vpn-wg-userspace-enabled & --agent-vpn-wg-userspace-binary
+        let vpn_wg_userspace_enabled = get_bool(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_vpn_wg_userspace_enabled,
+            INIT_AGENT_VPN_WG_USERSPACE_ENABLED_FLAG,
+            format!("\t{}", INIT_AGENT_VPN_WG_USERSPACE_ENABLED_HELP).as_str(),
+            !cfg!(target_os = "linux"),  // if on linux, disable userspace to use kernel module
+        );
+        let vpn_wg_userspace_binary = if vpn_wg_userspace_enabled {
+            get_value(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.agent_vpn_wg_userspace_binary.clone().map(|o| o.display().to_string()),
+                INIT_AGENT_VPN_WG_USERSPACE_BINARY_FLAG,
+                format!("\t\t{}", INIT_AGENT_VPN_WG_USERSPACE_BINARY_HELP).as_str(),
+                wg_userspace_options().into_iter().next().map(|o| o.display().to_string()),
+                parse_and_validate_wg_userspace_binary,
+            )
+        } else {
+            // if disabled, leave it empty
+            PathBuf::new()
+        };
+
+        (vpn_port, vpn_wg, vpn_wg_userspace_enabled, vpn_wg_userspace_binary)
     } else {
-        // if disabled, use a default port of 51820
-        51820
+        // if disabled, use a default port of 51820 and empty wg settings
+        (51820, PathBuf::new(), false, PathBuf::new())
     };
     step_counter += 1;
 
@@ -1114,6 +1152,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             vpn: AgentVpn {
                 enabled: agent_vpn_enabled,
                 port: agent_vpn_port,
+                wg: agent_vpn_wg,
+                wg_userspace: WireGuardUserspace {
+                    enabled: agent_vpn_wg_userspace_enabled,
+                    binary: agent_vpn_wg_userspace_binary,
+                },
             },
             firewall: AgentFirewall {
                 http: http_firewall_scripts,

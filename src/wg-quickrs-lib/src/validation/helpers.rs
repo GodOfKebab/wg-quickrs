@@ -30,6 +30,30 @@ fn find_in_path(cmd: &str) -> Option<PathBuf> {
     None
 }
 
+/// Get a list of wg tool binaries available on the system.
+pub fn wg_tool_options() -> Vec<PathBuf> {
+    let candidates = ["awg", "wg"];
+    let mut ret: Vec<PathBuf> = Vec::new();
+    for prog in candidates {
+        if let Some(path) = find_in_path(prog) {
+            ret.push(path);
+        }
+    }
+    ret
+}
+
+/// Get a list of userspace WireGuard implementation binaries available on the system.
+pub fn wg_userspace_options() -> Vec<PathBuf> {
+    let candidates = ["amneziawg-go", "wireguard-go"];
+    let mut ret: Vec<PathBuf> = Vec::new();
+    for prog in candidates {
+        if let Some(path) = find_in_path(prog) {
+            ret.push(path);
+        }
+    }
+    ret
+}
+
 /// Get a list of firewall utilities available on the system.
 pub fn firewall_utility_options() -> Vec<PathBuf> {
     let candidates = ["iptables", "pfctl"];

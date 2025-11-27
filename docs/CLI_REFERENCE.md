@@ -76,6 +76,12 @@ Configuration options can be filled either by prompts on screen (when no argumen
   Possible values: `true`, `false`
 
 * `--agent-vpn-port <51820>` — Set VPN server listening port
+* `--agent-vpn-wg <AGENT_VPN_WG>` — Set path for the wg tool
+* `--agent-vpn-wg-userspace-enabled <AGENT_VPN_WG_USERSPACE_ENABLED>` — Use userspace implementation of WireGuard
+
+  Possible values: `true`, `false`
+
+* `--agent-vpn-wg-userspace-binary <AGENT_VPN_WG_USERSPACE_BINARY>` — Set path of the binary for the userspace WireGuard implementation
 * `--agent-firewall-enabled <AGENT_FIREWALL_ENABLED>` — Enable running firewall commands for setting up NAT and input rules
 
   Possible values: `true`, `false`

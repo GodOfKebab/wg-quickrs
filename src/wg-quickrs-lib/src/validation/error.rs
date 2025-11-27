@@ -11,6 +11,10 @@ pub enum ValidationError {
     TlsFileNotFound(),
     #[error("tls path is not a file (it is a directory or a symlink)")]
     TlsFileNotAFile(),
+    #[error("wg tool {0} is not found (possible options: [{1}])")]
+    WgToolNotFound(String, String),
+    #[error("userspace WireGuard implementation {0} is not found (possible options: [{1}])")]
+    WgUserspaceNotFound(String, String),
     #[error("gateway {0} is not found (possible options: {1})")]
     InterfaceNotFound(String, String),
     #[error("firewall utility {0} is not found (possible options: [{1}])")]

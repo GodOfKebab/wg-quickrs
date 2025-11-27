@@ -63,6 +63,15 @@ pub struct InitOptions {
     )]
     pub agent_vpn_port: Option<u16>,
 
+    #[arg(long, default_value = None, long_help = "Set path for the wg tool")]
+    pub agent_vpn_wg: Option<PathBuf>,
+
+    #[arg(long, default_value = None, long_help = "Use userspace implementation of WireGuard")]
+    pub agent_vpn_wg_userspace_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set path of the binary for the userspace WireGuard implementation")]
+    pub agent_vpn_wg_userspace_binary: Option<PathBuf>,
+
     #[arg(long, default_value = None, long_help = "Enable running firewall commands for setting up NAT and input rules"
     )]
     pub agent_firewall_enabled: Option<bool>,

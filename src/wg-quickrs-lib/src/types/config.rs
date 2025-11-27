@@ -94,6 +94,14 @@ pub struct Password {
 pub struct AgentVpn {
     pub enabled: bool,
     pub port: u16,
+    pub wg: PathBuf,
+    pub wg_userspace: WireGuardUserspace,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WireGuardUserspace {
+    pub enabled: bool,
+    pub binary: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

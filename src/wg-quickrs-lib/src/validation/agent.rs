@@ -1,5 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 use std::net::Ipv4Addr;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use crate::validation::error::{ValidationError, ValidationResult};
 use crate::validation::helpers;
@@ -30,6 +31,48 @@ pub fn validate_tls_file(config_folder: &Path, tls_file: &Path) -> ValidationRes
     }
 
     Ok(tls_file.to_path_buf())
+}
+
+pub fn parse_and_validate_wg_tool(wg_tool: &str) -> ValidationResult<PathBuf> {
+    let wg_tool_path = PathBuf::from(wg_tool);
+    validate_wg_tool(&wg_tool_path)
+}
+
+pub fn validate_wg_tool(wg_tool: &Path) -> ValidationResult<PathBuf> {
+    let is_executable = wg_tool
+        .metadata()
+        .map(|m| m.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false);
+
+    if is_executable {
+        Ok(wg_tool.to_path_buf())
+    } else {
+        Err(ValidationError::WgToolNotFound(
+            wg_tool.display().to_string(),
+            helpers::wg_tool_options().iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join(", ")
+        ))
+    }
+}
+
+pub fn parse_and_validate_wg_userspace_binary(wg_userspace_binary: &str) -> ValidationResult<PathBuf> {
+    let wg_userspace_binary_path = PathBuf::from(wg_userspace_binary);
+    validate_wg_userspace_binary(&wg_userspace_binary_path)
+}
+
+pub fn validate_wg_userspace_binary(wg_userspace_binary: &Path) -> ValidationResult<PathBuf> {
+    let is_executable = wg_userspace_binary
+        .metadata()
+        .map(|m| m.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false);
+
+    if is_executable {
+        Ok(wg_userspace_binary.to_path_buf())
+    } else {
+        Err(ValidationError::WgUserspaceNotFound(
+            wg_userspace_binary.display().to_string(),
+            helpers::wg_userspace_options().iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join(", ")
+        ))
+    }
 }
 
 pub fn parse_and_validate_fw_gateway(fw_gateway: &str) -> ValidationResult<String> {

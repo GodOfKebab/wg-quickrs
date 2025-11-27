@@ -23,6 +23,19 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
             ConfigFileValidationError::Validation("agent.web.https.tls_key".to_string(), e)
         })?;
     }
+
+    // Validate VPN settings
+    if config_file.agent.vpn.enabled {
+        validate_wg_tool(&config_file.agent.vpn.wg).map_err(|e| {
+            ConfigFileValidationError::Validation("agent.vpn.wg".to_string(), e)
+        })?;
+
+        if config_file.agent.vpn.wg_userspace.enabled {
+            validate_wg_userspace_binary(&config_file.agent.vpn.wg_userspace.binary).map_err(|e| {
+                ConfigFileValidationError::Validation("agent.vpn.wg_userspace.binary".to_string(), e)
+            })?;
+        }
+    }
     // Validate Firewall scripts
     for (protocol, scripts_map) in [
         ("http", &config_file.agent.firewall.http),
