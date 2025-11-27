@@ -33,6 +33,9 @@ pub enum TunnelError {
     #[cfg(target_os = "macos")]
     #[error("unable to find default gateway")]
     DefaultGatewayNotFound(),
+    #[cfg(target_os = "macos")]
+    #[error("kernel support does not exist for this platform")]
+    NoWireGuardKernelModule(),
 }
 
 pub type TunnelResult<T> = Result<T, TunnelError>;
@@ -128,11 +131,12 @@ impl TunnelManager {
         self.add_addresses()?;
         self.set_mtu_and_up()?;
         self.add_routes()?;
+        let _wg = config.agent.vpn.wg.to_str().unwrap();
         #[cfg(target_os = "macos")]
         {
             log::debug!("[#] Setting endpoint direct route to WireGuard interface: {}", self.interface_name());
             let iface = self.real_interface.as_ref().unwrap();
-            wg_quick_platform::set_endpoint_direct_route(iface, &mut self.endpoint_router)?;
+            wg_quick_platform::set_endpoint_direct_route(_wg, iface, &mut self.endpoint_router)?;
         }
         self.set_dns()?;
         #[cfg(target_os = "macos")]
@@ -140,7 +144,7 @@ impl TunnelManager {
             let iface = self.real_interface.as_ref().unwrap();
             let this_peer = &self.this_peer()?;
 
-            wg_quick_platform::start_monitor_daemon(iface, &interface, &this_peer.dns, &this_peer.mtu, &self.endpoint_router, &self.dns_manager)?;
+            wg_quick_platform::start_monitor_daemon(_wg, iface, &interface, &this_peer.dns, &this_peer.mtu, &self.endpoint_router, &self.dns_manager)?;
         }
         self.execute_hooks(HookType::PostUp)?;
 
@@ -198,8 +202,11 @@ impl TunnelManager {
 
     fn add_interface(&mut self) -> TunnelResult<()> {
         let interface = self.interface_name();
+        let config = self.config.as_ref().unwrap();
+        let userspace_enabled = config.agent.vpn.wg_userspace.enabled;
+        let userspace_binary = config.agent.vpn.wg_userspace.binary.to_str().unwrap();
         log::debug!("[#] Adding WireGuard interface: {}", &interface);
-        self.real_interface = Some(wg_quick_platform::add_interface(&interface)?);
+        self.real_interface = Some(wg_quick_platform::add_interface(&interface, userspace_enabled, userspace_binary)?);
         Ok(())
     }
 
@@ -210,9 +217,11 @@ impl TunnelManager {
         let interface = self.interface_name();
         log::debug!("[#] Deleting WireGuard interface: {}", &interface);
 
+        let config = self.config.as_ref().unwrap();
+        let wg = config.agent.vpn.wg.to_str().unwrap();
         let mut dns_manager = self.dns_manager.clone();
         let mut endpoint_router = self.endpoint_router.clone();
-        wg_quick_platform::del_interface(iface, &interface, &mut dns_manager, &mut endpoint_router)?;
+        wg_quick_platform::del_interface(wg, iface, &interface, &mut dns_manager, &mut endpoint_router)?;
         self.dns_manager = dns_manager.clone();
         self.endpoint_router = endpoint_router.clone();
 
@@ -239,9 +248,11 @@ impl TunnelManager {
 
     fn set_mtu_and_up(&self) -> TunnelResult<()> {
         log::debug!("[#] Setting MTU and bringing up WireGuard interface: {}", self.interface_name());
+        let config = self.config.as_ref().unwrap();
+        let wg = config.agent.vpn.wg.to_str().unwrap();
         let iface = self.real_interface.as_ref().unwrap();
 
-        wg_quick_platform::set_mtu_and_up(iface, &self.this_peer()?.mtu)?;
+        wg_quick_platform::set_mtu_and_up(wg, iface, &self.this_peer()?.mtu)?;
 
         Ok(())
     }
@@ -268,12 +279,14 @@ impl TunnelManager {
 
     fn add_routes(&mut self) -> TunnelResult<()> {
         log::debug!("[#] Adding routes to WireGuard interface: {}", self.interface_name());
+        let config = self.config.as_ref().unwrap();
+        let wg = config.agent.vpn.wg.to_str().unwrap();
         let iface = self.real_interface.as_ref().unwrap();
-        let allowed_ips = get_allowed_ips(iface)?;
+        let allowed_ips = get_allowed_ips(wg, iface)?;
         let config = self.config.as_ref().unwrap();
 
         for cidr in allowed_ips {
-            wg_quick_platform::add_route(iface, &config.network.name, &cidr, &mut self.endpoint_router)?;
+            wg_quick_platform::add_route(wg, iface, &config.network.name, &cidr, &mut self.endpoint_router)?;
         }
 
         Ok(())
@@ -290,21 +303,24 @@ impl TunnelManager {
 
     fn set_config(&self) -> TunnelResult<()> {
         log::debug!("[#] Setting WireGuard interface configuration: {}", self.interface_name());
-        let iface = self.real_interface.as_ref().unwrap();
         let config = self.config.as_ref().unwrap();
+        let wg = config.agent.vpn.wg.to_str().unwrap();
+        let iface = self.real_interface.as_ref().unwrap();
 
         let wg_config = wg_quickrs_lib::helpers::get_peer_wg_config(&config.network, &config.network.this_peer, true)?;
 
         let mut temp_file = NamedTempFile::new()?;
         writeln!(temp_file, "{}", wg_config)?;
-        shell_cmd(&["wg", "setconf", iface, &temp_file.path().to_string_lossy()])?;
+        shell_cmd(&[wg, "setconf", iface, &temp_file.path().to_string_lossy()])?;
         let _ = fs::remove_file(&temp_file);
 
         Ok(())
     }
 
     fn is_wireguard_interface(&self) -> TunnelResult<bool> {
-        let output = shell_cmd(&["wg", "show", "interfaces"])?;
+        let config = self.config.as_ref().unwrap();
+        let wg = config.agent.vpn.wg.to_str().unwrap();
+        let output = shell_cmd(&[wg, "show", "interfaces"])?;
 
         if !output.status.success() {
             return Ok(false);
@@ -401,8 +417,8 @@ fn extract_ip_from_endpoint(endpoint: &str) -> Option<String> {
     None
 }
 
-fn get_allowed_ips(iface: &str) -> TunnelResult<Vec<String>> {
-    let output = match shell_cmd(&["wg", "show", iface, "allowed-ips"]) {
+fn get_allowed_ips(wg: &str, iface: &str) -> TunnelResult<Vec<String>> {
+    let output = match shell_cmd(&[wg, "show", iface, "allowed-ips"]) {
         Ok(output) => output,
         Err(e) => {
             log::warn!("Failed to get allowed IPs: {}, defaulting to an empty list of allowed IPs", e);
@@ -427,8 +443,8 @@ fn get_allowed_ips(iface: &str) -> TunnelResult<Vec<String>> {
     Ok(cidrs)
 }
 
-pub fn get_endpoints(iface: &str) -> Vec<String> {
-    let output = match shell_cmd(&["wg", "show", iface, "endpoints"]) {
+pub fn get_endpoints(wg: &str, iface: &str) -> Vec<String> {
+    let output = match shell_cmd(&[wg, "show", iface, "endpoints"]) {
         Ok(output) => output,
         Err(e) => {
             log::warn!("Failed to get endpoints: {}, defaulting to an empty list of endpoints", e);

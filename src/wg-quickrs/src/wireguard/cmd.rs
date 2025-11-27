@@ -176,7 +176,8 @@ fn show_dump(config: &Config) -> Result<BTreeMap<ConnectionId, TelemetryDatum>, 
 
     let real_interface = tunnel_manager.real_interface.as_ref().ok_or(WireGuardCommandError::InterfaceMissing)?;
 
-    let output = shell_cmd(&["wg", "show", real_interface, "dump"])?;
+    let wg = config.agent.vpn.wg.to_str().unwrap();
+    let output = shell_cmd(&[wg, "show", real_interface, "dump"])?;
     let mut telemetry = BTreeMap::<ConnectionId, TelemetryDatum>::new();
 
     let dump = String::from_utf8_lossy(&output.stdout);
@@ -237,7 +238,8 @@ pub(crate) fn sync_conf(config: &Config) -> Result<(), WireGuardCommandError> {
     let temp_path = temp.path().to_owned();
     let temp_path_str = temp_path.to_str().unwrap();
 
-    let _ = shell_cmd(&["wg", "syncconf", tunnel_manager.real_interface.as_ref().unwrap(), temp_path_str])
+    let wg = config.agent.vpn.wg.to_str().unwrap();
+    let _ = shell_cmd(&[wg, "syncconf", tunnel_manager.real_interface.as_ref().unwrap(), temp_path_str])
         .map_err(|_| WireGuardCommandError::InterfaceSyncFailed())?;
     Ok(())
 }
