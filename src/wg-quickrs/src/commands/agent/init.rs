@@ -484,7 +484,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     let (agent_vpn_port, agent_vpn_wg, agent_vpn_wg_userspace_enabled, agent_vpn_wg_userspace_binary) = if agent_vpn_enabled {
         // --agent-vpn-port
-        let vpn_port = get_value(
+        let agent_vpn_port = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_vpn_port.map(|o| o.to_string()),
@@ -495,7 +495,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         );
 
         // --agent-vpn-wg
-        let vpn_wg = get_value(
+        let agent_vpn_wg = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_vpn_wg.clone().map(|o| o.display().to_string()),
@@ -506,15 +506,15 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         );
 
         // --agent-vpn-wg-userspace-enabled & --agent-vpn-wg-userspace-binary
-        let vpn_wg_userspace_enabled = get_bool(
+        let agent_vpn_wg_userspace_enabled = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_vpn_wg_userspace_enabled,
             INIT_AGENT_VPN_WG_USERSPACE_ENABLED_FLAG,
             format!("\t{}", INIT_AGENT_VPN_WG_USERSPACE_ENABLED_HELP).as_str(),
-            !cfg!(target_os = "linux") || vpn_wg.ends_with("awg"),  // if on linux, disable userspace to use kernel module
+            !cfg!(target_os = "linux") || agent_vpn_wg.ends_with("awg"),  // if on linux, disable userspace to use kernel module
         );
-        let vpn_wg_userspace_binary = if vpn_wg_userspace_enabled {
+        let agent_vpn_wg_userspace_binary = if agent_vpn_wg_userspace_enabled {
             get_value(
                 init_opts.no_prompt,
                 step_str(step_counter),
@@ -529,7 +529,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             PathBuf::new()
         };
 
-        (vpn_port, vpn_wg, vpn_wg_userspace_enabled, vpn_wg_userspace_binary)
+        (agent_vpn_port, agent_vpn_wg, agent_vpn_wg_userspace_enabled, agent_vpn_wg_userspace_binary)
     } else {
         // if disabled, use a default port of 51820 and empty wg settings
         (51820, PathBuf::new(), false, PathBuf::new())
@@ -538,11 +538,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
 
     // AmneziaWG obfuscation parameters (only if using amneziawg)
     // [8/31] --network-amnezia-enabled
-    let amnezia_enabled = if agent_vpn_wg.ends_with("awg") {
+    let network_amnezia_enabled = if agent_vpn_wg.ends_with("awg") {
         get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.agent_web_password_enabled,
+            init_opts.network_amnezia_enabled,
             INIT_NETWORK_AMNEZIA_ENABLED_FLAG,
             INIT_NETWORK_AMNEZIA_ENABLED_HELP,
             true,
@@ -552,9 +552,9 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         false
     };
 
-    let amnezia_network_parameters = if amnezia_enabled {
+    let amnezia_network_parameters = if network_amnezia_enabled {
         // --network-amnezia-s1
-        let s1 = get_value(
+        let network_amnezia_s1 = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.network_amnezia_s1.map(|o| o.to_string()),
@@ -565,7 +565,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         );
 
         // --network-amnezia-s2
-        let s2 = get_value(
+        let network_amnezia_s2 = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.network_amnezia_s2.map(|o| o.to_string()),
@@ -574,13 +574,13 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             Some("155".into()),
             move |s: &str| {
                 let s2_value = parse_and_validate_amnezia_s2(s)?;
-                validate_amnezia_s1_s2(s1, s2_value)?;
+                validate_amnezia_s1_s2(network_amnezia_s1, s2_value)?;
                 Ok(s2_value)
             },
         );
 
         // --network-amnezia-h1
-        let h1 = get_value(
+        let network_amnezia_h1 = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.network_amnezia_h1.map(|o| o.to_string()),
@@ -591,7 +591,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         );
 
         // --network-amnezia-h2
-        let h2 = get_value(
+        let network_amnezia_h2 = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.network_amnezia_h2.map(|o| o.to_string()),
@@ -602,7 +602,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         );
 
         // --network-amnezia-h3
-        let h3 = get_value(
+        let network_amnezia_h3 = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.network_amnezia_h3.map(|o| o.to_string()),
@@ -613,7 +613,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         );
 
         // --network-amnezia-h4
-        let h4 = get_value(
+        let network_amnezia_h4 = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.network_amnezia_h4.map(|o| o.to_string()),
@@ -623,7 +623,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             parse_and_validate_amnezia_h4,
         );
 
-        AmneziaNetworkParameters { enabled: true, s1, s2, h1, h2, h3, h4 }
+        AmneziaNetworkParameters { enabled: true, s1: network_amnezia_s1, s2: network_amnezia_s2, h1: network_amnezia_h1, h2: network_amnezia_h2, h3: network_amnezia_h3, h4: network_amnezia_h4 }
     } else {
         AmneziaNetworkParameters {
             enabled: false,
@@ -649,7 +649,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
 
     let (http_firewall_scripts, https_firewall_scripts, vpn_firewall_scripts) = if agent_firewall_enabled {
         // HTTP firewall
-        let configure_http = get_bool(
+        let agent_firewall_configure_http = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_firewall_configure_http,
@@ -658,8 +658,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             true,
         );
 
-        let http_scripts = if configure_http {
-            let http_automated = get_bool(
+        let http_scripts = if agent_firewall_configure_http {
+            let agent_firewall_http_automated = get_bool(
                 init_opts.no_prompt,
                 step_str(step_counter),
                 init_opts.agent_firewall_http_automated,
@@ -668,8 +668,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                 true,
             );
 
-            if http_automated {
-                let utility = get_value(
+            if agent_firewall_http_automated {
+                let agent_firewall_utility = get_value(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
@@ -678,13 +678,13 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
                     parse_and_validate_fw_utility,
                 );
-                let scripts = generate_http_firewall_scripts(&utility.display().to_string());
+                let scripts = generate_http_firewall_scripts(&agent_firewall_utility.display().to_string());
                 println!("\t\t\t✓ HTTP firewall: {} pre-up, {} post-down script(s)",
                          scripts.pre_up.len(), scripts.post_down.len());
                 scripts
             } else {
                 // Manual setup using get_scripts helper
-                let http_pre_up = get_scripts(
+                let agent_firewall_http_pre_up = get_scripts(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_http_pre_up_enabled,
@@ -695,7 +695,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     "\t\t",
                 );
 
-                let http_post_down = get_scripts(
+                let agent_firewall_http_post_down = get_scripts(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_http_post_down_enabled,
@@ -706,14 +706,14 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     "\t\t",
                 );
 
-                HttpScripts { pre_up: http_pre_up, post_down: http_post_down }
+                HttpScripts { pre_up: agent_firewall_http_pre_up, post_down: agent_firewall_http_post_down }
             }
         } else {
             HttpScripts::default()
         };
 
         // HTTPS firewall
-        let configure_https = get_bool(
+        let agent_firewall_configure_https = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_firewall_configure_https,
@@ -722,8 +722,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             true,
         );
 
-        let https_scripts = if configure_https {
-            let https_automated = get_bool(
+        let https_scripts = if agent_firewall_configure_https {
+            let agent_firewall_https_automated = get_bool(
                 init_opts.no_prompt,
                 step_str(step_counter),
                 init_opts.agent_firewall_https_automated,
@@ -732,8 +732,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                 true,
             );
 
-            if https_automated {
-                let utility = get_value(
+            if agent_firewall_https_automated {
+                let agent_firewall_utility = get_value(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
@@ -742,13 +742,13 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
                     parse_and_validate_fw_utility,
                 );
-                let scripts = generate_http_firewall_scripts(&utility.display().to_string());
+                let scripts = generate_http_firewall_scripts(&agent_firewall_utility.display().to_string());
                 println!("\t\t\t✓ HTTPS firewall: {} pre-up, {} post-down script(s)",
                          scripts.pre_up.len(), scripts.post_down.len());
                 scripts
             } else {
                 // Manual setup using get_scripts helper
-                let https_pre_up = get_scripts(
+                let agent_firewall_https_pre_up = get_scripts(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_https_pre_up_enabled,
@@ -759,7 +759,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     "\t\t",
                 );
 
-                let https_post_down = get_scripts(
+                let agent_firewall_https_post_down = get_scripts(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_https_post_down_enabled,
@@ -770,14 +770,14 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     "\t\t",
                 );
 
-                HttpScripts { pre_up: https_pre_up, post_down: https_post_down }
+                HttpScripts { pre_up: agent_firewall_https_pre_up, post_down: agent_firewall_https_post_down }
             }
         } else {
             HttpScripts::default()
         };
 
         // VPN firewall
-        let configure_vpn = get_bool(
+        let agent_firewall_configure_vpn = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_firewall_configure_vpn,
@@ -786,8 +786,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             true,
         );
 
-        let vpn_scripts = if configure_vpn {
-            let vpn_automated = get_bool(
+        let vpn_scripts = if agent_firewall_configure_vpn {
+            let agent_firewall_vpn_automated = get_bool(
                 init_opts.no_prompt,
                 step_str(step_counter),
                 init_opts.agent_firewall_vpn_automated,
@@ -796,8 +796,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                 true,
             );
 
-            if vpn_automated {
-                let utility = get_value(
+            if agent_firewall_vpn_automated {
+                let agent_firewall_utility = get_value(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
@@ -806,7 +806,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
                     parse_and_validate_fw_utility,
                 );
-                let gateway = get_value(
+                let agent_firewall_gateway = get_value(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_gateway.clone(),
@@ -815,14 +815,14 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     iface_name.clone(),
                     parse_and_validate_fw_gateway,
                 );
-                let scripts = generate_firewall_scripts(&utility.display().to_string(), &gateway);
+                let scripts = generate_firewall_scripts(&agent_firewall_utility.display().to_string(), &agent_firewall_gateway);
                 println!("\t\t\t✓ VPN firewall: {} pre-up, {} post-up, {} pre-down, {} post-down script(s)",
                     scripts.pre_up.len(), scripts.post_up.len(),
                     scripts.pre_down.len(), scripts.post_down.len());
                 scripts
             } else {
                 // Manual setup using get_scripts helper
-                let vpn_pre_up = get_scripts(
+                let agent_firewall_vpn_pre_up = get_scripts(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_vpn_pre_up_enabled,
@@ -833,7 +833,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     "\t\t",
                 );
 
-                let vpn_post_up = get_scripts(
+                let agent_firewall_vpn_post_up = get_scripts(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_vpn_post_up_enabled,
@@ -844,7 +844,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     "\t\t",
                 );
 
-                let vpn_pre_down = get_scripts(
+                let agent_firewall_vpn_pre_down = get_scripts(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_vpn_pre_down_enabled,
@@ -855,7 +855,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     "\t\t",
                 );
 
-                let vpn_post_down = get_scripts(
+                let agent_firewall_vpn_post_down = get_scripts(
                     init_opts.no_prompt,
                     step_str(step_counter),
                     init_opts.agent_firewall_vpn_post_down_enabled,
@@ -867,10 +867,10 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                 );
 
                 Scripts {
-                    pre_up: vpn_pre_up,
-                    post_up: vpn_post_up,
-                    pre_down: vpn_pre_down,
-                    post_down: vpn_post_down,
+                    pre_up: agent_firewall_vpn_pre_up,
+                    post_up: agent_firewall_vpn_post_up,
+                    pre_down: agent_firewall_vpn_pre_down,
+                    post_down: agent_firewall_vpn_post_down,
                 }
             }
         } else {
@@ -1071,8 +1071,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
 
     // Agent peer AmneziaWG obfuscation parameters (only if using amneziawg)
     // [21/31] --agent-peer-amnezia-jc & --agent-peer-amnezia-jmin & --agent-peer-amnezia-jmax
-    let agent_peer_amnezia_parameters = if amnezia_enabled {
-        let jc = get_value(
+    let agent_peer_amnezia_parameters = if network_amnezia_enabled {
+        let agent_peer_amnezia_jc = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_peer_amnezia_jc.map(|o| o.to_string()),
@@ -1082,7 +1082,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             parse_and_validate_amnezia_jc,
         );
 
-        let jmin = get_value(
+        let agent_peer_amnezia_jmin = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_peer_amnezia_jmin.map(|o| o.to_string()),
@@ -1092,7 +1092,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             parse_and_validate_amnezia_jmin,
         );
 
-        let jmax = get_value(
+        let agent_peer_amnezia_jmax = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_peer_amnezia_jmax.map(|o| o.to_string()),
@@ -1101,12 +1101,12 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             Some("120".into()),
             move |s: &str| {
                 let jmax_value = parse_and_validate_amnezia_jmax(s)?;
-                validate_amnezia_jmin_jmax(jmin, jmax_value)?;
+                validate_amnezia_jmin_jmax(agent_peer_amnezia_jmin, jmax_value)?;
                 Ok(jmax_value)
             },
         );
 
-        AmneziaPeerParameters { jc, jmin, jmax }
+        AmneziaPeerParameters { jc: agent_peer_amnezia_jc, jmin: agent_peer_amnezia_jmin, jmax: agent_peer_amnezia_jmax }
     } else {
         println!("{} Not using amnezia, skipping...", step_str(step_counter));
         AmneziaPeerParameters { jc: 30, jmin: 60, jmax: 120 }
@@ -1246,8 +1246,8 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
 
     // Default peer AmneziaWG obfuscation parameters (only if using amneziawg)
     // [30/31] --default-peer-amnezia-jc & --default-peer-amnezia-jmin & --default-peer-amnezia-jmax
-    let default_peer_amnezia_parameters = if amnezia_enabled {
-        let jc = get_value(
+    let default_peer_amnezia_parameters = if network_amnezia_enabled {
+        let default_peer_amnezia_jc = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.default_peer_amnezia_jc.map(|o| o.to_string()),
@@ -1257,7 +1257,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             parse_and_validate_amnezia_jc,
         );
 
-        let jmin = get_value(
+        let default_peer_amnezia_jmin = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.default_peer_amnezia_jmin.map(|o| o.to_string()),
@@ -1267,7 +1267,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             parse_and_validate_amnezia_jmin,
         );
 
-        let jmax = get_value(
+        let default_peer_amnezia_jmax = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.default_peer_amnezia_jmax.map(|o| o.to_string()),
@@ -1276,12 +1276,12 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             Some("120".into()),
             move |s: &str| {
                 let jmax_value = parse_and_validate_amnezia_jmax(s)?;
-                validate_amnezia_jmin_jmax(jmin, jmax_value)?;
+                validate_amnezia_jmin_jmax(default_peer_amnezia_jmin, jmax_value)?;
                 Ok(jmax_value)
             },
         );
 
-        AmneziaPeerParameters { jc, jmin, jmax }
+        AmneziaPeerParameters { jc: default_peer_amnezia_jc, jmin: default_peer_amnezia_jmin, jmax: default_peer_amnezia_jmax }
     } else {
         println!("{} Not using amnezia, skipping...", step_str(step_counter));
         AmneziaPeerParameters { jc: 30, jmin: 60, jmax: 120 }
