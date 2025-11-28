@@ -59,5 +59,21 @@ pub enum ValidationError {
     InvalidPersistentKeepalivePeriod(),
     #[error("allowed_ips is not in CIDR format")]
     InvalidAllowedIPs(),
+    #[error("amnezia parameter is invalid")]
+    InvalidAmneziaParameter(),
+    #[error("amnezia S1 parameter is invalid (must be <= 1132)")]
+    InvalidAmneziaS1(),
+    #[error("amnezia S2 parameter is invalid (must be <= 1188)")]
+    InvalidAmneziaS2(),
+    #[error("amnezia S1 and S2 relationship is invalid (S1 + 56 must not equal S2)")]
+    InvalidAmneziaS1S2Relation(),
+    #[error("amnezia Jc parameter is invalid (must be -1 <= Jc <= 128)")]
+    InvalidAmneziaJc(),
+    #[error("amnezia Jmin parameter is invalid (must be 1 <= Jmin < 1280)")]
+    InvalidAmneziaJmin(),
+    #[error("amnezia Jmax parameter is invalid (must be 1 <= Jmax <= 1280)")]
+    InvalidAmneziaJmax(),
+    #[error("amnezia Jmin and Jmax relationship is invalid (Jmin must be < Jmax)")]
+    InvalidAmneziaJminJmaxRelation(),
 }
 pub type ValidationResult<T> = Result<T, ValidationError>;

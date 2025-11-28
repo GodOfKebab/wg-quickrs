@@ -72,6 +72,27 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Set path of the binary for the userspace WireGuard implementation")]
     pub agent_vpn_wg_userspace_binary: Option<PathBuf>,
 
+    #[arg(long, default_value = None, long_help = "Enable AmneziaWG obfuscation for VPN packets")]
+    pub network_amnezia_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set S1 (packet junk size) for AmneziaWG obfuscation", value_name = "55")]
+    pub network_amnezia_s1: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set S2 (packet junk size) for AmneziaWG obfuscation", value_name = "155")]
+    pub network_amnezia_s2: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set H1 (packet magic header) for AmneziaWG obfuscation")]
+    pub network_amnezia_h1: Option<u32>,
+
+    #[arg(long, default_value = None, long_help = "Set H2 (packet magic header) for AmneziaWG obfuscation")]
+    pub network_amnezia_h2: Option<u32>,
+
+    #[arg(long, default_value = None, long_help = "Set H3 (packet magic header) for AmneziaWG obfuscation")]
+    pub network_amnezia_h3: Option<u32>,
+
+    #[arg(long, default_value = None, long_help = "Set H4 (packet magic header) for AmneziaWG obfuscation")]
+    pub network_amnezia_h4: Option<u32>,
+
     #[arg(long, default_value = None, long_help = "Enable running firewall commands for setting up NAT and input rules"
     )]
     pub agent_firewall_enabled: Option<bool>,
@@ -220,6 +241,15 @@ pub struct InitOptions {
     )]
     pub agent_peer_script_post_down_line: Vec<String>,
 
+    #[arg(long, default_value = None, long_help = "Set Jc (junk packet count) for agent peer AmneziaWG obfuscation", value_name = "30")]
+    pub agent_peer_amnezia_jc: Option<i16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jmin (minimum junk packet size) for agent peer AmneziaWG obfuscation", value_name = "60")]
+    pub agent_peer_amnezia_jmin: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jmax (maximum junk packet size) for agent peer AmneziaWG obfuscation", value_name = "120")]
+    pub agent_peer_amnezia_jmax: Option<u16>,
+
     // default settings for new peers/connections
     #[arg(long, default_value = None, long_help = "Set peer kind for new peers by default"
     )]
@@ -286,6 +316,15 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Set default PersistentKeepalive period in seconds", value_name = "25"
     )]
     pub default_connection_persistent_keepalive_period: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jc (junk packet count) for new peers by default", value_name = "30")]
+    pub default_peer_amnezia_jc: Option<i16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jmin (minimum junk packet size) for new peers by default", value_name = "60")]
+    pub default_peer_amnezia_jmin: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jmax (maximum junk packet size) for new peers by default", value_name = "120")]
+    pub default_peer_amnezia_jmax: Option<u16>,
 
     #[arg(long, default_value = None, long_help = "Disable interactive setup prompts")]
     pub no_prompt: Option<bool>,

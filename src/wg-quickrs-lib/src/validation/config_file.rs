@@ -74,6 +74,16 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
     // skip network.subnet because if it can be deserialized, it means it's valid
     // skip network.this_peer because if it can be deserialized, it means it's valid
 
+    // Validate AmneziaWG parameters
+    if config_file.network.amnezia_parameters.enabled {
+        validate_amnezia_s1_s2(
+            config_file.network.amnezia_parameters.s1,
+            config_file.network.amnezia_parameters.s2
+        ).map_err(|e| {
+            ConfigFileValidationError::Validation("network.amnezia_parameters".to_string(), e)
+        })?;
+    }
+
     // Validate peers
     for (peer_id, peer) in &config_file.network.peers {
         let peer_path = format!("network.peers.{}", peer_id);
@@ -104,6 +114,16 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
             ConfigFileValidationError::Validation(format!("{}.mtu", peer_path), e)
         })?;
         // skip network.peers.{peer_id}.private_key because if it can be deserialized, it means it's valid
+
+        // Validate peer amnezia parameters
+        if config_file.network.amnezia_parameters.enabled {
+            validate_amnezia_jc(peer.amnezia_parameters.jc).map_err(|e| {
+                ConfigFileValidationError::Validation(format!("{}.amnezia_parameters.jc", peer_path), e)
+            })?;
+            validate_amnezia_jmin_jmax(peer.amnezia_parameters.jmin, peer.amnezia_parameters.jmax).map_err(|e| {
+                ConfigFileValidationError::Validation(format!("{}.amnezia_parameters", peer_path), e)
+            })?;
+        }
 
         for (script_type, scripts) in peer.scripts.clone() {
             for (i, script) in scripts.into_iter().enumerate() {
@@ -142,6 +162,20 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
     validate_peer_mtu(&config_file.network.defaults.peer.mtu).map_err(|e| {
         ConfigFileValidationError::Validation(format!("{}.peer.mtu", defaults_path), e)
     })?;
+
+    // Validate default peer amnezia parameters
+    if config_file.network.amnezia_parameters.enabled {
+        validate_amnezia_jc(config_file.network.defaults.peer.amnezia_parameters.jc).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.peer.amnezia_parameters.jc", defaults_path), e)
+        })?;
+        validate_amnezia_jmin_jmax(
+            config_file.network.defaults.peer.amnezia_parameters.jmin,
+            config_file.network.defaults.peer.amnezia_parameters.jmax
+        ).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.peer.amnezia_parameters", defaults_path), e)
+        })?;
+    }
+
     for (script_type, scripts) in config_file.network.defaults.peer.scripts.clone() {
         validate_peer_scripts(&scripts).map_err(|e| {
             ConfigFileValidationError::Validation(format!("{defaults_path}.peer.scripts.{script_type}"), e)

@@ -175,6 +175,113 @@ pub fn parse_and_validate_wg_key(key: &str) -> ValidationResult<WireGuardKey> {
         .map_err(|_: serde::de::value::Error| ValidationError::NotWireGuardKey())
 }
 
+// Network.AmneziaNetworkParameters Fields
+
+pub fn parse_and_validate_amnezia_s1(s1: &str) -> ValidationResult<u16> {
+    let value = s1.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaS1())?;
+    validate_amnezia_s1(value)
+}
+
+pub fn validate_amnezia_s1(s1: u16) -> ValidationResult<u16> {
+    // S1 <= 1280 - 148 = 1132
+    if s1 > 1132 {
+        return Err(ValidationError::InvalidAmneziaS1());
+    }
+    Ok(s1)
+}
+
+pub fn parse_and_validate_amnezia_s2(s2: &str) -> ValidationResult<u16> {
+    let value = s2.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaS2())?;
+    validate_amnezia_s2(value)
+}
+
+pub fn validate_amnezia_s2(s2: u16) -> ValidationResult<u16> {
+    // S2 <= 1280 - 92 = 1188
+    if s2 > 1188 {
+        return Err(ValidationError::InvalidAmneziaS2());
+    }
+    Ok(s2)
+}
+
+pub fn validate_amnezia_s1_s2(s1: u16, s2: u16) -> ValidationResult<()> {
+    validate_amnezia_s1(s1)?;
+    validate_amnezia_s2(s2)?;
+
+    // S1 + 56 != S2
+    if s1 + 56 == s2 {
+        return Err(ValidationError::InvalidAmneziaS1S2Relation());
+    }
+    Ok(())
+}
+
+pub fn parse_and_validate_amnezia_h1(h1: &str) -> ValidationResult<u32> {
+    h1.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
+}
+
+pub fn parse_and_validate_amnezia_h2(h2: &str) -> ValidationResult<u32> {
+    h2.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
+}
+
+pub fn parse_and_validate_amnezia_h3(h3: &str) -> ValidationResult<u32> {
+    h3.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
+}
+
+pub fn parse_and_validate_amnezia_h4(h4: &str) -> ValidationResult<u32> {
+    h4.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
+}
+
+// Peer.AmneziaPeerParameters Fields
+
+pub fn parse_and_validate_amnezia_jc(jc: &str) -> ValidationResult<i16> {
+    let value = jc.parse::<i16>().map_err(|_| ValidationError::InvalidAmneziaJc())?;
+    validate_amnezia_jc(value)
+}
+
+pub fn validate_amnezia_jc(jc: i16) -> ValidationResult<i16> {
+    // -1 <= Jc <= 128
+    if jc < -1 || jc > 128 {
+        return Err(ValidationError::InvalidAmneziaJc());
+    }
+    Ok(jc)
+}
+
+pub fn parse_and_validate_amnezia_jmin(jmin: &str) -> ValidationResult<u16> {
+    let value = jmin.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaJmin())?;
+    validate_amnezia_jmin(value)
+}
+
+pub fn validate_amnezia_jmin(jmin: u16) -> ValidationResult<u16> {
+    // Jmin < 1280
+    if jmin == 0 || jmin >= 1280 {
+        return Err(ValidationError::InvalidAmneziaJmin());
+    }
+    Ok(jmin)
+}
+
+pub fn parse_and_validate_amnezia_jmax(jmax: &str) -> ValidationResult<u16> {
+    let value = jmax.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaJmax())?;
+    validate_amnezia_jmax(value)
+}
+
+pub fn validate_amnezia_jmax(jmax: u16) -> ValidationResult<u16> {
+    // Jmax <= 1280
+    if jmax == 0 || jmax > 1280 {
+        return Err(ValidationError::InvalidAmneziaJmax());
+    }
+    Ok(jmax)
+}
+
+pub fn validate_amnezia_jmin_jmax(jmin: u16, jmax: u16) -> ValidationResult<()> {
+    validate_amnezia_jmin(jmin)?;
+    validate_amnezia_jmax(jmax)?;
+
+    // Jmin < Jmax
+    if jmin >= jmax {
+        return Err(ValidationError::InvalidAmneziaJminJmaxRelation());
+    }
+    Ok(())
+}
+
 // Network.Connection Fields
 
 pub fn parse_and_validate_conn_persistent_keepalive_period(persistent_keepalive_period: &str) -> ValidationResult<u16> {

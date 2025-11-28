@@ -16,7 +16,7 @@ use thiserror::Error;
 use uuid::Uuid;
 use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility, parse_and_validate_wg_tool, parse_and_validate_wg_userspace_binary};
 use wg_quickrs_lib::validation::helpers::{firewall_utility_options, wg_tool_options, wg_userspace_options};
-use wg_quickrs_lib::validation::network::{parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name};
+use wg_quickrs_lib::validation::network::{parse_and_validate_amnezia_h1, parse_and_validate_amnezia_h2, parse_and_validate_amnezia_h3, parse_and_validate_amnezia_h4, parse_and_validate_amnezia_jc, parse_and_validate_amnezia_jmax, parse_and_validate_amnezia_jmin, parse_and_validate_amnezia_s1, parse_and_validate_amnezia_s2, parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name, validate_amnezia_jmin_jmax, validate_amnezia_s1_s2};
 use crate::commands::helpers::*;
 use crate::conf::util::ConfUtilError;
 
@@ -325,10 +325,10 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     log::info!("Initializing wg-quickrs agent...");
     
     let mut step_counter = 1;
-    let step_str = make_step_formatter(28);
+    let step_str = make_step_formatter(31);
 
-    println!("[general network settings 1-2/28]");
-    // [1/28] --network-identifier
+    println!("[general network settings 1-2/31]");
+    // [1/31] --network-identifier
     let network_name = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -340,7 +340,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [2/28] --network-subnet
+    // [2/31] --network-subnet
     let network_subnet = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -353,14 +353,14 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     step_counter += 1;
 
     println!("[general network settings complete]");
-    println!("[agent settings 3-8/28]");
+    println!("[agent settings 3-9/31]");
 
     // Get primary IP of the current machine
     let iface_opt = recommend_interface();
     let iface_name = iface_opt.as_ref().map(|iface| iface.name.clone());
     let mut iface_ip = iface_opt.and_then(|iface| match iface.ip() { IpAddr::V4(v4) => Some(v4), _ => None });
 
-    // [3/28] --agent-web-address
+    // [3/31] --agent-web-address
     let agent_web_address = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -372,7 +372,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [4/28] --agent-web-http-enabled & --agent-web-http-port
+    // [4/31] --agent-web-http-enabled & --agent-web-http-port
     let agent_web_http_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -397,7 +397,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [5/28] --agent-web-https-enabled & --agent-web-https-port
+    // [5/31] --agent-web-https-enabled & --agent-web-https-port
     let agent_web_https_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -444,7 +444,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [6/28] --agent-enable-web-password
+    // [6/31] --agent-enable-web-password
     let mut agent_web_password_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -453,7 +453,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_WEB_PASSWORD_ENABLED_HELP,
         true,
     );
-    // [6/28] --agent-web-password
+    // [6/31] --agent-web-password
     let agent_web_password_hash = if agent_web_password_enabled {
         let password = get_init_password(
             init_opts.no_prompt,
@@ -473,7 +473,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [7/28] --agent-vpn-enabled & --agent-vpn-port & --agent-vpn-wg & --agent-vpn-wg-userspace-enabled & --agent-vpn-wg-userspace-binary
+    // [7/31] --agent-vpn-enabled & --agent-vpn-port & --agent-vpn-wg & --agent-vpn-wg-userspace-enabled & --agent-vpn-wg-userspace-binary
     let agent_vpn_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -536,17 +536,108 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    let amnezia_network_parameters = AmneziaNetworkParameters {
-        enabled: agent_vpn_wg.ends_with("awg"),
-        s1: 55,
-        s2: 155,
-        h1: rand::rng().next_u32(),
-        h2: rand::rng().next_u32(),
-        h3: rand::rng().next_u32(),
-        h4: rand::rng().next_u32(),
-    };  // TODO: make this configurable
+    // AmneziaWG obfuscation parameters (only if using amneziawg)
+    // [8/31] --network-amnezia-enabled
+    let amnezia_enabled = if agent_vpn_wg.ends_with("awg") {
+        get_bool(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_web_password_enabled,
+            INIT_NETWORK_AMNEZIA_ENABLED_FLAG,
+            INIT_NETWORK_AMNEZIA_ENABLED_HELP,
+            true,
+        )
+    } else {
+        println!("{} Not using amnezia, skipping...", step_str(step_counter));
+        false
+    };
 
-    // [8/28] --agent-firewall-enabled
+    let amnezia_network_parameters = if amnezia_enabled {
+        // --network-amnezia-s1
+        let s1 = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_s1.map(|o| o.to_string()),
+            INIT_NETWORK_AMNEZIA_S1_FLAG,
+            INIT_NETWORK_AMNEZIA_S1_HELP,
+            Some("55".into()),
+            parse_and_validate_amnezia_s1,
+        );
+
+        // --network-amnezia-s2
+        let s2 = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_s2.map(|o| o.to_string()),
+            INIT_NETWORK_AMNEZIA_S2_FLAG,
+            INIT_NETWORK_AMNEZIA_S2_HELP,
+            Some("155".into()),
+            move |s: &str| {
+                let s2_value = parse_and_validate_amnezia_s2(s)?;
+                validate_amnezia_s1_s2(s1, s2_value)?;
+                Ok(s2_value)
+            },
+        );
+
+        // --network-amnezia-h1
+        let h1 = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_h1.map(|o| o.to_string()),
+            INIT_NETWORK_AMNEZIA_H1_FLAG,
+            INIT_NETWORK_AMNEZIA_H1_HELP,
+            Some(rand::rng().next_u32().to_string()),
+            parse_and_validate_amnezia_h1,
+        );
+
+        // --network-amnezia-h2
+        let h2 = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_h2.map(|o| o.to_string()),
+            INIT_NETWORK_AMNEZIA_H2_FLAG,
+            INIT_NETWORK_AMNEZIA_H2_HELP,
+            Some(rand::rng().next_u32().to_string()),
+            parse_and_validate_amnezia_h2,
+        );
+
+        // --network-amnezia-h3
+        let h3 = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_h3.map(|o| o.to_string()),
+            INIT_NETWORK_AMNEZIA_H3_FLAG,
+            INIT_NETWORK_AMNEZIA_H3_HELP,
+            Some(rand::rng().next_u32().to_string()),
+            parse_and_validate_amnezia_h3,
+        );
+
+        // --network-amnezia-h4
+        let h4 = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_h4.map(|o| o.to_string()),
+            INIT_NETWORK_AMNEZIA_H4_FLAG,
+            INIT_NETWORK_AMNEZIA_H4_HELP,
+            Some(rand::rng().next_u32().to_string()),
+            parse_and_validate_amnezia_h4,
+        );
+
+        AmneziaNetworkParameters { enabled: true, s1, s2, h1, h2, h3, h4 }
+    } else {
+        AmneziaNetworkParameters {
+            enabled: false,
+            s1: 55,
+            s2: 155,
+            h1: rand::rng().next_u32(),
+            h2: rand::rng().next_u32(),
+            h3: rand::rng().next_u32(),
+            h4: rand::rng().next_u32(),
+        }
+    };
+    step_counter += 1;
+
+    // [9/31] --agent-firewall-enabled
     let agent_firewall_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -793,9 +884,9 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     step_counter += 1;
 
     println!("[agent settings complete]");
-    println!("[peer settings 9-19/28]");
+    println!("[peer settings 10-21/31]");
 
-    // [9/28] --agent-peer-name
+    // [10/31] --agent-peer-name
     let agent_peer_name = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -807,7 +898,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [10/28] --agent-peer-vpn-internal-address
+    // [11/31] --agent-peer-vpn-internal-address
     let temp_network = Network {
         name: "".to_string(),
         subnet: network_subnet,
@@ -838,7 +929,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     }
 
     // TODO: allow roaming init
-    // [11/28] --agent-peer-vpn-endpoint
+    // [12/31] --agent-peer-vpn-endpoint
     let agent_peer_vpn_endpoint = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -850,7 +941,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [12/28] --agent-peer-kind
+    // [13/31] --agent-peer-kind
     let agent_peer_kind = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -862,7 +953,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [13/28] --agent-peer-icon-enabled & --agent-peer-icon-src
+    // [14/31] --agent-peer-icon-enabled & --agent-peer-icon-src
     let agent_peer_icon_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -887,7 +978,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [14/28] --agent-peer-dns-enabled & --agent-peer-dns-addresses
+    // [15/31] --agent-peer-dns-enabled & --agent-peer-dns-addresses
     let agent_peer_dns_addresses = get_dns_addresses(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -901,7 +992,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     let agent_peer_dns_enabled = !agent_peer_dns_addresses.is_empty();
     step_counter += 1;
 
-    // [15/28] --agent-peer-mtu-enabled & --agent-peer-mtu-value
+    // [16/31] --agent-peer-mtu-enabled & --agent-peer-mtu-value
     let agent_peer_mtu_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -926,7 +1017,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [16/28] --agent-peer-script-pre-up-enabled & --agent-peer-script-pre-up-line
+    // [17/31] --agent-peer-script-pre-up-enabled & --agent-peer-script-pre-up-line
     let agent_peer_script_pre_up = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -939,7 +1030,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [17/28] --agent-peer-script-post-up-enabled & --agent-peer-script-post-up-line
+    // [18/31] --agent-peer-script-post-up-enabled & --agent-peer-script-post-up-line
     let agent_peer_script_post_up = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -952,7 +1043,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [18/28] --agent-peer-script-pre-down-enabled & --agent-peer-script-pre-down-line
+    // [19/31] --agent-peer-script-pre-down-enabled & --agent-peer-script-pre-down-line
     let agent_peer_script_pre_down = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -965,7 +1056,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [19/28] --agent-peer-script-post-down-enabled & --agent-peer-script-post-down-line
+    // [20/31] --agent-peer-script-post-down-enabled & --agent-peer-script-post-down-line
     let agent_peer_script_post_down = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -978,16 +1069,54 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    let agent_peer_amnezia_parameters = AmneziaPeerParameters {
-        jc: 30,
-        jmin: 60,
-        jmax: 120,
-    };  // TODO: make this configurable
+    // Agent peer AmneziaWG obfuscation parameters (only if using amneziawg)
+    // [21/31] --agent-peer-amnezia-jc & --agent-peer-amnezia-jmin & --agent-peer-amnezia-jmax
+    let agent_peer_amnezia_parameters = if amnezia_enabled {
+        let jc = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_peer_amnezia_jc.map(|o| o.to_string()),
+            INIT_AGENT_PEER_AMNEZIA_JC_FLAG,
+            INIT_AGENT_PEER_AMNEZIA_JC_HELP,
+            Some("30".into()),
+            parse_and_validate_amnezia_jc,
+        );
+
+        let jmin = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_peer_amnezia_jmin.map(|o| o.to_string()),
+            INIT_AGENT_PEER_AMNEZIA_JMIN_FLAG,
+            INIT_AGENT_PEER_AMNEZIA_JMIN_HELP,
+            Some("60".into()),
+            parse_and_validate_amnezia_jmin,
+        );
+
+        let jmax = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_peer_amnezia_jmax.map(|o| o.to_string()),
+            INIT_AGENT_PEER_AMNEZIA_JMAX_FLAG,
+            INIT_AGENT_PEER_AMNEZIA_JMAX_HELP,
+            Some("120".into()),
+            move |s: &str| {
+                let jmax_value = parse_and_validate_amnezia_jmax(s)?;
+                validate_amnezia_jmin_jmax(jmin, jmax_value)?;
+                Ok(jmax_value)
+            },
+        );
+
+        AmneziaPeerParameters { jc, jmin, jmax }
+    } else {
+        println!("{} Not using amnezia, skipping...", step_str(step_counter));
+        AmneziaPeerParameters { jc: 30, jmin: 60, jmax: 120 }
+    };
+    step_counter += 1;
 
     println!("[peer settings complete]");
-    println!("[new peer/connection default settings 20-28/28]");
+    println!("[new peer/connection default settings 22-31/31]");
 
-    // [20/28] --default-peer-kind
+    // [22/31] --default-peer-kind
     let default_peer_kind = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -999,7 +1128,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [21/28] --default-peer-icon-enabled & --default-peer-icon-src
+    // [23/31] --default-peer-icon-enabled & --default-peer-icon-src
     let default_peer_icon_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -1024,7 +1153,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [22/28] --default-peer-dns-enabled & --default-peer-dns-addresses
+    // [24/31] --default-peer-dns-enabled & --default-peer-dns-addresses
     let default_peer_dns_addresses = get_dns_addresses(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -1038,7 +1167,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     let default_peer_dns_enabled = !default_peer_dns_addresses.is_empty();
     step_counter += 1;
 
-    // [23/28] --default-peer-mtu-enabled & --default-peer-mtu-value
+    // [25/31] --default-peer-mtu-enabled & --default-peer-mtu-value
     let default_peer_mtu_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -1063,7 +1192,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [24/28] --default-peer-script-pre-up-enabled & --default-peer-script-pre-up-line
+    // [26/31] --default-peer-script-pre-up-enabled & --default-peer-script-pre-up-line
     let default_peer_script_pre_up = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -1076,7 +1205,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [25/28] --default-peer-script-post-up-enabled & --default-peer-script-post-up-line
+    // [27/31] --default-peer-script-post-up-enabled & --default-peer-script-post-up-line
     let default_peer_script_post_up = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -1089,7 +1218,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [26/28] --default-peer-script-pre-down-enabled & --default-peer-script-pre-down-line
+    // [28/31] --default-peer-script-pre-down-enabled & --default-peer-script-pre-down-line
     let default_peer_script_pre_down = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -1102,7 +1231,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [27/28] --default-peer-script-post-down-enabled & --default-peer-script-post-down-line
+    // [29/31] --default-peer-script-post-down-enabled & --default-peer-script-post-down-line
     let default_peer_script_post_down = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -1115,13 +1244,51 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    let default_peer_amnezia_parameters = AmneziaPeerParameters {
-        jc: 30,
-        jmin: 60,
-        jmax: 120,
-    };  // TODO: make this configurable
+    // Default peer AmneziaWG obfuscation parameters (only if using amneziawg)
+    // [30/31] --default-peer-amnezia-jc & --default-peer-amnezia-jmin & --default-peer-amnezia-jmax
+    let default_peer_amnezia_parameters = if amnezia_enabled {
+        let jc = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.default_peer_amnezia_jc.map(|o| o.to_string()),
+            INIT_DEFAULT_PEER_AMNEZIA_JC_FLAG,
+            INIT_DEFAULT_PEER_AMNEZIA_JC_HELP,
+            Some("30".into()),
+            parse_and_validate_amnezia_jc,
+        );
 
-    // [28/28] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
+        let jmin = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.default_peer_amnezia_jmin.map(|o| o.to_string()),
+            INIT_DEFAULT_PEER_AMNEZIA_JMIN_FLAG,
+            INIT_DEFAULT_PEER_AMNEZIA_JMIN_HELP,
+            Some("60".into()),
+            parse_and_validate_amnezia_jmin,
+        );
+
+        let jmax = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.default_peer_amnezia_jmax.map(|o| o.to_string()),
+            INIT_DEFAULT_PEER_AMNEZIA_JMAX_FLAG,
+            INIT_DEFAULT_PEER_AMNEZIA_JMAX_HELP,
+            Some("120".into()),
+            move |s: &str| {
+                let jmax_value = parse_and_validate_amnezia_jmax(s)?;
+                validate_amnezia_jmin_jmax(jmin, jmax_value)?;
+                Ok(jmax_value)
+            },
+        );
+
+        AmneziaPeerParameters { jc, jmin, jmax }
+    } else {
+        println!("{} Not using amnezia, skipping...", step_str(step_counter));
+        AmneziaPeerParameters { jc: 30, jmin: 60, jmax: 120 }
+    };
+    step_counter += 1;
+
+    // [31/31] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
     let default_connection_persistent_keepalive_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
