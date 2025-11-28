@@ -10,11 +10,11 @@
 ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fwg-quickrs%2FCargo.toml&query=package.rust-version&logo=rust&label=rust&color=%23000000)
 ![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fwg-quickrs-web%2Fpackage.json&query=dependencies.vue&logo=vue.js&label=vue&color=%234FC08D)
 
-✨ An intuitive multi-peer `wg` wrapper written in 🦀 Rust (`wg-quick` alternative).
+✨ An intuitive multi-peer [`wg`](https://www.wireguard.com)/[`awg`](https://docs.amnezia.org/documentation/amnezia-wg/) wrapper written in 🦀 Rust (`wg-quick` alternative).
 
-⚡ Rust + Vue + WASM + WireGuard = 🧪 one [static binary](docs/notes/static-binary.md) + 📝 one [YAML file](docs/notes/schema.md) to rule them all 🪄
+⚡ Rust + Vue + WASM + WireGuard/[AmneziaWG](docs/notes/amneziawg.md) = 🧪 one [static binary](docs/notes/static-binary.md) + 📝 one [YAML file](docs/notes/schema.md) to rule them all 🪄
 
-Run it on your [router](docs/quick-start/router.md), [server](docs/quick-start/server.md), or [docker host](docs/quick-start/docker.md) and manage your WireGuard VPN from a [terminal](docs/quick-start/cli.md) or a web interface.
+Run it on your [router](docs/quick-start/router.md), [server](docs/quick-start/server.md), or [docker host](docs/quick-start/docker.md) and manage WireGuard tunnels from a [terminal](docs/quick-start/cli.md) or a browser.
 
 <p align="center">
   <img src="https://yasar.idikut.cc/project-assets/wg-quickrs-speedtest.gif" alt="speedtest demo">
@@ -24,12 +24,6 @@ Run it on your [router](docs/quick-start/router.md), [server](docs/quick-start/s
   <img src="https://yasar.idikut.cc/project-assets/wg-quickrs-demo.gif" alt="usage demo">
 </p>
 
-Features:
-- Interactive graph to configure your P2P network
-- HTTPS support and password login with JWT-based API authentication
-- Automatic firewall/NAT setup (`iptables` for Debian/Linux or `pf` for macOS, both usually come preinstalled with the OS)
-- If you are not feeling like dealing with VPN/networking on your machine, you can also just use the CLI or the web console to create `.conf` files/QR codes for your network peers.
-
 ---
 
-To get started, see quick start guides for [routers](docs/quick-start/router.md), [servers](docs/quick-start/server.md), or [docker hosts](docs/quick-start/docker.md).
+Back for a newer release? See the [upgrading guide](docs/notes/upgrading.md).
