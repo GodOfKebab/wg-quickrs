@@ -69,8 +69,8 @@ RUN cd amneziawg-go && make
 FROM alpine:3.22 AS runner
 WORKDIR /app
 RUN apk add -U --no-cache wireguard-tools-wg openresolv iproute2 iptables
+COPY --from=amneziawg-builder /app/amneziawg-tools/src/wg /usr/bin/awg
+COPY --from=amneziawg-builder /app/amneziawg-go/amneziawg-go /usr/bin/amneziawg-go
 COPY --from=wg-quickrs-builder /app/bin/wg-quickrs /app/wg-quickrs
-COPY --from=amneziawg-builder /app/amneziawg-tools/src/wg /app/awg
-COPY --from=amneziawg-builder /app/amneziawg-go/amneziawg-go /app/amneziawg-go
 ENTRYPOINT ["/app/wg-quickrs", "--wg-quickrs-config-folder", ".wg-quickrs"]
 #CMD ["tail", "-f", "/dev/null"]
