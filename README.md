@@ -9,10 +9,11 @@
 [![Docker](https://img.shields.io/docker/pulls/godofkebab/wg-quickrs?logo=docker&color=%232496ED)](https://hub.docker.com/repository/docker/godofkebab/wg-quickrs/tags)
 ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fwg-quickrs%2FCargo.toml&query=package.rust-version&logo=rust&label=rust&color=%23000000)
 ![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FGodOfKebab%2Fwg-quickrs%2Frefs%2Fheads%2Fmain%2Fsrc%2Fwg-quickrs-web%2Fpackage.json&query=dependencies.vue&logo=vue.js&label=vue&color=%234FC08D)
+![Static Badge](https://img.shields.io/badge/%20wasm32-%23654ff0?logo=webassembly&labelColor=%23F0F0F0)
 
 ✨ An intuitive multi-peer [`wg`](https://www.wireguard.com)/[`awg`](https://docs.amnezia.org/documentation/amnezia-wg/) wrapper written in 🦀 Rust (`wg-quick` alternative).
 
-⚡ Rust + Vue + WASM + WireGuard/[AmneziaWG](docs/notes/amneziawg.md) = 🧪 one [static binary](docs/notes/static-binary.md) + 📝 one [YAML file](docs/notes/schema.md) to rule them all 🪄
+⚡ Rust + WireGuard/[AmneziaWG](docs/notes/amneziawg.md) = 🧪 one [static binary](docs/notes/static-binary.md) + 📝 one [YAML file](docs/notes/schema.md) to rule them all 🪄
 
 Run it on your [router](docs/quick-start/router.md), [server](docs/quick-start/server.md), or [docker host](docs/quick-start/docker.md) and manage WireGuard tunnels from a [terminal](docs/quick-start/cli.md) or a browser.
 
