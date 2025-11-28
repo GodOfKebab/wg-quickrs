@@ -512,7 +512,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             init_opts.agent_vpn_wg_userspace_enabled,
             INIT_AGENT_VPN_WG_USERSPACE_ENABLED_FLAG,
             format!("\t{}", INIT_AGENT_VPN_WG_USERSPACE_ENABLED_HELP).as_str(),
-            !cfg!(target_os = "linux"),  // if on linux, disable userspace to use kernel module
+            !cfg!(target_os = "linux") || vpn_wg.ends_with("awg"),  // if on linux, disable userspace to use kernel module
         );
         let vpn_wg_userspace_binary = if vpn_wg_userspace_enabled {
             get_value(
