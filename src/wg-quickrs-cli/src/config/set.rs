@@ -85,6 +85,25 @@ pub enum SetAgentVpnCommands {
         #[arg(help = "Port number (0-65535)")]
         value: u16,
     },
+    #[command(about = "Set path to WireGuard binary")]
+    Wg {
+        #[arg(help = "Path to WireGuard binary")]
+        value: PathBuf,
+    },
+    #[command(about = "Set WireGuard userspace configuration")]
+    WgUserspace {
+        #[command(subcommand)]
+        target: SetAgentVpnWgUserspaceCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetAgentVpnWgUserspaceCommands {
+    #[command(about = "Set path to WireGuard userspace binary")]
+    Binary {
+        #[arg(help = "Path to WireGuard userspace binary")]
+        value: PathBuf,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -117,6 +136,11 @@ pub enum SetNetworkCommands {
     Defaults {
         #[command(subcommand)]
         target: SetDefaultsCommands,
+    },
+    #[command(about = "Set AmneziaWG network parameters")]
+    AmneziaParameters {
+        #[command(subcommand)]
+        target: SetNetworkAmneziaParametersCommands,
     },
 }
 
@@ -155,6 +179,30 @@ pub enum SetPeerCommands {
     #[command(about = "Set peer MTU value")]
     Mtu {
         #[arg(help = "MTU value")]
+        value: u16,
+    },
+    #[command(about = "Set peer AmneziaWG parameters")]
+    AmneziaParameters {
+        #[command(subcommand)]
+        target: SetPeerAmneziaParametersCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetPeerAmneziaParametersCommands {
+    #[command(about = "Set Jc parameter (junk packet count)")]
+    Jc {
+        #[arg(help = "Junk packet count")]
+        value: i16,
+    },
+    #[command(about = "Set Jmin parameter (minimum junk packet size)")]
+    Jmin {
+        #[arg(help = "Minimum junk packet size")]
+        value: u16,
+    },
+    #[command(about = "Set Jmax parameter (maximum junk packet size)")]
+    Jmax {
+        #[arg(help = "Maximum junk packet size")]
         value: u16,
     },
 }
@@ -213,6 +261,45 @@ pub enum SetDefaultsPeerCommands {
     Mtu {
         #[arg(help = "MTU value")]
         value: u16,
+    },
+    #[command(about = "Set default peer AmneziaWG parameters")]
+    AmneziaParameters {
+        #[command(subcommand)]
+        target: SetPeerAmneziaParametersCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SetNetworkAmneziaParametersCommands {
+    #[command(about = "Set S1 parameter (init packet junk size)")]
+    S1 {
+        #[arg(help = "S1 value")]
+        value: u16,
+    },
+    #[command(about = "Set S2 parameter (response packet junk size)")]
+    S2 {
+        #[arg(help = "S2 value")]
+        value: u16,
+    },
+    #[command(about = "Set H1 parameter (init packet magic header)")]
+    H1 {
+        #[arg(help = "H1 value")]
+        value: u32,
+    },
+    #[command(about = "Set H2 parameter (response packet magic header)")]
+    H2 {
+        #[arg(help = "H2 value")]
+        value: u32,
+    },
+    #[command(about = "Set H3 parameter (underload packet magic header)")]
+    H3 {
+        #[arg(help = "H3 value")]
+        value: u32,
+    },
+    #[command(about = "Set H4 parameter (transport packet magic header)")]
+    H4 {
+        #[arg(help = "H4 value")]
+        value: u32,
     },
 }
 

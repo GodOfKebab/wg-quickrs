@@ -19,6 +19,14 @@ yaml.preserve_quotes = True
         (["get", "agent", "web", "password", "enabled"], "false"),
         (["get", "agent", "vpn", "enabled"], "false"),
         (["get", "agent", "vpn", "port"], "51829"),
+        # Skip agent.vpn.wg and wg-userspace fields - values are system-dependent based on config setup
+        (["get", "network", "amnezia-parameters", "enabled"], "false"),
+        (["get", "network", "amnezia-parameters", "s1"], "55"),
+        (["get", "network", "amnezia-parameters", "s2"], "155"),
+        (["get", "network", "amnezia-parameters", "h1"], "803319896"),
+        (["get", "network", "amnezia-parameters", "h2"], "1672348903"),
+        (["get", "network", "amnezia-parameters", "h3"], "2907329387"),
+        (["get", "network", "amnezia-parameters", "h4"], "3338763813"),
     ],
 )
 def test_config_get_no_auth(setup_wg_quickrs_folder, command, expected_value):
@@ -651,14 +659,20 @@ def test_config_get_network_peer_by_id(setup_wg_quickrs_folder):
         ("0ed989c6-6dba-4e3c-8034-08adf4262d9e", "name", "wg-quickrs-host"),
         ("0ed989c6-6dba-4e3c-8034-08adf4262d9e", "address", "10.0.34.1"),
         ("0ed989c6-6dba-4e3c-8034-08adf4262d9e", "kind", "server"),
+        ("0ed989c6-6dba-4e3c-8034-08adf4262d9e", ["amnezia-parameters", "jc"], "30"),
+        ("0ed989c6-6dba-4e3c-8034-08adf4262d9e", ["amnezia-parameters", "jmin"], "60"),
+        ("0ed989c6-6dba-4e3c-8034-08adf4262d9e", ["amnezia-parameters", "jmax"], "120"),
     ],
 )
 def test_config_get_network_peer_field(setup_wg_quickrs_folder, peer_id, field, expected_value):
     """Test getting individual peer fields."""
     setup_wg_quickrs_folder("no_auth_single_peer")
 
+    # Handle both string and list field arguments
+    field_args = field if isinstance(field, list) else [field]
+
     result = subprocess.run(
-        get_wg_quickrs_command() + ["config", "get", "network", "peers", peer_id, field],
+        get_wg_quickrs_command() + ["config", "get", "network", "peers", peer_id] + field_args,
         capture_output=True,
         text=True
     )
@@ -711,7 +725,38 @@ def test_config_get_network_defaults_peer(setup_wg_quickrs_folder):
     assert "dns" in data
     assert "mtu" in data
     assert "scripts" in data
+    assert "amnezia_parameters" in data
     assert data["kind"] == "laptop"
+    assert data["amnezia_parameters"]["jc"] == 30
+    assert data["amnezia_parameters"]["jmin"] == 60
+    assert data["amnezia_parameters"]["jmax"] == 120
+
+
+@pytest.mark.parametrize(
+    "field,expected_value",
+    [
+        (["amnezia-parameters", "jc"], "30"),
+        (["amnezia-parameters", "jmin"], "60"),
+        (["amnezia-parameters", "jmax"], "120"),
+    ],
+)
+def test_config_get_network_defaults_peer_amnezia_params(setup_wg_quickrs_folder, field, expected_value):
+    """Test getting individual default peer amnezia parameter fields."""
+    setup_wg_quickrs_folder("no_auth_single_peer")
+
+    field_args = field if isinstance(field, list) else [field]
+
+    result = subprocess.run(
+        get_wg_quickrs_command() + ["config", "get", "network", "defaults", "peer"] + field_args,
+        capture_output=True,
+        text=True
+    )
+    print(result.stdout)
+    print(result.stderr)
+
+    assert result.returncode == 0
+    output_lines = [line for line in result.stdout.strip().split('\n') if line]
+    assert output_lines[-1] == expected_value
 
 
 def test_config_get_network_defaults_connection(setup_wg_quickrs_folder):

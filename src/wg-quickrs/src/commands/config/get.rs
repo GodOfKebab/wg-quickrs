@@ -114,6 +114,10 @@ impl_peer_getter!(get_network_peer_mtu_enabled, mtu.enabled);
 impl_peer_getter!(get_network_peer_mtu_value, mtu.value);
 impl_peer_getter!(get_network_peer_scripts, scripts, yaml);
 impl_peer_getter!(get_network_peer_private_key, private_key);
+impl_peer_getter!(get_network_peer_amnezia_parameters, amnezia_parameters, yaml);
+impl_peer_getter!(get_network_peer_amnezia_parameters_jc, amnezia_parameters.jc);
+impl_peer_getter!(get_network_peer_amnezia_parameters_jmin, amnezia_parameters.jmin);
+impl_peer_getter!(get_network_peer_amnezia_parameters_jmax, amnezia_parameters.jmax);
 impl_peer_getter!(get_network_peer_created_at, created_at);
 impl_peer_getter!(get_network_peer_updated_at, updated_at);
 
@@ -186,6 +190,10 @@ impl_config_getter!(get_agent_web_password_enabled, agent.web.password.enabled);
 impl_config_getter!(get_agent_web_password_hash, agent.web.password.hash);
 impl_config_getter!(get_agent_vpn_enabled, agent.vpn.enabled);
 impl_config_getter!(get_agent_vpn_port, agent.vpn.port);
+impl_config_getter!(get_agent_vpn_wg, agent.vpn.wg, display);
+impl_config_getter!(get_agent_vpn_wg_userspace, agent.vpn.wg_userspace, yaml);
+impl_config_getter!(get_agent_vpn_wg_userspace_enabled, agent.vpn.wg_userspace.enabled);
+impl_config_getter!(get_agent_vpn_wg_userspace_binary, agent.vpn.wg_userspace.binary, display);
 
 // Network struct getter
 impl_config_getter!(get_network, network, yaml);
@@ -198,8 +206,20 @@ impl_config_getter!(get_network_peers, network.peers, yaml);
 impl_config_getter!(get_network_connections, network.connections, yaml);
 impl_config_getter!(get_network_defaults, network.defaults, yaml);
 impl_config_getter!(get_network_reservations, network.reservations, yaml);
+impl_config_getter!(get_network_amnezia_parameters, network.amnezia_parameters, yaml);
+impl_config_getter!(get_network_amnezia_parameters_enabled, network.amnezia_parameters.enabled);
+impl_config_getter!(get_network_amnezia_parameters_s1, network.amnezia_parameters.s1);
+impl_config_getter!(get_network_amnezia_parameters_s2, network.amnezia_parameters.s2);
+impl_config_getter!(get_network_amnezia_parameters_h1, network.amnezia_parameters.h1);
+impl_config_getter!(get_network_amnezia_parameters_h2, network.amnezia_parameters.h2);
+impl_config_getter!(get_network_amnezia_parameters_h3, network.amnezia_parameters.h3);
+impl_config_getter!(get_network_amnezia_parameters_h4, network.amnezia_parameters.h4);
 impl_config_getter!(get_network_updated_at, network.updated_at);
 
 // Network defaults field getters
 impl_config_getter!(get_network_defaults_peer, network.defaults.peer, yaml);
+impl_config_getter!(get_network_defaults_peer_amnezia_parameters, network.defaults.peer.amnezia_parameters, yaml);
+impl_config_getter!(get_network_defaults_peer_amnezia_parameters_jc, network.defaults.peer.amnezia_parameters.jc);
+impl_config_getter!(get_network_defaults_peer_amnezia_parameters_jmin, network.defaults.peer.amnezia_parameters.jmin);
+impl_config_getter!(get_network_defaults_peer_amnezia_parameters_jmax, network.defaults.peer.amnezia_parameters.jmax);
 impl_config_getter!(get_network_defaults_connection, network.defaults.connection, yaml);

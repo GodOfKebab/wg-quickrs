@@ -113,6 +113,22 @@ impl_port_setter!(set_agent_web_https_port, agent.web.https, "HTTPS");
 
 impl_port_setter!(set_agent_vpn_port, agent.vpn, "VPN");
 
+impl_setter!(
+    set_agent_vpn_wg,
+    PathBuf,
+    agent.vpn.wg,
+    "WireGuard binary path",
+    display: |p: &PathBuf| format!("{}", p.display())
+);
+
+impl_setter!(
+    set_agent_vpn_wg_userspace_binary,
+    PathBuf,
+    agent.vpn.wg_userspace.binary,
+    "WireGuard userspace binary path",
+    display: |p: &PathBuf| format!("{}", p.display())
+);
+
 // ============================================================================
 // Network Configuration Functions
 // ============================================================================
@@ -133,6 +149,60 @@ pub fn set_network_subnet(subnet_str: &str) -> Result<(), ConfigCommandError> {
         .map_err(|_| ConfigCommandError::Validation(ValidationError::NotCIDR()))?;
     config.network.subnet = subnet;
     log::info!("Set network subnet to: {}", subnet);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set network AmneziaWG S1 parameter
+pub fn set_network_amnezia_parameters_s1(value: u16) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.amnezia_parameters.s1 = value;
+    log::info!("Set network AmneziaWG S1 to: {}", value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set network AmneziaWG S2 parameter
+pub fn set_network_amnezia_parameters_s2(value: u16) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.amnezia_parameters.s2 = value;
+    log::info!("Set network AmneziaWG S2 to: {}", value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set network AmneziaWG H1 parameter
+pub fn set_network_amnezia_parameters_h1(value: u32) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.amnezia_parameters.h1 = value;
+    log::info!("Set network AmneziaWG H1 to: {}", value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set network AmneziaWG H2 parameter
+pub fn set_network_amnezia_parameters_h2(value: u32) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.amnezia_parameters.h2 = value;
+    log::info!("Set network AmneziaWG H2 to: {}", value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set network AmneziaWG H3 parameter
+pub fn set_network_amnezia_parameters_h3(value: u32) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.amnezia_parameters.h3 = value;
+    log::info!("Set network AmneziaWG H3 to: {}", value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set network AmneziaWG H4 parameter
+pub fn set_network_amnezia_parameters_h4(value: u32) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.amnezia_parameters.h4 = value;
+    log::info!("Set network AmneziaWG H4 to: {}", value);
     conf::util::set_config(&mut config)?;
     Ok(())
 }
@@ -214,6 +284,36 @@ pub fn set_peer_mtu(id: &Uuid, value: u16) -> Result<(), ConfigCommandError> {
     peer.mtu.value = value;
     peer.mtu.enabled = true;
     log::info!("Set peer {} MTU to: {}", id, value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set peer AmneziaWG Jc parameter
+pub fn set_peer_amnezia_parameters_jc(id: &Uuid, value: i16) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
+    peer.amnezia_parameters.jc = value;
+    log::info!("Set peer {} AmneziaWG Jc to: {}", id, value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set peer AmneziaWG Jmin parameter
+pub fn set_peer_amnezia_parameters_jmin(id: &Uuid, value: u16) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
+    peer.amnezia_parameters.jmin = value;
+    log::info!("Set peer {} AmneziaWG Jmin to: {}", id, value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set peer AmneziaWG Jmax parameter
+pub fn set_peer_amnezia_parameters_jmax(id: &Uuid, value: u16) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    let peer = config.network.peers.get_mut(id).ok_or(ConfigCommandError::PeerNotFound(*id))?;
+    peer.amnezia_parameters.jmax = value;
+    log::info!("Set peer {} AmneziaWG Jmax to: {}", id, value);
     conf::util::set_config(&mut config)?;
     Ok(())
 }
@@ -312,6 +412,33 @@ pub fn set_defaults_peer_mtu(value: u16) -> Result<(), ConfigCommandError> {
     config.network.defaults.peer.mtu.value = value;
     config.network.defaults.peer.mtu.enabled = true;
     log::info!("Set default peer MTU to: {}", value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set default peer AmneziaWG Jc parameter
+pub fn set_defaults_peer_amnezia_parameters_jc(value: i16) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.defaults.peer.amnezia_parameters.jc = value;
+    log::info!("Set default peer AmneziaWG Jc to: {}", value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set default peer AmneziaWG Jmin parameter
+pub fn set_defaults_peer_amnezia_parameters_jmin(value: u16) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.defaults.peer.amnezia_parameters.jmin = value;
+    log::info!("Set default peer AmneziaWG Jmin to: {}", value);
+    conf::util::set_config(&mut config)?;
+    Ok(())
+}
+
+/// Set default peer AmneziaWG Jmax parameter
+pub fn set_defaults_peer_amnezia_parameters_jmax(value: u16) -> Result<(), ConfigCommandError> {
+    let mut config = conf::util::get_config()?;
+    config.network.defaults.peer.amnezia_parameters.jmax = value;
+    log::info!("Set default peer AmneziaWG Jmax to: {}", value);
     conf::util::set_config(&mut config)?;
     Ok(())
 }

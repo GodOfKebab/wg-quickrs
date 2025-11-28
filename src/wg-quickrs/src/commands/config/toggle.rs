@@ -150,6 +150,18 @@ impl_toggle!(
     |c: &wg_quickrs_lib::types::config::Config| format!("VPN server (port={})...", c.agent.vpn.port)
 );
 
+impl_toggle!(
+    toggle_agent_vpn_wg_userspace,
+    agent.vpn.wg_userspace =>
+    |_c: &wg_quickrs_lib::types::config::Config| "WireGuard userspace mode...".to_string()
+);
+
+impl_toggle!(
+    toggle_network_amnezia_parameters,
+    network.amnezia_parameters =>
+    |_c: &wg_quickrs_lib::types::config::Config| "AmneziaWG obfuscation...".to_string()
+);
+
 // Peer toggles
 impl_peer_toggle!(enable_peer_endpoint, disable_peer_endpoint, endpoint, "endpoint");
 impl_peer_toggle!(enable_peer_icon, disable_peer_icon, icon, "icon");

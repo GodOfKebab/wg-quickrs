@@ -162,10 +162,13 @@ def test_config_set_connection_persistent_keepalive(setup_wg_quickrs_folder):
         ["config", "set", "network", "peer", "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "icon", "https://example.com/icon.png"],
         ["config", "set", "network", "peer", "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "dns", "8.8.8.8,8.8.4.4"],
         ["config", "set", "network", "peer", "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "mtu", "1420"],
+        ["config", "set", "network", "peer", "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "amnezia-parameters", "jc", "40"],
+        ["config", "set", "network", "peer", "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "amnezia-parameters", "jmin", "70"],
+        ["config", "set", "network", "peer", "0ed989c6-6dba-4e3c-8034-08adf4262d9e", "amnezia-parameters", "jmax", "130"],
     ],
 )
 def test_config_set_peer_additional_fields(setup_wg_quickrs_folder, command):
-    """Test setting peer kind, icon, dns, mtu fields."""
+    """Test setting peer kind, icon, dns, mtu, and amnezia parameters fields."""
     setup_wg_quickrs_folder("no_auth_single_peer")
 
     result = subprocess.run(
@@ -238,6 +241,9 @@ def test_config_peer_icon_toggle(setup_wg_quickrs_folder):
         ["config", "set", "network", "defaults", "peer", "icon", "https://example.com/default.png"],
         ["config", "set", "network", "defaults", "peer", "dns", "1.1.1.1,1.0.0.1"],
         ["config", "set", "network", "defaults", "peer", "mtu", "1380"],
+        ["config", "set", "network", "defaults", "peer", "amnezia-parameters", "jc", "35"],
+        ["config", "set", "network", "defaults", "peer", "amnezia-parameters", "jmin", "65"],
+        ["config", "set", "network", "defaults", "peer", "amnezia-parameters", "jmax", "125"],
         ["config", "set", "network", "defaults", "connection", "persistent-keepalive", "30"],
     ],
 )
@@ -323,6 +329,72 @@ def test_config_defaults_connection_persistent_keepalive_toggle(setup_wg_quickrs
     # Disable
     result = subprocess.run(
         get_wg_quickrs_command() + ["config", "disable", "network", "defaults", "connection", "persistent-keepalive"],
+        capture_output=True,
+        text=True
+    )
+    assert result.returncode == 0
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        ["config", "set", "network", "amnezia-parameters", "s1", "60"],
+        ["config", "set", "network", "amnezia-parameters", "s2", "160"],
+        ["config", "set", "network", "amnezia-parameters", "h1", "800000000"],
+        ["config", "set", "network", "amnezia-parameters", "h2", "1700000000"],
+        ["config", "set", "network", "amnezia-parameters", "h3", "2900000000"],
+        ["config", "set", "network", "amnezia-parameters", "h4", "3300000000"],
+    ],
+)
+def test_config_set_network_amnezia_parameters(setup_wg_quickrs_folder, command):
+    """Test setting network amnezia parameters."""
+    setup_wg_quickrs_folder("no_auth_single_peer")
+
+    result = subprocess.run(
+        get_wg_quickrs_command() + command,
+        capture_output=True,
+        text=True
+    )
+
+    assert result.returncode == 0
+
+
+def test_config_network_amnezia_parameters_toggle(setup_wg_quickrs_folder):
+    """Test enabling/disabling network amnezia parameters."""
+    setup_wg_quickrs_folder("no_auth_single_peer")
+
+    # Enable
+    result = subprocess.run(
+        get_wg_quickrs_command() + ["config", "enable", "network", "amnezia-parameters"],
+        capture_output=True,
+        text=True
+    )
+    assert result.returncode == 0
+
+    # Disable
+    result = subprocess.run(
+        get_wg_quickrs_command() + ["config", "disable", "network", "amnezia-parameters"],
+        capture_output=True,
+        text=True
+    )
+    assert result.returncode == 0
+
+
+def test_config_agent_vpn_wg_userspace_toggle(setup_wg_quickrs_folder):
+    """Test enabling/disabling agent VPN WireGuard userspace mode."""
+    setup_wg_quickrs_folder("no_auth_single_peer")
+
+    # Enable
+    result = subprocess.run(
+        get_wg_quickrs_command() + ["config", "enable", "agent", "vpn", "wg-userspace"],
+        capture_output=True,
+        text=True
+    )
+    assert result.returncode == 0
+
+    # Disable
+    result = subprocess.run(
+        get_wg_quickrs_command() + ["config", "disable", "agent", "vpn", "wg-userspace"],
         capture_output=True,
         text=True
     )
