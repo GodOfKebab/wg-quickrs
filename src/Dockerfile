@@ -60,15 +60,15 @@ FROM alpine:3.22 AS amneziawg-builder
 WORKDIR /app
 RUN apk add -U --no-cache git make linux-headers go
 
-RUN git clone https://github.com/amnezia-vpn/amneziawg-tools.git
+RUN git clone --depth 1 --branch v1.0.20250903 https://github.com/amnezia-vpn/amneziawg-tools.git
 RUN cd amneziawg-tools/src && make
 
-RUN git clone https://github.com/amnezia-vpn/amneziawg-go
+RUN git clone --depth 1 --branch v0.2.15 https://github.com/amnezia-vpn/amneziawg-go
 RUN cd amneziawg-go && make
 
 FROM alpine:3.22 AS runner
 WORKDIR /app
-RUN apk add -U --no-cache wireguard-tools-wg openresolv iproute2 iptables
+RUN apk add -U --no-cache openresolv iproute2-minimal iptables
 COPY --from=amneziawg-builder /app/amneziawg-tools/src/wg /usr/bin/awg
 COPY --from=amneziawg-builder /app/amneziawg-go/amneziawg-go /usr/bin/amneziawg-go
 COPY --from=wg-quickrs-builder /app/bin/wg-quickrs /app/wg-quickrs
