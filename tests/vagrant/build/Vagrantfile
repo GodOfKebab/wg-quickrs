@@ -13,5 +13,5 @@ Vagrant.configure("2") do |config|
   # Sync project folder to VM
   config.vm.synced_folder "../../..", "/home/vagrant/wg-quickrs",
     type: "rsync",
-    rsync__exclude: [".wg-quickrs", "src/target/", "src/wg-quickrs-web/dist/", "src/wg-quickrs-web/node_modules/", "src/wg-quickrs-web/pkg/", "tests/vagrant"]
+    rsync__exclude: [".wg-quickrs", ".wg-quickrs-docker", "src/target/", "src/wg-quickrs-web/dist/", "src/wg-quickrs-web/node_modules/", "src/wg-quickrs-web/pkg/", "tests/vagrant"]
 end
