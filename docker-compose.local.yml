@@ -9,29 +9,10 @@ services:
       dockerfile: src/Dockerfile
       target: runner
 
-  wg-quickrs-agent-init-amnezia-local:
-    extends:
-      file: docker-compose.yml
-      service: wg-quickrs-agent-init-amnezia
-    image: ''
-    build:
-      dockerfile: src/Dockerfile
-      target: runner
-
   wg-quickrs-agent-run-local:
     extends:
       file: docker-compose.yml
       service: wg-quickrs-agent-run
-    image: ''
-    build:
-      dockerfile: src/Dockerfile
-      target: runner
-    restart: no
-
-  wg-quickrs-agent-run-amnezia-local:
-    extends:
-      file: docker-compose.yml
-      service: wg-quickrs-agent-run-amnezia
     image: ''
     build:
       dockerfile: src/Dockerfile
