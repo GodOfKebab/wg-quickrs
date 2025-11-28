@@ -425,7 +425,6 @@ Run the services to initialize the agent.
 cd ..
 sudo docker compose up tls-cert-generator
 sudo docker compose -f docker-compose.local.yml up wg-quickrs-agent-init-local
-
 ```
 
 After initialization, you can run the `wg-quickrs-agent-run-local` service in `docker-compose.local.yml`.

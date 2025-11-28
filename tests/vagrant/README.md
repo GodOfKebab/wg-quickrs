@@ -26,7 +26,7 @@ vagrant destroy
 
 ## Build
 
-Used to verify `docs/BUILDING.md`
+Used to verify [`docs/BUILDING.md`](../../docs/BUILDING.md)
 
 ```shell
 # on the vm at ~/
