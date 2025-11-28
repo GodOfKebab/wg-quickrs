@@ -11,6 +11,7 @@ use std::net::{IpAddr};
 use std::path::{PathBuf};
 use std::{env, fs};
 use chrono::Utc;
+use rand::{RngCore};
 use thiserror::Error;
 use uuid::Uuid;
 use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility, parse_and_validate_wg_tool, parse_and_validate_wg_userspace_binary};
@@ -535,6 +536,16 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
+    let amnezia_network_parameters = AmneziaNetworkParameters {
+        enabled: agent_vpn_wg.ends_with("awg"),
+        s1: 55,
+        s2: 155,
+        h1: rand::rng().next_u32(),
+        h2: rand::rng().next_u32(),
+        h3: rand::rng().next_u32(),
+        h4: rand::rng().next_u32(),
+    };  // TODO: make this configurable
+
     // [8/28] --agent-firewall-enabled
     let agent_firewall_enabled = get_bool(
         init_opts.no_prompt,
@@ -805,6 +816,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         connections: Default::default(),
         defaults: Default::default(),
         reservations: Default::default(),
+        amnezia_parameters: Default::default(),
         updated_at: Utc::now(),
     };
     let agent_peer_vpn_internal_address = get_value(
@@ -966,6 +978,12 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
+    let agent_peer_amnezia_parameters = AmneziaPeerParameters {
+        jc: 30,
+        jmin: 60,
+        jmax: 120,
+    };  // TODO: make this configurable
+
     println!("[peer settings complete]");
     println!("[new peer/connection default settings 20-28/28]");
 
@@ -1097,6 +1115,12 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
+    let default_peer_amnezia_parameters = AmneziaPeerParameters {
+        jc: 30,
+        jmin: 60,
+        jmax: 120,
+    };  // TODO: make this configurable
+
     // [28/28] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
     let default_connection_persistent_keepalive_enabled = get_bool(
         init_opts.no_prompt,
@@ -1182,9 +1206,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                         enabled: agent_peer_icon_enabled,
                         src: agent_peer_icon_src,
                     },
-                    private_key: wg_generate_key(),
-                    created_at: now,
-                    updated_at: now,
                     dns: Dns {
                         enabled: agent_peer_dns_enabled,
                         addresses: agent_peer_dns_addresses,
@@ -1199,12 +1220,14 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                         pre_down: agent_peer_script_pre_down,
                         post_down: agent_peer_script_post_down,
                     },
+                    private_key: wg_generate_key(),
+                    amnezia_parameters: agent_peer_amnezia_parameters,
+                    created_at: now,
+                    updated_at: now,
                 });
                 map
             },
             connections: BTreeMap::new(),
-            reservations: BTreeMap::new(),
-            updated_at: now,
             defaults: Defaults {
                 peer: DefaultPeer {
                     kind: default_peer_kind.to_string(),
@@ -1226,6 +1249,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                         pre_down: default_peer_script_pre_down,
                         post_down: default_peer_script_post_down,
                     },
+                    amnezia_parameters: default_peer_amnezia_parameters
                 },
                 connection: DefaultConnection {
                     persistent_keepalive: PersistentKeepalive {
@@ -1234,6 +1258,9 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     },
                 },
             },
+            reservations: BTreeMap::new(),
+            amnezia_parameters: amnezia_network_parameters,
+            updated_at: now,
         },
     };
 

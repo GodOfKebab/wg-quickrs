@@ -81,6 +81,18 @@ pub fn get_peer_wg_config(
                 writeln!(wg_conf, "PostDown = {}", script_field.script).unwrap();
             }
         }
+        if network.amnezia_parameters.enabled {
+            writeln!(wg_conf, "# AmneziaWG Obfuscation Parameters").unwrap();
+            writeln!(wg_conf, "Jc = {}", this_peer.amnezia_parameters.jc).unwrap();
+            writeln!(wg_conf, "Jmin = {}", this_peer.amnezia_parameters.jmin).unwrap();
+            writeln!(wg_conf, "Jmax = {}", this_peer.amnezia_parameters.jmax).unwrap();
+            writeln!(wg_conf, "S1 = {}", network.amnezia_parameters.s1).unwrap();
+            writeln!(wg_conf, "S2 = {}", network.amnezia_parameters.s2).unwrap();
+            writeln!(wg_conf, "H1 = {}", network.amnezia_parameters.h1).unwrap();
+            writeln!(wg_conf, "H2 = {}", network.amnezia_parameters.h2).unwrap();
+            writeln!(wg_conf, "H3 = {}", network.amnezia_parameters.h3).unwrap();
+            writeln!(wg_conf, "H4 = {}", network.amnezia_parameters.h4).unwrap();
+        }
     }
     writeln!(wg_conf).unwrap();
 

@@ -111,6 +111,7 @@ pub struct AddedPeer {
     pub mtu: Mtu,
     pub scripts: Scripts,
     pub private_key: WireGuardKey,
+    pub amnezia_parameters: AmneziaPeerParameters,
 }
 
 impl From<&AddedPeer> for Peer {
@@ -125,6 +126,7 @@ impl From<&AddedPeer> for Peer {
             mtu: added_peer.mtu.clone(),
             scripts: added_peer.scripts.clone(),
             private_key: added_peer.private_key,
+            amnezia_parameters: added_peer.amnezia_parameters.clone(),
             created_at: Utc::now(), // TODO: use time from arg
             updated_at: Utc::now(),
         }

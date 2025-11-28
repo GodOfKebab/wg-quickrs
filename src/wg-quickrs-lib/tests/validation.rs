@@ -115,6 +115,7 @@ fn generate_peer(name: &str, address: &str) -> Peer {
         mtu: Default::default(),
         scripts: Default::default(),
         private_key: Default::default(),
+        amnezia_parameters: Default::default(),
         created_at: Default::default(),
         updated_at: Default::default(),
     }
@@ -131,6 +132,7 @@ fn generate_network(peers: BTreeMap<Uuid, Peer>, subnet: &str, reservations: BTr
         reservations: reservations.into_iter()
             .map(|(k, v)| (k.parse::<Ipv4Addr>().unwrap(), v))
             .collect(),
+        amnezia_parameters: Default::default(),
         updated_at: Default::default(),
     }
 }

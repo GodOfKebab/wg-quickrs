@@ -165,7 +165,12 @@ def get_test_peer_data() -> Dict[str, Any]:
             "pre_down": [],
             "post_down": []
         },
-        "private_key": "cL+YuwGKNS8bNnPUVdnGDp7jF5BZs1vp1UxK2Xv+JX0="
+        "private_key": "cL+YuwGKNS8bNnPUVdnGDp7jF5BZs1vp1UxK2Xv+JX0=",
+        "amnezia_parameters": {
+            "jc": 30,
+            "jmin": 60,
+            "jmax": 120
+        }
     }
 
 

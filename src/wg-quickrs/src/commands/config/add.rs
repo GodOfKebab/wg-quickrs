@@ -223,6 +223,7 @@ pub fn add_peer(opts: &AddPeerOptions) -> Result<(), ConfigCommandError> {
             post_down: script_post_down,
         },
         private_key: wg_generate_key(),
+        amnezia_parameters: config.network.defaults.peer.amnezia_parameters.clone(),  // TODO: make this configurable
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };
