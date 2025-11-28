@@ -19,30 +19,51 @@ agent:
     wg_userspace:
       enabled: true
       binary: /usr/bin/amneziawg-go  # replace this with the path to your `amneziawg-go` binary (which amneziawg-go)
+network:
   # ...
+  peers:
+    # ...
+    fe820672-cefc-4dfb-b532-89b32b86594f:
+      # ...
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
+  amnezia_parameters:
+    enabled: true  # make sure this is set to true, otherwise there will be no obfuscation
+    s1: 55
+    s2: 155
+    h1: 1965538070
+    h2: 1556073336
+    h3: 1369216251
+    h4: 4226881876
 ```
 
-See [conf.yml schema](./schema.md) for more details.
+See [conf.yml schema](./schema.md) for more details and [official notes](https://github.com/amnezia-vpn/amneziawg-linux-kernel-module?tab=readme-ov-file#configuration) for obfuscation parameter ranges.
 
 
-## Install AmneziaWG on Alpine (for servers and Docker containers)
+## Build and Install AmneziaWG on Alpine (for servers and Docker containers)
 
 ⚠️ Note 2: The installation guide here is intended for alpine hosts.
 
-### Install `amneziawg-tools`
+Install the following packages:
+
+```shell
+apk add -U --no-cache git make go linux-headers
+```
+
+### Build and Install `amneziawg-tools`
 
 To build and install `awg(8)`, run the following commands:
 
 ```shell
-apk add -U --no-cache git make linux-headers
-
 git clone https://github.com/amnezia-vpn/amneziawg-tools.git
 cd amneziawg-tools/src
 make
 make install
 ```
 
-### Install `amneziawg-go`
+### Build and Install `amneziawg-go`
 
 For installing the kernel module, see [here](https://github.com/amnezia-vpn/amneziawg-linux-kernel-module).
 
@@ -51,8 +72,6 @@ Since the kernel module is not available for alpine, Docker images and this guid
 To build the userspace implementation, run the following commands:
 
 ```shell
-apk add -U --no-cache git make go
-
 git clone https://github.com/amnezia-vpn/amneziawg-go
 cd amneziawg-go
 make

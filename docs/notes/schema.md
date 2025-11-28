@@ -99,6 +99,11 @@ network:
         post_down: []
       # private key for the peer (base64-encoded 32-byte WireGuard key)
       private_key: KU...=
+      # peer-level parameters for the Amnezia VPN client (https://github.com/amnezia-vpn/amneziawg-linux-kernel-module?tab=readme-ov-file#configuration)
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
       # timestamps in RFC3339 format (YYYY-MM-DDTHH:MM:SS.SSSSSSSZ)
       created_at: '2025-11-18T00:38:38.388252Z'
       updated_at: '2025-11-18T00:38:38.388252Z'
@@ -125,6 +130,10 @@ network:
         pre_down: []
         post_down: []
       private_key: /9...=
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
       created_at: '2025-11-18T00:40:16.391330Z'
       updated_at: '2025-11-18T00:40:16.391330Z'
   connections:
@@ -181,6 +190,15 @@ network:
       peer_id: f857bbe1-0063-4dff-98da-78b47efd6453
       # reservation expiry in RFC3339 format
       valid_until: '2025-11-18T00:50:10.911311Z'
+  # network-level parameters for the Amnezia VPN client (https://github.com/amnezia-vpn/amneziawg-linux-kernel-module?tab=readme-ov-file#configuration)
+  amnezia_parameters:
+    enabled: true
+    s1: 55
+    s2: 155
+    h1: 1965538070
+    h2: 1556073336
+    h3: 1369216251
+    h4: 4226881876
   # network last updated timestamp in RFC3339 format
   updated_at: '2025-11-18T00:40:10.911311Z'
 ```
