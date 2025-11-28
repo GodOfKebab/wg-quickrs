@@ -106,8 +106,6 @@ def test_init_no_prompt_simple(setup_wg_quickrs_folder):
         ("agent_web_password", "--agent-web-password-enabled true", False),
         ("agent_web_password", "--agent-web-password-enabled true --agent-web-password test-pwd", True),
         ("agent_vpn", "--agent-vpn-enabled true", False),
-        ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port 51820 --agent-vpn-wg $(which wg) --agent-vpn-wg-userspace-enabled true", False),
-        ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port 51820 --agent-vpn-wg $(which wg) --agent-vpn-wg-userspace-enabled false", True),
         ("agent_vpn", "--agent-vpn-enabled true --agent-vpn-port not-a-port", False),
         ("agent_firewall", "--agent-firewall-enabled true", False),
         ("agent_firewall", "--agent-firewall-enabled true --agent-firewall-utility not-a-utility --agent-firewall-gateway not-a-gateway", False),
@@ -175,6 +173,40 @@ def test_init_no_prompt(setup_wg_quickrs_folder, opt_key, opt_val, success):
 def test_init_no_prompt_multi_field(setup_wg_quickrs_folder, opts, success):
     setup_wg_quickrs_folder(None)
     assert (init_no_prompt(generate_init_no_prompt_opts(**opts)) == 0) == success
+
+
+@pytest.mark.parametrize(
+    "opt_key, opt_val, success",
+    [
+        ("agent_vpn", "--agent-vpn-wg $(which wg) --agent-vpn-wg-userspace-enabled false", True),
+        ("agent_vpn", "--agent-vpn-wg $(which wg) --agent-vpn-wg-userspace-enabled true", False),
+        ("agent_vpn", "--agent-vpn-wg $(which wg) --agent-vpn-wg-userspace-enabled true --agent-vpn-wg-userspace-binary $(which wireguard-go)", True),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled false", True),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2 --network-amnezia-h3 3", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2 --network-amnezia-h3 3 --network-amnezia-h4 4", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2 --network-amnezia-h3 3 --network-amnezia-h4 4 --agent-peer-amnezia-jc 3", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2 --network-amnezia-h3 3 --network-amnezia-h4 4 --agent-peer-amnezia-jc 3 --agent-peer-amnezia-jmin 61", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2 --network-amnezia-h3 3 --network-amnezia-h4 4 --agent-peer-amnezia-jc 3 --agent-peer-amnezia-jmin 61 --agent-peer-amnezia-jmax 121", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2 --network-amnezia-h3 3 --network-amnezia-h4 4 --agent-peer-amnezia-jc 3 --agent-peer-amnezia-jmin 61 --agent-peer-amnezia-jmax 121 --default-peer-amnezia-jc 3", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2 --network-amnezia-h3 3 --network-amnezia-h4 4 --agent-peer-amnezia-jc 3 --agent-peer-amnezia-jmin 61 --agent-peer-amnezia-jmax 121 --default-peer-amnezia-jc 3 --default-peer-amnezia-jmin 61", False),
+        ("agent_vpn", "--agent-vpn-wg $(which awg) --agent-vpn-wg-userspace-enabled false --network-amnezia-enabled true --network-amnezia-s1 56 --network-amnezia-s2 156 --network-amnezia-h1 1 --network-amnezia-h2 2 --network-amnezia-h3 3 --network-amnezia-h4 4 --agent-peer-amnezia-jc 3 --agent-peer-amnezia-jmin 61 --agent-peer-amnezia-jmax 121 --default-peer-amnezia-jc 3 --default-peer-amnezia-jmin 61 --default-peer-amnezia-jmax 121", True),
+    ],
+)
+def test_init_no_prompt_vpn(setup_wg_quickrs_folder, opt_key, opt_val, success):
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = setup_wg_quickrs_folder(None)
+
+    opt_val = f"--agent-vpn-enabled true --agent-vpn-port 51820 {opt_val}"
+    opt_val_sanitized = opt_val.replace("$(which wg)", str(wg_quickrs_config_folder / "bin/wg"))
+    opt_val_sanitized = opt_val_sanitized.replace("$(which wireguard-go)", str(wg_quickrs_config_folder / "bin/wireguard-go"))
+    opt_val_sanitized = opt_val_sanitized.replace("$(which awg)", str(wg_quickrs_config_folder / "bin/awg"))
+    opt_val_sanitized = opt_val_sanitized.replace("$(which amneziawg-go)", str(wg_quickrs_config_folder / "bin/amneziawg-go"))
+    assert (init_no_prompt(generate_init_no_prompt_opts(**{opt_key: opt_val_sanitized})) == 0) == success
 
 
 def test_init_no_prompt_https(setup_wg_quickrs_folder):

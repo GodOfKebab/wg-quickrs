@@ -41,6 +41,12 @@ def setup_wg_quickrs_folder(request):
     def _setup(which_conf: str):
         if which_conf is None:
             os.makedirs(wg_quickrs_config_folder, exist_ok=True)
+            # mock wg, wireguard-go, awg, amneziawg-go
+            os.makedirs(wg_quickrs_config_folder / "bin", exist_ok=True)
+            for mock_binary in ["wg", "wireguard-go", "awg", "amneziawg-go"]:
+                mock_binary_path = wg_quickrs_config_folder / "bin" / mock_binary
+                open(mock_binary_path, 'w').close()
+                os.chmod(mock_binary_path, 0o755)
         else:
             shutil.copytree(
                 pytest_folder / f"data/{which_conf}",
