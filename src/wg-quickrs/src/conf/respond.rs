@@ -2,7 +2,7 @@ use crate::conf::util;
 use crate::conf::network;
 use crate::wireguard::cmd::sync_conf;
 use wg_quickrs_lib::types::api::{SummaryDigest, ChangeSum};
-use wg_quickrs_lib::validation::network::{*, validate_amnezia_s1, validate_amnezia_s2, validate_amnezia_s1_s2};
+use wg_quickrs_lib::validation::network::{*, validate_amnezia_s1, validate_amnezia_s2, validate_amnezia_s1_s2, validate_amnezia_jc, validate_amnezia_jmin, validate_amnezia_jmax, validate_amnezia_jmin_jmax};
 use actix_web::{HttpResponse, web};
 use chrono::{Duration, Utc};
 use serde_json::json;
@@ -135,6 +135,36 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                         if let Some(scripts) = &scripts.post_down {
                             peer_config.scripts.post_down = validate_peer_scripts(scripts).map_err(|e| {
                                 HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.scripts.post_down: {}", peer_id, e))
+                            })?;
+                        }
+                    }
+
+                    if let Some(amnezia_parameters) = &peer_details.amnezia_parameters {
+                        if let Some(jc) = amnezia_parameters.jc {
+                            validate_amnezia_jc(jc).map_err(|e| {
+                                HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.amnezia_parameters.jc: {}", peer_id, e))
+                            })?;
+                            peer_config.amnezia_parameters.jc = jc;
+                        }
+                        if let Some(jmin) = amnezia_parameters.jmin {
+                            validate_amnezia_jmin(jmin).map_err(|e| {
+                                HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.amnezia_parameters.jmin: {}", peer_id, e))
+                            })?;
+                            peer_config.amnezia_parameters.jmin = jmin;
+                        }
+                        if let Some(jmax) = amnezia_parameters.jmax {
+                            validate_amnezia_jmax(jmax).map_err(|e| {
+                                HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.amnezia_parameters.jmax: {}", peer_id, e))
+                            })?;
+                            peer_config.amnezia_parameters.jmax = jmax;
+                        }
+                        // Validate jmin and jmax relationship if either is present
+                        if amnezia_parameters.jmin.is_some() || amnezia_parameters.jmax.is_some() {
+                            validate_amnezia_jmin_jmax(
+                                peer_config.amnezia_parameters.jmin,
+                                peer_config.amnezia_parameters.jmax
+                            ).map_err(|e| {
+                                HttpResponse::BadRequest().body(format!("changed_fields.peers.{}.amnezia_parameters: {}", peer_id, e))
                             })?;
                         }
                     }

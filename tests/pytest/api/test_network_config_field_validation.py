@@ -81,8 +81,35 @@ yaml.preserve_quotes = True
         ("private_key", "", 400, "empty peer private key validation"),
         ("private_key", "invalid-key-format", 400, "invalid peer private key format"),
 
+        # Peer Amnezia parameters - Jc
+        ({"amnezia_parameters": {"jc": 0}}, None, 200, "peer amnezia jc valid value"),
+        ({"amnezia_parameters": {"jc": -1}}, None, 200, "peer amnezia jc minimum value"),
+        ({"amnezia_parameters": {"jc": 128}}, None, 200, "peer amnezia jc maximum value"),
+        ({"amnezia_parameters": {"jc": -2}}, None, 400, "peer amnezia jc below minimum"),
+        ({"amnezia_parameters": {"jc": 129}}, None, 400, "peer amnezia jc above maximum"),
+
+        # Peer Amnezia parameters - Jmin
+        ({"amnezia_parameters": {"jmin": 100}}, None, 200, "peer amnezia jmin valid value"),
+        ({"amnezia_parameters": {"jmin": 0}}, None, 400, "peer amnezia jmin zero"),
+        ({"amnezia_parameters": {"jmin": 1280}}, None, 400, "peer amnezia jmin at boundary"),
+
+        # Peer Amnezia parameters - Jmax
+        ({"amnezia_parameters": {"jmax": 200}}, None, 200, "peer amnezia jmax valid value"),
+        ({"amnezia_parameters": {"jmax": 1280}}, None, 200, "peer amnezia jmax maximum value"),
+        ({"amnezia_parameters": {"jmax": 0}}, None, 400, "peer amnezia jmax zero"),
+        ({"amnezia_parameters": {"jmax": 1281}}, None, 400, "peer amnezia jmax above maximum"),
+
+        # Peer Amnezia parameters - Jmin/Jmax relationship (test together)
+        ({"amnezia_parameters": {"jmin": 50, "jmax": 100}}, None, 200, "peer amnezia jmin and jmax valid"),
+        ({"amnezia_parameters": {"jmin": 1, "jmax": 100}}, None, 200, "peer amnezia jmin minimum with valid jmax"),
+        ({"amnezia_parameters": {"jmin": 100, "jmax": 1280}}, None, 200, "peer amnezia jmax maximum with valid jmin"),
+        ({"amnezia_parameters": {"jmin": 1, "jmax": 1280}}, None, 200, "peer amnezia jmin min and jmax max"),
+        ({"amnezia_parameters": {"jmin": 100, "jmax": 100}}, None, 400, "peer amnezia jmin equals jmax"),
+        ({"amnezia_parameters": {"jmin": 150, "jmax": 100}}, None, 400, "peer amnezia jmin greater than jmax"),
+
         # Multiple fields combination
         ({"name": "multi-field-test", "dns": {"enabled": True, "addresses": ["8.8.8.8"]}, "mtu": {"enabled": True, "value": 1420}}, None, 200, "multiple peer fields"),
+        ({"amnezia_parameters": {"jc": 10, "jmin": 50, "jmax": 150}}, None, 200, "peer amnezia all fields"),
     ],
 )
 def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_value, expected_status, test_description):
@@ -124,6 +151,9 @@ def test_patch_peer_field_changes(setup_wg_quickrs_agent, field_name, field_valu
                 if field_name_key == 'scripts':
                     for script_type, script_value in field_name_value.items():
                         assert new_conf['network']['peers'][peer_id][field_name_key][script_type] == script_value
+                elif field_name_key == 'amnezia_parameters':
+                    for amnezia_field_key, amnezia_field_value in field_name_value.items():
+                        assert new_conf['network']['peers'][peer_id]['amnezia_parameters'][amnezia_field_key] == amnezia_field_value
                 else:
                     assert new_conf['network']['peers'][peer_id][field_name_key] == field_name_value
 
