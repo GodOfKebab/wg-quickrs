@@ -75,5 +75,7 @@ pub enum ValidationError {
     InvalidAmneziaJmax(),
     #[error("amnezia Jmin and Jmax relationship is invalid (Jmin must be < Jmax)")]
     InvalidAmneziaJminJmaxRelation(),
+    #[error("AmneziaWG parameters require the WireGuard binary to be an AmneziaWG binary")]
+    AmneziaRequiresAwgBinary(),
 }
 pub type ValidationResult<T> = Result<T, ValidationError>;

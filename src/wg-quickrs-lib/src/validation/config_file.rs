@@ -75,6 +75,13 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
     // skip network.this_peer because if it can be deserialized, it means it's valid
 
     // Validate AmneziaWG parameters
+    validate_amnezia_enabled(
+        config_file.network.amnezia_parameters.enabled,
+        &config_file.agent.vpn.wg
+    ).map_err(|e| {
+        ConfigFileValidationError::Validation("network.amnezia_parameters.enabled".to_string(), e)
+    })?;
+
     if config_file.network.amnezia_parameters.enabled {
         validate_amnezia_s1_s2(
             config_file.network.amnezia_parameters.s1,

@@ -2,7 +2,7 @@ use crate::conf::util;
 use crate::conf::network;
 use crate::wireguard::cmd::sync_conf;
 use wg_quickrs_lib::types::api::{SummaryDigest, ChangeSum};
-use wg_quickrs_lib::validation::network::{*, validate_amnezia_s1, validate_amnezia_s1_s2, validate_amnezia_jc, validate_amnezia_jmin, validate_amnezia_jmax, validate_amnezia_jmin_jmax};
+use wg_quickrs_lib::validation::network::{*, validate_amnezia_enabled, validate_amnezia_s1, validate_amnezia_s1_s2, validate_amnezia_jc, validate_amnezia_jmin, validate_amnezia_jmax, validate_amnezia_jmin_jmax};
 use actix_web::{HttpResponse, web};
 use chrono::{Duration, Utc};
 use serde_json::json;
@@ -291,6 +291,12 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
         }
         if let Some(amnezia_parameters) = &changed_fields.amnezia_parameters {
             if let Some(enabled) = amnezia_parameters.enabled {
+                validate_amnezia_enabled(
+                    enabled,
+                    &c.agent.vpn.wg
+                ).map_err(|e| {
+                    HttpResponse::BadRequest().body(format!("changed_fields.network.amnezia_parameters.enabled: {}", e))
+                })?;
                 c.network_w_digest.network.amnezia_parameters.enabled = enabled;
             }
             if let Some(s1) = amnezia_parameters.s1 {

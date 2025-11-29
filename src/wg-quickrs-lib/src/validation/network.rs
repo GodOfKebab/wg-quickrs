@@ -276,6 +276,22 @@ pub fn validate_amnezia_jmin_jmax(jmin: u16, jmax: u16) -> ValidationResult<()> 
     Ok(())
 }
 
+pub fn validate_amnezia_enabled(enabled: bool, wg_path: &std::path::Path) -> ValidationResult<()> {
+    if enabled {
+        // Check if wg_path filename is "awg"
+        if let Some(filename) = wg_path.file_name() {
+            if let Some(filename_str) = filename.to_str() {
+                if filename_str != "awg" {
+                    return Err(ValidationError::AmneziaRequiresAwgBinary());
+                }
+            }
+        } else {
+            return Err(ValidationError::AmneziaRequiresAwgBinary());
+        }
+    }
+    Ok(())
+}
+
 // Network.Connection Fields
 
 pub fn parse_and_validate_conn_persistent_keepalive_period(persistent_keepalive_period: &str) -> ValidationResult<u16> {

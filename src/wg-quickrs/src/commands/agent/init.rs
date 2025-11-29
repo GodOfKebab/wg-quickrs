@@ -16,7 +16,7 @@ use thiserror::Error;
 use uuid::Uuid;
 use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility, parse_and_validate_wg_tool, parse_and_validate_wg_userspace_binary};
 use wg_quickrs_lib::validation::helpers::{firewall_utility_options, wg_tool_options, wg_userspace_options};
-use wg_quickrs_lib::validation::network::{parse_and_validate_amnezia_h, parse_and_validate_amnezia_jc, parse_and_validate_amnezia_jmax, parse_and_validate_amnezia_jmin, parse_and_validate_amnezia_s1, parse_and_validate_amnezia_s1_s2, parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name, validate_amnezia_jmin_jmax};
+use wg_quickrs_lib::validation::network::{parse_and_validate_amnezia_h, parse_and_validate_amnezia_jc, parse_and_validate_amnezia_jmax, parse_and_validate_amnezia_jmin, parse_and_validate_amnezia_s1, parse_and_validate_amnezia_s1_s2, parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name, validate_amnezia_enabled, validate_amnezia_jmin_jmax};
 use crate::commands::helpers::*;
 use crate::conf::util::ConfUtilError;
 
@@ -538,18 +538,21 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
 
     // AmneziaWG obfuscation parameters (only if using amneziawg)
     // [8/31] --network-amnezia-enabled
-    let network_amnezia_enabled = if agent_vpn_wg.ends_with("awg") {
-        get_bool(
-            init_opts.no_prompt,
-            step_str(step_counter),
-            init_opts.network_amnezia_enabled,
-            INIT_NETWORK_AMNEZIA_ENABLED_FLAG,
-            INIT_NETWORK_AMNEZIA_ENABLED_HELP,
-            true,
-        )
-    } else {
-        println!("{} Not using amnezia, skipping...", step_str(step_counter));
-        false
+    let network_amnezia_enabled = match validate_amnezia_enabled(true, &agent_vpn_wg) {
+        Ok(_) => {
+            get_bool(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.network_amnezia_enabled,
+                INIT_NETWORK_AMNEZIA_ENABLED_FLAG,
+                INIT_NETWORK_AMNEZIA_ENABLED_HELP,
+                true,
+            )
+        }
+        Err(e) => {
+            println!("{} Not using amnezia ({}), skipping...", step_str(step_counter), e);
+            false
+        }
     };
 
     let amnezia_network_parameters = if network_amnezia_enabled {
