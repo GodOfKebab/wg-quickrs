@@ -41,20 +41,20 @@
         {{ JSON.stringify(changeSum.removed_connections, false, 2) }}
       </div>
     </div>
-    <div v-if="Object.keys(network.peers).includes(peerId)" class="bg-gray-100 rounded-md overflow-scroll">
+    <div class="bg-gray-100 rounded-md overflow-scroll">
       <div class="flex items-center justify-center bg-gray-200 rounded-md p-1">
         <strong class="text-gray-600">Old Configuration</strong>
       </div>
       <span class="text-sm text-gray-700 p-1">
-        {{ JSON.stringify({peers: pruned_network.peers, connections: pruned_network.connections}, false, 2) }}
+        {{ JSON.stringify(pruned_network, false, 2) }}
       </span>
     </div>
-    <div v-if="Object.keys(network.peers).includes(peerId)" class="bg-green-100 rounded-md overflow-scroll">
+    <div class="bg-green-100 rounded-md overflow-scroll">
       <div class="flex items-center justify-center bg-green-200 rounded-md p-1">
         <strong class="text-gray-600">New Configuration</strong>
       </div>
       <span class="text-sm text-gray-700 p-1">
-        {{ JSON.stringify({peers: new_network.peers, connections: new_network.connections}, false, 2) }}
+        {{ JSON.stringify(new_network, false, 2) }}
       </span>
     </div>
   </div>
@@ -90,6 +90,10 @@ export default {
       type: Object,
       default: {},
     },
+    dialogId: {
+      type: String,
+      default: "",
+    }
   },
   methods: {
     is_full(field) {
@@ -159,13 +163,22 @@ export default {
       return {peers: this.changeSum.added_peers};
     },
     pruned_network() {
-      let pruned_network = {peers: {}, connections: {}};
-      pruned_network.peers[this.peerId] = this.network.peers[this.peerId];
+      let pruned_network = {};
+      if (this.peerId) {
+        pruned_network = { peers: {}, connections: {} };
+        pruned_network.peers[this.peerId] = this.network.peers[this.peerId];
 
-      for (let connection_id in this.network.connections) {
-        if (connection_id.includes(this.peerId)) {
-          pruned_network.connections[connection_id] = this.network.connections[connection_id];
+        for (let connection_id in this.network.connections) {
+          if (connection_id.includes(this.peerId)) {
+            pruned_network.connections[connection_id] = this.network.connections[connection_id];
+          }
         }
+      } else if (this.dialogId === "network-defaults") {
+        pruned_network.defaults = this.network.defaults;
+      } else if (this.dialogId === "amnezia-parameters") {
+        pruned_network = { defaults: { peer: {} } };
+        pruned_network.defaults.peer.amnezia_parameters = this.network.defaults.peer.amnezia_parameters;
+        pruned_network.amnezia_parameters = this.network.amnezia_parameters;
       }
       return pruned_network;
     },
@@ -174,22 +187,49 @@ export default {
 
       if (this.changeSum.changed_fields) {
         // peer changes
-        for (const peer_id in this.changeSum.changed_fields.peers) {
-          for (const peer_field in this.changeSum.changed_fields.peers[peer_id]) {
-            if (peer_field === "scripts") {
-              for (const script_field in this.changeSum.changed_fields.peers[peer_id].scripts) {
-                new_network.peers[peer_id].scripts[script_field] = this.changeSum.changed_fields.peers[peer_id].scripts[script_field];
+        if (this.changeSum.changed_fields.peers) {
+          for (const peer_id in this.changeSum.changed_fields.peers) {
+            for (const peer_field in this.changeSum.changed_fields.peers[peer_id]) {
+              if (peer_field === "scripts") {
+                for (const script_field in this.changeSum.changed_fields.peers[peer_id].scripts) {
+                  new_network.peers[peer_id].scripts[script_field] = this.changeSum.changed_fields.peers[peer_id].scripts[script_field];
+                }
+                continue;
               }
-              continue;
+              new_network.peers[peer_id][peer_field] = this.changeSum.changed_fields.peers[peer_id][peer_field];
             }
-            new_network.peers[peer_id][peer_field] = this.changeSum.changed_fields.peers[peer_id][peer_field];
           }
         }
 
         // connection changes
-        for (const connection_id in this.changeSum.changed_fields.connections) {
-          for (const connection_field in this.changeSum.changed_fields.connections[connection_id]) {
-            new_network.connections[connection_id][connection_field] = this.changeSum.changed_fields.connections[connection_id][connection_field];
+        if (this.changeSum.changed_fields.connections) {
+          for (const connection_id in this.changeSum.changed_fields.connections) {
+            for (const connection_field in this.changeSum.changed_fields.connections[connection_id]) {
+              new_network.connections[connection_id][connection_field] = this.changeSum.changed_fields.connections[connection_id][connection_field];
+            }
+          }
+        }
+
+        // amnezia_parameters changes
+        if (this.changeSum.changed_fields.amnezia_parameters) {
+          for (const amnezia_field in this.changeSum.changed_fields.amnezia_parameters) {
+            new_network.amnezia_parameters[amnezia_field] = this.changeSum.changed_fields.amnezia_parameters[amnezia_field];
+          }
+        }
+
+        // defaults changes
+        if (this.changeSum.changed_fields.defaults) {
+          for (const defaults_field in this.changeSum.changed_fields.defaults.peer) {
+            if (defaults_field === "amnezia_parameters") {
+              for (const amnezia_field in this.changeSum.changed_fields.defaults.peer.amnezia_parameters) {
+                new_network.defaults.peer.amnezia_parameters[amnezia_field] = this.changeSum.changed_fields.defaults.peer.amnezia_parameters[amnezia_field];
+              }
+              continue;
+            }
+            new_network.defaults.peer[defaults_field] = this.changeSum.changed_fields.defaults.peer[defaults_field];
+          }
+          for (const defaults_field in this.changeSum.changed_fields.defaults.connection) {
+            new_network.defaults.connection[defaults_field] = this.changeSum.changed_fields.defaults.connection[defaults_field];
           }
         }
       }

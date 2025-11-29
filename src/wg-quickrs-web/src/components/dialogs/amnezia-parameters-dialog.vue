@@ -54,7 +54,7 @@
 
         <!-- view changes -->
         <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll text-start">
-          <change-sum :change-sum="changeSum" :network="network"></change-sum>
+          <change-sum :change-sum="changeSum" :network="network" dialog-id="amnezia-parameters"></change-sum>
         </div>
       </div>
 
@@ -77,7 +77,7 @@
       </div>
 
       <div class="flex max-h-[calc(100vh-20rem)] flex-col overflow-y-auto">
-        <change-sum :change-sum="changeSum" :network="network"></change-sum>
+        <change-sum :change-sum="changeSum" :network="network" dialog-id="amnezia-parameters"></change-sum>
       </div>
     </custom-dialog>
 
@@ -171,13 +171,17 @@ export default {
         errors: {
           amnezia_parameters: {},
           defaults: {
-            peer: {},
+            peer: {
+              amnezia_parameters: {}
+            },
           }
         },
         changed_fields: {
           amnezia_parameters: {},
           defaults: {
-            peer: {},
+            peer: {
+              amnezia_parameters: {}
+            },
           }
         }
       };
@@ -195,14 +199,14 @@ export default {
       // Add peer amnezia changes (goes into defaults.peer)
       if (this.peerAmneziaIslandChangeSum) {
         for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.errors)) {
-          if (value) data.errors.defaults.peer[field] = value;
+          if (value) data.errors.defaults.peer.amnezia_parameters[field] = value;
         }
         for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.changed_fields)) {
-          if (value) data.changed_fields.defaults.peer[field] = value;
+          if (value) data.changed_fields.defaults.peer.amnezia_parameters[field] = value;
         }
       }
-      if (Object.keys(data.errors.defaults.peer).length === 0) delete data.errors.defaults.peer;
-      if (Object.keys(data.changed_fields.defaults.peer).length === 0) delete data.changed_fields.defaults.peer;
+      if (Object.keys(data.errors.defaults.peer.amnezia_parameters).length === 0) delete data.errors.defaults.peer;
+      if (Object.keys(data.changed_fields.defaults.peer.amnezia_parameters).length === 0) delete data.changed_fields.defaults.peer;
 
       return data;
     },

@@ -73,7 +73,7 @@
 
         <!-- view changes -->
         <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll text-start">
-          <change-sum :change-sum="changeSum" :network="network"></change-sum>
+          <change-sum :change-sum="changeSum" :network="network" dialog-id="network-defaults"></change-sum>
         </div>
       </div>
 
@@ -96,7 +96,7 @@
       </div>
 
       <div class="flex max-h-[calc(100vh-20rem)] flex-col overflow-y-auto">
-        <change-sum :change-sum="changeSum" :network="network"></change-sum>
+        <change-sum :change-sum="changeSum" :network="network" dialog-id="network-defaults"></change-sum>
       </div>
     </custom-dialog>
 
