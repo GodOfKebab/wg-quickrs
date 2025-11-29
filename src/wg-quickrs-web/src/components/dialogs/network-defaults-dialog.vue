@@ -63,15 +63,12 @@
           <h5 class="text-2xl mt-5 mb-2 pl-2">New Connection Defaults</h5>
 
           <!-- Persistent Keepalive -->
-          <div class="w-92">
-            <input-field v-model="defaults_local.connection.persistent_keepalive.period"
-                         input-color="bg-white"
-                         value-field="period"
-                         :value-prev="defaults_local.connection.persistent_keepalive.period"
-                         undo-button-alignment-classes="right-[6px] top-[4px]"
-                         label="PersistentKeepalive"
-                         placeholder="seconds"></input-field>
-          </div>
+          <persistent-keepalive-island
+              :default-persistent-keepalive="{enabled: false, period: 0}"
+              :connection="{persistent_keepalive: defaults_local.connection.persistent_keepalive}"
+              :is-new-connection="false"
+              class="my-2 mr-2"
+              @updated-change-sum="onUpdatedPersistentKeepaliveChangeSum"></persistent-keepalive-island>
         </div>
 
         <!-- view changes -->
@@ -112,19 +109,19 @@ import ChangeSum from "@/src/components/change-sum.vue";
 import PeerKindIconIsland from "@/src/components/islands/peer-kind-icon.vue";
 import DnsmtuIsland from "@/src/components/islands/dnsmtu.vue";
 import ScriptsIsland from "@/src/components/islands/scripts.vue";
+import PersistentKeepaliveIsland from "@/src/components/islands/persistent-keepalive.vue";
 import CompareButton from "@/src/components/ui/buttons/compare.vue";
 import EditButton from "@/src/components/ui/buttons/edit.vue";
-import InputField from "@/src/components/ui/input-field.vue";
 
 export default {
   name: "network-defaults-dialog",
   components: {
-    InputField,
     CustomDialog,
     ChangeSum,
     PeerKindIconIsland,
     DnsmtuIsland,
     ScriptsIsland,
+    PersistentKeepaliveIsland,
     CompareButton,
     EditButton
   },
@@ -160,14 +157,10 @@ export default {
           persistent_keepalive: {enabled: false, period: 0}
         }
       },
-      changeSum: {
-        changed_fields: {
-          defaults: {}
-        },
-        errors: {}
-      },
-      changeDetected: false,
-      errorDetected: false
+      peerKindIconIslandChangeSum: null,
+      dnsmtuIslandChangeSum: null,
+      scriptsIslandChangeSum: null,
+      persistentKeepaliveIslandChangeSum: null
     };
   },
   created() {
@@ -181,59 +174,17 @@ export default {
     this.defaults_local.connection.persistent_keepalive = JSON.parse(JSON.stringify(this.network.defaults.connection.persistent_keepalive));
   },
   methods: {
-    onUpdatedKindIconChangeSum(changeSum) {
-      if (changeSum.changed_fields?.peers) {
-        const peerChanges = Object.values(changeSum.changed_fields.peers)[0];
-        if (!this.changeSum.changed_fields.defaults.peer) {
-          this.changeSum.changed_fields.defaults.peer = {};
-        }
-        if (peerChanges.kind !== undefined) {
-          this.changeSum.changed_fields.defaults.peer.kind = peerChanges.kind;
-        }
-        if (peerChanges.icon !== undefined) {
-          this.changeSum.changed_fields.defaults.peer.icon = peerChanges.icon;
-        }
-      }
-      this.updateChangeDetection();
+    onUpdatedKindIconChangeSum(data) {
+      this.peerKindIconIslandChangeSum = data;
     },
-    onUpdatedDnsMtuChangeSum(changeSum) {
-      if (changeSum.changed_fields?.peers) {
-        const peerChanges = Object.values(changeSum.changed_fields.peers)[0];
-        if (!this.changeSum.changed_fields.defaults.peer) {
-          this.changeSum.changed_fields.defaults.peer = {};
-        }
-        if (peerChanges.dns !== undefined) {
-          this.changeSum.changed_fields.defaults.peer.dns = peerChanges.dns;
-        }
-        if (peerChanges.mtu !== undefined) {
-          this.changeSum.changed_fields.defaults.peer.mtu = peerChanges.mtu;
-        }
-      }
-      this.updateChangeDetection();
+    onUpdatedDnsMtuChangeSum(data) {
+      this.dnsmtuIslandChangeSum = data;
     },
-    onUpdatedScriptsChangeSum(changeSum) {
-      if (changeSum.changed_fields?.peers) {
-        const peerChanges = Object.values(changeSum.changed_fields.peers)[0];
-        if (!this.changeSum.changed_fields.defaults.peer) {
-          this.changeSum.changed_fields.defaults.peer = {};
-        }
-        if (peerChanges.scripts !== undefined) {
-          this.changeSum.changed_fields.defaults.peer.scripts = peerChanges.scripts;
-        }
-      }
-      this.updateChangeDetection();
+    onUpdatedScriptsChangeSum(data) {
+      this.scriptsIslandChangeSum = data;
     },
-    onConnectionKeepaliveChanged() {
-      if (!this.changeSum.changed_fields.defaults.connection) {
-        this.changeSum.changed_fields.defaults.connection = {};
-      }
-      this.changeSum.changed_fields.defaults.connection.persistent_keepalive =
-        this.defaults_local.connection.persistent_keepalive;
-      this.updateChangeDetection();
-    },
-    updateChangeDetection() {
-      this.changeDetected = Object.keys(this.changeSum.changed_fields.defaults).length > 0;
-      this.errorDetected = false; // TODO: Add error detection
+    onUpdatedPersistentKeepaliveChangeSum(data) {
+      this.persistentKeepaliveIslandChangeSum = data;
     },
     async updateConfiguration() {
       try {
@@ -244,6 +195,79 @@ export default {
         alert(`Failed to update configuration: ${err.message || err}`);
         console.error(err);
       }
+    }
+  },
+  computed: {
+    changeSum() {
+      const data = {
+        errors: {
+          defaults: {
+            peer: {},
+            connection: {}
+          }
+        },
+        changed_fields: {
+          defaults: {
+            peer: {},
+            connection: {}
+          }
+        }
+      };
+
+      // Combine peer island changeSums
+      for (const island_datum of [this.peerKindIconIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum]) {
+        if (!island_datum) continue;
+
+        // Merge errors
+        for (const [field, value] of Object.entries(island_datum.errors)) {
+          if (field === "scripts" && value) {
+            data.errors.defaults.peer.scripts = {};
+            for (const [script_field, script_value] of Object.entries(value)) {
+              if (script_value) data.errors.defaults.peer.scripts[script_field] = script_value;
+            }
+            if (Object.keys(data.errors.defaults.peer.scripts).length === 0) {
+              delete data.errors.defaults.peer.scripts;
+            }
+          } else {
+            if (value) data.errors.defaults.peer[field] = value;
+          }
+        }
+
+        // Merge into defaults.peer
+        for (const [field, value] of Object.entries(island_datum.changed_fields)) {
+          if (field === "scripts" && value) {
+            data.changed_fields.defaults.peer.scripts = {};
+            for (const [script_field, script_value] of Object.entries(value)) {
+              if (script_value) data.changed_fields.defaults.peer.scripts[script_field] = script_value;
+            }
+            if (Object.keys(data.changed_fields.defaults.peer.scripts).length === 0) {
+              delete data.changed_fields.defaults.peer.scripts;
+            }
+          } else {
+            if (value) data.changed_fields.defaults.peer[field] = value;
+          }
+        }
+      }
+
+      // Add connection island changeSums
+      if (this.persistentKeepaliveIslandChangeSum) {
+        for (const [field, value] of Object.entries(this.persistentKeepaliveIslandChangeSum.errors)) {
+          if (value) data.errors.defaults.connection[field] = value;
+        }
+        for (const [field, value] of Object.entries(this.persistentKeepaliveIslandChangeSum.changed_fields)) {
+          if (value) data.changed_fields.defaults.connection[field] = value;
+        }
+      }
+
+      return data;
+    },
+    errorDetected() {
+      return !!(Object.keys(this.changeSum.errors.defaults.peer).length +
+          Object.keys(this.changeSum.errors.defaults.connection).length);
+    },
+    changeDetected() {
+      return !!(Object.keys(this.changeSum.changed_fields.defaults.peer).length +
+          Object.keys(this.changeSum.changed_fields.defaults.connection).length);
     }
   }
 }
