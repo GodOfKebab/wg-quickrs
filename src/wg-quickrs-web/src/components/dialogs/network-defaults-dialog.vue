@@ -248,6 +248,8 @@ export default {
           }
         }
       }
+      if (Object.keys(data.errors.defaults.peer).length === 0) delete data.errors.defaults.peer;
+      if (Object.keys(data.changed_fields.defaults.peer).length === 0) delete data.changed_fields.defaults.peer;
 
       // Add connection island changeSums
       if (this.persistentKeepaliveIslandChangeSum) {
@@ -258,16 +260,18 @@ export default {
           if (value) data.changed_fields.defaults.connection[field] = value;
         }
       }
+      if (Object.keys(data.errors.defaults.connection).length === 0) delete data.errors.defaults.connection;
+      if (Object.keys(data.changed_fields.defaults.connection).length === 0) delete data.changed_fields.defaults.connection;
 
       return data;
     },
     errorDetected() {
-      return !!(Object.keys(this.changeSum.errors.defaults.peer).length +
-          Object.keys(this.changeSum.errors.defaults.connection).length);
+      return !!(Object.keys(this.changeSum.errors.defaults).length +
+          Object.keys(this.changeSum.errors.defaults).length);
     },
     changeDetected() {
-      return !!(Object.keys(this.changeSum.changed_fields.defaults.peer).length +
-          Object.keys(this.changeSum.changed_fields.defaults.connection).length);
+      return !!(Object.keys(this.changeSum.changed_fields.defaults).length +
+          Object.keys(this.changeSum.changed_fields.defaults).length);
     }
   }
 }

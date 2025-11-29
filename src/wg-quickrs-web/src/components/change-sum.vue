@@ -115,6 +115,16 @@ export default {
           pruned_errors.connections = this.changeSum.errors.connections;
         }
       }
+      if (this.changeSum.errors.amnezia_parameters) {
+        if (Object.keys(this.changeSum.errors.amnezia_parameters).length) {
+          pruned_errors.amnezia_parameters = this.changeSum.errors.amnezia_parameters;
+        }
+      }
+      if (this.changeSum.errors.defaults) {
+        if (Object.keys(this.changeSum.errors.defaults).length) {
+          pruned_errors.defaults = this.changeSum.errors.defaults;
+        }
+      }
       return pruned_errors;
     },
     pruned_changed_fields() {
@@ -131,6 +141,11 @@ export default {
       if (this.changeSum.changed_fields.connections) {
         if (Object.keys(this.changeSum.changed_fields.connections).length) {
           pruned_changed_fields.connections = this.changeSum.changed_fields.connections;
+        }
+      }
+      if (this.changeSum.changed_fields.amnezia_parameters) {
+        if (Object.keys(this.changeSum.changed_fields.amnezia_parameters).length) {
+          pruned_changed_fields.amnezia_parameters = this.changeSum.changed_fields.amnezia_parameters;
         }
       }
       if (this.changeSum.changed_fields.defaults) {

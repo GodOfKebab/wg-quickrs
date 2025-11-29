@@ -35,147 +35,20 @@
         <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll text-start">
 
           <!-- Network-level Amnezia Parameters -->
-          <div class="my-2 py-2 pl-1 pr-3 shadow-md border rounded bg-purple-50">
-            <h5 class="text-2xl mb-3 pl-2">Network-Level Amnezia Parameters</h5>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 px-2">
-
-              <!-- Enabled Toggle -->
-              <div class="col-span-2 flex items-center gap-2">
-                <label class="text-sm font-medium">Enable AmneziaWG:</label>
-                <input
-                    v-model="amnezia_local.network.enabled"
-                    type="checkbox"
-                    class="h-4 w-4"
-                    @change="onNetworkParamChanged">
-              </div>
-
-              <!-- S1 Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">S1 (Init Packet Junk Size):</label>
-                <input
-                    v-model.number="amnezia_local.network.s1"
-                    type="number"
-                    min="0"
-                    max="1132"
-                    class="border rounded px-2 py-1"
-                    @input="onNetworkParamChanged">
-                <span class="text-xs text-gray-500">Range: 0-1132</span>
-              </div>
-
-              <!-- S2 Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">S2 (Response Packet Junk Size):</label>
-                <input
-                    v-model.number="amnezia_local.network.s2"
-                    type="number"
-                    min="0"
-                    max="1188"
-                    class="border rounded px-2 py-1"
-                    @input="onNetworkParamChanged">
-                <span class="text-xs text-gray-500">Range: 0-1188, s1+56≠s2</span>
-              </div>
-
-              <!-- H1 Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">H1 (Init Packet Magic Header):</label>
-                <input
-                    v-model.number="amnezia_local.network.h1"
-                    type="number"
-                    min="0"
-                    max="4294967295"
-                    class="border rounded px-2 py-1"
-                    @input="onNetworkParamChanged">
-                <span class="text-xs text-gray-500">32-bit unsigned integer</span>
-              </div>
-
-              <!-- H2 Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">H2 (Response Packet Magic Header):</label>
-                <input
-                    v-model.number="amnezia_local.network.h2"
-                    type="number"
-                    min="0"
-                    max="4294967295"
-                    class="border rounded px-2 py-1"
-                    @input="onNetworkParamChanged">
-                <span class="text-xs text-gray-500">32-bit unsigned integer</span>
-              </div>
-
-              <!-- H3 Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">H3 (Underload Packet Magic Header):</label>
-                <input
-                    v-model.number="amnezia_local.network.h3"
-                    type="number"
-                    min="0"
-                    max="4294967295"
-                    class="border rounded px-2 py-1"
-                    @input="onNetworkParamChanged">
-                <span class="text-xs text-gray-500">32-bit unsigned integer</span>
-              </div>
-
-              <!-- H4 Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">H4 (Transport Packet Magic Header):</label>
-                <input
-                    v-model.number="amnezia_local.network.h4"
-                    type="number"
-                    min="0"
-                    max="4294967295"
-                    class="border rounded px-2 py-1"
-                    @input="onNetworkParamChanged">
-                <span class="text-xs text-gray-500">32-bit unsigned integer</span>
-              </div>
-
-            </div>
-          </div>
+          <network-amnezia-params-island
+              :network="{amnezia_parameters: amnezia_local.network}"
+              :is-new-network="false"
+              class="my-2 mr-2"
+              @updated-change-sum="onUpdatedNetworkAmneziaChangeSum"></network-amnezia-params-island>
 
           <!-- Default Peer-level Amnezia Parameters -->
-          <div class="my-2 py-2 pl-1 pr-3 shadow-md border rounded bg-purple-50">
-            <h5 class="text-2xl mb-3 pl-2">New Peer Amnezia Parameter Defaults</h5>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 px-2">
-
-              <!-- Jc Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">Jc (Junk Packet Count):</label>
-                <input
-                    v-model.number="amnezia_local.peer.jc"
-                    type="number"
-                    min="-1"
-                    max="128"
-                    class="border rounded px-2 py-1"
-                    @input="onPeerParamChanged">
-                <span class="text-xs text-gray-500">Range: -1 to 128</span>
-              </div>
-
-              <!-- Jmin Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">Jmin (Min Junk Packet Size):</label>
-                <input
-                    v-model.number="amnezia_local.peer.jmin"
-                    type="number"
-                    min="1"
-                    max="1279"
-                    class="border rounded px-2 py-1"
-                    @input="onPeerParamChanged">
-                <span class="text-xs text-gray-500">Range: 1-1279</span>
-              </div>
-
-              <!-- Jmax Parameter -->
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium">Jmax (Max Junk Packet Size):</label>
-                <input
-                    v-model.number="amnezia_local.peer.jmax"
-                    type="number"
-                    min="1"
-                    max="1280"
-                    class="border rounded px-2 py-1"
-                    @input="onPeerParamChanged">
-                <span class="text-xs text-gray-500">Range: 1-1280, jmin&lt;jmax</span>
-              </div>
-
-            </div>
-          </div>
+          <h5 class="text-2xl mt-3 mb-2 pl-2">New Peer Amnezia Parameter Defaults</h5>
+          <peer-amnezia-params-island
+              :peer="{amnezia_parameters: amnezia_local.peer}"
+              :default-amnezia-parameters="{jc: 0, jmin: 0, jmax: 0}"
+              :is-new-peer="false"
+              class="my-2 mr-2"
+              @updated-change-sum="onUpdatedPeerAmneziaChangeSum"></peer-amnezia-params-island>
 
         </div>
 
@@ -214,6 +87,8 @@
 <script>
 import CustomDialog from "@/src/components/dialogs/custom-dialog.vue";
 import ChangeSum from "@/src/components/change-sum.vue";
+import NetworkAmneziaParamsIsland from "@/src/components/islands/network-amnezia-params.vue";
+import PeerAmneziaParamsIsland from "@/src/components/islands/peer-amnezia-params.vue";
 import CompareButton from "@/src/components/ui/buttons/compare.vue";
 import EditButton from "@/src/components/ui/buttons/edit.vue";
 
@@ -222,6 +97,8 @@ export default {
   components: {
     CustomDialog,
     ChangeSum,
+    NetworkAmneziaParamsIsland,
+    PeerAmneziaParamsIsland,
     CompareButton,
     EditButton
   },
@@ -260,15 +137,8 @@ export default {
           jmax: 0
         }
       },
-      changeSum: {
-        changed_fields: {
-          network: {},
-          defaults: {}
-        },
-        errors: {}
-      },
-      changeDetected: false,
-      errorDetected: false
+      networkAmneziaIslandChangeSum: null,
+      peerAmneziaIslandChangeSum: null
     };
   },
   created() {
@@ -278,112 +148,11 @@ export default {
     this.amnezia_local.peer = JSON.parse(JSON.stringify(this.network.defaults.peer.amnezia_parameters));
   },
   methods: {
-    onNetworkParamChanged() {
-      if (!this.changeSum.changed_fields.network.amnezia_parameters) {
-        this.changeSum.changed_fields.network.amnezia_parameters = {};
-      }
-
-      const networkParams = this.changeSum.changed_fields.network.amnezia_parameters;
-      const originalParams = this.network.amnezia_parameters;
-
-      // Only include changed fields
-      if (this.amnezia_local.network.enabled !== originalParams.enabled) {
-        networkParams.enabled = this.amnezia_local.network.enabled;
-      } else {
-        delete networkParams.enabled;
-      }
-
-      if (this.amnezia_local.network.s1 !== originalParams.s1) {
-        networkParams.s1 = this.amnezia_local.network.s1;
-      } else {
-        delete networkParams.s1;
-      }
-
-      if (this.amnezia_local.network.s2 !== originalParams.s2) {
-        networkParams.s2 = this.amnezia_local.network.s2;
-      } else {
-        delete networkParams.s2;
-      }
-
-      if (this.amnezia_local.network.h1 !== originalParams.h1) {
-        networkParams.h1 = this.amnezia_local.network.h1;
-      } else {
-        delete networkParams.h1;
-      }
-
-      if (this.amnezia_local.network.h2 !== originalParams.h2) {
-        networkParams.h2 = this.amnezia_local.network.h2;
-      } else {
-        delete networkParams.h2;
-      }
-
-      if (this.amnezia_local.network.h3 !== originalParams.h3) {
-        networkParams.h3 = this.amnezia_local.network.h3;
-      } else {
-        delete networkParams.h3;
-      }
-
-      if (this.amnezia_local.network.h4 !== originalParams.h4) {
-        networkParams.h4 = this.amnezia_local.network.h4;
-      } else {
-        delete networkParams.h4;
-      }
-
-      // Clean up if empty
-      if (Object.keys(networkParams).length === 0) {
-        delete this.changeSum.changed_fields.network.amnezia_parameters;
-      }
-
-      this.updateChangeDetection();
+    onUpdatedNetworkAmneziaChangeSum(data) {
+      this.networkAmneziaIslandChangeSum = data;
     },
-    onPeerParamChanged() {
-      if (!this.changeSum.changed_fields.defaults.peer) {
-        this.changeSum.changed_fields.defaults.peer = {};
-      }
-      if (!this.changeSum.changed_fields.defaults.peer.amnezia_parameters) {
-        this.changeSum.changed_fields.defaults.peer.amnezia_parameters = {};
-      }
-
-      const peerParams = this.changeSum.changed_fields.defaults.peer.amnezia_parameters;
-      const originalParams = this.network.defaults.peer.amnezia_parameters;
-
-      // Only include changed fields
-      if (this.amnezia_local.peer.jc !== originalParams.jc) {
-        peerParams.jc = this.amnezia_local.peer.jc;
-      } else {
-        delete peerParams.jc;
-      }
-
-      if (this.amnezia_local.peer.jmin !== originalParams.jmin) {
-        peerParams.jmin = this.amnezia_local.peer.jmin;
-      } else {
-        delete peerParams.jmin;
-      }
-
-      if (this.amnezia_local.peer.jmax !== originalParams.jmax) {
-        peerParams.jmax = this.amnezia_local.peer.jmax;
-      } else {
-        delete peerParams.jmax;
-      }
-
-      // Clean up if empty
-      if (Object.keys(peerParams).length === 0) {
-        delete this.changeSum.changed_fields.defaults.peer.amnezia_parameters;
-      }
-      if (this.changeSum.changed_fields.defaults.peer && Object.keys(this.changeSum.changed_fields.defaults.peer).length === 0) {
-        delete this.changeSum.changed_fields.defaults.peer;
-      }
-
-      this.updateChangeDetection();
-    },
-    updateChangeDetection() {
-      const hasNetworkChanges = this.changeSum.changed_fields.network.amnezia_parameters &&
-          Object.keys(this.changeSum.changed_fields.network.amnezia_parameters).length > 0;
-      const hasPeerChanges = this.changeSum.changed_fields.defaults.peer?.amnezia_parameters &&
-          Object.keys(this.changeSum.changed_fields.defaults.peer.amnezia_parameters).length > 0;
-
-      this.changeDetected = hasNetworkChanges || hasPeerChanges;
-      this.errorDetected = false; // TODO: Add validation error detection
+    onUpdatedPeerAmneziaChangeSum(data) {
+      this.peerAmneziaIslandChangeSum = data;
     },
     async updateConfiguration() {
       try {
@@ -394,6 +163,56 @@ export default {
         alert(`Failed to update configuration: ${err.message || err}`);
         console.error(err);
       }
+    }
+  },
+  computed: {
+    changeSum() {
+      const data = {
+        errors: {
+          amnezia_parameters: {},
+          defaults: {
+            peer: {},
+          }
+        },
+        changed_fields: {
+          amnezia_parameters: {},
+          defaults: {
+            peer: {},
+          }
+        }
+      };
+
+      // Add network amnezia changes
+      if (this.networkAmneziaIslandChangeSum) {
+        for (const [field, value] of Object.entries(this.networkAmneziaIslandChangeSum.errors)) {
+          if (value) data.errors.amnezia_parameters[field] = value;
+        }
+        for (const [field, value] of Object.entries(this.networkAmneziaIslandChangeSum.changed_fields)) {
+          if (value) data.changed_fields.amnezia_parameters[field] = value;
+        }
+      }
+
+      // Add peer amnezia changes (goes into defaults.peer)
+      if (this.peerAmneziaIslandChangeSum) {
+        for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.errors)) {
+          if (value) data.errors.defaults.peer[field] = value;
+        }
+        for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.changed_fields)) {
+          if (value) data.changed_fields.defaults.peer[field] = value;
+        }
+      }
+      if (Object.keys(data.errors.defaults.peer).length === 0) delete data.errors.defaults.peer;
+      if (Object.keys(data.changed_fields.defaults.peer).length === 0) delete data.changed_fields.defaults.peer;
+
+      return data;
+    },
+    errorDetected() {
+      return !!(Object.keys(this.changeSum.errors.amnezia_parameters).length +
+          Object.keys(this.changeSum.errors.defaults).length);
+    },
+    changeDetected() {
+      return !!(Object.keys(this.changeSum.changed_fields.amnezia_parameters).length +
+          Object.keys(this.changeSum.changed_fields.defaults).length);
     }
   }
 }
