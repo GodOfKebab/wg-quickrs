@@ -16,7 +16,7 @@ use thiserror::Error;
 use uuid::Uuid;
 use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility, parse_and_validate_wg_tool, parse_and_validate_wg_userspace_binary};
 use wg_quickrs_lib::validation::helpers::{firewall_utility_options, wg_tool_options, wg_userspace_options};
-use wg_quickrs_lib::validation::network::{parse_and_validate_amnezia_h1, parse_and_validate_amnezia_h2, parse_and_validate_amnezia_h3, parse_and_validate_amnezia_h4, parse_and_validate_amnezia_jc, parse_and_validate_amnezia_jmax, parse_and_validate_amnezia_jmin, parse_and_validate_amnezia_s1, parse_and_validate_amnezia_s2, parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name, validate_amnezia_jmin_jmax, validate_amnezia_s1_s2};
+use wg_quickrs_lib::validation::network::{parse_and_validate_amnezia_h, parse_and_validate_amnezia_jc, parse_and_validate_amnezia_jmax, parse_and_validate_amnezia_jmin, parse_and_validate_amnezia_s1, parse_and_validate_amnezia_s2, parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name, validate_amnezia_jmin_jmax, validate_amnezia_s1_s2};
 use crate::commands::helpers::*;
 use crate::conf::util::ConfUtilError;
 
@@ -587,7 +587,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             INIT_NETWORK_AMNEZIA_H1_FLAG,
             INIT_NETWORK_AMNEZIA_H1_HELP,
             Some(rand::rng().next_u32().to_string()),
-            parse_and_validate_amnezia_h1,
+            parse_and_validate_amnezia_h,
         );
 
         // --network-amnezia-h2
@@ -598,7 +598,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             INIT_NETWORK_AMNEZIA_H2_FLAG,
             INIT_NETWORK_AMNEZIA_H2_HELP,
             Some(rand::rng().next_u32().to_string()),
-            parse_and_validate_amnezia_h2,
+            parse_and_validate_amnezia_h,
         );
 
         // --network-amnezia-h3
@@ -609,7 +609,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             INIT_NETWORK_AMNEZIA_H3_FLAG,
             INIT_NETWORK_AMNEZIA_H3_HELP,
             Some(rand::rng().next_u32().to_string()),
-            parse_and_validate_amnezia_h3,
+            parse_and_validate_amnezia_h,
         );
 
         // --network-amnezia-h4
@@ -620,7 +620,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             INIT_NETWORK_AMNEZIA_H4_FLAG,
             INIT_NETWORK_AMNEZIA_H4_HELP,
             Some(rand::rng().next_u32().to_string()),
-            parse_and_validate_amnezia_h4,
+            parse_and_validate_amnezia_h,
         );
 
         AmneziaNetworkParameters { enabled: true, s1: network_amnezia_s1, s2: network_amnezia_s2, h1: network_amnezia_h1, h2: network_amnezia_h2, h3: network_amnezia_h3, h4: network_amnezia_h4 }

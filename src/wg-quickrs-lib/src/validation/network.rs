@@ -214,20 +214,8 @@ pub fn validate_amnezia_s1_s2(s1: u16, s2: u16) -> ValidationResult<()> {
     Ok(())
 }
 
-pub fn parse_and_validate_amnezia_h1(h1: &str) -> ValidationResult<u32> {
+pub fn parse_and_validate_amnezia_h(h1: &str) -> ValidationResult<u32> {
     h1.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
-}
-
-pub fn parse_and_validate_amnezia_h2(h2: &str) -> ValidationResult<u32> {
-    h2.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
-}
-
-pub fn parse_and_validate_amnezia_h3(h3: &str) -> ValidationResult<u32> {
-    h3.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
-}
-
-pub fn parse_and_validate_amnezia_h4(h4: &str) -> ValidationResult<u32> {
-    h4.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
 }
 
 // Peer.AmneziaPeerParameters Fields
