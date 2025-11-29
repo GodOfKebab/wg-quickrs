@@ -175,7 +175,7 @@ export default {
         }
       } else if (this.dialogId === "network-defaults") {
         pruned_network.defaults = this.network.defaults;
-      } else if (this.dialogId === "amnezia-parameters") {
+      } else if (this.dialogId === "amnezia-settings") {
         pruned_network = { defaults: { peer: {} } };
         pruned_network.defaults.peer.amnezia_parameters = this.network.defaults.peer.amnezia_parameters;
         pruned_network.amnezia_parameters = this.network.amnezia_parameters;

@@ -45,7 +45,7 @@
           <h5 class="text-2xl mt-3 mb-2 pl-2">New Peer Amnezia Parameter Defaults</h5>
           <peer-amnezia-params-island
               :peer="{amnezia_parameters: amnezia_local.peer}"
-              :default-amnezia-parameters="{jc: 0, jmin: 0, jmax: 0}"
+              :default-amnezia-settings="{jc: 0, jmin: 0, jmax: 0}"
               :is-new-peer="false"
               class="my-2 mr-2"
               @updated-change-sum="onUpdatedPeerAmneziaChangeSum"></peer-amnezia-params-island>
@@ -54,7 +54,7 @@
 
         <!-- view changes -->
         <div v-show="page === 'view-changes'" class="mt-2 w-full overflow-scroll text-start">
-          <change-sum :change-sum="changeSum" :network="network" dialog-id="amnezia-parameters"></change-sum>
+          <change-sum :change-sum="changeSum" :network="network" dialog-id="amnezia-settings"></change-sum>
         </div>
       </div>
 
@@ -77,7 +77,7 @@
       </div>
 
       <div class="flex max-h-[calc(100vh-20rem)] flex-col overflow-y-auto">
-        <change-sum :change-sum="changeSum" :network="network" dialog-id="amnezia-parameters"></change-sum>
+        <change-sum :change-sum="changeSum" :network="network" dialog-id="amnezia-settings"></change-sum>
       </div>
     </custom-dialog>
 
@@ -93,7 +93,7 @@ import CompareButton from "@/src/components/ui/buttons/compare.vue";
 import EditButton from "@/src/components/ui/buttons/edit.vue";
 
 export default {
-  name: "amnezia-parameters-dialog",
+  name: "amnezia-settings-dialog",
   components: {
     CustomDialog,
     ChangeSum,
