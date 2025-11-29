@@ -469,9 +469,7 @@ def test_patch_network_field_changes(setup_wg_quickrs_agent, field_name, field_v
         changed_fields = {field_name: field_value}
 
     change_sum = {
-        "changed_fields": {
-            "network": changed_fields
-        }
+        "changed_fields": changed_fields
     }
 
     response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
