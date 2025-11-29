@@ -35,46 +35,42 @@
         <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll text-start">
 
           <!-- New Peer Defaults -->
-          <div class="my-2 py-2 pl-2 pr-1 shadow-md border rounded bg-purple-50">
-            <h5 class="text-2xl mb-3 pl-2">New Peer Defaults</h5>
+          <h5 class="text-2xl mb-3 pl-2">New Peer Defaults</h5>
 
-            <!-- New Peer Default Kind & Icon -->
-            <peer-kind-icon-island
-                :default-kind-icon="{kind: '', icon: {enabled: false, src: ''}}"
-                :peer="{kind: defaults_local.peer.kind, icon: defaults_local.peer.icon}"
-                class="my-2 mr-2"
-                @updated-change-sum="onUpdatedKindIconChangeSum"></peer-kind-icon-island>
+          <!-- New Peer Default Kind & Icon -->
+          <peer-kind-icon-island
+              :default-kind-icon="{kind: '', icon: {enabled: false, src: ''}}"
+              :peer="{kind: defaults_local.peer.kind, icon: defaults_local.peer.icon}"
+              class="my-2 mr-2"
+              @updated-change-sum="onUpdatedKindIconChangeSum"></peer-kind-icon-island>
 
-            <!-- New Peer Default DNS & MTU -->
-            <dnsmtu-island
-                :default-dnsmtu="{dns: {enabled: false, addresses: []}, mtu: {enabled: false, value: 0}}"
-                :peer="{dns: defaults_local.peer.dns, mtu: defaults_local.peer.mtu}"
-                class="my-2 mr-2"
-                @updated-change-sum="onUpdatedDnsMtuChangeSum"></dnsmtu-island>
+          <!-- New Peer Default DNS & MTU -->
+          <dnsmtu-island
+              :default-dnsmtu="{dns: {enabled: false, addresses: []}, mtu: {enabled: false, value: 0}}"
+              :peer="{dns: defaults_local.peer.dns, mtu: defaults_local.peer.mtu}"
+              class="my-2 mr-2"
+              @updated-change-sum="onUpdatedDnsMtuChangeSum"></dnsmtu-island>
 
-            <!-- New Peer Default Scripts -->
-            <scripts-island
-                :default-scripts="{pre_up: [], post_up: [], pre_down: [], post_down: []}"
-                :peer="{scripts: defaults_local.peer.scripts}"
-                :is-this-peer="false"
-                class="my-2 mr-2"
-                @updated-change-sum="onUpdatedScriptsChangeSum"></scripts-island>
-          </div>
+          <!-- New Peer Default Scripts -->
+          <scripts-island
+              :default-scripts="{pre_up: [], post_up: [], pre_down: [], post_down: []}"
+              :peer="{scripts: defaults_local.peer.scripts}"
+              :is-this-peer="false"
+              class="my-2 mr-2"
+              @updated-change-sum="onUpdatedScriptsChangeSum"></scripts-island>
 
           <!-- New Connection Default -->
-          <div class="my-2 py-2 pl-1 pr-3 shadow-md border rounded bg-purple-50">
-            <h5 class="text-2xl mb-2 pl-2">New Connection Defaults</h5>
+          <h5 class="text-2xl mt-5 mb-2 pl-2">New Connection Defaults</h5>
 
-            <!-- Persistent Keepalive -->
-            <div class="w-92">
-              <input-field v-model="defaults_local.connection.persistent_keepalive.period"
-                           input-color="bg-white"
-                           value-field="period"
-                           :value-prev="defaults_local.connection.persistent_keepalive.period"
-                           undo-button-alignment-classes="right-[6px] top-[4px]"
-                           label="PersistentKeepalive"
-                           placeholder="seconds"></input-field>
-            </div>
+          <!-- Persistent Keepalive -->
+          <div class="w-92">
+            <input-field v-model="defaults_local.connection.persistent_keepalive.period"
+                         input-color="bg-white"
+                         value-field="period"
+                         :value-prev="defaults_local.connection.persistent_keepalive.period"
+                         undo-button-alignment-classes="right-[6px] top-[4px]"
+                         label="PersistentKeepalive"
+                         placeholder="seconds"></input-field>
           </div>
         </div>
 
