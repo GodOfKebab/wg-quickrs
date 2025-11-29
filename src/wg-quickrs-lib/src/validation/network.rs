@@ -190,22 +190,20 @@ pub fn validate_amnezia_s1(s1: u16) -> ValidationResult<u16> {
     Ok(s1)
 }
 
-pub fn parse_and_validate_amnezia_s2(s2: &str) -> ValidationResult<u16> {
-    let value = s2.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaS2())?;
-    validate_amnezia_s2(value)
+pub fn parse_and_validate_amnezia_s1_s2(s1: &str, s2: &str) -> ValidationResult<u16> {
+    let value2 = s2.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaS2())?;
+    let value1 = s1.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaS1())?;
+
+    validate_amnezia_s1_s2(value1, value2)?;
+    Ok(value2)
 }
 
-pub fn validate_amnezia_s2(s2: u16) -> ValidationResult<u16> {
+pub fn validate_amnezia_s1_s2(s1: u16, s2: u16) -> ValidationResult<()> {
     // S2 <= 1280 - 92 = 1188
     if s2 > 1188 {
         return Err(ValidationError::InvalidAmneziaS2());
     }
-    Ok(s2)
-}
-
-pub fn validate_amnezia_s1_s2(s1: u16, s2: u16) -> ValidationResult<()> {
     validate_amnezia_s1(s1)?;
-    validate_amnezia_s2(s2)?;
 
     // S1 + 56 != S2
     if s1 + 56 == s2 {
@@ -257,6 +255,14 @@ pub fn validate_amnezia_jmax(jmax: u16) -> ValidationResult<u16> {
         return Err(ValidationError::InvalidAmneziaJmax());
     }
     Ok(jmax)
+}
+
+pub fn parse_and_validate_amnezia_jmin_jmax(jmin: &str, jmax: &str) -> ValidationResult<u16> {
+    let jmax_value = jmax.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaJmax())?;
+    let jmin_value = jmin.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaJmin())?;
+
+    validate_amnezia_jmin_jmax(jmin_value, jmax_value)?;
+    Ok(jmax_value)
 }
 
 pub fn validate_amnezia_jmin_jmax(jmin: u16, jmax: u16) -> ValidationResult<()> {

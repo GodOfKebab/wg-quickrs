@@ -2,7 +2,7 @@ use crate::conf::util;
 use crate::conf::network;
 use crate::wireguard::cmd::sync_conf;
 use wg_quickrs_lib::types::api::{SummaryDigest, ChangeSum};
-use wg_quickrs_lib::validation::network::{*, validate_amnezia_s1, validate_amnezia_s2, validate_amnezia_s1_s2, validate_amnezia_jc, validate_amnezia_jmin, validate_amnezia_jmax, validate_amnezia_jmin_jmax};
+use wg_quickrs_lib::validation::network::{*, validate_amnezia_s1, validate_amnezia_s1_s2, validate_amnezia_jc, validate_amnezia_jmin, validate_amnezia_jmax, validate_amnezia_jmin_jmax};
 use actix_web::{HttpResponse, web};
 use chrono::{Duration, Utc};
 use serde_json::json;
@@ -217,7 +217,7 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                     c.network_w_digest.network.amnezia_parameters.s1 = s1;
                 }
                 if let Some(s2) = amnezia_parameters.s2 {
-                    validate_amnezia_s2(s2).map_err(|e| {
+                    validate_amnezia_s1_s2(c.network_w_digest.network.amnezia_parameters.s1, s2).map_err(|e| {
                         HttpResponse::BadRequest().body(format!("changed_fields.network.amnezia_parameters.s2: {}", e))
                     })?;
                     c.network_w_digest.network.amnezia_parameters.s2 = s2;
