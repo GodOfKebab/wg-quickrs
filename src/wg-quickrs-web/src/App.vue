@@ -25,7 +25,7 @@
               <!-- Network Defaults Button -->
               <button
                   class="flex flex-row w-full text-left px-0.5 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                  @click="settingsDropdownOpen = false; ">
+                  @click="settingsDropdownOpen = false; dialogId = 'network-defaults';">
                 <img alt="settings" class="h-6 my-auto mr-1"
                      src="/icons/iconfinder/ionicons-211751_gear_icon.svg">
                 <span class="my-auto inline-block">Network Defaults</span>
@@ -33,7 +33,7 @@
               <!-- Amnezia Parameters Button -->
               <button
                   class="flex flex-row w-full text-left px-0.5 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                  @click="settingsDropdownOpen = false; ">
+                  @click="settingsDropdownOpen = false; dialogId = 'amnezia-parameters';">
                 <img alt="settings" class="h-6 my-auto mr-1"
                      src="/icons/iconfinder/ionicons-211751_gear_icon.svg">
                 <span class="my-auto inline-block">Amnezia Parameters</span>
@@ -254,6 +254,18 @@
                         :api="api"
                         :network="network"></peer-create-dialog>
 
+    <!-- Dialog: Network Defaults -->
+    <network-defaults-dialog v-if="dialogId === 'network-defaults'"
+                             v-model:dialog-id="dialogId"
+                             :api="api"
+                             :network="network"></network-defaults-dialog>
+
+    <!-- Dialog: Amnezia Parameters -->
+    <amnezia-parameters-dialog v-if="dialogId === 'amnezia-parameters'"
+                               v-model:dialog-id="dialogId"
+                               :api="api"
+                               :network="network"></amnezia-parameters-dialog>
+
   </div>
 </template>
 
@@ -265,6 +277,8 @@ import CustomDialog from "@/src/components/dialogs/custom-dialog.vue";
 import PasswordDialog from "@/src/components/dialogs/password-dialog.vue";
 import PeerConfigDialog from "@/src/components/dialogs/peer-config-dialog.vue";
 import PeerCreateDialog from "@/src/components/dialogs/peer-create-dialog.vue";
+import NetworkDefaultsDialog from "@/src/components/dialogs/network-defaults-dialog.vue";
+import AmneziaParametersDialog from "@/src/components/dialogs/amnezia-parameters-dialog.vue";
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -285,7 +299,9 @@ export default {
     MapVisual,
     CustomDialog,
     PeerConfigDialog,
-    PeerCreateDialog
+    PeerCreateDialog,
+    NetworkDefaultsDialog,
+    AmneziaParametersDialog
   },
   data() {
     return {

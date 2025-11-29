@@ -103,13 +103,17 @@ export default {
   computed: {
     pruned_errors() {
       const pruned_errors = {};
-      if (this.changeSum.errors.peers[this.peerId]) {
-        if (Object.keys(this.changeSum.errors.peers[this.peerId]).length) {
-          pruned_errors.peers = this.changeSum.errors.peers;
+      if (this.changeSum.errors.peers) {
+        if (this.changeSum.errors.peers[this.peerId]) {
+          if (Object.keys(this.changeSum.errors.peers[this.peerId]).length) {
+            pruned_errors.peers = this.changeSum.errors.peers;
+          }
         }
       }
-      if (Object.keys(this.changeSum.errors.connections).length) {
-        pruned_errors.connections = this.changeSum.errors.connections;
+      if (this.changeSum.errors.connections) {
+        if (Object.keys(this.changeSum.errors.connections).length) {
+          pruned_errors.connections = this.changeSum.errors.connections;
+        }
       }
       return pruned_errors;
     },
@@ -119,11 +123,20 @@ export default {
       }
 
       const pruned_changed_fields = {};
-      if (Object.keys(this.changeSum.changed_fields.peers[this.peerId]).length) {
-        pruned_changed_fields.peers = this.changeSum.changed_fields.peers;
+      if (this.changeSum.changed_fields.peers) {
+        if (Object.keys(this.changeSum.changed_fields.peers[this.peerId]).length) {
+          pruned_changed_fields.peers = this.changeSum.changed_fields.peers;
+        }
       }
-      if (Object.keys(this.changeSum.changed_fields.connections).length) {
-        pruned_changed_fields.connections = this.changeSum.changed_fields.connections;
+      if (this.changeSum.changed_fields.connections) {
+        if (Object.keys(this.changeSum.changed_fields.connections).length) {
+          pruned_changed_fields.connections = this.changeSum.changed_fields.connections;
+        }
+      }
+      if (this.changeSum.changed_fields.defaults) {
+        if (Object.keys(this.changeSum.changed_fields.defaults).length) {
+          pruned_changed_fields.defaults = this.changeSum.changed_fields.defaults;
+        }
       }
       return pruned_changed_fields;
     },
