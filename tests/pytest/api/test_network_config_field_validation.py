@@ -486,6 +486,118 @@ def test_patch_network_field_changes(setup_wg_quickrs_agent, field_name, field_v
             if field_name_key == 'amnezia_parameters':
                 for amnezia_field_key, amnezia_field_value in field_name_value.items():
                     assert new_conf['network']['amnezia_parameters'][amnezia_field_key] == amnezia_field_value
+            elif field_name_key == 'defaults':
+                if 'peer' in field_name_value:
+                    for peer_field_key, peer_field_value in field_name_value['peer'].items():
+                        if peer_field_key == 'amnezia_parameters':
+                            assert new_conf['network']['defaults']['peer']['amnezia_parameters'] == peer_field_value
+                        else:
+                            assert new_conf['network']['defaults']['peer'][peer_field_key] == peer_field_value
+                if 'connection' in field_name_value:
+                    for conn_field_key, conn_field_value in field_name_value['connection'].items():
+                        assert new_conf['network']['defaults']['connection'][conn_field_key] == conn_field_value
             else:
                 assert new_conf['network'][field_name_key] == field_name_value
+
+
+@pytest.mark.parametrize(
+    "field_name,field_value,expected_status,test_description",
+    [
+        # Default peer - kind
+        ({"peer": {"kind": "laptop"}}, None, 200, "defaults peer kind change"),
+        ({"peer": {"kind": "desktop"}}, None, 200, "defaults peer kind desktop"),
+        ({"peer": {"kind": ""}}, None, 200, "defaults peer kind empty"),
+
+        # Default peer - icon
+        ({"peer": {"icon": {"enabled": True, "src": "data:image/png;base64,icon"}}}, None, 200, "defaults peer icon enabled"),
+        ({"peer": {"icon": {"enabled": False, "src": ""}}}, None, 200, "defaults peer icon disabled"),
+        ({"peer": {"icon": {"enabled": True, "src": ""}}}, None, 400, "defaults peer icon validation error"),
+
+        # Default peer - DNS
+        ({"peer": {"dns": {"enabled": True, "addresses": ["8.8.8.8"]}}}, None, 200, "defaults peer DNS enabled"),
+        ({"peer": {"dns": {"enabled": False, "addresses": []}}}, None, 200, "defaults peer DNS disabled"),
+        ({"peer": {"dns": {"enabled": True, "addresses": []}}}, None, 400, "defaults peer DNS validation error"),
+        ({"peer": {"dns": {"enabled": True, "addresses": ["invalid"]}}}, None, 400, "defaults peer DNS invalid address"),
+
+        # Default peer - MTU
+        ({"peer": {"mtu": {"enabled": True, "value": 1420}}}, None, 200, "defaults peer MTU enabled"),
+        ({"peer": {"mtu": {"enabled": False, "value": 0}}}, None, 200, "defaults peer MTU disabled"),
+        ({"peer": {"mtu": {"enabled": True, "value": 0}}}, None, 400, "defaults peer MTU zero"),
+        ({"peer": {"mtu": {"enabled": True, "value": 10001}}}, None, 400, "defaults peer MTU above maximum"),
+
+        # Default peer - scripts
+        ({"peer": {"scripts": {
+            "pre_up": [{"enabled": True, "script": "echo 'pre up';"}],
+            "post_up": [{"enabled": True, "script": "echo 'post up';"}],
+            "pre_down": [{"enabled": True, "script": "echo 'pre down';"}],
+            "post_down": [{"enabled": True, "script": "echo 'post down';"}]
+        }}}, None, 200, "defaults peer all scripts"),
+        ({"peer": {"scripts": {
+            "pre_up": [{"enabled": True, "script": "echo 'missing semicolon'"}],
+            "post_up": [],
+            "pre_down": [],
+            "post_down": []
+        }}}, None, 400, "defaults peer script validation error"),
+        ({"peer": {"scripts": {"pre_up": [{"enabled": True, "script": "echo 'only pre_up';"}]}}}, None, 200, "defaults peer partial script update pre_up"),
+        ({"peer": {"scripts": {"post_down": [{"enabled": True, "script": "echo 'only post_down';"}]}}}, None, 200, "defaults peer partial script update post_down"),
+
+        # Default peer - amnezia parameters
+        ({"peer": {"amnezia_parameters": {"jc": 10, "jmin": 50, "jmax": 100}}}, None, 200, "defaults peer amnezia valid"),
+        ({"peer": {"amnezia_parameters": {"jc": -1, "jmin": 1, "jmax": 1280}}}, None, 200, "defaults peer amnezia boundaries"),
+        ({"peer": {"amnezia_parameters": {"jc": 200, "jmin": 50, "jmax": 100}}}, None, 400, "defaults peer amnezia jc invalid"),
+        ({"peer": {"amnezia_parameters": {"jc": 10, "jmin": 100, "jmax": 50}}}, None, 400, "defaults peer amnezia jmin > jmax"),
+        ({"peer": {"amnezia_parameters": {"jc": 5}}}, None, 200, "defaults peer partial amnezia jc only"),
+        ({"peer": {"amnezia_parameters": {"jmin": 30, "jmax": 200}}}, None, 200, "defaults peer partial amnezia jmin and jmax"),
+
+        # Default connection - persistent keepalive
+        ({"connection": {"persistent_keepalive": {"enabled": True, "period": 25}}}, None, 200, "defaults connection keepalive enabled"),
+        ({"connection": {"persistent_keepalive": {"enabled": False, "period": 0}}}, None, 200, "defaults connection keepalive disabled"),
+        ({"connection": {"persistent_keepalive": {"enabled": True, "period": 0}}}, None, 400, "defaults connection keepalive zero"),
+        ({"connection": {"persistent_keepalive": {"enabled": True, "period": 70000}}}, None, 400, "defaults connection keepalive above max"),
+
+        # Multiple default fields
+        ({"peer": {"kind": "server", "mtu": {"enabled": True, "value": 1420}}, "connection": {"persistent_keepalive": {"enabled": True, "period": 25}}}, None, 200, "defaults multiple fields"),
+    ],
+)
+def test_patch_defaults_field_changes(setup_wg_quickrs_agent, field_name, field_value, expected_status, test_description):
+    """Parameterized test for all defaults field changes."""
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.load(stream)
+
+    # Handle different parameter formats
+    if isinstance(field_name, dict):
+        changed_fields = field_name
+    else:
+        changed_fields = {field_name: field_value}
+
+    change_sum = {
+        "changed_fields": {
+            "defaults": changed_fields
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == expected_status
+
+    # yaml validation
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.load(stream)
+
+    if response.status_code == 200:
+        if 'peer' in changed_fields:
+            for peer_field_key, peer_field_value in changed_fields['peer'].items():
+                if peer_field_key == 'amnezia_parameters':
+                    for amnezia_key, amnezia_value in peer_field_value.items():
+                        assert new_conf['network']['defaults']['peer']['amnezia_parameters'][amnezia_key] == amnezia_value
+                elif peer_field_key == 'scripts':
+                    for script_type, script_value in peer_field_value.items():
+                        assert new_conf['network']['defaults']['peer']['scripts'][script_type] == script_value
+                else:
+                    assert new_conf['network']['defaults']['peer'][peer_field_key] == peer_field_value
+        if 'connection' in changed_fields:
+            for conn_field_key, conn_field_value in changed_fields['connection'].items():
+                assert new_conf['network']['defaults']['connection'][conn_field_key] == conn_field_value
 

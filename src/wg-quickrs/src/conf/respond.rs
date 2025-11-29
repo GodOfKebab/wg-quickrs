@@ -246,6 +246,90 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 changed_config = true;
             }
         }
+        if let Some(changed_fields_defaults) = &changed_fields.defaults {
+            if let Some(default_peer) = &changed_fields_defaults.peer {
+                if let Some(kind) = &default_peer.kind {
+                    c.network_w_digest.network.defaults.peer.kind = parse_and_validate_peer_kind(kind).map_err(|e| {
+                        HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.kind: {}", e))
+                    })?;
+                }
+                if let Some(icon) = &default_peer.icon {
+                    c.network_w_digest.network.defaults.peer.icon = validate_peer_icon(icon).map_err(|e| {
+                        HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.icon: {}", e))
+                    })?;
+                }
+                if let Some(dns) = &default_peer.dns {
+                    c.network_w_digest.network.defaults.peer.dns = validate_peer_dns(dns).map_err(|e| {
+                        HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.dns: {}", e))
+                    })?;
+                }
+                if let Some(mtu) = &default_peer.mtu {
+                    c.network_w_digest.network.defaults.peer.mtu = validate_peer_mtu(mtu).map_err(|e| {
+                        HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.mtu: {}", e))
+                    })?;
+                }
+                if let Some(scripts) = &default_peer.scripts {
+                    if let Some(pre_up) = &scripts.pre_up {
+                        c.network_w_digest.network.defaults.peer.scripts.pre_up = validate_peer_scripts(pre_up).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.scripts.pre_up: {}", e))
+                        })?;
+                    }
+                    if let Some(post_up) = &scripts.post_up {
+                        c.network_w_digest.network.defaults.peer.scripts.post_up = validate_peer_scripts(post_up).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.scripts.post_up: {}", e))
+                        })?;
+                    }
+                    if let Some(pre_down) = &scripts.pre_down {
+                        c.network_w_digest.network.defaults.peer.scripts.pre_down = validate_peer_scripts(pre_down).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.scripts.pre_down: {}", e))
+                        })?;
+                    }
+                    if let Some(post_down) = &scripts.post_down {
+                        c.network_w_digest.network.defaults.peer.scripts.post_down = validate_peer_scripts(post_down).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.scripts.post_down: {}", e))
+                        })?;
+                    }
+                }
+                if let Some(amnezia_parameters) = &default_peer.amnezia_parameters {
+                    if let Some(jc) = amnezia_parameters.jc {
+                        validate_amnezia_jc(jc).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.amnezia_parameters.jc: {}", e))
+                        })?;
+                        c.network_w_digest.network.defaults.peer.amnezia_parameters.jc = jc;
+                    }
+                    if let Some(jmin) = amnezia_parameters.jmin {
+                        validate_amnezia_jmin(jmin).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.amnezia_parameters.jmin: {}", e))
+                        })?;
+                        c.network_w_digest.network.defaults.peer.amnezia_parameters.jmin = jmin;
+                    }
+                    if let Some(jmax) = amnezia_parameters.jmax {
+                        validate_amnezia_jmax(jmax).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.amnezia_parameters.jmax: {}", e))
+                        })?;
+                        c.network_w_digest.network.defaults.peer.amnezia_parameters.jmax = jmax;
+                    }
+                    // Validate jmin and jmax relationship if either is present
+                    if amnezia_parameters.jmin.is_some() || amnezia_parameters.jmax.is_some() {
+                        validate_amnezia_jmin_jmax(
+                            c.network_w_digest.network.defaults.peer.amnezia_parameters.jmin,
+                            c.network_w_digest.network.defaults.peer.amnezia_parameters.jmax
+                        ).map_err(|e| {
+                            HttpResponse::BadRequest().body(format!("changed_fields.defaults.peer.amnezia_parameters: {}", e))
+                        })?;
+                    }
+                }
+                changed_config = true;
+            }
+            if let Some(default_connection) = &changed_fields_defaults.connection {
+                if let Some(persistent_keepalive) = &default_connection.persistent_keepalive {
+                    c.network_w_digest.network.defaults.connection.persistent_keepalive = validate_conn_persistent_keepalive(persistent_keepalive).map_err(|e| {
+                        HttpResponse::BadRequest().body(format!("changed_fields.defaults.connection.persistent_keepalive: {}", e))
+                    })?;
+                }
+                changed_config = true;
+            }
+        }
     }
 
     // process added_peers

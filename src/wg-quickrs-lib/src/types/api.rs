@@ -69,6 +69,7 @@ pub struct ChangedFields {
     pub peers: Option<BTreeMap<Uuid, OptionalPeer>>,
     pub connections: Option<BTreeMap<ConnectionId, OptionalConnection>>,
     pub network: Option<OptionalNetwork>,
+    pub defaults: Option<OptionalDefaults>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -123,6 +124,27 @@ pub struct OptionalAmneziaNetworkParameters {
     pub h2: Option<u32>,
     pub h3: Option<u32>,
     pub h4: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalDefaults {
+    pub peer: Option<OptionalDefaultPeer>,
+    pub connection: Option<OptionalDefaultConnection>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalDefaultPeer {
+    pub kind: Option<String>,
+    pub icon: Option<Icon>,
+    pub dns: Option<Dns>,
+    pub mtu: Option<Mtu>,
+    pub scripts: Option<OptionalScripts>,
+    pub amnezia_parameters: Option<OptionalAmneziaPeerParameters>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalDefaultConnection {
+    pub persistent_keepalive: Option<PersistentKeepalive>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
