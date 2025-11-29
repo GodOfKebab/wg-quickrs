@@ -374,3 +374,88 @@ def test_add_connection_variants(setup_wg_quickrs_agent, connection_data_variant
         for field_name_key, field_name_value in connection_data.items():
             assert new_conf['network']['connections'][connection_id][field_name_key] == field_name_value
 
+
+@pytest.mark.parametrize(
+    "field_name,field_value,expected_status,test_description",
+    [
+        # Amnezia enabled/disabled
+        ({"amnezia_parameters": {"enabled": True}}, None, 200, "network amnezia enabled"),
+        ({"amnezia_parameters": {"enabled": False}}, None, 200, "network amnezia disabled"),
+
+        # S1 parameter variations
+        ({"amnezia_parameters": {"s1": 100}}, None, 200, "network amnezia s1 valid value"),
+        ({"amnezia_parameters": {"s1": 0}}, None, 200, "network amnezia s1 minimum value"),
+        ({"amnezia_parameters": {"s1": 1132}}, None, 200, "network amnezia s1 maximum value"),
+        ({"amnezia_parameters": {"s1": 1133}}, None, 400, "network amnezia s1 above maximum"),
+        ({"amnezia_parameters": {"s1": 2000}}, None, 400, "network amnezia s1 too high"),
+
+        # S2 parameter variations
+        ({"amnezia_parameters": {"s2": 200}}, None, 200, "network amnezia s2 valid value"),
+        ({"amnezia_parameters": {"s2": 0}}, None, 200, "network amnezia s2 minimum value"),
+        ({"amnezia_parameters": {"s2": 1188}}, None, 200, "network amnezia s2 maximum value"),
+        ({"amnezia_parameters": {"s2": 1189}}, None, 400, "network amnezia s2 above maximum"),
+        ({"amnezia_parameters": {"s2": 2000}}, None, 400, "network amnezia s2 too high"),
+
+        # S1 and S2 relationship validation
+        ({"amnezia_parameters": {"s1": 100, "s2": 200}}, None, 200, "network amnezia s1 and s2 valid"),
+        ({"amnezia_parameters": {"s1": 100, "s2": 156}}, None, 400, "network amnezia s1+56==s2 forbidden"),
+
+        # H1 parameter variations
+        ({"amnezia_parameters": {"h1": 1}}, None, 200, "network amnezia h1 valid value"),
+        ({"amnezia_parameters": {"h1": 0}}, None, 200, "network amnezia h1 zero"),
+        ({"amnezia_parameters": {"h1": 4294967295}}, None, 200, "network amnezia h1 max u32"),
+
+        # H2 parameter variations
+        ({"amnezia_parameters": {"h2": 2}}, None, 200, "network amnezia h2 valid value"),
+        ({"amnezia_parameters": {"h2": 0}}, None, 200, "network amnezia h2 zero"),
+        ({"amnezia_parameters": {"h2": 4294967295}}, None, 200, "network amnezia h2 max u32"),
+
+        # H3 parameter variations
+        ({"amnezia_parameters": {"h3": 3}}, None, 200, "network amnezia h3 valid value"),
+        ({"amnezia_parameters": {"h3": 0}}, None, 200, "network amnezia h3 zero"),
+        ({"amnezia_parameters": {"h3": 4294967295}}, None, 200, "network amnezia h3 max u32"),
+
+        # H4 parameter variations
+        ({"amnezia_parameters": {"h4": 4}}, None, 200, "network amnezia h4 valid value"),
+        ({"amnezia_parameters": {"h4": 0}}, None, 200, "network amnezia h4 zero"),
+        ({"amnezia_parameters": {"h4": 4294967295}}, None, 200, "network amnezia h4 max u32"),
+
+        # Multiple fields combination
+        ({"amnezia_parameters": {"enabled": True, "s1": 100, "s2": 200, "h1": 1, "h2": 2, "h3": 3, "h4": 4}}, None, 200, "network amnezia all fields"),
+    ],
+)
+def test_patch_network_field_changes(setup_wg_quickrs_agent, field_name, field_value, expected_status, test_description):
+    """Parameterized test for all network field changes."""
+    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+    pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
+
+    with open(wg_quickrs_config_file) as stream:
+        old_conf = yaml.load(stream)
+
+    # Handle different parameter formats
+    if isinstance(field_name, dict):
+        changed_fields = field_name
+    else:
+        changed_fields = {field_name: field_value}
+
+    change_sum = {
+        "changed_fields": {
+            "network": changed_fields
+        }
+    }
+
+    response = requests.patch(f"{base_url}/api/network/config", json=change_sum)
+    assert response.status_code == expected_status
+
+    # yaml validation
+    with open(wg_quickrs_config_file) as stream:
+        new_conf = yaml.load(stream)
+
+    if response.status_code == 200:
+        for field_name_key, field_name_value in changed_fields.items():
+            if field_name_key == 'amnezia_parameters':
+                for amnezia_field_key, amnezia_field_value in field_name_value.items():
+                    assert new_conf['network']['amnezia_parameters'][amnezia_field_key] == amnezia_field_value
+            else:
+                assert new_conf['network'][field_name_key] == field_name_value
+

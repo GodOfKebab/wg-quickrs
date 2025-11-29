@@ -2,7 +2,7 @@ use crate::conf::util;
 use crate::conf::network;
 use crate::wireguard::cmd::sync_conf;
 use wg_quickrs_lib::types::api::{SummaryDigest, ChangeSum};
-use wg_quickrs_lib::validation::network::*;
+use wg_quickrs_lib::validation::network::{*, validate_amnezia_s1, validate_amnezia_s2, validate_amnezia_s1_s2};
 use actix_web::{HttpResponse, web};
 use chrono::{Duration, Utc};
 use serde_json::json;
@@ -173,6 +173,47 @@ pub(crate) fn patch_network_config(body: web::Bytes) -> Result<HttpResponse, Htt
                 } else {
                     return Err(HttpResponse::NotFound().body(format!("connection '{}' does not exist", connection_id)));
                 }
+            }
+        }
+        if let Some(changed_fields_network) = &changed_fields.network {
+            if let Some(amnezia_parameters) = &changed_fields_network.amnezia_parameters {
+                if let Some(enabled) = amnezia_parameters.enabled {
+                    c.network_w_digest.network.amnezia_parameters.enabled = enabled;
+                }
+                if let Some(s1) = amnezia_parameters.s1 {
+                    validate_amnezia_s1(s1).map_err(|e| {
+                        HttpResponse::BadRequest().body(format!("changed_fields.network.amnezia_parameters.s1: {}", e))
+                    })?;
+                    c.network_w_digest.network.amnezia_parameters.s1 = s1;
+                }
+                if let Some(s2) = amnezia_parameters.s2 {
+                    validate_amnezia_s2(s2).map_err(|e| {
+                        HttpResponse::BadRequest().body(format!("changed_fields.network.amnezia_parameters.s2: {}", e))
+                    })?;
+                    c.network_w_digest.network.amnezia_parameters.s2 = s2;
+                }
+                // Validate s1 and s2 relationship if both are present
+                if amnezia_parameters.s1.is_some() || amnezia_parameters.s2.is_some() {
+                    validate_amnezia_s1_s2(
+                        c.network_w_digest.network.amnezia_parameters.s1,
+                        c.network_w_digest.network.amnezia_parameters.s2
+                    ).map_err(|e| {
+                        HttpResponse::BadRequest().body(format!("changed_fields.network.amnezia_parameters: {}", e))
+                    })?;
+                }
+                if let Some(h1) = amnezia_parameters.h1 {
+                    c.network_w_digest.network.amnezia_parameters.h1 = h1;
+                }
+                if let Some(h2) = amnezia_parameters.h2 {
+                    c.network_w_digest.network.amnezia_parameters.h2 = h2;
+                }
+                if let Some(h3) = amnezia_parameters.h3 {
+                    c.network_w_digest.network.amnezia_parameters.h3 = h3;
+                }
+                if let Some(h4) = amnezia_parameters.h4 {
+                    c.network_w_digest.network.amnezia_parameters.h4 = h4;
+                }
+                changed_config = true;
             }
         }
     }

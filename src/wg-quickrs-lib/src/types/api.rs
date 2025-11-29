@@ -68,6 +68,7 @@ pub struct ChangeSum {
 pub struct ChangedFields {
     pub peers: Option<BTreeMap<Uuid, OptionalPeer>>,
     pub connections: Option<BTreeMap<ConnectionId, OptionalConnection>>,
+    pub network: Option<OptionalNetwork>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -81,6 +82,14 @@ pub struct OptionalPeer {
     pub mtu: Option<Mtu>,
     pub scripts: Option<OptionalScripts>,
     pub private_key: Option<WireGuardKey>,
+    pub amnezia_parameters: Option<OptionalAmneziaPeerParameters>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+pub struct OptionalAmneziaPeerParameters {
+    pub jc: Option<i16>,
+    pub jmin: Option<u16>,
+    pub jmax: Option<u16>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -98,6 +107,22 @@ pub struct OptionalConnection {
     pub persistent_keepalive: Option<PersistentKeepalive>,
     pub allowed_ips_a_to_b: Option<AllowedIPs>,
     pub allowed_ips_b_to_a: Option<AllowedIPs>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalNetwork {
+    pub amnezia_parameters: Option<OptionalAmneziaNetworkParameters>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalAmneziaNetworkParameters {
+    pub enabled: Option<bool>,
+    pub s1: Option<u16>,
+    pub s2: Option<u16>,
+    pub h1: Option<u32>,
+    pub h2: Option<u32>,
+    pub h3: Option<u32>,
+    pub h4: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
