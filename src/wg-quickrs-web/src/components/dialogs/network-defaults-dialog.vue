@@ -229,7 +229,7 @@ export default {
               delete data.errors.defaults.peer.scripts;
             }
           } else {
-            if (value) data.errors.defaults.peer[field] = value;
+            if (value !== null) data.errors.defaults.peer[field] = value;
           }
         }
 
@@ -244,7 +244,7 @@ export default {
               delete data.changed_fields.defaults.peer.scripts;
             }
           } else {
-            if (value) data.changed_fields.defaults.peer[field] = value;
+            if (value !== null) data.changed_fields.defaults.peer[field] = value;
           }
         }
       }
@@ -254,10 +254,10 @@ export default {
       // Add connection island changeSums
       if (this.persistentKeepaliveIslandChangeSum) {
         for (const [field, value] of Object.entries(this.persistentKeepaliveIslandChangeSum.errors)) {
-          if (value) data.errors.defaults.connection[field] = value;
+          if (value !== null) data.errors.defaults.connection[field] = value;
         }
         for (const [field, value] of Object.entries(this.persistentKeepaliveIslandChangeSum.changed_fields)) {
-          if (value) data.changed_fields.defaults.connection[field] = value;
+          if (value !== null) data.changed_fields.defaults.connection[field] = value;
         }
       }
       if (Object.keys(data.errors.defaults.connection).length === 0) delete data.errors.defaults.connection;

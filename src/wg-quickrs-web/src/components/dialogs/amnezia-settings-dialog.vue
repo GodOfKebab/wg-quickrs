@@ -157,10 +157,8 @@ export default {
     async updateConfiguration() {
       try {
         await this.api.patch_network_config(this.changeSum);
-        // Refresh the network data
-        location.reload();
       } catch (err) {
-        alert(`Failed to update configuration: ${err.message || err}`);
+        alert(`Failed to update configuration: \n${err.message}`);
         console.error(err);
       }
     }
@@ -189,20 +187,20 @@ export default {
       // Add network amnezia changes
       if (this.networkAmneziaIslandChangeSum) {
         for (const [field, value] of Object.entries(this.networkAmneziaIslandChangeSum.errors)) {
-          if (value) data.errors.amnezia_parameters[field] = value;
+          if (value !== null) data.errors.amnezia_parameters[field] = value;
         }
         for (const [field, value] of Object.entries(this.networkAmneziaIslandChangeSum.changed_fields)) {
-          if (value) data.changed_fields.amnezia_parameters[field] = value;
+          if (value !== null) data.changed_fields.amnezia_parameters[field] = value;
         }
       }
 
       // Add peer amnezia changes (goes into defaults.peer)
       if (this.peerAmneziaIslandChangeSum) {
         for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.errors)) {
-          if (value) data.errors.defaults.peer.amnezia_parameters[field] = value;
+          if (value !== null) data.errors.defaults.peer.amnezia_parameters[field] = value;
         }
         for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.changed_fields)) {
-          if (value) data.changed_fields.defaults.peer.amnezia_parameters[field] = value;
+          if (value !== null) data.changed_fields.defaults.peer.amnezia_parameters[field] = value;
         }
       }
       if (Object.keys(data.errors.defaults.peer.amnezia_parameters).length === 0) delete data.errors.defaults.peer;

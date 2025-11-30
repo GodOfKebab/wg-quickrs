@@ -4,13 +4,10 @@
     <div class="grid grid-cols-1">
 
       <!-- Enabled Toggle -->
-      <div class="flex items-center gap-2">
-        <label class="text-sm font-medium">Enable AmneziaWG:</label>
-        <input
-            v-model="network_local_str.amnezia_parameters.enabled"
-            :class="[colors.enabled]"
-            type="checkbox"
-            class="h-4 w-4">
+      <div class="my-0.5 truncate flex items-center relative ml-2">
+        <!-- Label -->
+        <checkbox :checked="network_local_str.amnezia_parameters.enabled" label="Enable AmneziaWG Obfuscation" class="mr-1" size="6"
+                  @click="network_local_str.amnezia_parameters.enabled = !network_local_str.amnezia_parameters.enabled"></checkbox>
       </div>
 
       <!-- S1 Parameter -->
@@ -73,10 +70,12 @@ import {
   validate_amnezia_s1_s2_wasm,
   validate_amnezia_h_wasm,
 } from '@/pkg/wg_quickrs_lib.js'
+import Checkbox from "@/src/components/ui/checkbox.vue";
+import Field from "@/src/components/ui/field.vue";
 
 export default {
   name: "network-amnezia-params-island",
-  components: {InputField},
+  components: {Field, Checkbox, InputField},
   props: {
     network: {
       type: Object,
@@ -122,8 +121,7 @@ export default {
 
         // Validate enabled field
         if (this.network_local_str.amnezia_parameters.enabled !== this.network.amnezia_parameters.enabled) {
-          island_change_sum.changed_fields.amnezia_parameters = island_change_sum.changed_fields.amnezia_parameters || {};
-          island_change_sum.changed_fields.amnezia_parameters.enabled = this.network_local_str.amnezia_parameters.enabled;
+          island_change_sum.changed_fields.enabled = this.network_local_str.amnezia_parameters.enabled;
           this.colors.enabled = this.FIELD_COLOR_LOOKUP.changed;
         } else {
           this.colors.enabled = this.FIELD_COLOR_LOOKUP.unchanged;
