@@ -358,10 +358,20 @@ def test_config_set_network_amnezia_parameters(setup_wg_quickrs_folder, command)
 
     assert result.returncode == 0
 
-
-def test_config_network_amnezia_parameters_toggle(setup_wg_quickrs_folder):
+@pytest.mark.parametrize(
+    "wg_tool, success",
+    [
+        ("wg", False),
+        ("awg", True),
+    ],
+)
+def test_config_network_amnezia_parameters_toggle(setup_wg_quickrs_folder, wg_tool, success):
     """Test enabling/disabling network amnezia parameters."""
-    setup_wg_quickrs_folder("no_auth_single_peer")
+    if wg_tool == "awg":
+        which_conf = "no_auth_single_peer_awg"
+    else:
+        which_conf = "no_auth_single_peer"
+    setup_wg_quickrs_folder(which_conf)
 
     # Enable
     result = subprocess.run(
@@ -369,7 +379,7 @@ def test_config_network_amnezia_parameters_toggle(setup_wg_quickrs_folder):
         capture_output=True,
         text=True
     )
-    assert result.returncode == 0
+    assert (result.returncode == 0) == success
 
     # Disable
     result = subprocess.run(

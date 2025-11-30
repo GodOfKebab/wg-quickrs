@@ -406,57 +406,62 @@ def test_add_connection_variants(setup_wg_quickrs_agent, connection_data_variant
 
 
 @pytest.mark.parametrize(
-    "field_name,field_value,expected_status,test_description",
+    "field_name,field_value,wg_tool,expected_status,test_description",
     [
         # Amnezia enabled/disabled
-        ({"amnezia_parameters": {"enabled": True}}, None, 200, "network amnezia enabled"),
-        ({"amnezia_parameters": {"enabled": False}}, None, 200, "network amnezia disabled"),
+        ({"amnezia_parameters": {"enabled": True}}, None, "wg", 400, "network amnezia enabled"),  # because wg can't be used with amnezia
+        ({"amnezia_parameters": {"enabled": True}}, None, "awg", 200, "network amnezia enabled"),  # because wg can't be used with amnezia
+        ({"amnezia_parameters": {"enabled": False}}, None, "awg", 200, "network amnezia disabled"),
 
         # S1 parameter variations
-        ({"amnezia_parameters": {"s1": 100}}, None, 200, "network amnezia s1 valid value"),
-        ({"amnezia_parameters": {"s1": 0}}, None, 200, "network amnezia s1 minimum value"),
-        ({"amnezia_parameters": {"s1": 1132}}, None, 200, "network amnezia s1 maximum value"),
-        ({"amnezia_parameters": {"s1": 1133}}, None, 400, "network amnezia s1 above maximum"),
-        ({"amnezia_parameters": {"s1": 2000}}, None, 400, "network amnezia s1 too high"),
+        ({"amnezia_parameters": {"s1": 100}}, None, "awg", 200, "network amnezia s1 valid value"),
+        ({"amnezia_parameters": {"s1": 0}}, None, "awg", 200, "network amnezia s1 minimum value"),
+        ({"amnezia_parameters": {"s1": 1132}}, None, "awg", 200, "network amnezia s1 maximum value"),
+        ({"amnezia_parameters": {"s1": 1133}}, None, "awg", 400, "network amnezia s1 above maximum"),
+        ({"amnezia_parameters": {"s1": 2000}}, None, "awg", 400, "network amnezia s1 too high"),
 
         # S2 parameter variations
-        ({"amnezia_parameters": {"s2": 200}}, None, 200, "network amnezia s2 valid value"),
-        ({"amnezia_parameters": {"s2": 0}}, None, 200, "network amnezia s2 minimum value"),
-        ({"amnezia_parameters": {"s2": 1188}}, None, 200, "network amnezia s2 maximum value"),
-        ({"amnezia_parameters": {"s2": 1189}}, None, 400, "network amnezia s2 above maximum"),
-        ({"amnezia_parameters": {"s2": 2000}}, None, 400, "network amnezia s2 too high"),
+        ({"amnezia_parameters": {"s2": 200}}, None, "awg", 200, "network amnezia s2 valid value"),
+        ({"amnezia_parameters": {"s2": 0}}, None, "awg", 200, "network amnezia s2 minimum value"),
+        ({"amnezia_parameters": {"s2": 1188}}, None, "awg", 200, "network amnezia s2 maximum value"),
+        ({"amnezia_parameters": {"s2": 1189}}, None, "awg", 400, "network amnezia s2 above maximum"),
+        ({"amnezia_parameters": {"s2": 2000}}, None, "awg", 400, "network amnezia s2 too high"),
 
         # S1 and S2 relationship validation
-        ({"amnezia_parameters": {"s1": 100, "s2": 200}}, None, 200, "network amnezia s1 and s2 valid"),
-        ({"amnezia_parameters": {"s1": 100, "s2": 156}}, None, 400, "network amnezia s1+56==s2 forbidden"),
+        ({"amnezia_parameters": {"s1": 100, "s2": 200}}, None, "awg", 200, "network amnezia s1 and s2 valid"),
+        ({"amnezia_parameters": {"s1": 100, "s2": 156}}, None, "awg", 400, "network amnezia s1+56==s2 forbidden"),
 
         # H1 parameter variations
-        ({"amnezia_parameters": {"h1": 1}}, None, 200, "network amnezia h1 valid value"),
-        ({"amnezia_parameters": {"h1": 0}}, None, 200, "network amnezia h1 zero"),
-        ({"amnezia_parameters": {"h1": 4294967295}}, None, 200, "network amnezia h1 max u32"),
+        ({"amnezia_parameters": {"h1": 1}}, None, "awg", 200, "network amnezia h1 valid value"),
+        ({"amnezia_parameters": {"h1": 0}}, None, "awg", 200, "network amnezia h1 zero"),
+        ({"amnezia_parameters": {"h1": 4294967295}}, None, "awg", 200, "network amnezia h1 max u32"),
 
         # H2 parameter variations
-        ({"amnezia_parameters": {"h2": 2}}, None, 200, "network amnezia h2 valid value"),
-        ({"amnezia_parameters": {"h2": 0}}, None, 200, "network amnezia h2 zero"),
-        ({"amnezia_parameters": {"h2": 4294967295}}, None, 200, "network amnezia h2 max u32"),
+        ({"amnezia_parameters": {"h2": 2}}, None, "awg", 200, "network amnezia h2 valid value"),
+        ({"amnezia_parameters": {"h2": 0}}, None, "awg", 200, "network amnezia h2 zero"),
+        ({"amnezia_parameters": {"h2": 4294967295}}, None, "awg", 200, "network amnezia h2 max u32"),
 
         # H3 parameter variations
-        ({"amnezia_parameters": {"h3": 3}}, None, 200, "network amnezia h3 valid value"),
-        ({"amnezia_parameters": {"h3": 0}}, None, 200, "network amnezia h3 zero"),
-        ({"amnezia_parameters": {"h3": 4294967295}}, None, 200, "network amnezia h3 max u32"),
+        ({"amnezia_parameters": {"h3": 3}}, None, "awg", 200, "network amnezia h3 valid value"),
+        ({"amnezia_parameters": {"h3": 0}}, None, "awg", 200, "network amnezia h3 zero"),
+        ({"amnezia_parameters": {"h3": 4294967295}}, None, "awg", 200, "network amnezia h3 max u32"),
 
         # H4 parameter variations
-        ({"amnezia_parameters": {"h4": 4}}, None, 200, "network amnezia h4 valid value"),
-        ({"amnezia_parameters": {"h4": 0}}, None, 200, "network amnezia h4 zero"),
-        ({"amnezia_parameters": {"h4": 4294967295}}, None, 200, "network amnezia h4 max u32"),
+        ({"amnezia_parameters": {"h4": 4}}, None, "awg", 200, "network amnezia h4 valid value"),
+        ({"amnezia_parameters": {"h4": 0}}, None, "awg", 200, "network amnezia h4 zero"),
+        ({"amnezia_parameters": {"h4": 4294967295}}, None, "awg", 200, "network amnezia h4 max u32"),
 
         # Multiple fields combination
-        ({"amnezia_parameters": {"enabled": True, "s1": 100, "s2": 200, "h1": 1, "h2": 2, "h3": 3, "h4": 4}}, None, 200, "network amnezia all fields"),
+        ({"amnezia_parameters": {"enabled": True, "s1": 100, "s2": 200, "h1": 1, "h2": 2, "h3": 3, "h4": 4}}, None, "awg", 200, "network amnezia all fields"),
     ],
 )
-def test_patch_network_field_changes(setup_wg_quickrs_agent, field_name, field_value, expected_status, test_description):
+def test_patch_network_field_changes(setup_wg_quickrs_agent, field_name, field_value, wg_tool, expected_status, test_description):
     """Parameterized test for all network field changes."""
-    base_url = setup_wg_quickrs_agent("no_auth_multi_peer")
+    if wg_tool == "awg":
+        which_conf = "no_auth_single_peer_awg"
+    else:
+        which_conf = "no_auth_single_peer"
+    base_url = setup_wg_quickrs_agent(which_conf)
     pytest_folder, wg_quickrs_config_folder, wg_quickrs_config_file = get_paths()
 
     with open(wg_quickrs_config_file) as stream:

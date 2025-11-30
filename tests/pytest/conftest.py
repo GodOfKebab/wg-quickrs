@@ -39,17 +39,18 @@ def setup_wg_quickrs_folder(request):
     shutil.rmtree(wg_quickrs_config_folder, ignore_errors=True)
 
     def _setup(which_conf: str):
+        # mock wg, wireguard-go, awg, amneziawg-go
+        os.makedirs(wg_quickrs_config_folder / "bin", exist_ok=True)
+        for mock_binary in ["wg", "wireguard-go", "awg", "amneziawg-go"]:
+            mock_binary_path = wg_quickrs_config_folder / "bin" / mock_binary
+            open(mock_binary_path, 'w').close()
+            os.chmod(mock_binary_path, 0o755)
+
         if which_conf is None:
             os.makedirs(wg_quickrs_config_folder, exist_ok=True)
-            # mock wg, wireguard-go, awg, amneziawg-go
-            os.makedirs(wg_quickrs_config_folder / "bin", exist_ok=True)
-            for mock_binary in ["wg", "wireguard-go", "awg", "amneziawg-go"]:
-                mock_binary_path = wg_quickrs_config_folder / "bin" / mock_binary
-                open(mock_binary_path, 'w').close()
-                os.chmod(mock_binary_path, 0o755)
         else:
             shutil.copytree(
-                pytest_folder / f"data/{which_conf}",
+                pytest_folder / f"data/{which_conf.rstrip('_awg')}",
                 wg_quickrs_config_folder,
                 dirs_exist_ok=True
             )
@@ -60,7 +61,11 @@ def setup_wg_quickrs_folder(request):
             if conf['agent']['web']['https']['enabled']:
                 setup_certs_folder(conf['agent']['web']['address'])
 
-            conf['agent']['vpn']['wg'] = shutil.which("wg")
+            if which_conf.endswith("_awg"):
+                conf['agent']['vpn']['wg'] = str(wg_quickrs_config_folder / "bin/awg")
+            else:
+                conf['agent']['vpn']['wg'] = shutil.which("wg")
+
             if sys.platform == "linux":
                 conf['agent']['vpn']['wg_userspace']['enabled'] = False
             else:
