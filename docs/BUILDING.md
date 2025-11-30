@@ -105,6 +105,7 @@ Install `npm` dependency.
 [//]: # (install-deps-debian: 1.1.3 Build the web frontend - Install 'npm' dependency.)
 
 ```sh
+sudo apt update
 sudo apt install -y npm
 ```
 
@@ -281,6 +282,7 @@ Install packages for the `wg` and `wg-quick` dependency.
 [//]: # (install-deps-debian: 1.1.8 Install WireGuard)
 
 ```sh
+sudo apt update
 sudo apt install -y wireguard wireguard-tools openresolv iproute2 iptables
 ```
 
@@ -432,7 +434,6 @@ After initialization, you can run the `wg-quickrs-agent-run-local` service in `d
 [//]: # (run-agent-docker: 1.2 - Run agent)
 
 ```sh
-cd ..
 sudo docker compose -f docker-compose.local.yml up wg-quickrs-agent-run-local
 ```
 

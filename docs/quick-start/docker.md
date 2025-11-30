@@ -74,7 +74,7 @@ docker run --rm \
     --agent-web-https-tls-cert   certs/servers/YOUR-SERVER/cert.pem \
     --agent-web-https-tls-key    certs/servers/YOUR-SERVER/key.pem  \
     --agent-web-password-enabled true                               \
-    --agent-web-password         YOUR-PASSWORD                      \
+    --agent-web-password         YOUR_PASSWORD                      \
     --agent-vpn-enabled          true                               \
     --agent-vpn-port             51820                              \
     --agent-vpn-wg                   /usr/bin/awg                   \
@@ -136,6 +136,7 @@ docker run -d \
   --cap-add SYS_MODULE \
   --sysctl net.ipv4.ip_forward=1 \
   --sysctl net.ipv4.conf.all.src_valid_mark=1 \
+  --device /dev/net/tun:/dev/net/tun \
   -p 8443:443/tcp \
   -p 51820:51820/udp \
   --restart unless-stopped \
