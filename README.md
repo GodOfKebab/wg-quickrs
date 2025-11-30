@@ -15,6 +15,8 @@
 
 ⚡ Rust + WireGuard/[AmneziaWG](docs/notes/amneziawg.md) = 🧪 one [static binary](docs/notes/static-binary.md) + 📝 one [YAML file](docs/notes/schema.md) to rule them all 🪄
 
+Be it deploying and managing a [road warrior](docs/notes/network-setup.md#road-warrior), [site-to-site](docs/notes/network-setup.md#site-to-site), or a [mesh](docs/notes/network-setup.md#mesh) network, `wg-quickrs` is here to help.
+
 Run it on your [router](docs/quick-start/router.md), [server](docs/quick-start/server.md), or [docker host](docs/quick-start/docker.md) and manage WireGuard tunnels from a [terminal](docs/quick-start/cli.md) or a browser.
 
 <p align="center">
