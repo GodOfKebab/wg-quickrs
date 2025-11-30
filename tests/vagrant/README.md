@@ -26,7 +26,7 @@ vagrant destroy
 
 ## Build
 
-Used to verify `docs/BUILDING.md`
+Used to verify [`docs/BUILDING.md`](../../docs/BUILDING.md)
 
 ```shell
 # on the vm at ~/
@@ -63,5 +63,17 @@ vagrant provision
 ```shell
 # on the vm at ~/
 sh installer.sh --dist-tarball dist/wg-quickrs-aarch64-unknown-linux-musl.tar.gz
+
+# To build amneziawg-go, update apk repos to get the latest go version
+# doas apk -U add nano
+# doas nano /etc/apk/repositories
+#   add the following lines:
+#     http://dl-cdn.alpinelinux.org/alpine/edge/main
+#     http://dl-cdn.alpinelinux.org/alpine/edge/community
+# doas apk -U add go
+# To run amneziawg-go, enable tun
+# doas modprobe tun
+# If you get wg-quickrs-home already exists errors, delete wg-quickrs-home interface
+# doas ip link delete wg-quickrs-home
 ```
 

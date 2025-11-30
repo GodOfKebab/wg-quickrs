@@ -142,4 +142,40 @@ mod wasm {
         serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
+    #[wasm_bindgen]
+    pub fn validate_amnezia_s1_wasm(s1: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_amnezia_s1(s1));
+        serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    #[wasm_bindgen]
+    pub fn validate_amnezia_s1_s2_wasm(s1: &str, s2: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_amnezia_s1_s2(s1, s2));
+        serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    #[wasm_bindgen]
+    pub fn validate_amnezia_h_wasm(h: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_amnezia_h(h));
+        serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    #[wasm_bindgen]
+    pub fn validate_amnezia_jc_wasm(jc: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_amnezia_jc(jc));
+        serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    #[wasm_bindgen]
+    pub fn validate_amnezia_jmin_wasm(jmin: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_amnezia_jmin(jmin));
+        serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    #[wasm_bindgen]
+    pub fn validate_amnezia_jmin_jmax_wasm(jmin: &str, jmax: &str) -> Result<JsValue, JsValue> {
+        let res = ValidationResultWasm::from(parse_and_validate_amnezia_jmin_jmax(jmin, jmax));
+        serde_wasm_bindgen::to_value(&res).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
 }

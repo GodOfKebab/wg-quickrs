@@ -23,9 +23,16 @@ pub enum EnableAgentCommands {
         target: EnableAgentWebCommands,
     },
     #[command(about = "Enable VPN server")]
-    Vpn,
-    #[command(about = "Enable firewall configuration")]
-    Firewall,
+    Vpn {
+        #[command(subcommand)]
+        target: Option<EnableAgentVpnCommands>,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum EnableAgentVpnCommands {
+    #[command(about = "Enable WireGuard userspace mode")]
+    WgUserspace,
 }
 
 #[derive(Subcommand, Debug)]
@@ -57,6 +64,8 @@ pub enum EnableNetworkCommands {
         #[command(subcommand)]
         target: EnableDefaultsCommands,
     },
+    #[command(about = "Enable AmneziaWG obfuscation")]
+    AmneziaParameters,
 }
 
 #[derive(Subcommand, Debug)]

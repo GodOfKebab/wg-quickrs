@@ -22,7 +22,6 @@ jobs:
 
           # Convert relative markdown links to absolute GitHub URLs
           sed -e "s|\](docs/|\](${REPO_URL}/docs/|g" \
-              -e "s|\](\./docs/|\](${REPO_URL}/docs/|g" \
               README.md > README.dockerhub.md
 
           echo "Converted README.md for Docker Hub"

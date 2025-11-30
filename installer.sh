@@ -334,7 +334,7 @@ if [ -z "$ARG_DIST_TARBALL" ]; then
   if [ -z "$ARG_RELEASE" ]; then
     echo "ℹ️ No release version specified. If you want to use a different version, specify like the following"
     echo
-    echo "    sh installer.sh --release v1.0.0"
+    echo "    sh installer.sh --release v2.0.0"
     echo
     list_releases
     echo "⏳ Fetching latest release version..."
@@ -530,7 +530,18 @@ install_bin() {
   fi
 
   echo "    ✅ Installed wg-quickrs binary to $BIN_DIR"
-  rm -rf "$WG_QUICKRS_INSTALL_DIR/bin"
+
+  # Remove unnecessary folder with elevated privileges if needed
+  if [ ! -w "$WG_QUICKRS_INSTALL_DIR" ]; then
+    echo "🔐 Administrator privileges required to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/bin"
+    if ! run_privileged rm -rf "$WG_QUICKRS_INSTALL_DIR/bin"; then
+      echo "    ❌ Failed to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/bin"
+    fi
+  else
+    if ! rm -rf "$WG_QUICKRS_INSTALL_DIR/bin"; then
+      echo "    ❌ Failed to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/bin"
+    fi
+  fi
 }
 
 if [ -n "$(ls -A "$WG_QUICKRS_INSTALL_DIR" 2>/dev/null)" ]; then
@@ -581,6 +592,18 @@ case $(basename "$SHELL") in
     printf "    ⚠️ You are not using a supported shell (bash/zsh) for shell completions. Skipping shell completions.\n"
     ;;
 esac
+
+# Remove unnecessary folder with elevated privileges if needed
+if [ ! -w "$WG_QUICKRS_INSTALL_DIR" ]; then
+  echo "🔐 Administrator privileges required to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/completions"
+  if ! run_privileged rm -rf "$WG_QUICKRS_INSTALL_DIR/completions"; then
+    echo "    ❌ Failed to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/completions"
+  fi
+else
+  if ! rm -rf "$WG_QUICKRS_INSTALL_DIR/completions"; then
+    echo "    ❌ Failed to remove unnecessary folder $WG_QUICKRS_INSTALL_DIR/completions"
+  fi
+fi
 
 printf "🤔 Do you want to set up TLS certs/keys (at \"%s/certs\") now? [Y/n]: " "$WG_QUICKRS_INSTALL_DIR"
 read setup_certs
@@ -853,6 +876,13 @@ if ! wg-quickrs --help >/dev/null 2>&1; then
   echo
   echo "        export PATH=\"\$PATH:$BIN_DIR\""
   echo
+fi
+
+if check_command awg; then
+  printf "\n✅  AmneziaWG Support: Looks like you have AmneziaWG! When you run the init command, it will use awg instead of wg.\n\n"
+else
+  printf "\nℹ️  AmneziaWG Support: If you need AmneziaWG instead of standard WireGuard,\n"
+  printf "   please see the documentation: https://github.com/GodOfKebab/wg-quickrs/blob/main/docs/notes/amneziawg.md\n\n"
 fi
 
 printf "🛠️ You are ready to initialize your agent with:\n\n"

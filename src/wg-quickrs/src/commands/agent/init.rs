@@ -11,11 +11,12 @@ use std::net::{IpAddr};
 use std::path::{PathBuf};
 use std::{env, fs};
 use chrono::Utc;
+use rand::{RngCore};
 use thiserror::Error;
 use uuid::Uuid;
-use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility};
-use wg_quickrs_lib::validation::helpers::firewall_utility_options;
-use wg_quickrs_lib::validation::network::{parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name};
+use wg_quickrs_lib::validation::agent::{parse_and_validate_fw_gateway, parse_and_validate_ipv4_address, parse_and_validate_port, parse_and_validate_tls_file, parse_and_validate_fw_utility, parse_and_validate_wg_tool, parse_and_validate_wg_userspace_binary};
+use wg_quickrs_lib::validation::helpers::{firewall_utility_options, wg_tool_options, wg_userspace_options};
+use wg_quickrs_lib::validation::network::{parse_and_validate_amnezia_h, parse_and_validate_amnezia_jc, parse_and_validate_amnezia_jmax, parse_and_validate_amnezia_jmin, parse_and_validate_amnezia_s1, parse_and_validate_amnezia_s1_s2, parse_and_validate_conn_persistent_keepalive_period, parse_and_validate_ipv4_subnet, parse_and_validate_network_name, parse_and_validate_peer_address, parse_and_validate_peer_endpoint, parse_and_validate_peer_icon_src, parse_and_validate_peer_kind, parse_and_validate_peer_mtu_value, parse_and_validate_peer_name, validate_amnezia_enabled, validate_amnezia_jmin_jmax};
 use crate::commands::helpers::*;
 use crate::conf::util::ConfUtilError;
 
@@ -52,6 +53,178 @@ pub fn recommend_interface() -> Option<Interface> {
             log::warn!("Failed to get default gateway, falling back to first interface");
             get_interfaces().into_iter().next()
         })
+}
+
+// Generate recommended HTTP/HTTPS firewall scripts based on utility
+// HTTP/HTTPS only need pre_up and post_down (not post_up or pre_down)
+fn generate_http_firewall_scripts(utility: &str) -> HttpScripts {
+    let utility_name = std::path::Path::new(utility)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
+    if utility_name == "iptables" {
+        // PreUp scripts - 1 item to allow HTTP/HTTPS port
+        let pre_up = vec![
+            Script {
+                enabled: true,
+                script: "iptables -I INPUT -p tcp --dport \"$PORT\" -j ACCEPT;".to_string(),
+            },
+        ];
+
+        // PostDown scripts - 1 item to remove HTTP/HTTPS port rule
+        let post_down = vec![
+            Script {
+                enabled: true,
+                script: "iptables -D INPUT -p tcp --dport \"$PORT\" -j ACCEPT;".to_string(),
+            },
+        ];
+
+        HttpScripts {
+            pre_up,
+            post_down,
+        }
+    } else {
+        // Skip pfctl
+        HttpScripts::default()
+    }
+}
+
+// Generate recommended firewall scripts based on utility
+// Only GATEWAY is substituted during init, all other variables are runtime variables
+fn generate_firewall_scripts(utility: &str, gateway: &str) -> Scripts {
+    let utility_name = std::path::Path::new(utility)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
+    if utility_name == "iptables" {
+        // PostUp scripts - 5 separate items
+        let post_up = vec![
+            Script {
+                enabled: true,
+                script: format!("iptables -t nat -I POSTROUTING -s \"$WG_SUBNET\" -o \"{}\" -j MASQUERADE;", gateway),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -I INPUT -p udp -m udp --dport \"$WG_PORT\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -I FORWARD -i \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -I FORWARD -o \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
+            },
+            #[cfg(not(feature = "docker"))]
+            Script {
+                enabled: true,
+                script: "sysctl -w net.ipv4.ip_forward=1;".to_string(),
+            },
+        ];
+
+        // PostDown scripts - 5 separate items
+        let post_down = vec![
+            Script {
+                enabled: true,
+                script: format!("iptables -t nat -D POSTROUTING -s \"$WG_SUBNET\" -o \"{}\" -j MASQUERADE;", gateway),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -D INPUT -p udp -m udp --dport \"$WG_PORT\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -D FORWARD -i \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "iptables -D FORWARD -o \"$WG_INTERFACE\" -j ACCEPT;".to_string(),
+            },
+            #[cfg(not(feature = "docker"))]
+            Script {
+                enabled: true,
+                script: "sysctl -w net.ipv4.ip_forward=0;".to_string(),
+            },
+        ];
+
+        Scripts {
+            pre_up: vec![],
+            post_up,
+            pre_down: vec![],
+            post_down,
+        }
+    } else if utility_name == "pfctl" {
+        let pf_vars = format!(
+            r#"PF_CONF="/etc/pf.conf";
+NAT_RULE="nat on {gateway} from $WG_SUBNET to any -> {gateway}";
+"#
+        );
+        // PostUp scripts - 4 separate items
+        let post_up = vec![
+            Script {
+                enabled: true,
+                script: format!(
+                    r#"{pf_vars}
+awk "/^nat/ {{print; print \"$NAT_RULE\"; next}}1" "$PF_CONF" > "$PF_CONF.new";
+
+if ! grep -qxF "$NAT_RULE" "$PF_CONF.new"; then
+  echo "Error: could NOT configure firewall because there are no existing NAT rules at $PF_CONF. See notes at docs/notes/macos-firewall.md" >&2;
+  rm -f "$PF_CONF.new";
+  exit 1;
+fi
+
+mv "$PF_CONF" "$PF_CONF.bak";
+mv "$PF_CONF.new" "$PF_CONF";"#
+                ),
+            },
+            Script {
+                enabled: true,
+                script: "pfctl -f /etc/pf.conf;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "pfctl -e || true;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "sysctl -w net.inet.ip.forwarding=1;".to_string(),
+            },
+        ];
+
+        // PostDown scripts - 3 separate items
+        let post_down = vec![
+            Script {
+                enabled: true,
+                script: format!(
+                    r#"{pf_vars}
+awk -v line="$NAT_RULE" '$0 != line' "$PF_CONF" > "$PF_CONF.new";
+
+mv "$PF_CONF" "$PF_CONF.bak";
+mv "$PF_CONF.new" "$PF_CONF";"#,
+                ),
+            },
+            Script {
+                enabled: true,
+                script: "pfctl -d || true;".to_string(),
+            },
+            Script {
+                enabled: true,
+                script: "sysctl -w net.inet.ip.forwarding=0;".to_string(),
+            },
+        ];
+
+        Scripts {
+            pre_up: vec![],
+            post_up,
+            pre_down: vec![],
+            post_down,
+        }
+    } else {
+        // Unknown utility, return empty scripts
+        Scripts::default()
+    }
 }
 
 fn find_cert_server(config_folder: &PathBuf, web_address: String) -> (Option<PathBuf>, Option<PathBuf>) {
@@ -152,10 +325,10 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     log::info!("Initializing wg-quickrs agent...");
     
     let mut step_counter = 1;
-    let step_str = make_step_formatter(28);
+    let step_str = make_step_formatter(31);
 
-    println!("[general network settings 1-2/28]");
-    // [1/28] --network-identifier
+    println!("[general network settings 1-2/31]");
+    // [1/31] --network-identifier
     let network_name = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -167,7 +340,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [2/28] --network-subnet
+    // [2/31] --network-subnet
     let network_subnet = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -180,14 +353,14 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     step_counter += 1;
 
     println!("[general network settings complete]");
-    println!("[agent settings 3-8/28]");
+    println!("[agent settings 3-9/31]");
 
     // Get primary IP of the current machine
     let iface_opt = recommend_interface();
     let iface_name = iface_opt.as_ref().map(|iface| iface.name.clone());
     let mut iface_ip = iface_opt.and_then(|iface| match iface.ip() { IpAddr::V4(v4) => Some(v4), _ => None });
 
-    // [3/28] --agent-web-address
+    // [3/31] --agent-web-address
     let agent_web_address = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -199,7 +372,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [4/28] --agent-web-http-enabled & --agent-web-http-port
+    // [4/31] --agent-web-http-enabled & --agent-web-http-port
     let agent_web_http_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -224,7 +397,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [5/28] --agent-web-https-enabled & --agent-web-https-port
+    // [5/31] --agent-web-https-enabled & --agent-web-https-port
     let agent_web_https_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -271,7 +444,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [6/28] --agent-enable-web-password
+    // [6/31] --agent-enable-web-password
     let mut agent_web_password_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -280,7 +453,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_WEB_PASSWORD_ENABLED_HELP,
         true,
     );
-    // [6/28] --agent-web-password
+    // [6/31] --agent-web-password
     let agent_web_password_hash = if agent_web_password_enabled {
         let password = get_init_password(
             init_opts.no_prompt,
@@ -300,7 +473,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [7/28] --agent-vpn-enabled & --agent-vpn-port
+    // [7/31] --agent-vpn-enabled & --agent-vpn-port & --agent-vpn-wg & --agent-vpn-wg-userspace-enabled & --agent-vpn-wg-userspace-binary
     let agent_vpn_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -309,8 +482,9 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_VPN_ENABLED_HELP,
         true,
     );
-    let agent_vpn_port = if agent_vpn_enabled {
-        get_value(
+    let (agent_vpn_port, agent_vpn_wg, agent_vpn_wg_userspace_enabled, agent_vpn_wg_userspace_binary) = if agent_vpn_enabled {
+        // --agent-vpn-port
+        let agent_vpn_port = get_value(
             init_opts.no_prompt,
             step_str(step_counter),
             init_opts.agent_vpn_port.map(|o| o.to_string()),
@@ -318,14 +492,168 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             format!("\t{}", INIT_AGENT_VPN_PORT_HELP).as_str(),
             Some("51820".into()),
             parse_and_validate_port,
-        )
+        );
+
+        // --agent-vpn-wg
+        let agent_vpn_wg = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_vpn_wg.clone().map(|o| o.display().to_string()),
+            INIT_AGENT_VPN_WG_FLAG,
+            format!("\t{}", INIT_AGENT_VPN_WG_HELP).as_str(),
+            wg_tool_options().into_iter().next().map(|o| o.display().to_string()),
+            parse_and_validate_wg_tool,
+        );
+
+        // --agent-vpn-wg-userspace-enabled & --agent-vpn-wg-userspace-binary
+        let agent_vpn_wg_userspace_enabled = get_bool(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_vpn_wg_userspace_enabled,
+            INIT_AGENT_VPN_WG_USERSPACE_ENABLED_FLAG,
+            format!("\t{}", INIT_AGENT_VPN_WG_USERSPACE_ENABLED_HELP).as_str(),
+            !cfg!(target_os = "linux") || agent_vpn_wg.ends_with("awg"),  // if on linux, disable userspace to use kernel module
+        );
+        let agent_vpn_wg_userspace_binary = if agent_vpn_wg_userspace_enabled {
+            get_value(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.agent_vpn_wg_userspace_binary.clone().map(|o| o.display().to_string()),
+                INIT_AGENT_VPN_WG_USERSPACE_BINARY_FLAG,
+                format!("\t\t{}", INIT_AGENT_VPN_WG_USERSPACE_BINARY_HELP).as_str(),
+                wg_userspace_options().into_iter().next().map(|o| o.display().to_string()),
+                parse_and_validate_wg_userspace_binary,
+            )
+        } else {
+            // if disabled, leave it empty
+            PathBuf::new()
+        };
+
+        (agent_vpn_port, agent_vpn_wg, agent_vpn_wg_userspace_enabled, agent_vpn_wg_userspace_binary)
     } else {
-        // if disabled, use a default port of 51820
-        51820
+        // if disabled, use a default port of 51820 and empty wg settings
+        (51820, PathBuf::new(), false, PathBuf::new())
     };
     step_counter += 1;
 
-    // [8/28] --agent-firewall-enabled
+    // AmneziaWG obfuscation parameters (only if using amneziawg)
+    // [8/31] --network-amnezia-enabled
+    let network_amnezia_enabled = match validate_amnezia_enabled(true, &agent_vpn_wg) {
+        Ok(_) => {
+            get_bool(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.network_amnezia_enabled,
+                INIT_NETWORK_AMNEZIA_ENABLED_FLAG,
+                INIT_NETWORK_AMNEZIA_ENABLED_HELP,
+                true,
+            )
+        }
+        Err(e) => {
+            println!("{} Not using amnezia ({}), skipping...", step_str(step_counter), e);
+            false
+        }
+    };
+
+    let amnezia_network_parameters = if network_amnezia_enabled {
+        // --network-amnezia-s1
+        let network_amnezia_s1 = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_s1.map(|o| o.to_string()),
+            INIT_NETWORK_AMNEZIA_S1_FLAG,
+            INIT_NETWORK_AMNEZIA_S1_HELP,
+            Some("55".into()),
+            parse_and_validate_amnezia_s1,
+        );
+
+        // --network-amnezia-s2
+        let network_amnezia_s2 = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_s2.map(|o| o.to_string()),
+            INIT_NETWORK_AMNEZIA_S2_FLAG,
+            INIT_NETWORK_AMNEZIA_S2_HELP,
+            Some("155".into()),
+            move |s: &str| {
+                parse_and_validate_amnezia_s1_s2(&network_amnezia_s1.to_string(), s)
+            },
+        );
+
+        // --network-amnezia-h-random & --network-amnezia-h1-4
+        let network_amnezia_h_random = get_bool(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.network_amnezia_h_random,
+            INIT_NETWORK_AMNEZIA_H_RANDOM_FLAG,
+            INIT_NETWORK_AMNEZIA_H_RANDOM_HELP,
+            true,
+        );
+
+        let (network_amnezia_h1, network_amnezia_h2, network_amnezia_h3, network_amnezia_h4) =
+            if network_amnezia_h_random {
+                // Generate random values
+                (rand::rng().next_u32(), rand::rng().next_u32(), rand::rng().next_u32(), rand::rng().next_u32())
+            } else {
+                // Prompt for individual values
+                let network_amnezia_h1 = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.network_amnezia_h1.map(|o| o.to_string()),
+                    INIT_NETWORK_AMNEZIA_H1_FLAG,
+                    INIT_NETWORK_AMNEZIA_H1_HELP,
+                    Some(rand::rng().next_u32().to_string()),
+                    parse_and_validate_amnezia_h,
+                );
+
+                let network_amnezia_h2 = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.network_amnezia_h2.map(|o| o.to_string()),
+                    INIT_NETWORK_AMNEZIA_H2_FLAG,
+                    INIT_NETWORK_AMNEZIA_H2_HELP,
+                    Some(rand::rng().next_u32().to_string()),
+                    parse_and_validate_amnezia_h,
+                );
+
+                let network_amnezia_h3 = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.network_amnezia_h3.map(|o| o.to_string()),
+                    INIT_NETWORK_AMNEZIA_H3_FLAG,
+                    INIT_NETWORK_AMNEZIA_H3_HELP,
+                    Some(rand::rng().next_u32().to_string()),
+                    parse_and_validate_amnezia_h,
+                );
+
+                let network_amnezia_h4 = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.network_amnezia_h4.map(|o| o.to_string()),
+                    INIT_NETWORK_AMNEZIA_H4_FLAG,
+                    INIT_NETWORK_AMNEZIA_H4_HELP,
+                    Some(rand::rng().next_u32().to_string()),
+                    parse_and_validate_amnezia_h,
+                );
+
+                (network_amnezia_h1, network_amnezia_h2, network_amnezia_h3, network_amnezia_h4)
+            };
+
+        AmneziaNetworkParameters { enabled: true, s1: network_amnezia_s1, s2: network_amnezia_s2, h1: network_amnezia_h1, h2: network_amnezia_h2, h3: network_amnezia_h3, h4: network_amnezia_h4 }
+    } else {
+        AmneziaNetworkParameters {
+            enabled: false,
+            s1: 55,
+            s2: 155,
+            h1: rand::rng().next_u32(),
+            h2: rand::rng().next_u32(),
+            h3: rand::rng().next_u32(),
+            h4: rand::rng().next_u32(),
+        }
+    };
+    step_counter += 1;
+
+    // [9/31] --agent-firewall-enabled
     let agent_firewall_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -334,37 +662,247 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_FIREWALL_ENABLED_HELP,
         true,
     );
-    let (agent_firewall_utility, agent_firewall_gateway) = if agent_firewall_enabled {
-        // [8/28] --agent-firewall-utility
-        let utility = get_value(
+
+    let (http_firewall_scripts, https_firewall_scripts, vpn_firewall_scripts) = if agent_firewall_enabled {
+        // HTTP firewall
+        let agent_firewall_configure_http = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
-            INIT_AGENT_FIREWALL_UTILITY_FLAG,
-            format!("\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
-            firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),  // the first fw option is the default
-            parse_and_validate_fw_utility,
+            init_opts.agent_firewall_configure_http,
+            INIT_AGENT_FIREWALL_CONFIGURE_HTTP_FLAG,
+            format!("\t{}", INIT_AGENT_FIREWALL_CONFIGURE_HTTP_HELP).as_str(),
+            true,
         );
-        // [8/28] --agent-firewall-gateway
-        let gateway = get_value(
+
+        let http_scripts = if agent_firewall_configure_http {
+            let agent_firewall_http_automated = get_bool(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.agent_firewall_http_automated,
+                INIT_AGENT_FIREWALL_HTTP_AUTOMATED_FLAG,
+                format!("\t\t{}", INIT_AGENT_FIREWALL_HTTP_AUTOMATED_HELP).as_str(),
+                true,
+            );
+
+            if agent_firewall_http_automated {
+                let agent_firewall_utility = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
+                    INIT_AGENT_FIREWALL_UTILITY_FLAG,
+                    format!("\t\t\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
+                    firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
+                    parse_and_validate_fw_utility,
+                );
+                let scripts = generate_http_firewall_scripts(&agent_firewall_utility.display().to_string());
+                println!("\t\t\t✓ HTTP firewall: {} pre-up, {} post-down script(s)",
+                         scripts.pre_up.len(), scripts.post_down.len());
+                scripts
+            } else {
+                // Manual setup using get_scripts helper
+                let agent_firewall_http_pre_up = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_http_pre_up_enabled,
+                    init_opts.agent_firewall_http_pre_up_line.clone(),
+                    INIT_AGENT_FIREWALL_HTTP_PRE_UP_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_HTTP_PRE_UP_LINE_FLAG,
+                    INIT_AGENT_FIREWALL_HTTP_PRE_UP_ENABLED_HELP,
+                    "\t\t",
+                );
+
+                let agent_firewall_http_post_down = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_http_post_down_enabled,
+                    init_opts.agent_firewall_http_post_down_line.clone(),
+                    INIT_AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_HTTP_POST_DOWN_LINE_FLAG,
+                    INIT_AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED_HELP,
+                    "\t\t",
+                );
+
+                HttpScripts { pre_up: agent_firewall_http_pre_up, post_down: agent_firewall_http_post_down }
+            }
+        } else {
+            HttpScripts::default()
+        };
+
+        // HTTPS firewall
+        let agent_firewall_configure_https = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.agent_firewall_gateway.clone(),
-            INIT_AGENT_FIREWALL_GATEWAY_FLAG,
-            format!("\t{}", INIT_AGENT_FIREWALL_GATEWAY_HELP).as_str(),
-            iface_name,
-            parse_and_validate_fw_gateway,
+            init_opts.agent_firewall_configure_https,
+            INIT_AGENT_FIREWALL_CONFIGURE_HTTPS_FLAG,
+            format!("\t{}", INIT_AGENT_FIREWALL_CONFIGURE_HTTPS_HELP).as_str(),
+            true,
         );
-        (utility, gateway)
+
+        let https_scripts = if agent_firewall_configure_https {
+            let agent_firewall_https_automated = get_bool(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.agent_firewall_https_automated,
+                INIT_AGENT_FIREWALL_HTTPS_AUTOMATED_FLAG,
+                format!("\t\t{}", INIT_AGENT_FIREWALL_HTTPS_AUTOMATED_HELP).as_str(),
+                true,
+            );
+
+            if agent_firewall_https_automated {
+                let agent_firewall_utility = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
+                    INIT_AGENT_FIREWALL_UTILITY_FLAG,
+                    format!("\t\t\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
+                    firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
+                    parse_and_validate_fw_utility,
+                );
+                let scripts = generate_http_firewall_scripts(&agent_firewall_utility.display().to_string());
+                println!("\t\t\t✓ HTTPS firewall: {} pre-up, {} post-down script(s)",
+                         scripts.pre_up.len(), scripts.post_down.len());
+                scripts
+            } else {
+                // Manual setup using get_scripts helper
+                let agent_firewall_https_pre_up = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_https_pre_up_enabled,
+                    init_opts.agent_firewall_https_pre_up_line.clone(),
+                    INIT_AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_HTTPS_PRE_UP_LINE_FLAG,
+                    INIT_AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED_HELP,
+                    "\t\t",
+                );
+
+                let agent_firewall_https_post_down = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_https_post_down_enabled,
+                    init_opts.agent_firewall_https_post_down_line.clone(),
+                    INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_LINE_FLAG,
+                    INIT_AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED_HELP,
+                    "\t\t",
+                );
+
+                HttpScripts { pre_up: agent_firewall_https_pre_up, post_down: agent_firewall_https_post_down }
+            }
+        } else {
+            HttpScripts::default()
+        };
+
+        // VPN firewall
+        let agent_firewall_configure_vpn = get_bool(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_firewall_configure_vpn,
+            INIT_AGENT_FIREWALL_CONFIGURE_VPN_FLAG,
+            format!("\t{}", INIT_AGENT_FIREWALL_CONFIGURE_VPN_HELP).as_str(),
+            true,
+        );
+
+        let vpn_scripts = if agent_firewall_configure_vpn {
+            let agent_firewall_vpn_automated = get_bool(
+                init_opts.no_prompt,
+                step_str(step_counter),
+                init_opts.agent_firewall_vpn_automated,
+                INIT_AGENT_FIREWALL_VPN_AUTOMATED_FLAG,
+                format!("\t\t{}", INIT_AGENT_FIREWALL_VPN_AUTOMATED_HELP).as_str(),
+                true,
+            );
+
+            if agent_firewall_vpn_automated {
+                let agent_firewall_utility = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_utility.clone().map(|o| o.display().to_string()),
+                    INIT_AGENT_FIREWALL_UTILITY_FLAG,
+                    format!("\t\t\t{}", INIT_AGENT_FIREWALL_UTILITY_HELP).as_str(),
+                    firewall_utility_options().into_iter().next().map(|o| o.display().to_string()),
+                    parse_and_validate_fw_utility,
+                );
+                let agent_firewall_gateway = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_gateway.clone(),
+                    INIT_AGENT_FIREWALL_GATEWAY_FLAG,
+                    format!("\t\t\t{}", INIT_AGENT_FIREWALL_GATEWAY_HELP).as_str(),
+                    iface_name.clone(),
+                    parse_and_validate_fw_gateway,
+                );
+                let scripts = generate_firewall_scripts(&agent_firewall_utility.display().to_string(), &agent_firewall_gateway);
+                println!("\t\t\t✓ VPN firewall: {} pre-up, {} post-up, {} pre-down, {} post-down script(s)",
+                    scripts.pre_up.len(), scripts.post_up.len(),
+                    scripts.pre_down.len(), scripts.post_down.len());
+                scripts
+            } else {
+                // Manual setup using get_scripts helper
+                let agent_firewall_vpn_pre_up = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_vpn_pre_up_enabled,
+                    init_opts.agent_firewall_vpn_pre_up_line.clone(),
+                    INIT_AGENT_FIREWALL_VPN_PRE_UP_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_PRE_UP_LINE_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_PRE_UP_ENABLED_HELP,
+                    "\t\t",
+                );
+
+                let agent_firewall_vpn_post_up = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_vpn_post_up_enabled,
+                    init_opts.agent_firewall_vpn_post_up_line.clone(),
+                    INIT_AGENT_FIREWALL_VPN_POST_UP_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_POST_UP_LINE_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_POST_UP_ENABLED_HELP,
+                    "\t\t",
+                );
+
+                let agent_firewall_vpn_pre_down = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_vpn_pre_down_enabled,
+                    init_opts.agent_firewall_vpn_pre_down_line.clone(),
+                    INIT_AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_PRE_DOWN_LINE_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED_HELP,
+                    "\t\t",
+                );
+
+                let agent_firewall_vpn_post_down = get_scripts(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.agent_firewall_vpn_post_down_enabled,
+                    init_opts.agent_firewall_vpn_post_down_line.clone(),
+                    INIT_AGENT_FIREWALL_VPN_POST_DOWN_ENABLED_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_POST_DOWN_LINE_FLAG,
+                    INIT_AGENT_FIREWALL_VPN_POST_DOWN_ENABLED_HELP,
+                    "\t\t",
+                );
+
+                Scripts {
+                    pre_up: agent_firewall_vpn_pre_up,
+                    post_up: agent_firewall_vpn_post_up,
+                    pre_down: agent_firewall_vpn_pre_down,
+                    post_down: agent_firewall_vpn_post_down,
+                }
+            }
+        } else {
+            Scripts::default()
+        };
+
+        (http_scripts, https_scripts, vpn_scripts)
     } else {
-        ("".into(), "".into())
+        (HttpScripts::default(), HttpScripts::default(), Scripts::default())
     };
     step_counter += 1;
 
     println!("[agent settings complete]");
-    println!("[peer settings 9-19/28]");
+    println!("[peer settings 10-21/31]");
 
-    // [9/28] --agent-peer-name
+    // [10/31] --agent-peer-name
     let agent_peer_name = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -376,7 +914,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [10/28] --agent-peer-vpn-internal-address
+    // [11/31] --agent-peer-vpn-internal-address
     let temp_network = Network {
         name: "".to_string(),
         subnet: network_subnet,
@@ -385,6 +923,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         connections: Default::default(),
         defaults: Default::default(),
         reservations: Default::default(),
+        amnezia_parameters: Default::default(),
         updated_at: Utc::now(),
     };
     let agent_peer_vpn_internal_address = get_value(
@@ -400,13 +939,13 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
 
     // update the address in the recommended endpoint
     for iface in get_interfaces() {
-        if agent_firewall_gateway == iface.name {
+        if iface_name == Some(iface.name.clone()) {
             iface_ip = match iface.ip() { IpAddr::V4(v4) => Some(v4), _ => None };
         }
     }
 
     // TODO: allow roaming init
-    // [11/28] --agent-peer-vpn-endpoint
+    // [12/31] --agent-peer-vpn-endpoint
     let agent_peer_vpn_endpoint = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -418,7 +957,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [12/28] --agent-peer-kind
+    // [13/31] --agent-peer-kind
     let agent_peer_kind = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -430,7 +969,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [13/28] --agent-peer-icon-enabled & --agent-peer-icon-src
+    // [14/31] --agent-peer-icon-enabled & --agent-peer-icon-src
     let agent_peer_icon_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -455,7 +994,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [14/28] --agent-peer-dns-enabled & --agent-peer-dns-addresses
+    // [15/31] --agent-peer-dns-enabled & --agent-peer-dns-addresses
     let agent_peer_dns_addresses = get_dns_addresses(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -469,7 +1008,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     let agent_peer_dns_enabled = !agent_peer_dns_addresses.is_empty();
     step_counter += 1;
 
-    // [15/28] --agent-peer-mtu-enabled & --agent-peer-mtu-value
+    // [16/31] --agent-peer-mtu-enabled & --agent-peer-mtu-value
     let agent_peer_mtu_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -494,7 +1033,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [16/28] --agent-peer-script-pre-up-enabled & --agent-peer-script-pre-up-line
+    // [17/31] --agent-peer-script-pre-up-enabled & --agent-peer-script-pre-up-line
     let agent_peer_script_pre_up = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -503,11 +1042,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
-        INIT_AGENT_PEER_SCRIPT_PRE_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
-    // [17/28] --agent-peer-script-post-up-enabled & --agent-peer-script-post-up-line
+    // [18/31] --agent-peer-script-post-up-enabled & --agent-peer-script-post-up-line
     let agent_peer_script_post_up = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -516,11 +1055,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
-        INIT_AGENT_PEER_SCRIPT_POST_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
-    // [18/28] --agent-peer-script-pre-down-enabled & --agent-peer-script-pre-down-line
+    // [19/31] --agent-peer-script-pre-down-enabled & --agent-peer-script-pre-down-line
     let agent_peer_script_pre_down = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -529,11 +1068,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
-        INIT_AGENT_PEER_SCRIPT_PRE_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
-    // [19/28] --agent-peer-script-post-down-enabled & --agent-peer-script-post-down-line
+    // [20/31] --agent-peer-script-post-down-enabled & --agent-peer-script-post-down-line
     let agent_peer_script_post_down = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -542,14 +1081,58 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         INIT_AGENT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
-        INIT_AGENT_PEER_SCRIPT_POST_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
-    println!("[peer settings complete]");
-    println!("[new peer/connection default settings 20-28/28]");
+    // Agent peer AmneziaWG obfuscation parameters (only if using amneziawg)
+    // [21/31] --agent-peer-amnezia-jc & --agent-peer-amnezia-jmin & --agent-peer-amnezia-jmax
+    let agent_peer_amnezia_parameters = if network_amnezia_enabled {
+        let agent_peer_amnezia_jc = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_peer_amnezia_jc.map(|o| o.to_string()),
+            INIT_AGENT_PEER_AMNEZIA_JC_FLAG,
+            INIT_AGENT_PEER_AMNEZIA_JC_HELP,
+            Some("30".into()),
+            parse_and_validate_amnezia_jc,
+        );
 
-    // [20/28] --default-peer-kind
+        let agent_peer_amnezia_jmin = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_peer_amnezia_jmin.map(|o| o.to_string()),
+            INIT_AGENT_PEER_AMNEZIA_JMIN_FLAG,
+            INIT_AGENT_PEER_AMNEZIA_JMIN_HELP,
+            Some("60".into()),
+            parse_and_validate_amnezia_jmin,
+        );
+
+        let agent_peer_amnezia_jmax = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.agent_peer_amnezia_jmax.map(|o| o.to_string()),
+            INIT_AGENT_PEER_AMNEZIA_JMAX_FLAG,
+            INIT_AGENT_PEER_AMNEZIA_JMAX_HELP,
+            Some("120".into()),
+            move |s: &str| {
+                let jmax_value = parse_and_validate_amnezia_jmax(s)?;
+                validate_amnezia_jmin_jmax(agent_peer_amnezia_jmin, jmax_value)?;
+                Ok(jmax_value)
+            },
+        );
+
+        AmneziaPeerParameters { jc: agent_peer_amnezia_jc, jmin: agent_peer_amnezia_jmin, jmax: agent_peer_amnezia_jmax }
+    } else {
+        println!("{} Not using amnezia, skipping...", step_str(step_counter));
+        AmneziaPeerParameters { jc: 30, jmin: 60, jmax: 120 }
+    };
+    step_counter += 1;
+
+    println!("[peer settings complete]");
+    println!("[new peer/connection default settings 22-31/31]");
+
+    // [22/31] --default-peer-kind
     let default_peer_kind = get_value(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -561,7 +1144,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     );
     step_counter += 1;
 
-    // [21/28] --default-peer-icon-enabled & --default-peer-icon-src
+    // [23/31] --default-peer-icon-enabled & --default-peer-icon-src
     let default_peer_icon_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -586,7 +1169,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [22/28] --default-peer-dns-enabled & --default-peer-dns-addresses
+    // [24/31] --default-peer-dns-enabled & --default-peer-dns-addresses
     let default_peer_dns_addresses = get_dns_addresses(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -600,7 +1183,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     let default_peer_dns_enabled = !default_peer_dns_addresses.is_empty();
     step_counter += 1;
 
-    // [23/28] --default-peer-mtu-enabled & --default-peer-mtu-value
+    // [25/31] --default-peer-mtu-enabled & --default-peer-mtu-value
     let default_peer_mtu_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -625,7 +1208,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
     };
     step_counter += 1;
 
-    // [24/28] --default-peer-script-pre-up-enabled & --default-peer-script-pre-up-line
+    // [26/31] --default-peer-script-pre-up-enabled & --default-peer-script-pre-up-line
     let default_peer_script_pre_up = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -634,11 +1217,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_UP_ENABLED_HELP,
-        INIT_DEFAULT_PEER_SCRIPT_PRE_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
-    // [25/28] --default-peer-script-post-up-enabled & --default-peer-script-post-up-line
+    // [27/31] --default-peer-script-post-up-enabled & --default-peer-script-post-up-line
     let default_peer_script_post_up = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -647,11 +1230,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_UP_ENABLED_HELP,
-        INIT_DEFAULT_PEER_SCRIPT_POST_UP_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
-    // [26/28] --default-peer-script-pre-down-enabled & --default-peer-script-pre-down-line
+    // [28/31] --default-peer-script-pre-down-enabled & --default-peer-script-pre-down-line
     let default_peer_script_pre_down = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -660,11 +1243,11 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_ENABLED_HELP,
-        INIT_DEFAULT_PEER_SCRIPT_PRE_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
-    // [27/28] --default-peer-script-post-down-enabled & --default-peer-script-post-down-line
+    // [29/31] --default-peer-script-post-down-enabled & --default-peer-script-post-down-line
     let default_peer_script_post_down = get_scripts(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -673,11 +1256,55 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_FLAG,
         INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_ENABLED_HELP,
-        INIT_DEFAULT_PEER_SCRIPT_POST_DOWN_LINE_HELP,
+        "",
     );
     step_counter += 1;
 
-    // [28/28] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
+    // Default peer AmneziaWG obfuscation parameters (only if using amneziawg)
+    // [30/31] --default-peer-amnezia-jc & --default-peer-amnezia-jmin & --default-peer-amnezia-jmax
+    let default_peer_amnezia_parameters = if network_amnezia_enabled {
+        let default_peer_amnezia_jc = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.default_peer_amnezia_jc.map(|o| o.to_string()),
+            INIT_DEFAULT_PEER_AMNEZIA_JC_FLAG,
+            INIT_DEFAULT_PEER_AMNEZIA_JC_HELP,
+            Some("30".into()),
+            parse_and_validate_amnezia_jc,
+        );
+
+        let default_peer_amnezia_jmin = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.default_peer_amnezia_jmin.map(|o| o.to_string()),
+            INIT_DEFAULT_PEER_AMNEZIA_JMIN_FLAG,
+            INIT_DEFAULT_PEER_AMNEZIA_JMIN_HELP,
+            Some("60".into()),
+            parse_and_validate_amnezia_jmin,
+        );
+
+        let default_peer_amnezia_jmax = get_value(
+            init_opts.no_prompt,
+            step_str(step_counter),
+            init_opts.default_peer_amnezia_jmax.map(|o| o.to_string()),
+            INIT_DEFAULT_PEER_AMNEZIA_JMAX_FLAG,
+            INIT_DEFAULT_PEER_AMNEZIA_JMAX_HELP,
+            Some("120".into()),
+            move |s: &str| {
+                let jmax_value = parse_and_validate_amnezia_jmax(s)?;
+                validate_amnezia_jmin_jmax(default_peer_amnezia_jmin, jmax_value)?;
+                Ok(jmax_value)
+            },
+        );
+
+        AmneziaPeerParameters { jc: default_peer_amnezia_jc, jmin: default_peer_amnezia_jmin, jmax: default_peer_amnezia_jmax }
+    } else {
+        println!("{} Not using amnezia, skipping...", step_str(step_counter));
+        AmneziaPeerParameters { jc: 30, jmin: 60, jmax: 120 }
+    };
+    step_counter += 1;
+
+    // [31/31] --default-connection-persistent-keepalive-enabled & --default-connection-persistent-keepalive-period
     let default_connection_persistent_keepalive_enabled = get_bool(
         init_opts.no_prompt,
         step_str(step_counter),
@@ -732,11 +1359,16 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             vpn: AgentVpn {
                 enabled: agent_vpn_enabled,
                 port: agent_vpn_port,
+                wg: agent_vpn_wg,
+                wg_userspace: WireGuardUserspace {
+                    enabled: agent_vpn_wg_userspace_enabled,
+                    binary: agent_vpn_wg_userspace_binary,
+                },
             },
             firewall: AgentFirewall {
-                enabled: agent_firewall_enabled,
-                utility: agent_firewall_utility,
-                gateway: agent_firewall_gateway,
+                http: http_firewall_scripts,
+                https: https_firewall_scripts,
+                vpn: vpn_firewall_scripts,
             },
         },
         network: Network {
@@ -757,9 +1389,6 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                         enabled: agent_peer_icon_enabled,
                         src: agent_peer_icon_src,
                     },
-                    private_key: wg_generate_key(),
-                    created_at: now,
-                    updated_at: now,
                     dns: Dns {
                         enabled: agent_peer_dns_enabled,
                         addresses: agent_peer_dns_addresses,
@@ -774,12 +1403,14 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                         pre_down: agent_peer_script_pre_down,
                         post_down: agent_peer_script_post_down,
                     },
+                    private_key: wg_generate_key(),
+                    amnezia_parameters: agent_peer_amnezia_parameters,
+                    created_at: now,
+                    updated_at: now,
                 });
                 map
             },
             connections: BTreeMap::new(),
-            reservations: BTreeMap::new(),
-            updated_at: now,
             defaults: Defaults {
                 peer: DefaultPeer {
                     kind: default_peer_kind.to_string(),
@@ -801,6 +1432,7 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                         pre_down: default_peer_script_pre_down,
                         post_down: default_peer_script_post_down,
                     },
+                    amnezia_parameters: default_peer_amnezia_parameters
                 },
                 connection: DefaultConnection {
                     persistent_keepalive: PersistentKeepalive {
@@ -809,6 +1441,9 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
                     },
                 },
             },
+            reservations: BTreeMap::new(),
+            amnezia_parameters: amnezia_network_parameters,
+            updated_at: now,
         },
     };
 

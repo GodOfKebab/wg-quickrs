@@ -23,13 +23,48 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
             ConfigFileValidationError::Validation("agent.web.https.tls_key".to_string(), e)
         })?;
     }
-    if config_file.agent.firewall.enabled {
-        validate_fw_utility(&config_file.agent.firewall.utility).map_err(|e| {
-            ConfigFileValidationError::Validation("agent.firewall.utility".to_string(), e)
+
+    // Validate VPN settings
+    if config_file.agent.vpn.enabled {
+        validate_wg_tool(&config_file.agent.vpn.wg).map_err(|e| {
+            ConfigFileValidationError::Validation("agent.vpn.wg".to_string(), e)
         })?;
-        parse_and_validate_fw_gateway(&config_file.agent.firewall.gateway).map_err(|e| {
-            ConfigFileValidationError::Validation("agent.firewall.gateway".to_string(), e)
-        })?;
+
+        if config_file.agent.vpn.wg_userspace.enabled {
+            validate_wg_userspace_binary(&config_file.agent.vpn.wg_userspace.binary).map_err(|e| {
+                ConfigFileValidationError::Validation("agent.vpn.wg_userspace.binary".to_string(), e)
+            })?;
+        }
+    }
+    // Validate Firewall scripts
+    for (protocol, scripts_map) in [
+        ("http", &config_file.agent.firewall.http),
+        ("https", &config_file.agent.firewall.https),
+    ] {
+        for (script_type, scripts) in scripts_map.clone() {
+            for (i, script) in scripts.iter().enumerate() {
+                if script.enabled {
+                    parse_and_validate_peer_script(&script.script).map_err(|e| {
+                        ConfigFileValidationError::Validation(
+                            format!("agent.firewall.{protocol}.{script_type}.{i}"),
+                            e,
+                        )
+                    })?;
+                }
+            }
+        }
+    }
+    for (script_type, scripts) in config_file.agent.firewall.vpn.clone() {
+        for (i, script) in scripts.iter().enumerate() {
+            if script.enabled {
+                parse_and_validate_peer_script(&script.script).map_err(|e| {
+                    ConfigFileValidationError::Validation(
+                        format!("agent.firewall.vpn.{script_type}.{i}"),
+                        e,
+                    )
+                })?;
+            }
+        }
     }
 
     // Validate Network
@@ -38,6 +73,23 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
     })?;
     // skip network.subnet because if it can be deserialized, it means it's valid
     // skip network.this_peer because if it can be deserialized, it means it's valid
+
+    // Validate AmneziaWG parameters
+    validate_amnezia_enabled(
+        config_file.network.amnezia_parameters.enabled,
+        &config_file.agent.vpn.wg
+    ).map_err(|e| {
+        ConfigFileValidationError::Validation("network.amnezia_parameters.enabled".to_string(), e)
+    })?;
+
+    if config_file.network.amnezia_parameters.enabled {
+        validate_amnezia_s1_s2(
+            config_file.network.amnezia_parameters.s1,
+            config_file.network.amnezia_parameters.s2
+        ).map_err(|e| {
+            ConfigFileValidationError::Validation("network.amnezia_parameters".to_string(), e)
+        })?;
+    }
 
     // Validate peers
     for (peer_id, peer) in &config_file.network.peers {
@@ -69,6 +121,16 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
             ConfigFileValidationError::Validation(format!("{}.mtu", peer_path), e)
         })?;
         // skip network.peers.{peer_id}.private_key because if it can be deserialized, it means it's valid
+
+        // Validate peer amnezia parameters
+        if config_file.network.amnezia_parameters.enabled {
+            validate_amnezia_jc(peer.amnezia_parameters.jc).map_err(|e| {
+                ConfigFileValidationError::Validation(format!("{}.amnezia_parameters.jc", peer_path), e)
+            })?;
+            validate_amnezia_jmin_jmax(peer.amnezia_parameters.jmin, peer.amnezia_parameters.jmax).map_err(|e| {
+                ConfigFileValidationError::Validation(format!("{}.amnezia_parameters", peer_path), e)
+            })?;
+        }
 
         for (script_type, scripts) in peer.scripts.clone() {
             for (i, script) in scripts.into_iter().enumerate() {
@@ -107,6 +169,20 @@ pub fn validate_config_file(config_file: &mut ConfigFile, config_folder_path: &P
     validate_peer_mtu(&config_file.network.defaults.peer.mtu).map_err(|e| {
         ConfigFileValidationError::Validation(format!("{}.peer.mtu", defaults_path), e)
     })?;
+
+    // Validate default peer amnezia parameters
+    if config_file.network.amnezia_parameters.enabled {
+        validate_amnezia_jc(config_file.network.defaults.peer.amnezia_parameters.jc).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.peer.amnezia_parameters.jc", defaults_path), e)
+        })?;
+        validate_amnezia_jmin_jmax(
+            config_file.network.defaults.peer.amnezia_parameters.jmin,
+            config_file.network.defaults.peer.amnezia_parameters.jmax
+        ).map_err(|e| {
+            ConfigFileValidationError::Validation(format!("{}.peer.amnezia_parameters", defaults_path), e)
+        })?;
+    }
+
     for (script_type, scripts) in config_file.network.defaults.peer.scripts.clone() {
         validate_peer_scripts(&scripts).map_err(|e| {
             ConfigFileValidationError::Validation(format!("{defaults_path}.peer.scripts.{script_type}"), e)

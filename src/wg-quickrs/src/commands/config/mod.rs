@@ -5,6 +5,7 @@ mod list;
 mod remove;
 mod reset;
 mod add;
+mod generate_conf;
 
 use std::io;
 use std::net::Ipv4Addr;
@@ -22,6 +23,7 @@ use wg_quickrs_cli::config::list::*;
 use wg_quickrs_cli::config::remove::*;
 use wg_quickrs_cli::config::add::*;
 use wg_quickrs_lib::types::network::ConnectionId;
+use wg_quickrs_lib::types::misc::WireGuardLibError;
 use wg_quickrs_lib::validation::error::ValidationError;
 use crate::commands::config::toggle::*;
 use crate::commands::config::get::*;
@@ -30,6 +32,7 @@ use crate::commands::config::list::*;
 use crate::commands::config::remove::*;
 use crate::commands::config::reset::*;
 use crate::commands::config::add::*;
+use crate::commands::config::generate_conf::*;
 use crate::conf;
 use crate::conf::util::ConfUtilError;
 
@@ -41,12 +44,14 @@ pub enum ConfigCommandError {
     Validation(#[from] ValidationError),
     #[error(transparent)]
     ConfUtilError(#[from] ConfUtilError),
+    #[error(transparent)]
+    WireGuardLibError(#[from] WireGuardLibError),
     #[error("cannot enable firewall gateway: gateway is not set")]
     GatewayNotSet(),
     #[error("failed to read input: {0}")]
     ReadFailed(#[from] io::Error),
     #[error("failed to serialize to YAML: {0}")]
-    YamlSerialization(#[from] serde_yml::Error),
+    YamlSerialization(#[from] serde_norway::Error),
     #[error("peer not found: {0}")]
     PeerNotFound(Uuid),
     #[error("connection not found: {0}")]
@@ -71,7 +76,7 @@ impl From<argon2::password_hash::Error> for ConfigCommandError {
 
 // A helper function to print any serializable struct as YAML
 pub fn print_as_yaml<T: Serialize>(value: &T) -> Result<(), ConfigCommandError> {
-    let yaml = serde_yml::to_string(value)?;
+    let yaml = serde_norway::to_string(value)?;
     print!("{}", yaml);
     Ok(())
 }
@@ -99,8 +104,10 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                     EnableAgentWebCommands::Https => toggle_agent_web_https(true),
                     EnableAgentWebCommands::Password => toggle_agent_web_password(true),
                 },
-                EnableAgentCommands::Vpn => toggle_agent_vpn(true),
-                EnableAgentCommands::Firewall => toggle_agent_firewall(true),
+                EnableAgentCommands::Vpn { target } => match target {
+                    Some(EnableAgentVpnCommands::WgUserspace) => toggle_agent_vpn_wg_userspace(true),
+                    None => toggle_agent_vpn(true),
+                },
             },
             EnableCommands::Network { target } => match target {
                 EnableNetworkCommands::Peer { id, target } => match target {
@@ -120,6 +127,7 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                         EnableDefaultsConnectionCommands::PersistentKeepalive => enable_defaults_connection_persistent_keepalive(),
                     },
                 },
+                EnableNetworkCommands::AmneziaParameters => toggle_network_amnezia_parameters(true),
             },
         },
         ConfigCommands::Disable { target } => match target {
@@ -129,8 +137,10 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                     DisableAgentWebCommands::Https => toggle_agent_web_https(false),
                     DisableAgentWebCommands::Password => toggle_agent_web_password(false),
                 },
-                DisableAgentCommands::Vpn => toggle_agent_vpn(false),
-                DisableAgentCommands::Firewall => toggle_agent_firewall(false),
+                DisableAgentCommands::Vpn { target } => match target {
+                    Some(DisableAgentVpnCommands::WgUserspace) => toggle_agent_vpn_wg_userspace(false),
+                    None => toggle_agent_vpn(false),
+                },
             },
             DisableCommands::Network { target } => match target {
                 DisableNetworkCommands::Peer { id, target } => match target {
@@ -150,6 +160,7 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                         DisableDefaultsConnectionCommands::PersistentKeepalive => disable_defaults_connection_persistent_keepalive(),
                     },
                 },
+                DisableNetworkCommands::AmneziaParameters => toggle_network_amnezia_parameters(false),
             },
         },
         ConfigCommands::Set { target } => match target {
@@ -167,10 +178,10 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                 },
                 SetAgentCommands::Vpn { target } => match target {
                     SetAgentVpnCommands::Port { value } => set_agent_vpn_port(*value),
-                },
-                SetAgentCommands::Firewall { target } => match target {
-                    SetAgentFirewallCommands::Utility { value } => set_agent_firewall_utility(value),
-                    SetAgentFirewallCommands::Gateway { value } => set_agent_firewall_gateway(value),
+                    SetAgentVpnCommands::Wg { value } => set_agent_vpn_wg(value),
+                    SetAgentVpnCommands::WgUserspace { target } => match target {
+                        SetAgentVpnWgUserspaceCommands::Binary { value } => set_agent_vpn_wg_userspace_binary(value),
+                    },
                 },
             },
             SetCommands::Network { target } => match target {
@@ -184,6 +195,11 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                     SetPeerCommands::Icon { src } => set_peer_icon(id, src),
                     SetPeerCommands::Dns { addresses } => set_peer_dns(id, addresses),
                     SetPeerCommands::Mtu { value } => set_peer_mtu(id, *value),
+                    SetPeerCommands::AmneziaParameters { target } => match target {
+                        SetPeerAmneziaParametersCommands::Jc { value } => set_peer_amnezia_parameters_jc(id, *value),
+                        SetPeerAmneziaParametersCommands::Jmin { value } => set_peer_amnezia_parameters_jmin(id, *value),
+                        SetPeerAmneziaParametersCommands::Jmax { value } => set_peer_amnezia_parameters_jmax(id, *value),
+                    },
                 },
                 SetNetworkCommands::Connection { id, target } => match target {
                     SetConnectionCommands::AllowedIpsAToB { ips } => set_connection_allowed_ips_a_to_b(id, ips),
@@ -196,10 +212,23 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                         SetDefaultsPeerCommands::Icon { src } => set_defaults_peer_icon(src),
                         SetDefaultsPeerCommands::Dns { addresses } => set_defaults_peer_dns(addresses),
                         SetDefaultsPeerCommands::Mtu { value } => set_defaults_peer_mtu(*value),
+                        SetDefaultsPeerCommands::AmneziaParameters { target } => match target {
+                            SetPeerAmneziaParametersCommands::Jc { value } => set_defaults_peer_amnezia_parameters_jc(*value),
+                            SetPeerAmneziaParametersCommands::Jmin { value } => set_defaults_peer_amnezia_parameters_jmin(*value),
+                            SetPeerAmneziaParametersCommands::Jmax { value } => set_defaults_peer_amnezia_parameters_jmax(*value),
+                        },
                     },
                     SetDefaultsCommands::Connection { target } => match target {
                         SetDefaultsConnectionCommands::PersistentKeepalive { period } => set_defaults_connection_persistent_keepalive(*period),
                     },
+                },
+                SetNetworkCommands::AmneziaParameters { target } => match target {
+                    SetNetworkAmneziaParametersCommands::S1 { value } => set_network_amnezia_parameters_s1(*value),
+                    SetNetworkAmneziaParametersCommands::S2 { value } => set_network_amnezia_parameters_s2(*value),
+                    SetNetworkAmneziaParametersCommands::H1 { value } => set_network_amnezia_parameters_h1(*value),
+                    SetNetworkAmneziaParametersCommands::H2 { value } => set_network_amnezia_parameters_h2(*value),
+                    SetNetworkAmneziaParametersCommands::H3 { value } => set_network_amnezia_parameters_h3(*value),
+                    SetNetworkAmneziaParametersCommands::H4 { value } => set_network_amnezia_parameters_h4(*value),
                 },
             },
         },
@@ -258,14 +287,14 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                         Some(vpn_cmd) => match vpn_cmd {
                             GetAgentVpnCommands::Enabled => get_agent_vpn_enabled(),
                             GetAgentVpnCommands::Port => get_agent_vpn_port(),
-                        },
-                    },
-                    GetAgentCommands::Firewall { target } => match target {
-                        None => get_agent_firewall(),
-                        Some(fw_cmd) => match fw_cmd {
-                            GetAgentFirewallCommands::Enabled => get_agent_firewall_enabled(),
-                            GetAgentFirewallCommands::Utility => get_agent_firewall_utility(),
-                            GetAgentFirewallCommands::Gateway => get_agent_firewall_gateway(),
+                            GetAgentVpnCommands::Wg => get_agent_vpn_wg(),
+                            GetAgentVpnCommands::WgUserspace { target } => match target {
+                                None => get_agent_vpn_wg_userspace(),
+                                Some(wg_us_cmd) => match wg_us_cmd {
+                                    GetAgentVpnWgUserspaceCommands::Enabled => get_agent_vpn_wg_userspace_enabled(),
+                                    GetAgentVpnWgUserspaceCommands::Binary => get_agent_vpn_wg_userspace_binary(),
+                                },
+                            },
                         },
                     },
                 },
@@ -313,6 +342,14 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                             },
                             GetNetworkPeersCommands::Scripts => get_network_peer_scripts(peer_id),
                             GetNetworkPeersCommands::PrivateKey => get_network_peer_private_key(peer_id),
+                            GetNetworkPeersCommands::AmneziaParameters { target } => match target {
+                                None => get_network_peer_amnezia_parameters(peer_id),
+                                Some(amnezia_cmd) => match amnezia_cmd {
+                                    GetNetworkPeersAmneziaParametersCommands::Jc => get_network_peer_amnezia_parameters_jc(peer_id),
+                                    GetNetworkPeersAmneziaParametersCommands::Jmin => get_network_peer_amnezia_parameters_jmin(peer_id),
+                                    GetNetworkPeersAmneziaParametersCommands::Jmax => get_network_peer_amnezia_parameters_jmax(peer_id),
+                                },
+                            },
                             GetNetworkPeersCommands::CreatedAt => get_network_peer_created_at(peer_id),
                             GetNetworkPeersCommands::UpdatedAt => get_network_peer_updated_at(peer_id),
                         },
@@ -402,6 +439,14 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                                         let config = conf::util::get_config()?;
                                         print_as_yaml(&config.network.defaults.peer.scripts)
                                     },
+                                    GetNetworkDefaultsPeerCommands::AmneziaParameters { target } => match target {
+                                        None => get_network_defaults_peer_amnezia_parameters(),
+                                        Some(amnezia_cmd) => match amnezia_cmd {
+                                            GetNetworkPeersAmneziaParametersCommands::Jc => get_network_defaults_peer_amnezia_parameters_jc(),
+                                            GetNetworkPeersAmneziaParametersCommands::Jmin => get_network_defaults_peer_amnezia_parameters_jmin(),
+                                            GetNetworkPeersAmneziaParametersCommands::Jmax => get_network_defaults_peer_amnezia_parameters_jmax(),
+                                        },
+                                    },
                                 },
                             },
                             GetNetworkDefaultsCommands::Connection { target } => match target {
@@ -438,6 +483,18 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
                             Err(ConfigCommandError::MissingArgument("IP address is required when accessing reservation fields".to_string()))
                         }
                     },
+                    GetNetworkCommands::AmneziaParameters { target } => match target {
+                        None => get_network_amnezia_parameters(),
+                        Some(amnezia_cmd) => match amnezia_cmd {
+                            GetNetworkAmneziaParametersCommands::Enabled => get_network_amnezia_parameters_enabled(),
+                            GetNetworkAmneziaParametersCommands::S1 => get_network_amnezia_parameters_s1(),
+                            GetNetworkAmneziaParametersCommands::S2 => get_network_amnezia_parameters_s2(),
+                            GetNetworkAmneziaParametersCommands::H1 => get_network_amnezia_parameters_h1(),
+                            GetNetworkAmneziaParametersCommands::H2 => get_network_amnezia_parameters_h2(),
+                            GetNetworkAmneziaParametersCommands::H3 => get_network_amnezia_parameters_h3(),
+                            GetNetworkAmneziaParametersCommands::H4 => get_network_amnezia_parameters_h4(),
+                        },
+                    },
                     GetNetworkCommands::UpdatedAt => get_network_updated_at(),
                 },
             },
@@ -456,6 +513,7 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
             AddCommands::Peer { options } => add_peer(options),
             AddCommands::Connection { options } => add_connection(options),
         },
+        ConfigCommands::Conf { options } => generate_peer_conf(options),
     }
 }
 

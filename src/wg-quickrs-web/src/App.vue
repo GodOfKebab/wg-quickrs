@@ -20,13 +20,32 @@
 
             <!-- Settings Dropdown -->
             <div v-if="settingsDropdownOpen"
-                 class="absolute left-0 top-9 w-24 bg-white border border-gray-200 rounded-md shadow-lg z-20 flex items-center justify-center">
+                 class="absolute left-0 top-9 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-5 flex flex-col items-center justify-center p-0.5">
+
+              <!-- Network Defaults Button -->
               <button
-                  class="block w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                  @click="settingsDropdownOpen = false; logout();">
+                  class="flex flex-row w-full text-left px-0.5 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                  @click="settingsDropdownOpen = false; dialogId = 'network-defaults';">
+                <img alt="settings" class="h-6 my-auto mr-1"
+                     src="/icons/iconfinder/ionicons-211751_gear_icon.svg">
+                <span class="my-auto inline-block">Network Defaults</span>
+              </button>
+              <!-- Amnezia Settings Button -->
+              <button
+                  class="flex flex-row w-full text-left px-0.5 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                  @click="settingsDropdownOpen = false; dialogId = 'amnezia-settings';">
+                <img alt="settings" class="h-6 my-auto mr-1"
+                     src="/icons/iconfinder/ionicons-211751_gear_icon.svg">
+                <span class="my-auto inline-block">Amnezia Settings</span>
+              </button>
+
+              <!-- Logout Button -->
+              <button
+                  class="block w-full text-left px-1 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                  @click="settingsDropdownOpen = false; dialogId = 'logout';">
                 <img alt="logout" class="inline-block float-left h-5 mr-1"
                      src="/icons/iconfinder/iconoir-9042719_log_out_icon.svg">
-                <span>Logout</span>
+                <span class="ml-0.5">Logout</span>
               </button>
             </div>
           </div>
@@ -187,6 +206,7 @@
                      :api="api"></password-dialog>
 
 
+    <!-- Dialog: Toggle Network -->
     <custom-dialog v-if="dialogId === 'network-toggle'" :left-button-click="() => { dialogId = '' }"
                    modal-classes="max-w-xl"
                    :left-button-text="'Cancel'"
@@ -204,6 +224,23 @@
       </div>
     </custom-dialog>
 
+    <!-- Dialog: Logout -->
+    <custom-dialog v-if="dialogId === 'logout'" :left-button-click="() => { dialogId = '' }"
+                   modal-classes="max-w-xl"
+                   :left-button-text="'Cancel'"
+                   right-button-color="red"
+                   :right-button-click="() => { logout(); dialogId = ''; }"
+                   right-button-text="Logout"
+                   class="z-10"
+                   icon="danger">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Logout
+      </h3>
+      <div class="mt-2 text-sm text-gray-500">
+        Are you sure you want to logout?
+      </div>
+    </custom-dialog>
+
     <!-- Dialog: Peer View/Edit -->
     <peer-config-dialog v-if="dialogId.startsWith('selected-peer-id=')"
                         v-model:dialog-id="dialogId"
@@ -217,6 +254,18 @@
                         :api="api"
                         :network="network"></peer-create-dialog>
 
+    <!-- Dialog: Network Defaults -->
+    <network-defaults-dialog v-if="dialogId === 'network-defaults'"
+                             v-model:dialog-id="dialogId"
+                             :api="api"
+                             :network="network"></network-defaults-dialog>
+
+    <!-- Dialog: Amnezia Settings -->
+    <amnezia-settings-dialog v-if="dialogId === 'amnezia-settings'"
+                               v-model:dialog-id="dialogId"
+                               :api="api"
+                               :network="network"></amnezia-settings-dialog>
+
   </div>
 </template>
 
@@ -228,6 +277,8 @@ import CustomDialog from "@/src/components/dialogs/custom-dialog.vue";
 import PasswordDialog from "@/src/components/dialogs/password-dialog.vue";
 import PeerConfigDialog from "@/src/components/dialogs/peer-config-dialog.vue";
 import PeerCreateDialog from "@/src/components/dialogs/peer-create-dialog.vue";
+import NetworkDefaultsDialog from "@/src/components/dialogs/network-defaults-dialog.vue";
+import AmneziaSettingsDialog from "@/src/components/dialogs/amnezia-settings-dialog.vue";
 
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -248,7 +299,9 @@ export default {
     MapVisual,
     CustomDialog,
     PeerConfigDialog,
-    PeerCreateDialog
+    PeerCreateDialog,
+    NetworkDefaultsDialog,
+    AmneziaSettingsDialog
   },
   data() {
     return {

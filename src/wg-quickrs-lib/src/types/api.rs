@@ -68,6 +68,8 @@ pub struct ChangeSum {
 pub struct ChangedFields {
     pub peers: Option<BTreeMap<Uuid, OptionalPeer>>,
     pub connections: Option<BTreeMap<ConnectionId, OptionalConnection>>,
+    pub defaults: Option<OptionalDefaults>,
+    pub amnezia_parameters: Option<OptionalAmneziaNetworkParameters>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -81,6 +83,14 @@ pub struct OptionalPeer {
     pub mtu: Option<Mtu>,
     pub scripts: Option<OptionalScripts>,
     pub private_key: Option<WireGuardKey>,
+    pub amnezia_parameters: Option<OptionalAmneziaPeerParameters>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+pub struct OptionalAmneziaPeerParameters {
+    pub jc: Option<i16>,
+    pub jmin: Option<u16>,
+    pub jmax: Option<u16>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -101,6 +111,38 @@ pub struct OptionalConnection {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalDefaults {
+    pub peer: Option<OptionalDefaultPeer>,
+    pub connection: Option<OptionalDefaultConnection>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalDefaultPeer {
+    pub kind: Option<String>,
+    pub icon: Option<Icon>,
+    pub dns: Option<Dns>,
+    pub mtu: Option<Mtu>,
+    pub scripts: Option<OptionalScripts>,
+    pub amnezia_parameters: Option<OptionalAmneziaPeerParameters>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalDefaultConnection {
+    pub persistent_keepalive: Option<PersistentKeepalive>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct OptionalAmneziaNetworkParameters {
+    pub enabled: Option<bool>,
+    pub s1: Option<u16>,
+    pub s2: Option<u16>,
+    pub h1: Option<u32>,
+    pub h2: Option<u32>,
+    pub h3: Option<u32>,
+    pub h4: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AddedPeer {
     pub name: String,
     pub address: Ipv4Addr,
@@ -111,6 +153,7 @@ pub struct AddedPeer {
     pub mtu: Mtu,
     pub scripts: Scripts,
     pub private_key: WireGuardKey,
+    pub amnezia_parameters: AmneziaPeerParameters,
 }
 
 impl From<&AddedPeer> for Peer {
@@ -125,6 +168,7 @@ impl From<&AddedPeer> for Peer {
             mtu: added_peer.mtu.clone(),
             scripts: added_peer.scripts.clone(),
             private_key: added_peer.private_key,
+            amnezia_parameters: added_peer.amnezia_parameters.clone(),
             created_at: Utc::now(), // TODO: use time from arg
             updated_at: Utc::now(),
         }

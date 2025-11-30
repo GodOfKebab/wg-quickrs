@@ -5,6 +5,9 @@ use std::fs;
 use std::path::Path;
 use std::env;
 use std::net::Ipv4Addr;
+use std::os::unix::prelude::CommandExt;
+use std::time::Duration;
+use log::{log_enabled, Level};
 use regex::Regex;
 use wg_quickrs_lib::types::network::Mtu;
 use crate::helpers::shell_cmd;
@@ -20,14 +23,45 @@ pub fn interface_exists(interface: &str) -> TunnelResult<Option<String>> {
     Ok(None)
 }
 
-pub fn add_interface(interface: &str) -> TunnelResult<String> {
-    let result = shell_cmd(&["ip", "link", "add", interface, "type", "wireguard"]);
+pub fn add_interface(interface: &str, userspace: bool, userspace_binary: &str) -> TunnelResult<String> {
+    if userspace {
+        let interface_cloned = interface.to_string();
+        let log_level = if log_enabled!(Level::Debug) { "debug" } else { "error" };
+        let userspace_binary_cloned = userspace_binary.to_string();
+        std::thread::spawn(move || unsafe {
+            match Command::new(&userspace_binary_cloned)
+                .args(["--foreground", &interface_cloned])
+                .env("LOG_LEVEL", log_level)
+                .stdin(std::process::Stdio::inherit())
+                .stdout(std::process::Stdio::inherit())
+                .stderr(std::process::Stdio::inherit())
+                .pre_exec(|| {
+                    // Create a new session -> child will NOT be in parent’s process group
+                    libc::setsid(); // unsafe function
+                    Ok(())
+                }).output() {
+                Ok(output) => {
+                    if !output.status.success() {
+                        log::error!("[!] {} failed: {}", userspace_binary_cloned, String::from_utf8_lossy(&output.stderr));
+                    }
+                }
+                Err(e) => {
+                    log::error!("[!] {} failed: {}", userspace_binary_cloned, e);
+                }
+            };
 
-    if result.is_err() {
-        log::error!("[!] Missing WireGuard kernel module. Linux userspace implementation support is not available. Please install the WireGuard kernel module and try again.");
-        return Err(TunnelError::CommandFailed(
-            "Failed to create WireGuard interface".to_string()
-        ));
+            log::debug!("[+] {} exit", userspace_binary_cloned);
+        });
+        std::thread::sleep(Duration::from_millis(500)); // TODO: replace with a better solution
+    } else {
+        let result = shell_cmd(&["ip", "link", "add", interface, "type", "wireguard"]);
+
+        if result.is_err() {
+            log::error!("[!] Missing WireGuard kernel module. Please install and/or load the WireGuard kernel module and try again.");
+            return Err(TunnelError::CommandFailed(
+                "Failed to create WireGuard interface".to_string()
+            ));
+        }
     }
 
     Ok(interface.to_string())
@@ -39,11 +73,11 @@ pub fn add_address(iface: &str, addr: &str, is_ipv6: bool) -> TunnelResult<()> {
     Ok(())
 }
 
-pub fn set_mtu_and_up(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
+pub fn set_mtu_and_up(wg: &str, iface: &str, mtu: &Mtu) -> TunnelResult<()> {
     let mtu_val = if mtu.enabled {
         mtu.value.to_string()
     } else {
-        calculate_mtu(iface).unwrap_or(1420).to_string()
+        calculate_mtu(wg, iface).unwrap_or(1420).to_string()
     };
 
     shell_cmd(&["ip", "link", "set", "mtu", &mtu_val, "up", "dev", iface])?;
@@ -51,8 +85,8 @@ pub fn set_mtu_and_up(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
     Ok(())
 }
 
-fn calculate_mtu(iface: &str) -> TunnelResult<u16> {
-    let endpoints = wg_quick::get_endpoints(iface);
+fn calculate_mtu(wg: &str, iface: &str) -> TunnelResult<u16> {
+    let endpoints = wg_quick::get_endpoints(wg, iface);
     let mut min_mtu = u16::MAX;
 
     // Regex patterns
@@ -183,12 +217,12 @@ pub fn set_dns(dns_servers: &Vec<Ipv4Addr>, interface: &str, dns_manager: &mut D
     Ok(())
 }
 
-pub fn add_route(iface: &str, interface_name: &str, cidr: &str, endpoint_router: &mut wg_quick::EndpointRouter) -> TunnelResult<()> {
+pub fn add_route(wg: &str, iface: &str, interface_name: &str, cidr: &str, endpoint_router: &mut wg_quick::EndpointRouter) -> TunnelResult<()> {
     endpoint_router.have_set_firewall = false;
     let is_default = cidr.ends_with("/0");
     
     if is_default {
-        add_default_route(interface_name, cidr)?;
+        add_default_route(wg, interface_name, cidr)?;
         endpoint_router.have_set_firewall = true;
     } else {
         let is_ipv6 = cidr.contains(':');
@@ -203,8 +237,8 @@ pub fn add_route(iface: &str, interface_name: &str, cidr: &str, endpoint_router:
     Ok(())
 }
 
-fn get_fwmark(interface: &str) -> TunnelResult<u16> {
-    let output = shell_cmd(&["wg", "show", interface, "fwmark"])?;
+fn get_fwmark(wg: &str, interface: &str) -> TunnelResult<u16> {
+    let output = shell_cmd(&[wg, "show", interface, "fwmark"])?;
     let fwmark_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     if fwmark_str.is_empty() || fwmark_str == "off" {
@@ -237,13 +271,13 @@ fn find_unused_table() -> TunnelResult<u16> {
     }
 }
 
-pub fn add_default_route(interface: &str, cidr: &str) -> TunnelResult<()> {
+pub fn add_default_route(wg: &str, interface: &str, cidr: &str) -> TunnelResult<()> {
     // Get or create fwmark/table
-    let table = &match get_fwmark(interface) {
+    let table = &match get_fwmark(wg, interface) {
         Ok(mark) => mark,
         Err(_) => {
             let table = find_unused_table()?;
-            shell_cmd(&["wg", "set", interface, "fwmark", &table.to_string()])?;
+            shell_cmd(&[wg, "set", interface, "fwmark", &table.to_string()])?;
             table
         }
     }.to_string();
@@ -495,7 +529,7 @@ fn remove_rules_matching(proto: &str, pattern: &str, delete_cmd: &[&str]) -> Tun
     Ok(())
 }
 
-pub fn del_interface(_iface: &str, interface: &str, dns_manager: &mut DnsManager, endpoint_router: &mut wg_quick::EndpointRouter) -> TunnelResult<()> {
+pub fn del_interface(wg: &str, _iface: &str, interface: &str, dns_manager: &mut DnsManager, endpoint_router: &mut wg_quick::EndpointRouter) -> TunnelResult<()> {
     // Unset DNS if it was configured
     if dns_manager.have_set_dns {
         del_dns(interface, dns_manager)?;
@@ -505,7 +539,7 @@ pub fn del_interface(_iface: &str, interface: &str, dns_manager: &mut DnsManager
     if endpoint_router.have_set_firewall {
         remove_nftables(interface)?;
         remove_iptables(interface)?;
-        if let Ok(table) = get_fwmark(interface) {
+        if let Ok(table) = get_fwmark(wg, interface) {
             remove_routing_rules(table)?;
         } else {
             log::warn!("Failed to get fwmark for interface {}. Skipping routing rules cleanup.", interface);

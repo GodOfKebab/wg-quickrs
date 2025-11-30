@@ -1,4 +1,4 @@
-version: '1.0.0'
+version: '2.0.0'
 agent:
   web:
     address: '127.0.0.1'
@@ -16,10 +16,22 @@ agent:
   vpn:
     enabled: true
     port: 51829
+    wg: ''
+    wg_userspace:
+      enabled: true
+      binary: ''
   firewall:
-    enabled: false
-    utility: ''
-    gateway: ''
+    http:
+      pre_up: []
+      post_down: []
+    https:
+      pre_up: []
+      post_down: []
+    vpn:
+      pre_up: []
+      post_up: []
+      pre_down: []
+      post_down: []
 network:
   name: wg-quickrs-home
   subnet: '10.0.34.0/24'
@@ -50,6 +62,10 @@ network:
         pre_down: []
         post_down: []
       private_key: yGFmuVZeV1V/Jy0rAx7bOF4Gx4Mt/17VMazM5grvqE4=
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
       created_at: '2025-10-04T00:36:44Z'
       updated_at: '2025-10-04T00:36:44Z'
   connections: {}
@@ -71,9 +87,21 @@ network:
         post_up: []
         pre_down: []
         post_down: []
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
     connection:
       persistent_keepalive:
         enabled: true
         period: 25
   reservations: {}
+  amnezia_parameters:
+    enabled: false
+    s1: 55
+    s2: 155
+    h1: 803319896
+    h2: 1672348903
+    h3: 2907329387
+    h4: 3338763813
   updated_at: '2025-10-04T00:36:44Z'

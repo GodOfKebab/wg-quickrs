@@ -56,9 +56,21 @@ COPY --from=node-builder /app/wg-quickrs-web/dist /app/wg-quickrs-web/dist
 RUN cargo zigbuild --locked --release --target $(cat RUST_TARGET) --features docker && \
     mkdir /app/bin/ && cp /app/target/$(cat RUST_TARGET)/release/wg-quickrs /app/bin/wg-quickrs
 
+FROM alpine:3.22 AS amneziawg-builder
+WORKDIR /app
+RUN apk add -U --no-cache git make linux-headers go
+
+RUN git clone --depth 1 --branch v1.0.20250903 https://github.com/amnezia-vpn/amneziawg-tools.git
+RUN cd amneziawg-tools/src && make
+
+RUN git clone --depth 1 --branch v0.2.15 https://github.com/amnezia-vpn/amneziawg-go
+RUN cd amneziawg-go && make
+
 FROM alpine:3.22 AS runner
 WORKDIR /app
-RUN apk add -U --no-cache wireguard-tools-wg openresolv iproute2 iptables
+RUN apk add -U --no-cache openresolv iproute2-minimal iptables
+COPY --from=amneziawg-builder /app/amneziawg-tools/src/wg /usr/bin/awg
+COPY --from=amneziawg-builder /app/amneziawg-go/amneziawg-go /usr/bin/amneziawg-go
 COPY --from=wg-quickrs-builder /app/bin/wg-quickrs /app/wg-quickrs
 ENTRYPOINT ["/app/wg-quickrs", "--wg-quickrs-config-folder", ".wg-quickrs"]
 #CMD ["tail", "-f", "/dev/null"]

@@ -7,4 +7,5 @@ The `installer.sh` script should also install the autocomplete scripts for bash 
 
 ⚠️ Note: If you want to edit config options, you need to stop the agent first. Otherwise, the changes will be overwritten/ignored by the agent.
 
-Click [here](../CLI_REFERENCE.md) for a full reference.
+Click [here](../CLI_REFERENCE.md) to get the full CLI reference of the latest version.
+For older versions, please refer to the `CLI_REFERENCE.md` file attached to [releases](https://github.com/GodOfKebab/wg-quickrs/releases).

@@ -1,4 +1,4 @@
-# `wg-quickrs` (v1.0.0)
+# `wg-quickrs` (2.0.0)
 
 A tool to manage the peer and network configuration of the WireGuard-based overlay network over the web console
 
@@ -76,12 +76,96 @@ Configuration options can be filled either by prompts on screen (when no argumen
   Possible values: `true`, `false`
 
 * `--agent-vpn-port <51820>` — Set VPN server listening port
+* `--agent-vpn-wg <AGENT_VPN_WG>` — Set path for the wg tool
+* `--agent-vpn-wg-userspace-enabled <AGENT_VPN_WG_USERSPACE_ENABLED>` — Use userspace implementation of WireGuard
+
+  Possible values: `true`, `false`
+
+* `--agent-vpn-wg-userspace-binary <AGENT_VPN_WG_USERSPACE_BINARY>` — Set path of the binary for the userspace WireGuard implementation
+* `--network-amnezia-enabled <NETWORK_AMNEZIA_ENABLED>` — Enable AmneziaWG obfuscation for VPN packets
+
+  Possible values: `true`, `false`
+
+* `--network-amnezia-s1 <55>` — Set S1 (packet junk size) for AmneziaWG obfuscation
+* `--network-amnezia-s2 <155>` — Set S2 (packet junk size) for AmneziaWG obfuscation
+* `--network-amnezia-h1 <NETWORK_AMNEZIA_H1>` — Set H1 (packet magic header) for AmneziaWG obfuscation
+* `--network-amnezia-h2 <NETWORK_AMNEZIA_H2>` — Set H2 (packet magic header) for AmneziaWG obfuscation
+* `--network-amnezia-h3 <NETWORK_AMNEZIA_H3>` — Set H3 (packet magic header) for AmneziaWG obfuscation
+* `--network-amnezia-h4 <NETWORK_AMNEZIA_H4>` — Set H4 (packet magic header) for AmneziaWG obfuscation
+* `--network-amnezia-h-random <NETWORK_AMNEZIA_H_RANDOM>` — Use random values for AmneziaWG H1, H2, H3, H4 packet magic headers instead of specifying them manually
+
+  Possible values: `true`, `false`
+
 * `--agent-firewall-enabled <AGENT_FIREWALL_ENABLED>` — Enable running firewall commands for setting up NAT and input rules
 
   Possible values: `true`, `false`
 
 * `--agent-firewall-utility <iptables>` — Set the utility used to configure firewall NAT and input rules
 * `--agent-firewall-gateway <eth0>` — Set gateway (outbound interface) for VPN packet forwarding
+* `--agent-firewall-configure-http <AGENT_FIREWALL_CONFIGURE_HTTP>` — Configure HTTP firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-http-automated <AGENT_FIREWALL_HTTP_AUTOMATED>` — Use automated setup for HTTP firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-configure-https <AGENT_FIREWALL_CONFIGURE_HTTPS>` — Configure HTTPS firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-https-automated <AGENT_FIREWALL_HTTPS_AUTOMATED>` — Use automated setup for HTTPS firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-configure-vpn <AGENT_FIREWALL_CONFIGURE_VPN>` — Configure VPN firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-automated <AGENT_FIREWALL_VPN_AUTOMATED>` — Use automated setup for VPN firewall
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-http-pre-up-enabled <AGENT_FIREWALL_HTTP_PRE_UP_ENABLED>` — Enable HTTP firewall PreUp scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-http-pre-up-line <AGENT_FIREWALL_HTTP_PRE_UP_LINE>` — Set HTTP firewall PreUp script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-http-post-down-enabled <AGENT_FIREWALL_HTTP_POST_DOWN_ENABLED>` — Enable HTTP firewall PostDown scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-http-post-down-line <AGENT_FIREWALL_HTTP_POST_DOWN_LINE>` — Set HTTP firewall PostDown script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-https-pre-up-enabled <AGENT_FIREWALL_HTTPS_PRE_UP_ENABLED>` — Enable HTTPS firewall PreUp scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-https-pre-up-line <AGENT_FIREWALL_HTTPS_PRE_UP_LINE>` — Set HTTPS firewall PreUp script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-https-post-down-enabled <AGENT_FIREWALL_HTTPS_POST_DOWN_ENABLED>` — Enable HTTPS firewall PostDown scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-https-post-down-line <AGENT_FIREWALL_HTTPS_POST_DOWN_LINE>` — Set HTTPS firewall PostDown script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-vpn-pre-up-enabled <AGENT_FIREWALL_VPN_PRE_UP_ENABLED>` — Enable VPN firewall PreUp scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-pre-up-line <AGENT_FIREWALL_VPN_PRE_UP_LINE>` — Set VPN firewall PreUp script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-vpn-post-up-enabled <AGENT_FIREWALL_VPN_POST_UP_ENABLED>` — Enable VPN firewall PostUp scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-post-up-line <AGENT_FIREWALL_VPN_POST_UP_LINE>` — Set VPN firewall PostUp script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-vpn-pre-down-enabled <AGENT_FIREWALL_VPN_PRE_DOWN_ENABLED>` — Enable VPN firewall PreDown scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-pre-down-line <AGENT_FIREWALL_VPN_PRE_DOWN_LINE>` — Set VPN firewall PreDown script line(s). Can be specified multiple times for multiple script lines.
+* `--agent-firewall-vpn-post-down-enabled <AGENT_FIREWALL_VPN_POST_DOWN_ENABLED>` — Enable VPN firewall PostDown scripts
+
+  Possible values: `true`, `false`
+
+* `--agent-firewall-vpn-post-down-line <AGENT_FIREWALL_VPN_POST_DOWN_LINE>` — Set VPN firewall PostDown script line(s). Can be specified multiple times for multiple script lines.
 * `--agent-peer-name <wg-quickrs-host>` — Set agent peer name
 * `--agent-peer-vpn-internal-address <10.0.34.1>` — Set internal IPv4 address for agent in VPN network
 * `--agent-peer-vpn-endpoint <AGENT_PEER_VPN_ENDPOINT>` — Set publicly accessible endpoint(IP/FQDN:PORT) for VPN endpoint
@@ -121,6 +205,9 @@ Configuration options can be filled either by prompts on screen (when no argumen
   Possible values: `true`, `false`
 
 * `--agent-peer-script-post-down-line <AGENT_PEER_SCRIPT_POST_DOWN_LINE>` — Set PostDown script line(s) for agent. Can be specified multiple times for multiple script lines.
+* `--agent-peer-amnezia-jc <30>` — Set Jc (junk packet count) for agent peer AmneziaWG obfuscation
+* `--agent-peer-amnezia-jmin <60>` — Set Jmin (minimum junk packet size) for agent peer AmneziaWG obfuscation
+* `--agent-peer-amnezia-jmax <120>` — Set Jmax (maximum junk packet size) for agent peer AmneziaWG obfuscation
 * `--default-peer-kind <DEFAULT_PEER_KIND>` — Set peer kind for new peers by default
 * `--default-peer-icon-enabled <DEFAULT_PEER_ICON_ENABLED>` — Enable peer icon for new peers by default
 
@@ -162,6 +249,9 @@ Configuration options can be filled either by prompts on screen (when no argumen
   Possible values: `true`, `false`
 
 * `--default-connection-persistent-keepalive-period <25>` — Set default PersistentKeepalive period in seconds
+* `--default-peer-amnezia-jc <30>` — Set Jc (junk packet count) for new peers by default
+* `--default-peer-amnezia-jmin <60>` — Set Jmin (minimum junk packet size) for new peers by default
+* `--default-peer-amnezia-jmax <120>` — Set Jmax (maximum junk packet size) for new peers by default
 * `--no-prompt <NO_PROMPT>` — Disable interactive setup prompts
 
   Possible values: `true`, `false`
@@ -193,7 +283,7 @@ Run the wg-quickrs agent
 * [`config enable agent web https`↴](#config-enable-agent-web-https)
 * [`config enable agent web password`↴](#config-enable-agent-web-password)
 * [`config enable agent vpn`↴](#config-enable-agent-vpn)
-* [`config enable agent firewall`↴](#config-enable-agent-firewall)
+* [`config enable agent vpn wg-userspace`↴](#config-enable-agent-vpn-wg-userspace)
 * [`config enable network`↴](#config-enable-network)
 * [`config enable network peer`↴](#config-enable-network-peer)
 * [`config enable network peer endpoint`↴](#config-enable-network-peer-endpoint)
@@ -208,6 +298,7 @@ Run the wg-quickrs agent
 * [`config enable network defaults peer mtu`↴](#config-enable-network-defaults-peer-mtu)
 * [`config enable network defaults connection`↴](#config-enable-network-defaults-connection)
 * [`config enable network defaults connection persistent-keepalive`↴](#config-enable-network-defaults-connection-persistent-keepalive)
+* [`config enable network amnezia-parameters`↴](#config-enable-network-amnezia-parameters)
 * [`config disable`↴](#config-disable)
 * [`config disable agent`↴](#config-disable-agent)
 * [`config disable agent web`↴](#config-disable-agent-web)
@@ -215,7 +306,7 @@ Run the wg-quickrs agent
 * [`config disable agent web https`↴](#config-disable-agent-web-https)
 * [`config disable agent web password`↴](#config-disable-agent-web-password)
 * [`config disable agent vpn`↴](#config-disable-agent-vpn)
-* [`config disable agent firewall`↴](#config-disable-agent-firewall)
+* [`config disable agent vpn wg-userspace`↴](#config-disable-agent-vpn-wg-userspace)
 * [`config disable network`↴](#config-disable-network)
 * [`config disable network peer`↴](#config-disable-network-peer)
 * [`config disable network peer endpoint`↴](#config-disable-network-peer-endpoint)
@@ -230,6 +321,7 @@ Run the wg-quickrs agent
 * [`config disable network defaults peer mtu`↴](#config-disable-network-defaults-peer-mtu)
 * [`config disable network defaults connection`↴](#config-disable-network-defaults-connection)
 * [`config disable network defaults connection persistent-keepalive`↴](#config-disable-network-defaults-connection-persistent-keepalive)
+* [`config disable network amnezia-parameters`↴](#config-disable-network-amnezia-parameters)
 * [`config set`↴](#config-set)
 * [`config set agent`↴](#config-set-agent)
 * [`config set agent web`↴](#config-set-agent-web)
@@ -242,9 +334,9 @@ Run the wg-quickrs agent
 * [`config set agent web https tls-key`↴](#config-set-agent-web-https-tls-key)
 * [`config set agent vpn`↴](#config-set-agent-vpn)
 * [`config set agent vpn port`↴](#config-set-agent-vpn-port)
-* [`config set agent firewall`↴](#config-set-agent-firewall)
-* [`config set agent firewall utility`↴](#config-set-agent-firewall-utility)
-* [`config set agent firewall gateway`↴](#config-set-agent-firewall-gateway)
+* [`config set agent vpn wg`↴](#config-set-agent-vpn-wg)
+* [`config set agent vpn wg-userspace`↴](#config-set-agent-vpn-wg-userspace)
+* [`config set agent vpn wg-userspace binary`↴](#config-set-agent-vpn-wg-userspace-binary)
 * [`config set network`↴](#config-set-network)
 * [`config set network name`↴](#config-set-network-name)
 * [`config set network subnet`↴](#config-set-network-subnet)
@@ -256,6 +348,10 @@ Run the wg-quickrs agent
 * [`config set network peer icon`↴](#config-set-network-peer-icon)
 * [`config set network peer dns`↴](#config-set-network-peer-dns)
 * [`config set network peer mtu`↴](#config-set-network-peer-mtu)
+* [`config set network peer amnezia-parameters`↴](#config-set-network-peer-amnezia-parameters)
+* [`config set network peer amnezia-parameters jc`↴](#config-set-network-peer-amnezia-parameters-jc)
+* [`config set network peer amnezia-parameters jmin`↴](#config-set-network-peer-amnezia-parameters-jmin)
+* [`config set network peer amnezia-parameters jmax`↴](#config-set-network-peer-amnezia-parameters-jmax)
 * [`config set network connection`↴](#config-set-network-connection)
 * [`config set network connection allowed-ips-a-to-b`↴](#config-set-network-connection-allowed-ips-a-to-b)
 * [`config set network connection allowed-ips-b-to-a`↴](#config-set-network-connection-allowed-ips-b-to-a)
@@ -266,8 +362,19 @@ Run the wg-quickrs agent
 * [`config set network defaults peer icon`↴](#config-set-network-defaults-peer-icon)
 * [`config set network defaults peer dns`↴](#config-set-network-defaults-peer-dns)
 * [`config set network defaults peer mtu`↴](#config-set-network-defaults-peer-mtu)
+* [`config set network defaults peer amnezia-parameters`↴](#config-set-network-defaults-peer-amnezia-parameters)
+* [`config set network defaults peer amnezia-parameters jc`↴](#config-set-network-defaults-peer-amnezia-parameters-jc)
+* [`config set network defaults peer amnezia-parameters jmin`↴](#config-set-network-defaults-peer-amnezia-parameters-jmin)
+* [`config set network defaults peer amnezia-parameters jmax`↴](#config-set-network-defaults-peer-amnezia-parameters-jmax)
 * [`config set network defaults connection`↴](#config-set-network-defaults-connection)
 * [`config set network defaults connection persistent-keepalive`↴](#config-set-network-defaults-connection-persistent-keepalive)
+* [`config set network amnezia-parameters`↴](#config-set-network-amnezia-parameters)
+* [`config set network amnezia-parameters s1`↴](#config-set-network-amnezia-parameters-s1)
+* [`config set network amnezia-parameters s2`↴](#config-set-network-amnezia-parameters-s2)
+* [`config set network amnezia-parameters h1`↴](#config-set-network-amnezia-parameters-h1)
+* [`config set network amnezia-parameters h2`↴](#config-set-network-amnezia-parameters-h2)
+* [`config set network amnezia-parameters h3`↴](#config-set-network-amnezia-parameters-h3)
+* [`config set network amnezia-parameters h4`↴](#config-set-network-amnezia-parameters-h4)
 * [`config reset`↴](#config-reset)
 * [`config reset agent`↴](#config-reset-agent)
 * [`config reset agent web`↴](#config-reset-agent-web)
@@ -295,10 +402,10 @@ Run the wg-quickrs agent
 * [`config get agent vpn`↴](#config-get-agent-vpn)
 * [`config get agent vpn enabled`↴](#config-get-agent-vpn-enabled)
 * [`config get agent vpn port`↴](#config-get-agent-vpn-port)
-* [`config get agent firewall`↴](#config-get-agent-firewall)
-* [`config get agent firewall enabled`↴](#config-get-agent-firewall-enabled)
-* [`config get agent firewall utility`↴](#config-get-agent-firewall-utility)
-* [`config get agent firewall gateway`↴](#config-get-agent-firewall-gateway)
+* [`config get agent vpn wg`↴](#config-get-agent-vpn-wg)
+* [`config get agent vpn wg-userspace`↴](#config-get-agent-vpn-wg-userspace)
+* [`config get agent vpn wg-userspace enabled`↴](#config-get-agent-vpn-wg-userspace-enabled)
+* [`config get agent vpn wg-userspace binary`↴](#config-get-agent-vpn-wg-userspace-binary)
 * [`config get network`↴](#config-get-network)
 * [`config get network name`↴](#config-get-network-name)
 * [`config get network subnet`↴](#config-get-network-subnet)
@@ -321,6 +428,10 @@ Run the wg-quickrs agent
 * [`config get network peers mtu value`↴](#config-get-network-peers-mtu-value)
 * [`config get network peers scripts`↴](#config-get-network-peers-scripts)
 * [`config get network peers private-key`↴](#config-get-network-peers-private-key)
+* [`config get network peers amnezia-parameters`↴](#config-get-network-peers-amnezia-parameters)
+* [`config get network peers amnezia-parameters jc`↴](#config-get-network-peers-amnezia-parameters-jc)
+* [`config get network peers amnezia-parameters jmin`↴](#config-get-network-peers-amnezia-parameters-jmin)
+* [`config get network peers amnezia-parameters jmax`↴](#config-get-network-peers-amnezia-parameters-jmax)
 * [`config get network peers created-at`↴](#config-get-network-peers-created-at)
 * [`config get network peers updated-at`↴](#config-get-network-peers-updated-at)
 * [`config get network connections`↴](#config-get-network-connections)
@@ -344,6 +455,10 @@ Run the wg-quickrs agent
 * [`config get network defaults peer mtu enabled`↴](#config-get-network-defaults-peer-mtu-enabled)
 * [`config get network defaults peer mtu value`↴](#config-get-network-defaults-peer-mtu-value)
 * [`config get network defaults peer scripts`↴](#config-get-network-defaults-peer-scripts)
+* [`config get network defaults peer amnezia-parameters`↴](#config-get-network-defaults-peer-amnezia-parameters)
+* [`config get network defaults peer amnezia-parameters jc`↴](#config-get-network-defaults-peer-amnezia-parameters-jc)
+* [`config get network defaults peer amnezia-parameters jmin`↴](#config-get-network-defaults-peer-amnezia-parameters-jmin)
+* [`config get network defaults peer amnezia-parameters jmax`↴](#config-get-network-defaults-peer-amnezia-parameters-jmax)
 * [`config get network defaults connection`↴](#config-get-network-defaults-connection)
 * [`config get network defaults connection persistent-keepalive`↴](#config-get-network-defaults-connection-persistent-keepalive)
 * [`config get network defaults connection persistent-keepalive enabled`↴](#config-get-network-defaults-connection-persistent-keepalive-enabled)
@@ -351,6 +466,14 @@ Run the wg-quickrs agent
 * [`config get network reservations`↴](#config-get-network-reservations)
 * [`config get network reservations peer-id`↴](#config-get-network-reservations-peer-id)
 * [`config get network reservations valid-until`↴](#config-get-network-reservations-valid-until)
+* [`config get network amnezia-parameters`↴](#config-get-network-amnezia-parameters)
+* [`config get network amnezia-parameters enabled`↴](#config-get-network-amnezia-parameters-enabled)
+* [`config get network amnezia-parameters s1`↴](#config-get-network-amnezia-parameters-s1)
+* [`config get network amnezia-parameters s2`↴](#config-get-network-amnezia-parameters-s2)
+* [`config get network amnezia-parameters h1`↴](#config-get-network-amnezia-parameters-h1)
+* [`config get network amnezia-parameters h2`↴](#config-get-network-amnezia-parameters-h2)
+* [`config get network amnezia-parameters h3`↴](#config-get-network-amnezia-parameters-h3)
+* [`config get network amnezia-parameters h4`↴](#config-get-network-amnezia-parameters-h4)
 * [`config get network updated-at`↴](#config-get-network-updated-at)
 * [`config list`↴](#config-list)
 * [`config list peers`↴](#config-list-peers)
@@ -363,6 +486,7 @@ Run the wg-quickrs agent
 * [`config add`↴](#config-add)
 * [`config add peer`↴](#config-add-peer)
 * [`config add connection`↴](#config-add-connection)
+* [`config conf`↴](#config-conf)
 
 ### `config`
 
@@ -380,6 +504,7 @@ Edit agent configuration options
 * `list` — List network entities in human-readable format
 * `remove` — Remove network entities
 * `add` — Add network entities
+* `conf` — Generate wg/awg or wg-quick/awg-quick configuration file for a peer
 
 
 
@@ -406,7 +531,6 @@ Enable agent configuration options
 
 * `web` — Enable web server options
 * `vpn` — Enable VPN server
-* `firewall` — Enable firewall configuration
 
 
 
@@ -452,15 +576,19 @@ Enable password authentication for web server
 
 Enable VPN server
 
-**Usage:** `config enable agent vpn`
+**Usage:** `config enable agent vpn [COMMAND]`
+
+###### **Subcommands:**
+
+* `wg-userspace` — Enable WireGuard userspace mode
 
 
 
-### `config enable agent firewall`
+### `config enable agent vpn wg-userspace`
 
-Enable firewall configuration
+Enable WireGuard userspace mode
 
-**Usage:** `config enable agent firewall`
+**Usage:** `config enable agent vpn wg-userspace`
 
 
 
@@ -475,6 +603,7 @@ Enable network configuration options
 * `peer` — Enable peer options
 * `connection` — Enable connection
 * `defaults` — Enable default configuration options
+* `amnezia-parameters` — Enable AmneziaWG obfuscation
 
 
 
@@ -612,6 +741,14 @@ Enable default connection persistent keepalive
 
 
 
+### `config enable network amnezia-parameters`
+
+Enable AmneziaWG obfuscation
+
+**Usage:** `config enable network amnezia-parameters`
+
+
+
 ### `config disable`
 
 Disable a configuration option
@@ -635,7 +772,6 @@ Disable agent configuration options
 
 * `web` — Disable web server options
 * `vpn` — Disable VPN server
-* `firewall` — Disable firewall configuration
 
 
 
@@ -681,15 +817,19 @@ Disable password authentication for web server
 
 Disable VPN server
 
-**Usage:** `config disable agent vpn`
+**Usage:** `config disable agent vpn [COMMAND]`
+
+###### **Subcommands:**
+
+* `wg-userspace` — Disable WireGuard userspace mode
 
 
 
-### `config disable agent firewall`
+### `config disable agent vpn wg-userspace`
 
-Disable firewall configuration
+Disable WireGuard userspace mode
 
-**Usage:** `config disable agent firewall`
+**Usage:** `config disable agent vpn wg-userspace`
 
 
 
@@ -704,6 +844,7 @@ Disable network configuration options
 * `peer` — Disable peer options
 * `connection` — Disable connection
 * `defaults` — Disable default configuration options
+* `amnezia-parameters` — Disable AmneziaWG obfuscation
 
 
 
@@ -841,6 +982,14 @@ Disable default connection persistent keepalive
 
 
 
+### `config disable network amnezia-parameters`
+
+Disable AmneziaWG obfuscation
+
+**Usage:** `config disable network amnezia-parameters`
+
+
+
 ### `config set`
 
 Set a configuration value
@@ -864,7 +1013,6 @@ Set agent configuration values
 
 * `web` — Set web server configuration
 * `vpn` — Set VPN configuration
-* `firewall` — Set firewall configuration
 
 
 
@@ -977,6 +1125,8 @@ Set VPN configuration
 ###### **Subcommands:**
 
 * `port` — Set VPN server listening port
+* `wg` — Set path to WireGuard binary
+* `wg-userspace` — Set WireGuard userspace configuration
 
 
 
@@ -992,40 +1142,39 @@ Set VPN server listening port
 
 
 
-### `config set agent firewall`
+### `config set agent vpn wg`
 
-Set firewall configuration
+Set path to WireGuard binary
 
-**Usage:** `config set agent firewall <COMMAND>`
+**Usage:** `config set agent vpn wg <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — Path to WireGuard binary
+
+
+
+### `config set agent vpn wg-userspace`
+
+Set WireGuard userspace configuration
+
+**Usage:** `config set agent vpn wg-userspace <COMMAND>`
 
 ###### **Subcommands:**
 
-* `utility` — Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)
-* `gateway` — Set the gateway used to configure firewall NAT and input rules (e.g. en0, eth0, etc.)
+* `binary` — Set path to WireGuard userspace binary
 
 
 
-### `config set agent firewall utility`
+### `config set agent vpn wg-userspace binary`
 
-Set the utility used to configure firewall NAT and input rules (e.g. iptables, pfctl, etc.)
+Set path to WireGuard userspace binary
 
-**Usage:** `config set agent firewall utility <VALUE>`
-
-###### **Arguments:**
-
-* `<VALUE>` — Utility binary path or name
-
-
-
-### `config set agent firewall gateway`
-
-Set the gateway used to configure firewall NAT and input rules (e.g. en0, eth0, etc.)
-
-**Usage:** `config set agent firewall gateway <VALUE>`
+**Usage:** `config set agent vpn wg-userspace binary <VALUE>`
 
 ###### **Arguments:**
 
-* `<VALUE>` — Internet interface name
+* `<VALUE>` — Path to WireGuard userspace binary
 
 
 
@@ -1042,6 +1191,7 @@ Set network configuration values
 * `peer` — Set peer configuration
 * `connection` — Set connection configuration
 * `defaults` — Set default configuration
+* `amnezia-parameters` — Set AmneziaWG network parameters
 
 
 
@@ -1084,6 +1234,7 @@ Set peer configuration
 * `icon` — Set peer icon source
 * `dns` — Set peer DNS addresses
 * `mtu` — Set peer MTU value
+* `amnezia-parameters` — Set peer AmneziaWG parameters
 
 ###### **Arguments:**
 
@@ -1175,6 +1326,56 @@ Set peer MTU value
 
 
 
+### `config set network peer amnezia-parameters`
+
+Set peer AmneziaWG parameters
+
+**Usage:** `config set network peer amnezia-parameters <COMMAND>`
+
+###### **Subcommands:**
+
+* `jc` — Set Jc parameter (junk packet count)
+* `jmin` — Set Jmin parameter (minimum junk packet size)
+* `jmax` — Set Jmax parameter (maximum junk packet size)
+
+
+
+### `config set network peer amnezia-parameters jc`
+
+Set Jc parameter (junk packet count)
+
+**Usage:** `config set network peer amnezia-parameters jc <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — Junk packet count
+
+
+
+### `config set network peer amnezia-parameters jmin`
+
+Set Jmin parameter (minimum junk packet size)
+
+**Usage:** `config set network peer amnezia-parameters jmin <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — Minimum junk packet size
+
+
+
+### `config set network peer amnezia-parameters jmax`
+
+Set Jmax parameter (maximum junk packet size)
+
+**Usage:** `config set network peer amnezia-parameters jmax <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — Maximum junk packet size
+
+
+
 ### `config set network connection`
 
 Set connection configuration
@@ -1254,6 +1455,7 @@ Set default peer configuration
 * `icon` — Set default peer icon source
 * `dns` — Set default peer DNS addresses
 * `mtu` — Set default peer MTU value
+* `amnezia-parameters` — Set default peer AmneziaWG parameters
 
 
 
@@ -1305,6 +1507,56 @@ Set default peer MTU value
 
 
 
+### `config set network defaults peer amnezia-parameters`
+
+Set default peer AmneziaWG parameters
+
+**Usage:** `config set network defaults peer amnezia-parameters <COMMAND>`
+
+###### **Subcommands:**
+
+* `jc` — Set Jc parameter (junk packet count)
+* `jmin` — Set Jmin parameter (minimum junk packet size)
+* `jmax` — Set Jmax parameter (maximum junk packet size)
+
+
+
+### `config set network defaults peer amnezia-parameters jc`
+
+Set Jc parameter (junk packet count)
+
+**Usage:** `config set network defaults peer amnezia-parameters jc <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — Junk packet count
+
+
+
+### `config set network defaults peer amnezia-parameters jmin`
+
+Set Jmin parameter (minimum junk packet size)
+
+**Usage:** `config set network defaults peer amnezia-parameters jmin <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — Minimum junk packet size
+
+
+
+### `config set network defaults peer amnezia-parameters jmax`
+
+Set Jmax parameter (maximum junk packet size)
+
+**Usage:** `config set network defaults peer amnezia-parameters jmax <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — Maximum junk packet size
+
+
+
 ### `config set network defaults connection`
 
 Set default connection configuration
@@ -1326,6 +1578,95 @@ Set default connection persistent keepalive period
 ###### **Arguments:**
 
 * `<PERIOD>` — Keepalive period in seconds
+
+
+
+### `config set network amnezia-parameters`
+
+Set AmneziaWG network parameters
+
+**Usage:** `config set network amnezia-parameters <COMMAND>`
+
+###### **Subcommands:**
+
+* `s1` — Set S1 parameter (init packet junk size)
+* `s2` — Set S2 parameter (response packet junk size)
+* `h1` — Set H1 parameter (init packet magic header)
+* `h2` — Set H2 parameter (response packet magic header)
+* `h3` — Set H3 parameter (underload packet magic header)
+* `h4` — Set H4 parameter (transport packet magic header)
+
+
+
+### `config set network amnezia-parameters s1`
+
+Set S1 parameter (init packet junk size)
+
+**Usage:** `config set network amnezia-parameters s1 <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — S1 value
+
+
+
+### `config set network amnezia-parameters s2`
+
+Set S2 parameter (response packet junk size)
+
+**Usage:** `config set network amnezia-parameters s2 <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — S2 value
+
+
+
+### `config set network amnezia-parameters h1`
+
+Set H1 parameter (init packet magic header)
+
+**Usage:** `config set network amnezia-parameters h1 <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — H1 value
+
+
+
+### `config set network amnezia-parameters h2`
+
+Set H2 parameter (response packet magic header)
+
+**Usage:** `config set network amnezia-parameters h2 <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — H2 value
+
+
+
+### `config set network amnezia-parameters h3`
+
+Set H3 parameter (underload packet magic header)
+
+**Usage:** `config set network amnezia-parameters h3 <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — H3 value
+
+
+
+### `config set network amnezia-parameters h4`
+
+Set H4 parameter (transport packet magic header)
+
+**Usage:** `config set network amnezia-parameters h4 <VALUE>`
+
+###### **Arguments:**
+
+* `<VALUE>` — H4 value
 
 
 
@@ -1462,7 +1803,6 @@ Get agent configuration values
 
 * `web` — Get web server configuration
 * `vpn` — Get VPN configuration
-* `firewall` — Get firewall configuration
 
 
 
@@ -1604,6 +1944,8 @@ Get VPN configuration
 
 * `enabled` — Get whether VPN server is enabled
 * `port` — Get VPN server listening port
+* `wg` — Get path to WireGuard binary
+* `wg-userspace` — Get WireGuard userspace configuration
 
 
 
@@ -1623,41 +1965,40 @@ Get VPN server listening port
 
 
 
-### `config get agent firewall`
+### `config get agent vpn wg`
 
-Get firewall configuration
+Get path to WireGuard binary
 
-**Usage:** `config get agent firewall [COMMAND]`
+**Usage:** `config get agent vpn wg`
+
+
+
+### `config get agent vpn wg-userspace`
+
+Get WireGuard userspace configuration
+
+**Usage:** `config get agent vpn wg-userspace [COMMAND]`
 
 ###### **Subcommands:**
 
-* `enabled` — Get whether firewall configuration is enabled
-* `utility` — Get the utility used to configure firewall NAT and input rules
-* `gateway` — Get the gateway used to configure firewall NAT and input rules
+* `enabled` — Get whether WireGuard userspace is enabled
+* `binary` — Get path to WireGuard userspace binary
 
 
 
-### `config get agent firewall enabled`
+### `config get agent vpn wg-userspace enabled`
 
-Get whether firewall configuration is enabled
+Get whether WireGuard userspace is enabled
 
-**Usage:** `config get agent firewall enabled`
-
-
-
-### `config get agent firewall utility`
-
-Get the utility used to configure firewall NAT and input rules
-
-**Usage:** `config get agent firewall utility`
+**Usage:** `config get agent vpn wg-userspace enabled`
 
 
 
-### `config get agent firewall gateway`
+### `config get agent vpn wg-userspace binary`
 
-Get the gateway used to configure firewall NAT and input rules
+Get path to WireGuard userspace binary
 
-**Usage:** `config get agent firewall gateway`
+**Usage:** `config get agent vpn wg-userspace binary`
 
 
 
@@ -1676,6 +2017,7 @@ Get network configuration values
 * `connections` — Get network connections
 * `defaults` — Get network defaults
 * `reservations` — Get network reservations
+* `amnezia-parameters` — Get AmneziaWG network parameters
 * `updated-at` — Get network last updated timestamp
 
 
@@ -1721,6 +2063,7 @@ Get network peers
 * `mtu` — Get peer MTU
 * `scripts` — Get peer scripts
 * `private-key` — Get peer private key
+* `amnezia-parameters` — Get peer AmneziaWG parameters
 * `created-at` — Get peer creation timestamp
 * `updated-at` — Get peer last updated timestamp
 
@@ -1886,6 +2229,44 @@ Get peer private key
 
 
 
+### `config get network peers amnezia-parameters`
+
+Get peer AmneziaWG parameters
+
+**Usage:** `config get network peers amnezia-parameters [COMMAND]`
+
+###### **Subcommands:**
+
+* `jc` — Get Jc parameter (junk packet count)
+* `jmin` — Get Jmin parameter (minimum junk packet size)
+* `jmax` — Get Jmax parameter (maximum junk packet size)
+
+
+
+### `config get network peers amnezia-parameters jc`
+
+Get Jc parameter (junk packet count)
+
+**Usage:** `config get network peers amnezia-parameters jc`
+
+
+
+### `config get network peers amnezia-parameters jmin`
+
+Get Jmin parameter (minimum junk packet size)
+
+**Usage:** `config get network peers amnezia-parameters jmin`
+
+
+
+### `config get network peers amnezia-parameters jmax`
+
+Get Jmax parameter (maximum junk packet size)
+
+**Usage:** `config get network peers amnezia-parameters jmax`
+
+
+
 ### `config get network peers created-at`
 
 Get peer creation timestamp
@@ -2009,6 +2390,7 @@ Get default peer configuration
 * `dns` — Get default peer DNS
 * `mtu` — Get default peer MTU
 * `scripts` — Get default peer scripts
+* `amnezia-parameters` — Get default peer AmneziaWG parameters
 
 
 
@@ -2115,6 +2497,44 @@ Get default peer scripts
 
 
 
+### `config get network defaults peer amnezia-parameters`
+
+Get default peer AmneziaWG parameters
+
+**Usage:** `config get network defaults peer amnezia-parameters [COMMAND]`
+
+###### **Subcommands:**
+
+* `jc` — Get Jc parameter (junk packet count)
+* `jmin` — Get Jmin parameter (minimum junk packet size)
+* `jmax` — Get Jmax parameter (maximum junk packet size)
+
+
+
+### `config get network defaults peer amnezia-parameters jc`
+
+Get Jc parameter (junk packet count)
+
+**Usage:** `config get network defaults peer amnezia-parameters jc`
+
+
+
+### `config get network defaults peer amnezia-parameters jmin`
+
+Get Jmin parameter (minimum junk packet size)
+
+**Usage:** `config get network defaults peer amnezia-parameters jmin`
+
+
+
+### `config get network defaults peer amnezia-parameters jmax`
+
+Get Jmax parameter (maximum junk packet size)
+
+**Usage:** `config get network defaults peer amnezia-parameters jmax`
+
+
+
 ### `config get network defaults connection`
 
 Get default connection configuration
@@ -2186,6 +2606,80 @@ Get reservation peer ID
 Get reservation validity timestamp
 
 **Usage:** `config get network reservations valid-until`
+
+
+
+### `config get network amnezia-parameters`
+
+Get AmneziaWG network parameters
+
+**Usage:** `config get network amnezia-parameters [COMMAND]`
+
+###### **Subcommands:**
+
+* `enabled` — Get whether AmneziaWG obfuscation is enabled
+* `s1` — Get S1 parameter (init packet junk size)
+* `s2` — Get S2 parameter (response packet junk size)
+* `h1` — Get H1 parameter (init packet magic header)
+* `h2` — Get H2 parameter (response packet magic header)
+* `h3` — Get H3 parameter (underload packet magic header)
+* `h4` — Get H4 parameter (transport packet magic header)
+
+
+
+### `config get network amnezia-parameters enabled`
+
+Get whether AmneziaWG obfuscation is enabled
+
+**Usage:** `config get network amnezia-parameters enabled`
+
+
+
+### `config get network amnezia-parameters s1`
+
+Get S1 parameter (init packet junk size)
+
+**Usage:** `config get network amnezia-parameters s1`
+
+
+
+### `config get network amnezia-parameters s2`
+
+Get S2 parameter (response packet junk size)
+
+**Usage:** `config get network amnezia-parameters s2`
+
+
+
+### `config get network amnezia-parameters h1`
+
+Get H1 parameter (init packet magic header)
+
+**Usage:** `config get network amnezia-parameters h1`
+
+
+
+### `config get network amnezia-parameters h2`
+
+Get H2 parameter (response packet magic header)
+
+**Usage:** `config get network amnezia-parameters h2`
+
+
+
+### `config get network amnezia-parameters h3`
+
+Get H3 parameter (underload packet magic header)
+
+**Usage:** `config get network amnezia-parameters h3`
+
+
+
+### `config get network amnezia-parameters h4`
+
+Get H4 parameter (transport packet magic header)
+
+**Usage:** `config get network amnezia-parameters h4`
 
 
 
@@ -2377,6 +2871,23 @@ Add a connection between two peers
 * `--persistent-keepalive-period <25>` — Set persistent keepalive period in seconds
 * `--allowed-ips-first-to-second <10.0.34.0/24>` — Set allowed IPs from the first peer to the second peer
 * `--allowed-ips-second-to-first <10.0.34.0/24>` — Set allowed IPs from the second peer to the first peer
+
+
+
+### `config conf`
+
+Generate wg/awg or wg-quick/awg-quick configuration file for a peer
+
+**Usage:** `config conf [OPTIONS] <PEER_ID>`
+
+###### **Arguments:**
+
+* `<PEER_ID>` — UUID of the peer to generate WireGuard configuration for. Use 'wg-quickrs config list peers' to see available peer IDs.
+
+###### **Options:**
+
+* `--stripped` — Use --stripped to use with wg/awg, otherwise the conf will only be valid for wg-quick/awg-quick.
+* `-o`, `--out <FILE>` — Write the generated WireGuard configuration to the specified file path. If not specified, the configuration will be written to stdout.
 
 
 

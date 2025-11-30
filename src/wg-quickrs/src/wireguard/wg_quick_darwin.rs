@@ -57,17 +57,21 @@ pub fn interface_exists(interface: &str) -> TunnelResult<Option<String>> {
     Ok(Some(iface))
 }
 
-pub fn add_interface(interface: &str) -> TunnelResult<String> {
-    fs::create_dir_all("/var/run/wireguard/")?;
+pub fn add_interface(interface: &str, userspace: bool, userspace_binary: &str) -> TunnelResult<String> {
+    if !userspace {
+        return Err(TunnelError::NoWireGuardKernelModule());
+    }
 
+    fs::create_dir_all("/var/run/wireguard/")?;
     let name_file = format!("/var/run/wireguard/{}.name", interface);
 
     let log_level = if log_enabled!(Level::Debug) { "debug" } else { "error" };
-    let value = name_file.clone();
+    let name_file_cloned = name_file.clone();
+    let userspace_binary_cloned = userspace_binary.to_string();
     std::thread::spawn(move || unsafe {
-        match Command::new("wireguard-go")
+        match Command::new(&userspace_binary_cloned)
             .args(["--foreground", "utun"])
-            .env("WG_TUN_NAME_FILE", value)
+            .env("WG_TUN_NAME_FILE", name_file_cloned)
             .env("LOG_LEVEL", log_level)
             .stdin(std::process::Stdio::inherit())
             .stdout(std::process::Stdio::inherit())
@@ -79,15 +83,15 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
             }).output() {
             Ok(output) => {
                 if !output.status.success() {
-                    log::error!("[!] wireguard-go failed: {}", String::from_utf8_lossy(&output.stderr));
+                    log::error!("[!] {} failed: {}", userspace_binary_cloned, String::from_utf8_lossy(&output.stderr));
                 }
             }
             Err(e) => {
-                log::error!("[!] wireguard-go failed: {}", e);
+                log::error!("[!] {} failed: {}", userspace_binary_cloned, e);
             }
         };
 
-        log::debug!("[+] wireguard-go exit");
+        log::debug!("[+] {} exit", userspace_binary_cloned);
     });
 
     std::thread::sleep(Duration::from_millis(500)); // TODO: replace with a better solution
@@ -96,7 +100,7 @@ pub fn add_interface(interface: &str) -> TunnelResult<String> {
     Ok(iface)
 }
 
-pub fn del_interface(iface: &str, interface: &str, _dns_manager: &mut DnsManager, _endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
+pub fn del_interface(_wg: &str, iface: &str, interface: &str, _dns_manager: &mut DnsManager, _endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
     let sock_file = format!("/var/run/wireguard/{}.sock", iface);
     let _ = fs::remove_file(sock_file);
 
@@ -117,7 +121,7 @@ pub fn add_address(iface: &str, addr: &str, is_ipv6: bool) -> TunnelResult<()> {
     Ok(())
 }
 
-pub fn set_mtu_and_up(iface: &str, mtu: &Mtu) -> TunnelResult<()> {
+pub fn set_mtu_and_up(_wg: &str, iface: &str, mtu: &Mtu) -> TunnelResult<()> {
     set_mtu(iface, mtu)?;
     shell_cmd(&["ifconfig", iface, "up"])?;
 
@@ -265,7 +269,7 @@ pub fn del_dns(_interface: &str, dns_manager: &mut DnsManager) -> TunnelResult<(
     Ok(())
 }
 
-pub fn add_route(iface: &str, _interface_name: &str, cidr: &str, endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
+pub fn add_route(_wg: &str, iface: &str, _interface_name: &str, cidr: &str, endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
     let is_default = cidr.ends_with("/0");
     let is_ipv6 = cidr.contains(':');
 
@@ -298,14 +302,14 @@ pub fn add_route(iface: &str, _interface_name: &str, cidr: &str, endpoint_router
     Ok(())
 }
 
-pub fn set_endpoint_direct_route(iface: &str, endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
+pub fn set_endpoint_direct_route(wg: &str, iface: &str, endpoint_router: &mut EndpointRouter) -> TunnelResult<()> {
     let mut old_endpoints = endpoint_router.endpoints.clone();
     let old_gateway4 = endpoint_router.gateway4.clone();
     let old_gateway6 = endpoint_router.gateway6.clone();
 
     endpoint_router.gateway4 = get_default_gateway(false).ok();
     endpoint_router.gateway6 = get_default_gateway(true).ok();
-    endpoint_router.endpoints = wg_quick::get_endpoints(iface);
+    endpoint_router.endpoints = wg_quick::get_endpoints(wg, iface);
 
     // Check if gateways changed
     let remove_all_old = old_gateway4 != endpoint_router.gateway4 || old_gateway6 != endpoint_router.gateway6;
@@ -381,7 +385,8 @@ fn get_default_gateway(ipv6: bool) -> TunnelResult<String> {
     Err(TunnelError::DefaultGatewayNotFound())
 }
 
-pub fn start_monitor_daemon(iface: &str, interface_name: &str, dns: &Dns, mtu: &Mtu, endpoint_router: &EndpointRouter, dns_manager: &DnsManager) -> TunnelResult<()> {
+pub fn start_monitor_daemon(wg: &str, iface: &str, interface_name: &str, dns: &Dns, mtu: &Mtu, endpoint_router: &EndpointRouter, dns_manager: &DnsManager) -> TunnelResult<()> {
+    let wg_clone = wg.to_string();
     let iface_clone = iface.to_string();
     let interface_name_clone = interface_name.to_string();
     let dns_clone = dns.clone();
@@ -390,6 +395,7 @@ pub fn start_monitor_daemon(iface: &str, interface_name: &str, dns: &Dns, mtu: &
     let mut dns_manager_clone = dns_manager.clone();
     std::thread::spawn(move || {
         let result = monitor_daemon_worker(
+            wg_clone,
             iface_clone.clone(),
             interface_name_clone,
             dns_clone,
@@ -415,6 +421,7 @@ pub fn start_monitor_daemon(iface: &str, interface_name: &str, dns: &Dns, mtu: &
 }
 
 fn monitor_daemon_worker(
+    wg: String,
     real_iface: String,
     _interface: String,
     dns: Dns,
@@ -462,7 +469,7 @@ fn monitor_daemon_worker(
         }
 
         if (endpoint_router.auto_route4 || endpoint_router.auto_route6)
-            && let Err(e) = set_endpoint_direct_route(&real_iface, &mut endpoint_router_clone) {
+            && let Err(e) = set_endpoint_direct_route(&wg, &real_iface, &mut endpoint_router_clone) {
                 log::warn!("[!] Failed to reapply endpoint routes: {}", e);
             }
 

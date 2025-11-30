@@ -84,6 +84,7 @@ pub struct Network {
     pub connections: BTreeMap<ConnectionId, Connection>,
     pub defaults: Defaults,
     pub reservations: BTreeMap<Ipv4Addr, ReservationData>,
+    pub amnezia_parameters: AmneziaNetworkParameters,
     pub updated_at: DateTime<Utc>,
 }
 
@@ -98,6 +99,7 @@ pub struct Peer {
     pub mtu: Mtu,
     pub scripts: Scripts,
     pub private_key: WireGuardKey,
+    pub amnezia_parameters: AmneziaPeerParameters,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -227,6 +229,13 @@ impl<'de> Deserialize<'de> for WireGuardKey {
     }
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+pub struct AmneziaPeerParameters {
+    pub jc: i16,
+    pub jmin: u16,
+    pub jmax: u16,
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Connection {
     pub enabled: bool,
@@ -257,6 +266,7 @@ pub struct DefaultPeer {
     pub dns: Dns,
     pub mtu: Mtu,
     pub scripts: Scripts,
+    pub amnezia_parameters: AmneziaPeerParameters,
 }
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Debug, Clone)]
@@ -268,4 +278,15 @@ pub struct DefaultConnection {
 pub struct ReservationData {
     pub peer_id: Uuid,
     pub valid_until: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Default, PartialEq, Debug, Clone)]
+pub struct AmneziaNetworkParameters {
+    pub enabled: bool,
+    pub s1: u16,
+    pub s2: u16,
+    pub h1: u32,
+    pub h2: u32,
+    pub h3: u32,
+    pub h4: u32,
 }

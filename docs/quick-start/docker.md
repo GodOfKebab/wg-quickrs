@@ -2,7 +2,38 @@
 
 ## 1. Use the pre-built Docker images (recommended)
 
-## 1.1 Generate your TLS certs/keys (optional)
+### 1.1 Use `docker-compose.yml` (recommended)
+
+You can either pull and start your containers over the command line, or use the provided `docker-compose.yml` file.
+The advantage of using the `docker-compose.yml` file is that you can easily customize the containers to your needs.
+Also, the tags are pinned to a version, so when you run this in the future, you will always deal with the same version of `wg-quickrs` as your config files.
+This prevents you from accidentally upgrading to a newer version of `wg-quickrs` and breaking your setup.
+To download, run the following command:
+
+```shell
+mkdir wg-quickrs-docker
+cd wg-quickrs-docker
+wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/docker-compose.yml
+# OR specify a release like so
+# wget -q https://github.com/GodOfKebab/wg-quickrs/releases/download/v2.0.0/docker-compose.yml
+```
+
+After editing the `docker-compose.yml` file, run the following command to set up and start the containers:
+
+```shell
+# optional: generate TLS certs/keys
+docker compose up tls-cert-generator
+# initialize the agent
+docker compose up wg-quickrs-agent-init
+# run the agent and fork it in the background
+docker compose up -d wg-quickrs-agent-run
+# reset the web password
+docker compose up wg-quickrs-config-reset-password
+```
+
+### 1.2 Use docker CLI commands
+
+#### 1.2.1 Generate your TLS certs/keys (optional)
 
 Generate your TLS certs/keys to `$HOME/.wg-quickrs-docker/certs/YOUR-SERVER/cert.pem`/`$HOME/.wg-quickrs-docker/certs/YOUR-SERVER/key.pem`.
 
@@ -23,9 +54,7 @@ docker run --rm \
   YOUR-SERVER
 ```
 
----
-
-## 1.2 Initialize the agent
+#### 1.2.2 Initialize the agent
 
 Initialize your agent using the init command:
 
@@ -45,12 +74,25 @@ docker run --rm \
     --agent-web-https-tls-cert   certs/servers/YOUR-SERVER/cert.pem \
     --agent-web-https-tls-key    certs/servers/YOUR-SERVER/key.pem  \
     --agent-web-password-enabled true                               \
-    --agent-web-password         YOUR-PASSWORD                      \
+    --agent-web-password         YOUR_PASSWORD                      \
     --agent-vpn-enabled          true                               \
     --agent-vpn-port             51820                              \
+    --agent-vpn-wg                   /usr/bin/awg                   \
+    --agent-vpn-wg-userspace-enabled true                           \
+    --agent-vpn-wg-userspace-binary  /usr/bin/amneziawg-go          \
+    --network-amnezia-enabled        false                          \
+    --network-amnezia-s1             55                             \
+    --network-amnezia-s2             155                            \
+    --network-amnezia-h-random       true                           \
     --agent-firewall-enabled     true                               \
     --agent-firewall-utility     /usr/sbin/iptables                 \
     --agent-firewall-gateway     eth0                               \
+    --agent-firewall-configure-http  true                           \
+    --agent-firewall-http-automated  true                           \
+    --agent-firewall-configure-https true                           \
+    --agent-firewall-https-automated true                           \
+    --agent-firewall-configure-vpn   true                           \
+    --agent-firewall-vpn-automated   true                           \
     --agent-peer-name                     wg-quickrs-host   \
     --agent-peer-vpn-internal-address     10.0.34.1         \
     --agent-peer-vpn-endpoint             YOUR-SERVER:51820 \
@@ -63,6 +105,9 @@ docker run --rm \
     --agent-peer-script-post-up-enabled   false             \
     --agent-peer-script-pre-down-enabled  false             \
     --agent-peer-script-post-down-enabled false             \
+    --agent-peer-amnezia-jc               30                \
+    --agent-peer-amnezia-jmin             60                \
+    --agent-peer-amnezia-jmax             120               \
     --default-peer-kind                               laptop  \
     --default-peer-icon-enabled                       false   \
     --default-peer-dns-enabled                        true    \
@@ -72,13 +117,14 @@ docker run --rm \
     --default-peer-script-post-up-enabled             false   \
     --default-peer-script-pre-down-enabled            false   \
     --default-peer-script-post-down-enabled           false   \
+    --default-peer-amnezia-jc                         30      \
+    --default-peer-amnezia-jmin                       60      \
+    --default-peer-amnezia-jmax                       120     \
     --default-connection-persistent-keepalive-enabled true    \
     --default-connection-persistent-keepalive-period  25
 ```
 
----
-
-## 1.3 Run the agent
+#### 1.2.3 Run the agent
 
 Then start the agent and fork it in the background like so:
 
@@ -90,6 +136,7 @@ docker run -d \
   --cap-add SYS_MODULE \
   --sysctl net.ipv4.ip_forward=1 \
   --sysctl net.ipv4.conf.all.src_valid_mark=1 \
+  --device /dev/net/tun:/dev/net/tun \
   -p 8443:443/tcp \
   -p 51820:51820/udp \
   --restart unless-stopped \
@@ -100,7 +147,7 @@ docker run -d \
 HTTPS server will be available at `https://YOUR-SERVER:8443`.
 WireGuard endpoint will be available at `YOUR-SERVER:51820`.
 
-## 1.4 Reset web password
+#### 1.2.4 Reset web password
 
 If you need to reset the web password in the future, make sure the 'agent run' container is not running and run the following command:
 
@@ -114,7 +161,7 @@ docker run --rm \
 ⚠️ Note: Keep in mind that the plaintext password might show up in the bash/zsh history.
 If you instead use the binaries instead of docker, `wg-quickrs config reset agent web password` prompts for the password interactively, which is safer.
 
-### 2. Build the Docker images from source
+## 2. Build the Docker images from source
 
 See [BUILDING.md](../BUILDING.md#12-using-docker)
 

@@ -1,0 +1,114 @@
+services:
+
+  tls-cert-generator:
+    image: godofkebab/tls-cert-generator
+    volumes:
+      - .wg-quickrs-docker/certs:/app/certs
+    environment:
+      COUNTRY: "XX"
+      STATE: "XXX"
+      LOCALITY: "XXX"
+      ORGANIZATION: "XXX"
+      ORGANIZATIONAL_UNIT: "XXX"
+      ROOT_CN: "tls-cert-generator@XXX"
+    command: [ "YOUR-SERVER" ] # <-- update with your IP/domain for HTTPS server
+
+  # <-- update YOUR-SERVER with the address (ip/domain) that would be in your wg endpoint
+  # <-- update YOUR_PASSWORD with your password
+  # <-- toggle --network-amnezia-enabled to true if you want to use amnezia with obfuscation,
+  #     by default, it is backwards compatible with normal wg
+  wg-quickrs-agent-init:
+    container_name: wg-quickrs-agent-init-cnt
+    image: godofkebab/wg-quickrs:latest
+    volumes:
+      - .wg-quickrs-docker:/app/.wg-quickrs
+    command: >
+      agent init --no-prompt true
+      --network-name wg-quickrs-home
+      --network-subnet     10.0.34.0/24
+
+      --agent-web-address              0.0.0.0
+      --agent-web-http-enabled         true
+      --agent-web-http-port            80
+      --agent-web-https-enabled        true
+      --agent-web-https-port           443
+      --agent-web-https-tls-cert       certs/servers/YOUR-SERVER/cert.pem
+      --agent-web-https-tls-key        certs/servers/YOUR-SERVER/key.pem
+      --agent-web-password-enabled     true
+      --agent-web-password             YOUR_PASSWORD
+      --agent-vpn-enabled              true
+      --agent-vpn-port                 51820
+      --agent-vpn-wg                   /usr/bin/awg
+      --agent-vpn-wg-userspace-enabled true
+      --agent-vpn-wg-userspace-binary  /usr/bin/amneziawg-go
+      --network-amnezia-enabled        false
+      --network-amnezia-s1             55
+      --network-amnezia-s2             155
+      --network-amnezia-h-random       true
+      --agent-firewall-enabled         true
+      --agent-firewall-utility         /usr/sbin/iptables
+      --agent-firewall-gateway         eth0
+      --agent-firewall-configure-http  true
+      --agent-firewall-http-automated  true
+      --agent-firewall-configure-https true
+      --agent-firewall-https-automated true
+      --agent-firewall-configure-vpn   true
+      --agent-firewall-vpn-automated   true
+      
+      --agent-peer-name                     wg-quickrs-host
+      --agent-peer-vpn-internal-address     10.0.34.1
+      --agent-peer-vpn-endpoint             YOUR-SERVER:51820
+      --agent-peer-kind                     server
+      --agent-peer-icon-enabled             false
+      --agent-peer-dns-enabled              true
+      --agent-peer-dns-addresses            1.1.1.1
+      --agent-peer-mtu-enabled              false
+      --agent-peer-script-pre-up-enabled    false
+      --agent-peer-script-post-up-enabled   false
+      --agent-peer-script-pre-down-enabled  false
+      --agent-peer-script-post-down-enabled false
+      --agent-peer-amnezia-jc               30
+      --agent-peer-amnezia-jmin             60
+      --agent-peer-amnezia-jmax             120
+
+      --default-peer-kind                               laptop
+      --default-peer-icon-enabled                       false
+      --default-peer-dns-enabled                        true
+      --default-peer-dns-addresses                      1.1.1.1
+      --default-peer-mtu-enabled                        false
+      --default-peer-script-pre-up-enabled              false
+      --default-peer-script-post-up-enabled             false
+      --default-peer-script-pre-down-enabled            false
+      --default-peer-script-post-down-enabled           false
+      --default-peer-amnezia-jc                         30
+      --default-peer-amnezia-jmin                       60
+      --default-peer-amnezia-jmax                       120
+      --default-connection-persistent-keepalive-enabled true
+      --default-connection-persistent-keepalive-period  25
+
+  wg-quickrs-agent-run:
+    container_name: wg-quickrs-agent-run-cnt
+    image: godofkebab/wg-quickrs:latest
+    volumes:
+      - .wg-quickrs-docker:/app/.wg-quickrs
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "8443:443/tcp"
+      - "51820:51820/udp"
+    command: [ "agent", "run" ]
+
+  wg-quickrs-config-reset-password:
+    container_name: wg-quickrs-config-reset-password-cnt
+    image: godofkebab/wg-quickrs:latest
+    volumes:
+      - .wg-quickrs-docker:/app/.wg-quickrs
+    command: [ "config", "reset", "agent", "web", "password", "--password", "NEW_PASSWORD"]
+

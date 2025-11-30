@@ -1,9 +1,7 @@
 use argon2::PasswordHash;
 use uuid::Uuid;
-use wg_quickrs_lib::validation::agent::{validate_fw_utility, validate_tls_file};
 use crate::conf;
 use crate::commands::config::{parse_connection_id, ConfigCommandError};
-use crate::WG_QUICKRS_CONFIG_FOLDER;
 
 /// Macro for implementing toggle (enable/disable) functions
 macro_rules! impl_toggle {
@@ -125,13 +123,7 @@ impl_toggle!(
         c.agent.web.https.port,
         c.agent.web.https.tls_cert.display(),
         c.agent.web.https.tls_key.display()
-    ),
-    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
-        let wg_quickrs_conf_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
-        validate_tls_file(wg_quickrs_conf_folder, &c.agent.web.https.tls_cert)?;
-        validate_tls_file(wg_quickrs_conf_folder, &c.agent.web.https.tls_key)?;
-        Ok(())
-    }
+    )
 );
 
 impl_toggle!(
@@ -151,19 +143,15 @@ impl_toggle!(
 );
 
 impl_toggle!(
-    toggle_agent_firewall,
-    agent.firewall =>
-    |c: &wg_quickrs_lib::types::config::Config| format!(
-        "firewall setting up NAT and input rules (utility={})...",
-        c.agent.firewall.utility.display()
-    ),
-    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
-        if c.agent.firewall.gateway.is_empty() {
-            return Err(ConfigCommandError::GatewayNotSet());
-        }
-        validate_fw_utility(&c.agent.firewall.utility)?;
-        Ok(())
-    }
+    toggle_agent_vpn_wg_userspace,
+    agent.vpn.wg_userspace =>
+    |_c: &wg_quickrs_lib::types::config::Config| "WireGuard userspace mode...".to_string()
+);
+
+impl_toggle!(
+    toggle_network_amnezia_parameters,
+    network.amnezia_parameters =>
+    |_c: &wg_quickrs_lib::types::config::Config| "AmneziaWG obfuscation...".to_string()
 );
 
 // Peer toggles

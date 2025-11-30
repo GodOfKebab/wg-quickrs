@@ -3,7 +3,7 @@ use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use crate::macros::*;
 use crate::types::misc::WireGuardLibError;
-use crate::types::network::{Network, NetworkWDigest};
+use crate::types::network::{Network, NetworkWDigest, Script, Scripts};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigFile {
@@ -94,12 +94,37 @@ pub struct Password {
 pub struct AgentVpn {
     pub enabled: bool,
     pub port: u16,
+    pub wg: PathBuf,
+    pub wg_userspace: WireGuardUserspace,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WireGuardUserspace {
+    pub enabled: bool,
+    pub binary: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AgentFirewall {
-    pub enabled: bool,
-    pub utility: PathBuf,
-    pub gateway: String,
+    pub http: HttpScripts,
+    pub https: HttpScripts,
+    pub vpn: Scripts,
 }
 
+#[derive(Serialize, Deserialize, Default, PartialEq, Debug, Clone)]
+pub struct HttpScripts {
+    pub pre_up: Vec<Script>,
+    pub post_down: Vec<Script>,
+}
+
+impl IntoIterator for HttpScripts {
+    type Item = (String, Vec<Script>);
+    type IntoIter = std::array::IntoIter<(String, Vec<Script>), 2>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        [
+            ("pre_up".to_string(), self.pre_up),
+            ("post_down".to_string(), self.post_down)
+        ].into_iter()
+    }
+}

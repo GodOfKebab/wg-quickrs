@@ -63,6 +63,39 @@ pub struct InitOptions {
     )]
     pub agent_vpn_port: Option<u16>,
 
+    #[arg(long, default_value = None, long_help = "Set path for the wg tool")]
+    pub agent_vpn_wg: Option<PathBuf>,
+
+    #[arg(long, default_value = None, long_help = "Use userspace implementation of WireGuard")]
+    pub agent_vpn_wg_userspace_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set path of the binary for the userspace WireGuard implementation")]
+    pub agent_vpn_wg_userspace_binary: Option<PathBuf>,
+
+    #[arg(long, default_value = None, long_help = "Enable AmneziaWG obfuscation for VPN packets")]
+    pub network_amnezia_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Set S1 (packet junk size) for AmneziaWG obfuscation", value_name = "55")]
+    pub network_amnezia_s1: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set S2 (packet junk size) for AmneziaWG obfuscation", value_name = "155")]
+    pub network_amnezia_s2: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set H1 (packet magic header) for AmneziaWG obfuscation")]
+    pub network_amnezia_h1: Option<u32>,
+
+    #[arg(long, default_value = None, long_help = "Set H2 (packet magic header) for AmneziaWG obfuscation")]
+    pub network_amnezia_h2: Option<u32>,
+
+    #[arg(long, default_value = None, long_help = "Set H3 (packet magic header) for AmneziaWG obfuscation")]
+    pub network_amnezia_h3: Option<u32>,
+
+    #[arg(long, default_value = None, long_help = "Set H4 (packet magic header) for AmneziaWG obfuscation")]
+    pub network_amnezia_h4: Option<u32>,
+
+    #[arg(long, default_value = None, long_help = "Use random values for AmneziaWG H1, H2, H3, H4 packet magic headers instead of specifying them manually")]
+    pub network_amnezia_h_random: Option<bool>,
+
     #[arg(long, default_value = None, long_help = "Enable running firewall commands for setting up NAT and input rules"
     )]
     pub agent_firewall_enabled: Option<bool>,
@@ -74,6 +107,75 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Set gateway (outbound interface) for VPN packet forwarding", value_name = "eth0"
     )]
     pub agent_firewall_gateway: Option<String>,
+
+    #[arg(long, default_value = None, long_help = "Configure HTTP firewall")]
+    pub agent_firewall_configure_http: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Use automated setup for HTTP firewall")]
+    pub agent_firewall_http_automated: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Configure HTTPS firewall")]
+    pub agent_firewall_configure_https: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Use automated setup for HTTPS firewall")]
+    pub agent_firewall_https_automated: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Configure VPN firewall")]
+    pub agent_firewall_configure_vpn: Option<bool>,
+
+    #[arg(long, default_value = None, long_help = "Use automated setup for VPN firewall")]
+    pub agent_firewall_vpn_automated: Option<bool>,
+
+    // HTTP firewall scripts
+    #[arg(long, default_value = None, long_help = "Enable HTTP firewall PreUp scripts")]
+    pub agent_firewall_http_pre_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set HTTP firewall PreUp script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_http_pre_up_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable HTTP firewall PostDown scripts")]
+    pub agent_firewall_http_post_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set HTTP firewall PostDown script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_http_post_down_line: Vec<String>,
+
+    // HTTPS firewall scripts
+    #[arg(long, default_value = None, long_help = "Enable HTTPS firewall PreUp scripts")]
+    pub agent_firewall_https_pre_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set HTTPS firewall PreUp script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_https_pre_up_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable HTTPS firewall PostDown scripts")]
+    pub agent_firewall_https_post_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set HTTPS firewall PostDown script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_https_post_down_line: Vec<String>,
+
+    // VPN firewall scripts
+    #[arg(long, default_value = None, long_help = "Enable VPN firewall PreUp scripts")]
+    pub agent_firewall_vpn_pre_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set VPN firewall PreUp script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_vpn_pre_up_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable VPN firewall PostUp scripts")]
+    pub agent_firewall_vpn_post_up_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set VPN firewall PostUp script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_vpn_post_up_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable VPN firewall PreDown scripts")]
+    pub agent_firewall_vpn_pre_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set VPN firewall PreDown script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_vpn_pre_down_line: Vec<String>,
+
+    #[arg(long, default_value = None, long_help = "Enable VPN firewall PostDown scripts")]
+    pub agent_firewall_vpn_post_down_enabled: Option<bool>,
+
+    #[arg(long, default_value = None, num_args = 0.., long_help = "Set VPN firewall PostDown script line(s). Can be specified multiple times for multiple script lines.")]
+    pub agent_firewall_vpn_post_down_line: Vec<String>,
 
     #[arg(long, default_value = None, long_help = "Set agent peer name", value_name = "wg-quickrs-host"
     )]
@@ -142,6 +244,15 @@ pub struct InitOptions {
     )]
     pub agent_peer_script_post_down_line: Vec<String>,
 
+    #[arg(long, default_value = None, long_help = "Set Jc (junk packet count) for agent peer AmneziaWG obfuscation", value_name = "30")]
+    pub agent_peer_amnezia_jc: Option<i16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jmin (minimum junk packet size) for agent peer AmneziaWG obfuscation", value_name = "60")]
+    pub agent_peer_amnezia_jmin: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jmax (maximum junk packet size) for agent peer AmneziaWG obfuscation", value_name = "120")]
+    pub agent_peer_amnezia_jmax: Option<u16>,
+
     // default settings for new peers/connections
     #[arg(long, default_value = None, long_help = "Set peer kind for new peers by default"
     )]
@@ -208,6 +319,15 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Set default PersistentKeepalive period in seconds", value_name = "25"
     )]
     pub default_connection_persistent_keepalive_period: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jc (junk packet count) for new peers by default", value_name = "30")]
+    pub default_peer_amnezia_jc: Option<i16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jmin (minimum junk packet size) for new peers by default", value_name = "60")]
+    pub default_peer_amnezia_jmin: Option<u16>,
+
+    #[arg(long, default_value = None, long_help = "Set Jmax (maximum junk packet size) for new peers by default", value_name = "120")]
+    pub default_peer_amnezia_jmax: Option<u16>,
 
     #[arg(long, default_value = None, long_help = "Disable interactive setup prompts")]
     pub no_prompt: Option<bool>,

@@ -22,9 +22,9 @@ pub enum ConfUtilError {
     #[error("failed to read config file at {0}: {1}")]
     Read(PathBuf, std::io::Error),
     #[error("invalid config file format: {0}")]
-    Parse(serde_yml::Error),
+    Parse(serde_norway::Error),
     #[error("failed to serialize config object: {0}")]
-    Serialization(serde_yml::Error),
+    Serialization(serde_norway::Error),
     #[error("failed to encode digest: {0}")]
     DigestEncoding(base16ct::Error),
     #[error("failed to acquire lock: {0}")]
@@ -81,7 +81,7 @@ fn get_config_w_digest() -> Result<ConfigWNetworkDigest, ConfUtilError> {
     let config_file_path = WG_QUICKRS_CONFIG_FILE.get().unwrap();
     let config_str = fs::read_to_string(config_file_path)
         .map_err(|e| ConfUtilError::Read(config_file_path.clone(), e))?;
-    let mut config_file: ConfigFile = serde_yml::from_str(&config_str).map_err(ConfUtilError::Parse)?;
+    let mut config_file: ConfigFile = serde_norway::from_str(&config_str).map_err(ConfUtilError::Parse)?;
     let build_version = Version::parse(wg_quickrs_version!()).unwrap();
     let conf_ver = Version::parse(config_file.version.as_str()).map_err(ConfUtilError::InvalidVersion)?;
     if build_version.major != conf_ver.major {
@@ -126,11 +126,14 @@ pub(crate) fn get_summary() -> Result<Summary, ConfUtilError> {
 }
 
 pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
+    let mut config_file = ConfigFile::from(&config.clone());
+    let config_folder_path = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
+    validate_config_file(&mut config_file, config_folder_path)?;
+
     let config_w_digest = ConfigWNetworkDigest::from_config(config.clone())?;
     set_or_init_config_w_digest(config_w_digest)?;
 
-    let config_file = ConfigFile::from(&config.clone());
-    let config_file_str = serde_yml::to_string(&config_file).map_err(ConfUtilError::Serialization)?;
+    let config_file_str = serde_norway::to_string(&config_file).map_err(ConfUtilError::Serialization)?;
     write_config(config_file_str)
 }
 

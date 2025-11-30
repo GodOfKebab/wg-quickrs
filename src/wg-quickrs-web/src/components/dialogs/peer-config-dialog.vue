@@ -87,6 +87,11 @@
                                class="my-2 mr-2"
                                @updated-change-sum="onUpdatedPeerDetailsIslandChangeSum"></peer-details-island>
 
+          <peer-amnezia-params-island v-if="network.amnezia_parameters.enabled"
+              :peer="peer_conf"
+              class="my-2 mr-2"
+              @updated-change-sum="onUpdatedAmneziaParametersIslandChangeSum"></peer-amnezia-params-island>
+
           <connection-islands :api="api"
                               :network="network"
                               :peer-id="peerId"
@@ -177,10 +182,12 @@ import ConfButton from "@/src/components/ui/buttons/conf.vue";
 import QrButton from "@/src/components/ui/buttons/qr.vue";
 import DownloadButton from "@/src/components/ui/buttons/download.vue";
 import {get_peer_wg_config_wasm} from "@/pkg/wg_quickrs_lib.js";
+import PeerAmneziaParamsIsland from "@/src/components/islands/peer-amnezia-params.vue";
 
 export default {
   name: "peer-config-dialog",
   components: {
+    PeerAmneziaParamsIsland,
     DownloadButton,
     QrButton,
     ConfButton,
@@ -224,6 +231,7 @@ export default {
       dnsmtuIslandChangeSum: null,
       scriptsIslandChangeSum: null,
       peerDetailsIslandChangeSum: null,
+      amnesiaParametersIslandChangeSum: null,
       connectionIslandsChangeSum: {
         changed_fields: {},
         added_connections: {},
@@ -251,6 +259,9 @@ export default {
     },
     onUpdatedPeerDetailsIslandChangeSum(data) {
       this.peerDetailsIslandChangeSum = data;
+    },
+    onUpdatedAmneziaParametersIslandChangeSum(data) {
+      this.amnesiaParametersIslandChangeSum = data;
     },
     onUpdatedConnectionsIslandsChangeSum(data) {
       this.connectionIslandsChangeSum = data;
@@ -313,7 +324,7 @@ export default {
       // check for errors + changed fields for this peer
       data.errors.peers[this.peerId] = {};
       data.changed_fields.peers[this.peerId] = {};
-      for (const island_datum of [this.peerSummaryIslandChangeSum, this.peerKindIconIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum, this.peerDetailsIslandChangeSum]) {
+      for (const island_datum of [this.peerSummaryIslandChangeSum, this.peerKindIconIslandChangeSum, this.dnsmtuIslandChangeSum, this.scriptsIslandChangeSum, this.peerDetailsIslandChangeSum, this.amnesiaParametersIslandChangeSum]) {
         if (!island_datum) continue;
         for (const [island_field, island_value] of Object.entries(island_datum.errors)) {
           if (island_field === "scripts" && island_value) {
@@ -322,6 +333,12 @@ export default {
               if (script_field) data.errors.peers[this.peerId].scripts[script_field] = script_value;
             }
             if (Object.keys(data.errors.peers[this.peerId].scripts).length === 0) delete data.errors.peers[this.peerId].scripts;
+          } else if (island_field === "amnezia_parameters" && island_value) {
+            data.errors.peers[this.peerId].amnezia_parameters = {};
+            for (const [amnezia_field, amnezia_value] of Object.entries(island_value)) {
+              if (amnezia_value) data.errors.peers[this.peerId].amnezia_parameters[amnezia_field] = amnezia_value;
+            }
+            if (Object.keys(data.errors.peers[this.peerId].amnezia_parameters).length === 0) delete data.errors.peers[this.peerId].amnezia_parameters;
           } else {
             if (island_value) data.errors.peers[this.peerId][island_field] = island_value;
           }
@@ -334,6 +351,12 @@ export default {
               if (script_field) data.changed_fields.peers[this.peerId].scripts[script_field] = script_value;
             }
             if (Object.keys(data.changed_fields.peers[this.peerId].scripts).length === 0) delete data.changed_fields.peers[this.peerId].scripts;
+          } else if (island_field === "amnezia_parameters" && island_value) {
+            data.changed_fields.peers[this.peerId].amnezia_parameters = {};
+            for (const [amnezia_field, amnezia_value] of Object.entries(island_value)) {
+              if (amnezia_value) data.changed_fields.peers[this.peerId].amnezia_parameters[amnezia_field] = amnezia_value;
+            }
+            if (Object.keys(data.changed_fields.peers[this.peerId].amnezia_parameters).length === 0) delete data.changed_fields.peers[this.peerId].amnezia_parameters;
           } else {
             if (island_value) data.changed_fields.peers[this.peerId][island_field] = island_value;
           }

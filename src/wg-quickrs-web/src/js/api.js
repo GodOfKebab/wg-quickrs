@@ -31,11 +31,11 @@ export default class API {
             return undefined;
         }
 
-        const json = await res.json();
-
         if (!res.ok) {
-            throw new Error(json.error || res.statusText);
+            throw new Error(`${method} ${path}: ${res.status} ${res.statusText}\n${await res.text()}`);
         }
+
+        const json = await res.json();
 
         return json;
     }

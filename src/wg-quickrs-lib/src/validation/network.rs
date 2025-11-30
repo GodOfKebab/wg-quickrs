@@ -175,6 +175,123 @@ pub fn parse_and_validate_wg_key(key: &str) -> ValidationResult<WireGuardKey> {
         .map_err(|_: serde::de::value::Error| ValidationError::NotWireGuardKey())
 }
 
+// Network.AmneziaNetworkParameters Fields
+
+pub fn parse_and_validate_amnezia_s1(s1: &str) -> ValidationResult<u16> {
+    let value = s1.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaS1())?;
+    validate_amnezia_s1(value)
+}
+
+pub fn validate_amnezia_s1(s1: u16) -> ValidationResult<u16> {
+    // S1 <= 1280 - 148 = 1132
+    if s1 > 1132 {
+        return Err(ValidationError::InvalidAmneziaS1());
+    }
+    Ok(s1)
+}
+
+pub fn parse_and_validate_amnezia_s1_s2(s1: &str, s2: &str) -> ValidationResult<u16> {
+    let value2 = s2.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaS2())?;
+    let value1 = s1.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaS1())?;
+
+    validate_amnezia_s1_s2(value1, value2)?;
+    Ok(value2)
+}
+
+pub fn validate_amnezia_s1_s2(s1: u16, s2: u16) -> ValidationResult<()> {
+    // S2 <= 1280 - 92 = 1188
+    if s2 > 1188 {
+        return Err(ValidationError::InvalidAmneziaS2());
+    }
+    validate_amnezia_s1(s1)?;
+
+    // S1 + 56 != S2
+    if s1 + 56 == s2 {
+        return Err(ValidationError::InvalidAmneziaS1S2Relation());
+    }
+    Ok(())
+}
+
+pub fn parse_and_validate_amnezia_h(h1: &str) -> ValidationResult<u32> {
+    h1.parse::<u32>().map_err(|_| ValidationError::InvalidAmneziaParameter())
+}
+
+// Peer.AmneziaPeerParameters Fields
+
+pub fn parse_and_validate_amnezia_jc(jc: &str) -> ValidationResult<i16> {
+    let value = jc.parse::<i16>().map_err(|_| ValidationError::InvalidAmneziaJc())?;
+    validate_amnezia_jc(value)
+}
+
+pub fn validate_amnezia_jc(jc: i16) -> ValidationResult<i16> {
+    // -1 <= Jc <= 128
+    if jc < -1 || jc > 128 {
+        return Err(ValidationError::InvalidAmneziaJc());
+    }
+    Ok(jc)
+}
+
+pub fn parse_and_validate_amnezia_jmin(jmin: &str) -> ValidationResult<u16> {
+    let value = jmin.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaJmin())?;
+    validate_amnezia_jmin(value)
+}
+
+pub fn validate_amnezia_jmin(jmin: u16) -> ValidationResult<u16> {
+    // Jmin < 1280
+    if jmin == 0 || jmin >= 1280 {
+        return Err(ValidationError::InvalidAmneziaJmin());
+    }
+    Ok(jmin)
+}
+
+pub fn parse_and_validate_amnezia_jmax(jmax: &str) -> ValidationResult<u16> {
+    let value = jmax.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaJmax())?;
+    validate_amnezia_jmax(value)
+}
+
+pub fn validate_amnezia_jmax(jmax: u16) -> ValidationResult<u16> {
+    // Jmax <= 1280
+    if jmax == 0 || jmax > 1280 {
+        return Err(ValidationError::InvalidAmneziaJmax());
+    }
+    Ok(jmax)
+}
+
+pub fn parse_and_validate_amnezia_jmin_jmax(jmin: &str, jmax: &str) -> ValidationResult<u16> {
+    let jmax_value = jmax.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaJmax())?;
+    let jmin_value = jmin.parse::<u16>().map_err(|_| ValidationError::InvalidAmneziaJmin())?;
+
+    validate_amnezia_jmin_jmax(jmin_value, jmax_value)?;
+    Ok(jmax_value)
+}
+
+pub fn validate_amnezia_jmin_jmax(jmin: u16, jmax: u16) -> ValidationResult<()> {
+    validate_amnezia_jmin(jmin)?;
+    validate_amnezia_jmax(jmax)?;
+
+    // Jmin < Jmax
+    if jmin >= jmax {
+        return Err(ValidationError::InvalidAmneziaJminJmaxRelation());
+    }
+    Ok(())
+}
+
+pub fn validate_amnezia_enabled(enabled: bool, wg_path: &std::path::Path) -> ValidationResult<()> {
+    if enabled {
+        // Check if wg_path filename is "awg"
+        if let Some(filename) = wg_path.file_name() {
+            if let Some(filename_str) = filename.to_str() {
+                if filename_str != "awg" {
+                    return Err(ValidationError::AmneziaRequiresAwgBinary());
+                }
+            }
+        } else {
+            return Err(ValidationError::AmneziaRequiresAwgBinary());
+        }
+    }
+    Ok(())
+}
+
 // Network.Connection Fields
 
 pub fn parse_and_validate_conn_persistent_keepalive_period(persistent_keepalive_period: &str) -> ValidationResult<u16> {

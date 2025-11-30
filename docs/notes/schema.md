@@ -1,10 +1,12 @@
 # wg-quickrs schemas
 
+To see schemas from earlier versions, see the schema.md file in that release's attachments.
+
 ## conf.yml: 1.x.x
 
 ```yaml
 # version of the wg-quickrs binary used to generate this config
-version: '1.0.0'
+version: '2.0.0'
 # wg-quickrs agent configuration (not sent over network)
 agent:
   web:
@@ -34,13 +36,57 @@ agent:
     enabled: false
     # port for the VPN service to listen on (valid range: 1-65535, WireGuard default: 51820)
     port: 51820
+    # path to the wireguard-tools utility (wg/awg)
+    wg: /usr/bin/wg
+    wg_userspace:
+      # enable to use userspace WireGuard implementation, disable for kernel module (Linux only)
+      enabled: true
+      # path to the wireguard-go/amneziawg-go utility
+      binary: /usr/bin/wireguard-go
   firewall:
-    # enable/disable firewall rules (to set up NAT/forwarding)
-    enabled: true
-    # path to the firewall utility (iptables or pfctl)
-    utility: /sbin/pfctl
-    # gateway interface to use for NAT/forwarding
-    gateway: en0
+    # firewall scripts for http server
+    # Every script gets a PORT variable prepended (PORT=agent.web.http.port)
+    http:
+      pre_up:
+        - enabled: true
+          script: iptables -I INPUT -p tcp --dport "$PORT" -j ACCEPT;
+      post_down:
+        - enabled: true
+          script: iptables -D INPUT -p tcp --dport "$PORT" -j ACCEPT;
+    # firewall scripts for https server
+    # Every script gets a PORT variable prepended (PORT=agent.web.https.port)
+    https:
+      pre_up:
+        - enabled: true
+          script: iptables -I INPUT -p tcp --dport "$PORT" -j ACCEPT;
+      post_down:
+        - enabled: true
+          script: iptables -D INPUT -p tcp --dport "$PORT" -j ACCEPT;
+    # firewall scripts for wireguard
+    # Every script gets a WG_SUBNET variable prepended (WG_SUBNET=network.subnet)
+    # Every script gets a WG_PORT variable prepended (WG_PORT=agent.vpn.port)
+    # Every script gets a WG_INTERFACE variable prepended (WG_INTERFACE=network.name for linux, utunX(whatever the utun prefixed interface ends up being created) for macOS)
+    vpn:
+      pre_up: []
+      post_up:
+        - enabled: true
+          script: iptables -t nat -I POSTROUTING -s "$WG_SUBNET" -o "eth0" -j MASQUERADE;
+        - enabled: true
+          script: iptables -I INPUT -p udp -m udp --dport "$WG_PORT" -j ACCEPT;
+        - enabled: true
+          script: iptables -I FORWARD -i "$WG_INTERFACE" -j ACCEPT;
+        - enabled: true
+          script: iptables -I FORWARD -o "$WG_INTERFACE" -j ACCEPT;
+      pre_down: []
+      post_down:
+        - enabled: true
+          script: iptables -t nat -D POSTROUTING -s "$WG_SUBNET" -o "eth0" -j MASQUERADE;
+        - enabled: true
+          script: iptables -D INPUT -p udp -m udp --dport "$WG_PORT" -j ACCEPT;
+        - enabled: true
+          script: iptables -D FORWARD -i "$WG_INTERFACE" -j ACCEPT;
+        - enabled: true
+          script: iptables -D FORWARD -o "$WG_INTERFACE" -j ACCEPT;
 # wg-quickrs network configuration (sent over network)
 network:
   name: wg-quickrs-home
@@ -99,6 +145,11 @@ network:
         post_down: []
       # private key for the peer (base64-encoded 32-byte WireGuard key)
       private_key: KU...=
+      # peer-level parameters for the Amnezia VPN client (https://github.com/amnezia-vpn/amneziawg-linux-kernel-module?tab=readme-ov-file#configuration)
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
       # timestamps in RFC3339 format (YYYY-MM-DDTHH:MM:SS.SSSSSSSZ)
       created_at: '2025-11-18T00:38:38.388252Z'
       updated_at: '2025-11-18T00:38:38.388252Z'
@@ -125,6 +176,10 @@ network:
         pre_down: []
         post_down: []
       private_key: /9...=
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
       created_at: '2025-11-18T00:40:16.391330Z'
       updated_at: '2025-11-18T00:40:16.391330Z'
   connections:
@@ -170,6 +225,11 @@ network:
         post_up: []
         pre_down: []
         post_down: []
+      # default new peer-level parameters for the Amnezia VPN client (https://github.com/amnezia-vpn/amneziawg-linux-kernel-module?tab=readme-ov-file#configuration)
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
     connection:
       # default new connection persistent keepalive
       persistent_keepalive:
@@ -181,6 +241,15 @@ network:
       peer_id: f857bbe1-0063-4dff-98da-78b47efd6453
       # reservation expiry in RFC3339 format
       valid_until: '2025-11-18T00:50:10.911311Z'
+  # network-level parameters for the Amnezia VPN client (https://github.com/amnezia-vpn/amneziawg-linux-kernel-module?tab=readme-ov-file#configuration)
+  amnezia_parameters:
+    enabled: true
+    s1: 55
+    s2: 155
+    h1: 1965538070
+    h2: 1556073336
+    h3: 1369216251
+    h4: 4226881876
   # network last updated timestamp in RFC3339 format
   updated_at: '2025-11-18T00:40:10.911311Z'
 ```
@@ -233,7 +302,7 @@ Get version and build information.
 **Response:** `200 OK`
 ```json
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "build": {
     "branch": "main",
     "commit": "ea0e...",
