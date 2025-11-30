@@ -1,9 +1,11 @@
+use argon2::PasswordHash;
 use uuid::Uuid;
 use crate::conf;
 use crate::commands::config::{parse_connection_id, ConfigCommandError};
 
 /// Macro for implementing toggle (enable/disable) functions
 macro_rules! impl_toggle {
+    // Without validation
     ($fn_name:ident, $($field:ident).+ => $log_format:expr) => {
         pub fn $fn_name(status: bool) -> Result<(), ConfigCommandError> {
             let mut config = conf::util::get_config()?;
@@ -12,6 +14,23 @@ macro_rules! impl_toggle {
                 if status { "Enabling" } else { "Disabling" },
                 $log_format(&config)
             );
+            config.$($field).+.enabled = status;
+            conf::util::set_config(&mut config)?;
+            Ok(())
+        }
+    };
+    // With validation
+    ($fn_name:ident, $($field:ident).+ => $log_format:expr, validate: $validator:expr) => {
+        pub fn $fn_name(status: bool) -> Result<(), ConfigCommandError> {
+            let mut config = conf::util::get_config()?;
+            log::info!(
+                "{} {}",
+                if status { "Enabling" } else { "Disabling" },
+                $log_format(&config)
+            );
+            if status {
+                $validator(&config)?;
+            }
             config.$($field).+.enabled = status;
             conf::util::set_config(&mut config)?;
             Ok(())
@@ -110,7 +129,11 @@ impl_toggle!(
 impl_toggle!(
     toggle_agent_web_password,
     agent.web.password =>
-    |_: &wg_quickrs_lib::types::config::Config| "password for the web server...".to_string()
+    |_: &wg_quickrs_lib::types::config::Config| "password for the web server...".to_string(),
+    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
+        PasswordHash::new(&c.agent.web.password.hash)?;
+        Ok(())
+    }
 );
 
 impl_toggle!(
