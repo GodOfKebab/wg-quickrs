@@ -6,7 +6,7 @@ To see schemas from earlier versions, see the schema.md file in that release's a
 
 ```yaml
 # version of the wg-quickrs binary used to generate this config
-version: '1.0.0'
+version: '2.0.0'
 # wg-quickrs agent configuration (not sent over network)
 agent:
   web:
@@ -302,7 +302,7 @@ Get version and build information.
 **Response:** `200 OK`
 ```json
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "build": {
     "branch": "main",
     "commit": "ea0e...",

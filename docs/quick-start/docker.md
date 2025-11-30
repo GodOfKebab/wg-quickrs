@@ -15,7 +15,7 @@ mkdir wg-quickrs-docker
 cd wg-quickrs-docker
 wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/docker-compose.yml
 # OR specify a release like so
-# wget -q https://github.com/GodOfKebab/wg-quickrs/releases/download/v1.0.0/docker-compose.yml
+# wget -q https://github.com/GodOfKebab/wg-quickrs/releases/download/v2.0.0/docker-compose.yml
 ```
 
 After editing the `docker-compose.yml` file, run the following command to set up and start the containers:

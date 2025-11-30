@@ -334,7 +334,7 @@ if [ -z "$ARG_DIST_TARBALL" ]; then
   if [ -z "$ARG_RELEASE" ]; then
     echo "ℹ️ No release version specified. If you want to use a different version, specify like the following"
     echo
-    echo "    sh installer.sh --release v1.0.0"
+    echo "    sh installer.sh --release v2.0.0"
     echo
     list_releases
     echo "⏳ Fetching latest release version..."
