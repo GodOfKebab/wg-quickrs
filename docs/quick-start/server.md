@@ -1,46 +1,14 @@
 # wg-quickrs quick-start guide for servers
 
-## Requirements
 
-`installer.sh` script will install the following dependencies if not already installed:
+## 1. Use the installer script with pre-built binaries (recommended)
 
-- `wireguard-tools` (only the `wg(8)` utility)
-- Linux (same dependencies as `wg-easy`)
-    - `openresolv` / `resolvconf` one or the other required for DNS resolution
-    - `iproute2` required for setting up interfaces
-    - `iptables` / `nftables` (optional one or the other for setting up firewall)
-- macOS
-    - None (brew install `wireguard-tools` sets up all the required dependencies)
-- Windows
-    - Not supported
-
----
-
-## 1. Use the pre-built binaries (recommended)
-
-The `installer.sh` script is the easiest way to install wg-quickrs on your server. It automatically detects your OS and architecture, downloads the appropriate binary, installs dependencies, and optionally configures systemd/OpenRC services.
-
-### What the installer does
-
-The installer script performs the following actions:
-
-1. **Dependency Management**: Checks for and optionally installs required dependencies:
-   - WireGuard tools (`wg`)
-   - Linux: `iproute2`, `openresolv`/`resolvconf`, `iptables`
-   - macOS: `wireguard-tools` (via Homebrew)
-
-2. **Binary Installation**:
-   - Downloads the correct release tarball for your OS/architecture from GitHub
-   - Extracts and installs the binary to `/usr/local/bin` (system) or `~/.local/bin` (user)
-   - Installs configuration files to `/etc/wg-quickrs` (system) or `~/.wg-quickrs` (user)
-
-3. **Shell Completions**: Sets up auto-completion for `bash` or `zsh`
-
-4. **TLS Certificate Setup**: Optionally generates TLS certificates/keys for HTTPS support
-
-5. **Service Setup**: Optionally configures `systemd` (Linux) or `openrc` (Alpine) services with proper user/group permissions. So the agent can be managed easier and survive system reboots.
-
-### Basic installation
+The `installer.sh` script is the easiest way to install wg-quickrs on your server.
+- It automatically detects your OS and architecture,
+- installs dependencies (`wg`, os-specific commands etc.),
+- downloads and installs the appropriate binary with shell completions (`bash` or `zsh`),
+- (optionally) generates TLS certificates,
+- (optionally) configures `systemd`/`OpenRC` services.
 
 ```bash
 wget -q https://github.com/GodOfKebab/wg-quickrs/releases/latest/download/installer.sh
@@ -84,7 +52,7 @@ sh installer.sh --dist-tarball ./wg-quickrs-x86_64-unknown-linux-musl.tar.gz
 
 ### After installation
 
-Once the installer completes, you'll be ready to initialize your agent:
+Once the installer completes, you'll be ready to initialize your agent and test that everything works:
 
 ```bash
 # System installation
@@ -96,7 +64,7 @@ wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs agent init
 wg-quickrs --wg-quickrs-config-folder ~/.wg-quickrs agent run
 ```
 
-If you set up systemd/OpenRC service, you can manage it with:
+If you set up `systemd`/`OpenRC` service, you can manage it with:
 
 ```bash
 # Systemd
