@@ -179,6 +179,11 @@ network:
         post_up: []
         pre_down: []
         post_down: []
+      # default new peer-level parameters for the Amnezia VPN client (https://github.com/amnezia-vpn/amneziawg-linux-kernel-module?tab=readme-ov-file#configuration)
+      amnezia_parameters:
+        jc: 30
+        jmin: 60
+        jmax: 120
     connection:
       # default new connection persistent keepalive
       persistent_keepalive:

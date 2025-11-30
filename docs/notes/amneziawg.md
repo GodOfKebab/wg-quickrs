@@ -21,25 +21,18 @@ agent:
       binary: /usr/bin/amneziawg-go  # replace this with the path to your `amneziawg-go` binary (which amneziawg-go)
 network:
   # ...
-  peers:
-    # ...
-    fe820672-cefc-4dfb-b532-89b32b86594f:
-      # ...
-      amnezia_parameters:
-        jc: 30
-        jmin: 60
-        jmax: 120
   amnezia_parameters:
     enabled: true  # make sure this is set to true, otherwise there will be no obfuscation
-    s1: 55
-    s2: 155
-    h1: 1965538070
-    h2: 1556073336
-    h3: 1369216251
-    h4: 4226881876
+    # ...
 ```
 
 See [conf.yml schema](./schema.md) for more details and [official notes](https://github.com/amnezia-vpn/amneziawg-linux-kernel-module?tab=readme-ov-file#configuration) for obfuscation parameter ranges.
+
+
+## Use Docker (recommended)
+
+The `awg` and `amneziawg-go` binaries are already included in the Docker image.
+So follow the instructions in the [docker-compose.yml](../../docker-compose.yml) to enable obfuscation.
 
 
 ## Build and Install AmneziaWG on Alpine (for servers and Docker containers)
