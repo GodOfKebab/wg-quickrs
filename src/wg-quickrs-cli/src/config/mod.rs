@@ -6,6 +6,7 @@ pub mod get;
 pub mod list;
 pub mod remove;
 pub mod add;
+pub mod conf;
 
 use clap::Subcommand;
 
@@ -50,5 +51,12 @@ pub enum ConfigCommands {
     Add {
         #[command(subcommand)]
         target: add::AddCommands,
+    },
+    #[command(
+        about = "Generate wg/awg or wg-quick/awg-quick configuration file for a peer",
+    )]
+    Conf {
+        #[command(flatten)]
+        options: conf::ConfOptions,
     },
 }

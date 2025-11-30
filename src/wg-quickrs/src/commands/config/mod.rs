@@ -5,6 +5,7 @@ mod list;
 mod remove;
 mod reset;
 mod add;
+mod generate_conf;
 
 use std::io;
 use std::net::Ipv4Addr;
@@ -22,6 +23,7 @@ use wg_quickrs_cli::config::list::*;
 use wg_quickrs_cli::config::remove::*;
 use wg_quickrs_cli::config::add::*;
 use wg_quickrs_lib::types::network::ConnectionId;
+use wg_quickrs_lib::types::misc::WireGuardLibError;
 use wg_quickrs_lib::validation::error::ValidationError;
 use crate::commands::config::toggle::*;
 use crate::commands::config::get::*;
@@ -30,6 +32,7 @@ use crate::commands::config::list::*;
 use crate::commands::config::remove::*;
 use crate::commands::config::reset::*;
 use crate::commands::config::add::*;
+use crate::commands::config::generate_conf::*;
 use crate::conf;
 use crate::conf::util::ConfUtilError;
 
@@ -41,6 +44,8 @@ pub enum ConfigCommandError {
     Validation(#[from] ValidationError),
     #[error(transparent)]
     ConfUtilError(#[from] ConfUtilError),
+    #[error(transparent)]
+    WireGuardLibError(#[from] WireGuardLibError),
     #[error("cannot enable firewall gateway: gateway is not set")]
     GatewayNotSet(),
     #[error("failed to read input: {0}")]
@@ -508,6 +513,7 @@ pub fn handle_config_command(target: &ConfigCommands) -> Result<(), ConfigComman
             AddCommands::Peer { options } => add_peer(options),
             AddCommands::Connection { options } => add_connection(options),
         },
+        ConfigCommands::Conf { options } => generate_peer_conf(options),
     }
 }
 
