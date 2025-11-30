@@ -35,6 +35,7 @@
         <div v-show="page === 'edit'" class="mt-0 w-full overflow-scroll text-start">
 
           <!-- Network-level Amnezia Parameters -->
+          <h5 class="text-2xl mt-3 mb-2 pl-2">Network-level Amnezia Parameters</h5>
           <network-amnezia-params-island
               :network="{amnezia_parameters: amnezia_local.network}"
               :is-new-network="false"
@@ -49,7 +50,6 @@
               :is-new-peer="false"
               class="my-2 mr-2"
               @updated-change-sum="onUpdatedPeerAmneziaChangeSum"></peer-amnezia-params-island>
-
         </div>
 
         <!-- view changes -->
@@ -196,10 +196,10 @@ export default {
 
       // Add peer amnezia changes (goes into defaults.peer)
       if (this.peerAmneziaIslandChangeSum) {
-        for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.errors)) {
+        for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.errors.amnezia_parameters)) {
           if (value !== null) data.errors.defaults.peer.amnezia_parameters[field] = value;
         }
-        for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.changed_fields)) {
+        for (const [field, value] of Object.entries(this.peerAmneziaIslandChangeSum.changed_fields.amnezia_parameters)) {
           if (value !== null) data.changed_fields.defaults.peer.amnezia_parameters[field] = value;
         }
       }

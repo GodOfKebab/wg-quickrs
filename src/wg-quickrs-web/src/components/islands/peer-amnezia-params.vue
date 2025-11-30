@@ -1,6 +1,5 @@
 <template>
   <div :class="[colors.div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
-    <h5 class="text-xl mb-3 pl-2">Amnezia Parameters</h5>
     <div class="grid grid-cols-1">
 
       <!-- Jc Parameter -->
@@ -118,15 +117,19 @@ export default {
             this.peer_local_str.amnezia_parameters.jmax
         );
 
-        // TODO: Add validation for jmin_jmax relationship
-        // Validate jmin < jmax relationship
-
         // Check for errors or changes
         const errorDetected = Object.values(island_change_sum.errors).some(err => err !== null);
         const changeDetected = Object.values(island_change_sum.changed_fields).some(field => field !== null);
         this.colors.div = errorDetected ? this.DIV_COLOR_LOOKUP.error : changeDetected ? this.DIV_COLOR_LOOKUP.changed : this.DIV_COLOR_LOOKUP.unchanged;
 
-        this.$emit("updated-change-sum", island_change_sum);
+        this.$emit("updated-change-sum", {
+          errors: {
+            amnezia_parameters: island_change_sum.errors,
+          },
+          changed_fields: {
+            amnezia_parameters: island_change_sum.changed_fields,
+          }
+        });
       },
       deep: true,
     }

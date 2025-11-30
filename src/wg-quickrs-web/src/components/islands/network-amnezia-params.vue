@@ -1,6 +1,5 @@
 <template>
   <div :class="[colors.div]" class="my-2 py-2 pl-1 pr-3 shadow-md border rounded">
-    <h5 class="text-xl mb-3 pl-2">Network-Level Amnezia Parameters</h5>
     <div class="grid grid-cols-1">
 
       <!-- Enabled Toggle -->
