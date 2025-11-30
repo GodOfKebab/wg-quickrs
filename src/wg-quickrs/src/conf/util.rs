@@ -129,7 +129,10 @@ pub(crate) fn set_config(config: &mut Config) -> Result<(), ConfUtilError> {
     let config_w_digest = ConfigWNetworkDigest::from_config(config.clone())?;
     set_or_init_config_w_digest(config_w_digest)?;
 
-    let config_file = ConfigFile::from(&config.clone());
+    let mut config_file = ConfigFile::from(&config.clone());
+    let config_folder_path = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
+    validate_config_file(&mut config_file, config_folder_path)?;
+
     let config_file_str = serde_yml::to_string(&config_file).map_err(ConfUtilError::Serialization)?;
     write_config(config_file_str)
 }
