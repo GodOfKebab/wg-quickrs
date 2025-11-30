@@ -1,13 +1,9 @@
-use argon2::PasswordHash;
 use uuid::Uuid;
-use wg_quickrs_lib::validation::agent::validate_tls_file;
 use crate::conf;
 use crate::commands::config::{parse_connection_id, ConfigCommandError};
-use crate::WG_QUICKRS_CONFIG_FOLDER;
 
 /// Macro for implementing toggle (enable/disable) functions
 macro_rules! impl_toggle {
-    // Without validation
     ($fn_name:ident, $($field:ident).+ => $log_format:expr) => {
         pub fn $fn_name(status: bool) -> Result<(), ConfigCommandError> {
             let mut config = conf::util::get_config()?;
@@ -16,23 +12,6 @@ macro_rules! impl_toggle {
                 if status { "Enabling" } else { "Disabling" },
                 $log_format(&config)
             );
-            config.$($field).+.enabled = status;
-            conf::util::set_config(&mut config)?;
-            Ok(())
-        }
-    };
-    // With validation
-    ($fn_name:ident, $($field:ident).+ => $log_format:expr, validate: $validator:expr) => {
-        pub fn $fn_name(status: bool) -> Result<(), ConfigCommandError> {
-            let mut config = conf::util::get_config()?;
-            log::info!(
-                "{} {}",
-                if status { "Enabling" } else { "Disabling" },
-                $log_format(&config)
-            );
-            if status {
-                $validator(&config)?;
-            }
             config.$($field).+.enabled = status;
             conf::util::set_config(&mut config)?;
             Ok(())
@@ -125,23 +104,13 @@ impl_toggle!(
         c.agent.web.https.port,
         c.agent.web.https.tls_cert.display(),
         c.agent.web.https.tls_key.display()
-    ),
-    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
-        let wg_quickrs_conf_folder = WG_QUICKRS_CONFIG_FOLDER.get().unwrap();
-        validate_tls_file(wg_quickrs_conf_folder, &c.agent.web.https.tls_cert)?;
-        validate_tls_file(wg_quickrs_conf_folder, &c.agent.web.https.tls_key)?;
-        Ok(())
-    }
+    )
 );
 
 impl_toggle!(
     toggle_agent_web_password,
     agent.web.password =>
-    |_: &wg_quickrs_lib::types::config::Config| "password for the web server...".to_string(),
-    validate: |c: &wg_quickrs_lib::types::config::Config| -> Result<(), ConfigCommandError> {
-        PasswordHash::new(&c.agent.web.password.hash)?;
-        Ok(())
-    }
+    |_: &wg_quickrs_lib::types::config::Config| "password for the web server...".to_string()
 );
 
 impl_toggle!(
