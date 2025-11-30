@@ -1,5 +1,7 @@
 # wg-quickrs schemas
 
+To see schemas from earlier versions, see the schema.md file in that release's attachments.
+
 ## conf.yml: 1.x.x
 
 ```yaml

@@ -153,5 +153,6 @@ jobs:
             installer.sh
             .github/docker-compose.yml
             docs/CLI_REFERENCE.md
+            docs/notes/schema.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
