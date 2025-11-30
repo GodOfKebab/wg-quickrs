@@ -51,7 +51,7 @@ pub enum ConfigCommandError {
     #[error("failed to read input: {0}")]
     ReadFailed(#[from] io::Error),
     #[error("failed to serialize to YAML: {0}")]
-    YamlSerialization(#[from] serde_yml::Error),
+    YamlSerialization(#[from] serde_norway::Error),
     #[error("peer not found: {0}")]
     PeerNotFound(Uuid),
     #[error("connection not found: {0}")]
@@ -76,7 +76,7 @@ impl From<argon2::password_hash::Error> for ConfigCommandError {
 
 // A helper function to print any serializable struct as YAML
 pub fn print_as_yaml<T: Serialize>(value: &T) -> Result<(), ConfigCommandError> {
-    let yaml = serde_yml::to_string(value)?;
+    let yaml = serde_norway::to_string(value)?;
     print!("{}", yaml);
     Ok(())
 }

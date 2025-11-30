@@ -28,7 +28,7 @@ macro_rules! post_mg_config_w_digest {
         $c.network_w_digest = NetworkWDigest::try_from($c.network_w_digest.network.clone())
             .map_err(|_| HttpResponse::InternalServerError().body("unable to compute config digest"))?;
 
-        let config_file_str = serde_yml::to_string(&config_file)
+        let config_file_str = serde_norway::to_string(&config_file)
             .map_err(|_| HttpResponse::InternalServerError().body("unable to serialize config"))?;
 
         util::write_config(config_file_str)
