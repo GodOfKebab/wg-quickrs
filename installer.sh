@@ -878,6 +878,8 @@ if ! wg-quickrs --help >/dev/null 2>&1; then
   echo
 fi
 
+printf "ℹ️  AmneziaWG Support: If you need AmneziaWG instead of standard WireGuard,\n"
+printf "   please see the documentation: https://github.com/GodOfKebab/wg-quickrs/blob/main/docs/notes/amneziawg.md\n\n"
 printf "🛠️ You are ready to initialize your agent with:\n\n"
 printf "    %swg-quickrs%s agent init\n" "$WG_QUICKRS_PRIVILEGE_CMD" "$WG_QUICKRS_INSTALL_DIR_OPTION"
 printf "\n🚀 After a successful initialization, you can start up your service with:\n\n"

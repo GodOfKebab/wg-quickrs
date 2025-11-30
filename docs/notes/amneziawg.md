@@ -3,7 +3,11 @@
 Since `wg-quickrs` allows you to specify which `wg` and which userspace implementation to use, it is super easy to set up [AmneziaWG](https://docs.amnezia.org/documentation/amnezia-wg/).
 But you still need to install it before you can use it.
 
-⚠️ Note 1: You need to use `AmneziaWG` app, not the `AmneziaVPN` on the client.
+ℹ️ Note 1: `wg-quickrs agent init` command will seamlessly use `AmneziaWG` if it is installed.
+If not, it will fall back to the default `wg` implementation.
+So you should follow this guide, then run `wg-quickrs agent init`.
+
+⚠️ Note 2: You need to use `AmneziaWG` app, not the `AmneziaVPN` on the client.
 
 ## 1. `AmneziaWG` Installation 
 
