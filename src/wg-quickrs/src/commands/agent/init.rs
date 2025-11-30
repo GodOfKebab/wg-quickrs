@@ -103,7 +103,7 @@ fn generate_firewall_scripts(utility: &str, gateway: &str) -> Scripts {
         let post_up = vec![
             Script {
                 enabled: true,
-                script: format!("iptables -t nat -I POSTROUTING -s \"$SUBNET\" -o \"{}\" -j MASQUERADE;", gateway),
+                script: format!("iptables -t nat -I POSTROUTING -s \"$WG_SUBNET\" -o \"{}\" -j MASQUERADE;", gateway),
             },
             Script {
                 enabled: true,
@@ -128,7 +128,7 @@ fn generate_firewall_scripts(utility: &str, gateway: &str) -> Scripts {
         let post_down = vec![
             Script {
                 enabled: true,
-                script: format!("iptables -t nat -D POSTROUTING -s \"$SUBNET\" -o \"{}\" -j MASQUERADE;", gateway),
+                script: format!("iptables -t nat -D POSTROUTING -s \"$WG_SUBNET\" -o \"{}\" -j MASQUERADE;", gateway),
             },
             Script {
                 enabled: true,
@@ -158,7 +158,7 @@ fn generate_firewall_scripts(utility: &str, gateway: &str) -> Scripts {
     } else if utility_name == "pfctl" {
         let pf_vars = format!(
             r#"PF_CONF="/etc/pf.conf";
-NAT_RULE="nat on {gateway} from $SUBNET to any -> {gateway}";
+NAT_RULE="nat on {gateway} from $WG_SUBNET to any -> {gateway}";
 "#
         );
         // PostUp scripts - 4 separate items

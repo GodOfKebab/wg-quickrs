@@ -358,7 +358,7 @@ impl TunnelManager {
                 }
 
                 let script_w_vars = format!(
-                    "SUBNET={subnet}\nWG_PORT={wg_port}\n{wg_interface_var}\n{script}",
+                    "WG_SUBNET={subnet}\nWG_PORT={wg_port}\n{wg_interface_var}\n{script}",
                     subnet=config.network.subnet,
                     wg_port=config.agent.vpn.port,
                     script=hook.script
