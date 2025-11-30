@@ -183,6 +183,7 @@ export default {
       return pruned_network;
     },
     new_network() {
+      if (Object.keys(this.pruned_network).length === 0) return {};
       let new_network = JSON.parse(JSON.stringify(this.pruned_network));
 
       if (this.changeSum.changed_fields) {
@@ -231,6 +232,12 @@ export default {
           for (const defaults_field in this.changeSum.changed_fields.defaults.connection) {
             new_network.defaults.connection[defaults_field] = this.changeSum.changed_fields.defaults.connection[defaults_field];
           }
+        }
+      }
+
+      if (this.changeSum.added_peers) {
+        for (const added_peer_id in this.changeSum.added_peers) {
+          new_network.peers[added_peer_id] = this.changeSum.added_peers[added_peer_id];
         }
       }
 
