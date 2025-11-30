@@ -34,13 +34,57 @@ agent:
     enabled: false
     # port for the VPN service to listen on (valid range: 1-65535, WireGuard default: 51820)
     port: 51820
+    # path to the wireguard-tools utility (wg/awg)
+    wg: /usr/bin/wg
+    wg_userspace:
+      # enable to use userspace WireGuard implementation, disable for kernel module (Linux only)
+      enabled: true
+      # path to the wireguard-go/amneziawg-go utility
+      binary: /usr/bin/wireguard-go
   firewall:
-    # enable/disable firewall rules (to set up NAT/forwarding)
-    enabled: true
-    # path to the firewall utility (iptables or pfctl)
-    utility: /sbin/pfctl
-    # gateway interface to use for NAT/forwarding
-    gateway: en0
+    # firewall scripts for http server
+    # Every script gets a PORT variable prepended (PORT=agent.web.http.port)
+    http:
+      pre_up:
+        - enabled: true
+          script: iptables -I INPUT -p tcp --dport "$PORT" -j ACCEPT;
+      post_down:
+        - enabled: true
+          script: iptables -D INPUT -p tcp --dport "$PORT" -j ACCEPT;
+    # firewall scripts for https server
+    # Every script gets a PORT variable prepended (PORT=agent.web.https.port)
+    https:
+      pre_up:
+        - enabled: true
+          script: iptables -I INPUT -p tcp --dport "$PORT" -j ACCEPT;
+      post_down:
+        - enabled: true
+          script: iptables -D INPUT -p tcp --dport "$PORT" -j ACCEPT;
+    # firewall scripts for wireguard
+    # Every script gets a WG_SUBNET variable prepended (WG_SUBNET=network.subnet)
+    # Every script gets a WG_PORT variable prepended (WG_PORT=agent.vpn.port)
+    # Every script gets a WG_INTERFACE variable prepended (WG_INTERFACE=network.name for linux, utunX(whatever the utun prefixed interface ends up being created) for macOS)
+    vpn:
+      pre_up: []
+      post_up:
+        - enabled: true
+          script: iptables -t nat -I POSTROUTING -s "$WG_SUBNET" -o "eth0" -j MASQUERADE;
+        - enabled: true
+          script: iptables -I INPUT -p udp -m udp --dport "$WG_PORT" -j ACCEPT;
+        - enabled: true
+          script: iptables -I FORWARD -i "$WG_INTERFACE" -j ACCEPT;
+        - enabled: true
+          script: iptables -I FORWARD -o "$WG_INTERFACE" -j ACCEPT;
+      pre_down: []
+      post_down:
+        - enabled: true
+          script: iptables -t nat -D POSTROUTING -s "$WG_SUBNET" -o "eth0" -j MASQUERADE;
+        - enabled: true
+          script: iptables -D INPUT -p udp -m udp --dport "$WG_PORT" -j ACCEPT;
+        - enabled: true
+          script: iptables -D FORWARD -i "$WG_INTERFACE" -j ACCEPT;
+        - enabled: true
+          script: iptables -D FORWARD -o "$WG_INTERFACE" -j ACCEPT;
 # wg-quickrs network configuration (sent over network)
 network:
   name: wg-quickrs-home
