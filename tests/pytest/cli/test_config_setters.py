@@ -8,7 +8,8 @@ from tests.pytest.conftest import setup_wg_quickrs_folder
     "command,expected_success",
     [
         (["config", "set", "network", "name", "test-network"], True),
-        (["config", "set", "network", "subnet", "10.0.50.0/24"], True),
+        (["config", "set", "network", "subnet", "10.0.34.0/16"], True),
+        (["config", "set", "network", "subnet", "10.0.50.0/24"], False),  # not all peers are on this subnet so it should fail
         (["config", "set", "network", "subnet", "invalid"], False),
     ],
 )
@@ -22,10 +23,7 @@ def test_config_set_network(setup_wg_quickrs_folder, command, expected_success):
         text=True
     )
 
-    if expected_success:
-        assert result.returncode == 0
-    else:
-        assert result.returncode != 0
+    assert (result.returncode == 0) == expected_success
 
 
 @pytest.mark.parametrize(
