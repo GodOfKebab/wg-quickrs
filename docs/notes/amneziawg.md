@@ -14,15 +14,22 @@ So you should follow this guide, then run `wg-quickrs agent init`.
 ### Use Docker (recommended)
 
 The `awg` and `amneziawg-go` binaries are already included in the Docker image.
-So follow the instructions in the [docker-compose.yml](../../docker-compose.yml) to enable obfuscation.
+By default, the network is not obfuscated to be backwards compatible with the official WireGuard app.
+To enable obfuscation, either
+- follow the instructions in the [docker-compose.yml](../../docker-compose.yml)
+- or on the web console, click on the gear icon in the top left corner > Amnezia Settings, then make sure the button "Enable AmneziaWG Obfuscation" is checked. Then "Save Configuration".
 
+⚠️ Note: When you toggle AmneziaWG obfuscation, your clients' configuration will be updated, you will need to re-download .conf files or re-scan the QR.
 
-### Build and Install `AmneziaWG` on Alpine
+### Build and Install `AmneziaWG`
 
 Install the following packages:
 
 ```shell
-apk add -U --no-cache git make go linux-headers
+# Debian/Ubuntu
+sudo apt update && sudo apt install -y git build-essential golang-go
+# Alpine
+# doas apk add -U --no-cache git make build-base linux-headers go
 ```
 
 ### Build and Install `amneziawg-tools`
@@ -33,7 +40,9 @@ To build and install `awg(8)`, run the following commands:
 git clone https://github.com/amnezia-vpn/amneziawg-tools.git
 cd amneziawg-tools/src
 make
-make install
+sudo make install
+# OR
+# doas make install
 ```
 
 ### Build and Install `amneziawg-go`
@@ -47,7 +56,9 @@ To build the userspace implementation, run the following commands:
 git clone https://github.com/amnezia-vpn/amneziawg-go
 cd amneziawg-go
 make
-make install
+sudo make install
+# OR
+# doas make install
 ```
 
 ## 2. `wg-quickrs` setup
