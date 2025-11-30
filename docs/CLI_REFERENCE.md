@@ -1,4 +1,4 @@
-# `wg-quickrs`
+# `wg-quickrs` (2.0.0)
 
 A tool to manage the peer and network configuration of the WireGuard-based overlay network over the web console
 
