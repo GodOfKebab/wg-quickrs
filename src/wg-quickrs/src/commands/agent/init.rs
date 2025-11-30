@@ -580,49 +580,64 @@ pub fn initialize_agent(init_opts: &InitOptions) -> Result<(), AgentInitError> {
             },
         );
 
-        // --network-amnezia-h1
-        let network_amnezia_h1 = get_value(
+        // --network-amnezia-h-random & --network-amnezia-h1-4
+        let network_amnezia_h_random = get_bool(
             init_opts.no_prompt,
             step_str(step_counter),
-            init_opts.network_amnezia_h1.map(|o| o.to_string()),
-            INIT_NETWORK_AMNEZIA_H1_FLAG,
-            INIT_NETWORK_AMNEZIA_H1_HELP,
-            Some(rand::rng().next_u32().to_string()),
-            parse_and_validate_amnezia_h,
+            init_opts.network_amnezia_h_random,
+            INIT_NETWORK_AMNEZIA_H_RANDOM_FLAG,
+            INIT_NETWORK_AMNEZIA_H_RANDOM_HELP,
+            true,
         );
 
-        // --network-amnezia-h2
-        let network_amnezia_h2 = get_value(
-            init_opts.no_prompt,
-            step_str(step_counter),
-            init_opts.network_amnezia_h2.map(|o| o.to_string()),
-            INIT_NETWORK_AMNEZIA_H2_FLAG,
-            INIT_NETWORK_AMNEZIA_H2_HELP,
-            Some(rand::rng().next_u32().to_string()),
-            parse_and_validate_amnezia_h,
-        );
+        let (network_amnezia_h1, network_amnezia_h2, network_amnezia_h3, network_amnezia_h4) =
+            if network_amnezia_h_random {
+                // Generate random values
+                (rand::rng().next_u32(), rand::rng().next_u32(), rand::rng().next_u32(), rand::rng().next_u32())
+            } else {
+                // Prompt for individual values
+                let network_amnezia_h1 = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.network_amnezia_h1.map(|o| o.to_string()),
+                    INIT_NETWORK_AMNEZIA_H1_FLAG,
+                    INIT_NETWORK_AMNEZIA_H1_HELP,
+                    Some(rand::rng().next_u32().to_string()),
+                    parse_and_validate_amnezia_h,
+                );
 
-        // --network-amnezia-h3
-        let network_amnezia_h3 = get_value(
-            init_opts.no_prompt,
-            step_str(step_counter),
-            init_opts.network_amnezia_h3.map(|o| o.to_string()),
-            INIT_NETWORK_AMNEZIA_H3_FLAG,
-            INIT_NETWORK_AMNEZIA_H3_HELP,
-            Some(rand::rng().next_u32().to_string()),
-            parse_and_validate_amnezia_h,
-        );
+                let network_amnezia_h2 = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.network_amnezia_h2.map(|o| o.to_string()),
+                    INIT_NETWORK_AMNEZIA_H2_FLAG,
+                    INIT_NETWORK_AMNEZIA_H2_HELP,
+                    Some(rand::rng().next_u32().to_string()),
+                    parse_and_validate_amnezia_h,
+                );
 
-        // --network-amnezia-h4
-        let network_amnezia_h4 = get_value(
-            init_opts.no_prompt,
-            step_str(step_counter),
-            init_opts.network_amnezia_h4.map(|o| o.to_string()),
-            INIT_NETWORK_AMNEZIA_H4_FLAG,
-            INIT_NETWORK_AMNEZIA_H4_HELP,
-            Some(rand::rng().next_u32().to_string()),
-            parse_and_validate_amnezia_h,
-        );
+                let network_amnezia_h3 = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.network_amnezia_h3.map(|o| o.to_string()),
+                    INIT_NETWORK_AMNEZIA_H3_FLAG,
+                    INIT_NETWORK_AMNEZIA_H3_HELP,
+                    Some(rand::rng().next_u32().to_string()),
+                    parse_and_validate_amnezia_h,
+                );
+
+                let network_amnezia_h4 = get_value(
+                    init_opts.no_prompt,
+                    step_str(step_counter),
+                    init_opts.network_amnezia_h4.map(|o| o.to_string()),
+                    INIT_NETWORK_AMNEZIA_H4_FLAG,
+                    INIT_NETWORK_AMNEZIA_H4_HELP,
+                    Some(rand::rng().next_u32().to_string()),
+                    parse_and_validate_amnezia_h,
+                );
+
+                (network_amnezia_h1, network_amnezia_h2, network_amnezia_h3, network_amnezia_h4)
+            };
 
         AmneziaNetworkParameters { enabled: true, s1: network_amnezia_s1, s2: network_amnezia_s2, h1: network_amnezia_h1, h2: network_amnezia_h2, h3: network_amnezia_h3, h4: network_amnezia_h4 }
     } else {

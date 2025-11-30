@@ -92,6 +92,10 @@ Configuration options can be filled either by prompts on screen (when no argumen
 * `--network-amnezia-h2 <NETWORK_AMNEZIA_H2>` — Set H2 (packet magic header) for AmneziaWG obfuscation
 * `--network-amnezia-h3 <NETWORK_AMNEZIA_H3>` — Set H3 (packet magic header) for AmneziaWG obfuscation
 * `--network-amnezia-h4 <NETWORK_AMNEZIA_H4>` — Set H4 (packet magic header) for AmneziaWG obfuscation
+* `--network-amnezia-h-random <NETWORK_AMNEZIA_H_RANDOM>` — Use random values for AmneziaWG H1, H2, H3, H4 packet magic headers instead of specifying them manually
+
+  Possible values: `true`, `false`
+
 * `--agent-firewall-enabled <AGENT_FIREWALL_ENABLED>` — Enable running firewall commands for setting up NAT and input rules
 
   Possible values: `true`, `false`

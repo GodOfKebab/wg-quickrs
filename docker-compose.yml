@@ -44,10 +44,7 @@ services:
       --network-amnezia-enabled        false
       --network-amnezia-s1             55
       --network-amnezia-s2             155
-      --network-amnezia-h1             1965538070
-      --network-amnezia-h2             1556073336
-      --network-amnezia-h3             1369216251
-      --network-amnezia-h4             4226881876
+      --network-amnezia-h-random       true
       --agent-firewall-enabled         true
       --agent-firewall-utility         /usr/sbin/iptables
       --agent-firewall-gateway         eth0

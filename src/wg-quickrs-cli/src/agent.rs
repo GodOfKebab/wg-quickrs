@@ -93,6 +93,9 @@ pub struct InitOptions {
     #[arg(long, default_value = None, long_help = "Set H4 (packet magic header) for AmneziaWG obfuscation")]
     pub network_amnezia_h4: Option<u32>,
 
+    #[arg(long, default_value = None, long_help = "Use random values for AmneziaWG H1, H2, H3, H4 packet magic headers instead of specifying them manually")]
+    pub network_amnezia_h_random: Option<bool>,
+
     #[arg(long, default_value = None, long_help = "Enable running firewall commands for setting up NAT and input rules"
     )]
     pub agent_firewall_enabled: Option<bool>,

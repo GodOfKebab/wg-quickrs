@@ -77,6 +77,13 @@ docker run --rm \
     --agent-web-password         YOUR-PASSWORD                      \
     --agent-vpn-enabled          true                               \
     --agent-vpn-port             51820                              \
+    --agent-vpn-wg                   /usr/bin/awg                   \
+    --agent-vpn-wg-userspace-enabled true                           \
+    --agent-vpn-wg-userspace-binary  /usr/bin/amneziawg-go          \
+    --network-amnezia-enabled        false                          \
+    --network-amnezia-s1             55                             \
+    --network-amnezia-s2             155                            \
+    --network-amnezia-h-random       true                           \
     --agent-firewall-enabled     true                               \
     --agent-firewall-utility     /usr/sbin/iptables                 \
     --agent-firewall-gateway     eth0                               \
@@ -98,6 +105,9 @@ docker run --rm \
     --agent-peer-script-post-up-enabled   false             \
     --agent-peer-script-pre-down-enabled  false             \
     --agent-peer-script-post-down-enabled false             \
+    --agent-peer-amnezia-jc               30                \
+    --agent-peer-amnezia-jmin             60                \
+    --agent-peer-amnezia-jmax             120               \
     --default-peer-kind                               laptop  \
     --default-peer-icon-enabled                       false   \
     --default-peer-dns-enabled                        true    \
@@ -107,6 +117,9 @@ docker run --rm \
     --default-peer-script-post-up-enabled             false   \
     --default-peer-script-pre-down-enabled            false   \
     --default-peer-script-post-down-enabled           false   \
+    --default-peer-amnezia-jc                         30      \
+    --default-peer-amnezia-jmin                       60      \
+    --default-peer-amnezia-jmax                       120     \
     --default-connection-persistent-keepalive-enabled true    \
     --default-connection-persistent-keepalive-period  25
 ```
