@@ -13,7 +13,7 @@ In `wg-quickrs` agent initialization on a host with public IP address, default o
 When you add a new roaming peer (without a static endpoint), AllowedIPs of the new peer will be defaulted to 0.0.0.0/0, allowing all traffic to the `wg-quickrs` agent.
 
 <p align="center">
-  <img src="../figures/road-warrior.png" alt="road warrior media" width="400">
+  <img src="../figures/road-warrior.png" alt="road warrior media" width="600">
 </p>
 
 ## Site-to-Site
@@ -21,7 +21,7 @@ When you add a new roaming peer (without a static endpoint), AllowedIPs of the n
 If you set up AllowedIPs and firewall rules correctly, you can create a site-to-site configuration.
 
 <p align="center">
-  <img src="../figures/site-to-site.png" alt="site-to-site media" width="400">
+  <img src="../figures/site-to-site.png" alt="site-to-site media" width="600">
 </p>
 
 ## Mesh
@@ -32,5 +32,5 @@ If you set up AllowedIPs and firewall rules correctly, you can also create a mes
 So even if you can connect them on the web console, they will not be able to discover each other and you will not get a handshake.
 
 <p align="center">
-  <img src="../figures/mesh.png" alt="mesh media" width="400">
+  <img src="../figures/mesh.png" alt="mesh media" width="600">
 </p>
