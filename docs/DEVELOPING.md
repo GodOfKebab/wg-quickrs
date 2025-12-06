@@ -22,6 +22,14 @@ Following will listen to the files, and if I change them, automagically reload t
 npm run dev
 ```
 
+Run a security audit with `npm audit`:
+
+```sh
+# running directory: src/wg-quickrs-web/
+npm audit
+```
+
+
 ## 3. Agent
 
 Following will listen to the files and if I change them, recompile and rerun the agent.
@@ -46,6 +54,13 @@ To test the release profile.
 ```sh
 # running directory: src/
 cargo run --release -- --wg-quickrs-config-folder ../.wg-quickrs agent run
+```
+
+Run a security audit with `cargo audit`:
+
+```sh
+# running directory: src/
+cargo audit
 ```
 
 # Testing wg-quickrs (automated)
