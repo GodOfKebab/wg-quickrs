@@ -9,9 +9,7 @@ So you should follow this guide, then run `wg-quickrs agent init`.
 
 ⚠️ Note 2: You need to use `AmneziaWG` app, not the `AmneziaVPN` on the client.
 
-## 1. `AmneziaWG` Installation 
-
-### Use Docker (recommended)
+## Use Docker (recommended)
 
 The `awg` and `amneziawg-go` binaries are already included in the Docker image.
 By default, the network is not obfuscated to be backwards compatible with the official WireGuard app.
@@ -21,7 +19,11 @@ To enable obfuscation, either
 
 ⚠️ Note: When you toggle AmneziaWG obfuscation, your clients' configuration will be updated, you will need to re-download .conf files or re-scan the QR.
 
-### Build and Install `AmneziaWG`
+## Use Static Binaries
+
+### 1. `AmneziaWG` Installation 
+
+#### Build and Install `AmneziaWG`
 
 Install the following packages:
 
@@ -32,7 +34,7 @@ sudo apt update && sudo apt install -y git build-essential golang-go
 # doas apk add -U --no-cache git make build-base linux-headers go
 ```
 
-### Build and Install `amneziawg-tools`
+#### Build and Install `amneziawg-tools`
 
 To build and install `awg(8)`, run the following commands:
 
@@ -45,7 +47,7 @@ sudo make install
 # doas make install
 ```
 
-### Build and Install `amneziawg-go`
+#### Build and Install `amneziawg-go`
 
 For installing the kernel module, see [here](https://github.com/amnezia-vpn/amneziawg-linux-kernel-module).
 Since the kernel module is harder to set up for alpine, Docker images and this guide will use the userspace implementation.
@@ -61,7 +63,7 @@ sudo make install
 # doas make install
 ```
 
-## 2. `wg-quickrs` setup
+### 2. `wg-quickrs` setup
 
 Make sure that the conf.yml file looks like this:
 
