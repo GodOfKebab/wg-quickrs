@@ -14,7 +14,7 @@ export default class API {
             headers["Authorization"] = `Bearer ${this.token}`;
         }
         const res = await fetch(`${import.meta.env.VITE_API_FETCH_URL_PREFIX}${path}`, {
-            method,
+            method: method.toUpperCase(),
             headers: headers,
             body: body
                 ? JSON.stringify(body)
