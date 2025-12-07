@@ -18,8 +18,16 @@ jobs:
         id: get_version
         run: |
           VERSION=$(grep '^version' src/wg-quickrs/Cargo.toml | head -1 | awk -F'"' '{print $2}')
-          echo "version_tag=v${VERSION}" >> $GITHUB_OUTPUT
           echo "Version tag: v${VERSION}"
+          echo "version_tag=v${VERSION}" >> $GITHUB_OUTPUT
+          
+          if [[ "${VERSION}" == *"-"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "Pre-release detected"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "Release detected"
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -33,15 +41,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Check if pre-release
-        id: check_prerelease
-        run: |
-          if [[ "${{ steps.set_version.outputs.version_tag }}" == *"-"* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build and Push (Multi-arch)
         uses: docker/build-push-action@v5
         with:
@@ -50,5 +49,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:${{ steps.set_version.outputs.version_tag }}
-            ${{ steps.check_prerelease.outputs.is_prerelease == 'false' && format('{0}/{1}:latest', secrets.DOCKERHUB_USERNAME, github.event.repository.name) || '' }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:${{ steps.get_version.outputs.version_tag }}
+            ${{ steps.get_version.outputs.is_prerelease == 'false' && format('{0}/{1}:latest', secrets.DOCKERHUB_USERNAME, github.event.repository.name) || '' }}
