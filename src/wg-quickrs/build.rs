@@ -223,5 +223,5 @@ fn generate_cli_docs() {
     markdown = result;
 
     let docs_path = Path::new("../../docs/CLI_REFERENCE.md");
-    fs::write(docs_path, markdown).expect("Failed to write markdown documentation");
+    fs::write(docs_path, markdown).unwrap_or(println!("Failed to write markdown documentation"));
 }
