@@ -56,10 +56,9 @@ jobs:
         with:
           tag_name: ${{ steps.tag_check.outputs.tag_name }}
           name: Release ${{ steps.tag_check.outputs.tag_name }}
+          generate_release_notes: true
           body: |
-            Automated release for version ${{ steps.version_check.outputs.current_version }}
-
-            This release was automatically created by the version watcher workflow.
+            Release for version ${{ steps.version_check.outputs.current_version }}
           draft: false
           prerelease: ${{ contains(steps.version_check.outputs.current_version, '-') }}
         env:
