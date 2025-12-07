@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
 
 jobs:
   docker:
@@ -12,6 +13,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      - name: Extract version from Cargo.toml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version = ' src/wg-quickrs/Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          echo "version_tag=v${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -28,7 +35,7 @@ jobs:
       - name: Check if pre-release
         id: check_prerelease
         run: |
-          if [[ "${{ github.ref_name }}" == *"-"* ]]; then
+          if [[ "${{ steps.set_version.outputs.version_tag }}" == *"-"* ]]; then
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
           else
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
@@ -42,5 +49,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:${{ steps.set_version.outputs.version_tag }}
             ${{ steps.check_prerelease.outputs.is_prerelease == 'false' && format('{0}/{1}:latest', secrets.DOCKERHUB_USERNAME, github.event.repository.name) || '' }}
