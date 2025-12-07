@@ -17,8 +17,9 @@ jobs:
       - name: Extract version from Cargo.toml
         id: get_version
         run: |
-          VERSION=$(grep '^version = ' src/wg-quickrs/Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          VERSION=$(grep '^version' src/wg-quickrs/Cargo.toml | head -1 | awk -F'"' '{print $2}')
           echo "version_tag=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "Version tag: v${VERSION}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
