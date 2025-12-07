@@ -2,7 +2,7 @@
 
 To see schemas from earlier versions, see the schema.md file in that release's attachments.
 
-## conf.yml: 1.x.x
+## conf.yml: 2.x.x
 
 ```yaml
 # version of the wg-quickrs binary used to generate this config
@@ -254,7 +254,7 @@ network:
   updated_at: '2025-11-18T00:40:10.911311Z'
 ```
 
-## API: 1.0.x
+## API: 2.0.x
 
 If password is enabled, all API endpoints except `/api/token` require authentication via JWT bearer token.
 
