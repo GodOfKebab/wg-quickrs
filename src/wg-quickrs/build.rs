@@ -155,10 +155,8 @@ pub const ADD_CONNECTION_{}_HELP: &str = "{}";
         // println!("cargo:warning=Generated {} completion script at: {:?}", shell, _completion_file_path);
     }
 
-    // Generate markdown documentation (only if GENERATE_CLI_DOCS is set)
-    if std::env::var("GENERATE_CLI_DOCS").is_ok() {
-        generate_cli_docs();
-    }
+    // Generate markdown documentation
+    generate_cli_docs();
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=Cargo.toml");
@@ -191,7 +189,7 @@ fn generate_cli_docs() {
     // Prepend # to all lines starting with #
     let mut result = String::new();
     // 1. Main command (no links - just basic info)
-    result.push_str("# `wg-quickrs`\n\n");
+    result.push_str(&format!("# `wg-quickrs` ({})\n\n", env!("CARGO_PKG_VERSION")));
     // result.push_str("# `wg-quickrs`\n\n");
     if let Some(about) = cli.get_about() {
         result.push_str(&format!("{}\n\n", about));
