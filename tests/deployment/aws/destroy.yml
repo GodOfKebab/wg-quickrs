@@ -1,0 +1,40 @@
+---
+- name: Destroy AWS resources
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    terraform_dir: "./terraform"
+
+  tasks:
+    - name: Show what will be destroyed
+      command: terraform plan -destroy
+      args:
+        chdir: "{{ terraform_dir }}"
+      register: tf_plan_destroy
+      changed_when: false
+
+    - name: Display destroy plan
+      debug:
+        var: tf_plan_destroy.stdout_lines
+
+    - name: Confirm destruction
+      pause:
+        prompt: |
+          
+          ====================================================================
+          WARNING: This will DESTROY all resources shown above!
+          
+          Press Enter to continue with destruction, or Ctrl+C to abort
+          ====================================================================
+
+    - name: Terraform destroy
+      command: terraform destroy -auto-approve
+      args:
+        chdir: "{{ terraform_dir }}"
+      register: tf_destroy
+
+    - name: Display destroy output
+      debug:
+        var: tf_destroy.stdout_lines

@@ -1,0 +1,126 @@
+---
+- name: Deploy to AWS
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    terraform_dir: "./terraform"
+    terraform_file: "{{ terraform_dir }}/main.tf"
+
+  tasks:
+    # Create a local (temporary) SSH keypair
+    - name: Create .ssh directory
+      file:
+        path: .ssh
+        state: directory
+        mode: '0700'
+
+    - name: Generate SSH keypair
+      openssh_keypair:
+        path: .ssh/id_rsa
+        type: rsa
+        size: 4096
+
+    # Create Terraform directory and files
+    - name: Create Terraform directory
+      file:
+        path: "{{ terraform_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Read SSH public key
+      slurp:
+        src: .ssh/id_rsa.pub
+      register: ssh_pub_key
+
+    - name: Create Terraform file from template
+      template:
+        src: terraform.tf.j2
+        dest: "{{ terraform_file }}"
+      vars:
+        ssh_public_key: "{{ ssh_pub_key.content | b64decode | trim }}"
+
+    # Initialize and run Terraform
+    - name: Terraform init
+      command: terraform init
+      args:
+        chdir: "{{ terraform_dir }}"
+      register: tf_init
+
+    - name: Display Terraform init output
+      debug:
+        var: tf_init.stdout_lines
+
+    - name: Terraform plan
+      command: terraform plan -out=tfplan
+      args:
+        chdir: "{{ terraform_dir }}"
+      register: tf_plan
+
+    - name: Display Terraform plan output
+      debug:
+        var: tf_plan.stdout_lines
+
+    - name: Terraform apply
+      command: terraform apply -auto-approve tfplan
+      args:
+        chdir: "{{ terraform_dir }}"
+      register: tf_apply
+
+    - name: Display Terraform apply output
+      debug:
+        var: tf_apply.stdout_lines
+
+    # Add EC2 instance to inventory
+    - name: Get EC2 instance public IP
+      command: terraform output -raw instance_public_ip
+      args:
+        chdir: "{{ terraform_dir }}"
+      register: instance_ip
+
+    - name: Display instance IP
+      debug:
+        msg: "EC2 Instance IP: {{ instance_ip.stdout }}"
+
+    - name: Wait for SSH to become available
+      wait_for:
+        host: "{{ instance_ip.stdout }}"
+        port: 22
+        delay: 10
+        timeout: 300
+        state: started
+
+    - name: Add EC2 instance to inventory
+      add_host:
+        name: "{{ instance_ip.stdout }}"
+        groups: ec2_instances
+        ansible_user: admin
+        ansible_ssh_private_key_file: .ssh/id_rsa
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null'
+
+- name: Configure EC2 instance
+  hosts: ec2_instances
+  gather_facts: no
+
+  tasks:
+    - name: Upload installer script
+      copy:
+        src: ../../../installer.sh
+        dest: /tmp/installer.sh
+        mode: '0755'
+
+    - name: Pause for manual installation
+      pause:
+        prompt: |
+
+          ====================================================================
+          The installer script is ready on the EC2 instance.
+          Click on any key to exit the playbook and continue setting up manually.
+
+          Run:
+          ssh -i .ssh/id_rsa admin@{{ inventory_hostname }}
+
+          Then execute:
+          sh /tmp/installer.sh
+          ====================================================================
